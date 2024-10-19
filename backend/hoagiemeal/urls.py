@@ -1,5 +1,5 @@
 """
-URL configuration for hoagiemeal project.
+URL configuration for Hoagie Meal app.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.1/topics/http/urls/
