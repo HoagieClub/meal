@@ -1,126 +1,233 @@
 import requests
 from bs4 import BeautifulSoup
-
+from hoagiemeal.logger import logger
+from copy import deepcopy
+import pprint
 
 class Scraper:
     def __init__(self):
         self.INGREDIENTS_CLASS = "labelingredientsvalue"
         self.ALLERGENS_CLASS = "labelallergensvalue"
-        self.SERVING_SIZE_ID = "facts2"
-        self.CALORIES_ID = "facts2"
-        
-        self.CALORIES_PREFIX = "Calories"
-        self.CALORIES_FAT_PREFIX = "Calories from Fat"
-        self.SERVING_SIZE_PREFIX = "Serving Size"
-        self.ALLERGENS_PREFIX = "Ingredients include"
+        self.CALORIES_SIZE_ID = "facts2"
+        self.NUTRITION_ID = "facts4"
+        self.NAME_QUERY = "h2"
+        self.EMPTY_MENU_SCHEMA = {
+            "Name": "",
+            "Serving Size": "",
+            "Calories": "",
+            "Calories from Fat": "",
+            "Ingredients": [],
+            "Allergens": [],
+            "Fat": {
+                "Total Fat": {
+                    "Amount": "",
+                    "Daily Value": "",
+                },
+                "Saturated Fat": {
+                    "Amount": "",
+                    "Daily Value": "",
+                },
+                "Trans Fat": {
+                    "Amount": "",
+                    "Daily Value": "",
+                },
+            },
+            "Cholesterol": {
+                "Amount": "",
+                "Daily Value": "",
+            },
+            "Sodium": {
+                "Amount": "",
+                "Daily Value": "",
+            },
+            "Carbohydrates": {
+                "Total Carbohydrates": {
+                    "Amount": "",
+                    "Daily Value": "",
+                },
+                "Dietary Fiber": {
+                    "Amount": "",
+                    "Daily Value": "",
+                },
+                "Sugar": {
+                    "Amount": "",
+                    "Daily Value": "",
+                },
+            },
+            "Protein": {
+                "Amount": "",
+                "Daily Value": "",
+            },
+            "Vitamins": {
+                "Vitamin D": {
+                    "Amount": "",
+                    "Daily Value": "",
+                },
+                "Calcium": {
+                    "Amount": "",
+                    "Daily Value": "",
+                },
+                "Iron": {
+                    "Amount": "",
+                    "Daily Value": "",
+                },
+                "Potassium": {
+                    "Amount": "",
+                    "Daily Value": "",
+                },
+            },
+        }
 
     def get_html(self, link: str = None):
-        print("Fetching HTML content...")
+        logger.info("Fetching HTML content.")
         if link is None or link == "":
-            print("Error: No link found.")
+            logger.error("Exception occurred: No link provided.")
             return None
         try:
             response = requests.get(link)
             soup = BeautifulSoup(response.content, "lxml")
-            print("HTML content fetched successfully.")
+            logger.info("HTML content fetched successfully.")
             return soup
         except Exception as e:
-            print("Error: Failed to fetch HTML content. " + str(e))
+            logger.error(f"Exception occurred: {e}")
             return None
 
-    def get_ingredients(self, soup: BeautifulSoup = None):
+    def get_info(self, soup: BeautifulSoup = None):
         if soup is None or not isinstance(soup, BeautifulSoup):
-            print("Error: No soup object found.")
-            return {
-                "Ingredients": [],
-            }
+            logger.error(f"Exception occurred: No soup object found.")
+            response = deepcopy(self.EMPTY_MENU_SCHEMA)
+            return response
         try:
-            element = soup.find_all(class_=self.INGREDIENTS_CLASS)[0]
-            parsed = element.text.strip().split(",")
-            items = [item.strip().capitalize() for item in parsed]
-            return {
-                "Ingredients": items,
-            }
+            response = deepcopy(self.EMPTY_MENU_SCHEMA)
+            try:
+              ingredients_element = soup.find_all(class_=self.INGREDIENTS_CLASS)[0]
+              ingredients_parsed = ingredients_element.get_text().split(",")
+              ingredients_list = [item.strip().capitalize() for item in ingredients_parsed]
+              response["Ingredients"] = ingredients_list
+            except Exception as e:
+              logger.error(f"Exception occurred: {e}")
+          
+            try:
+              allergens_element = soup.find_all(class_=self.ALLERGENS_CLASS)[0]
+              allergens_text = allergens_element.get_text().strip()
+              allergen_text_truncated = allergens_text[len("Ingredients include") :] if allergens_text.startswith("Ingredients include") else allergens_text 
+              allergens_list = [allergen.strip().capitalize() for allergen in allergen_text_truncated.split(",")]
+              response["Allergens"] = allergens_list
+            except Exception as e:
+              logger.error(f"Exception occurred: {e}")
+            
+            try:
+              name_element = soup.find_all(self.NAME_QUERY)[0]
+              name_text = name_element.get_text().strip()
+              response["Name"] = name_text
+            except Exception as e:
+              logger.error(f"Exception occurred: {e}")
+            
+            try:
+              elements = soup.find_all(id=self.CALORIES_SIZE_ID)
+              serving_size_element = elements[0]
+              serving_size_text = serving_size_element.text.strip()[len("Serving Size") :].strip()
+              response["Serving Size"] = serving_size_text
+              
+              calories_element = elements[1]
+              calories_text = calories_element.text.strip()[len("Calories") :].strip()
+              calories_text = calories_text if calories_text.isnumeric() else ""
+              response["Calories"] = calories_text
+            
+              fat_calories_element = elements[2]
+              fat_calories_text = fat_calories_element.text.strip()[len("Calories from Fat") :].strip()
+              fat_calories_text = fat_calories_text if fat_calories_text.isnumeric() else ""
+              response["Calories from Fat"] = fat_calories_text 
+            except Exception as e:
+              logger.error(f"Exception occurred: {e}")  
+              
+            try:
+              nutrition_elements = soup.find_all(id=self.NUTRITION_ID) or []
+              total_fat_amount_element = nutrition_elements[0]
+              total_fat_amount_text = total_fat_amount_element.text.strip()[len("Total Fat") :].strip()
+              response["Fat"]["Total Fat"]["Amount"] = total_fat_amount_text  
+              
+              total_fat_dv_element = nutrition_elements[1]
+              total_fat_dv_text = total_fat_dv_element.text.strip()
+              response["Fat"]["Total Fat"]["Daily Value"] = total_fat_dv_text
+              
+              total_carb_amount_element = nutrition_elements[2]
+              total_carb_amount_text = total_carb_amount_element.text.strip()[len("Tot. Carb.") :].strip()
+              response["Carbohydrates"]["Total Carbohydrates"]["Amount"] = total_carb_amount_text
+              
+              total_carb_dv_element = nutrition_elements[3]
+              total_carb_dv_text = total_carb_dv_element.text.strip()
+              response["Carbohydrates"]["Total Carbohydrates"]["Daily Value"] = total_carb_dv_text
+              
+              sat_fat_amount_element = nutrition_elements[4]
+              sat_fat_amount_text = sat_fat_amount_element.text.strip()[len("Sat. Fat") :].strip()
+              response["Fat"]["Saturated Fat"]["Amount"] = sat_fat_amount_text
+              
+              sat_fat_dv_element = nutrition_elements[5]
+              sat_fat_dv_text = sat_fat_dv_element.text.strip()
+              response["Fat"]["Saturated Fat"]["Daily Value"] = sat_fat_dv_text
+              
+              fiber_amount_element = nutrition_elements[6]
+              fiber_amount_text = fiber_amount_element.text.strip()[len("Dietary Fiber") :].strip()
+              response["Carbohydrates"]["Dietary Fiber"]["Amount"] = fiber_amount_text
+              
+              fiber_dv_element = nutrition_elements[7]
+              fiber_dv_text = fiber_dv_element.text.strip()
+              response["Carbohydrates"]["Dietary Fiber"]["Daily Value"] = fiber_dv_text
+              
+              trans_fat_amount_element = nutrition_elements[8]
+              trans_fat_amount_text = trans_fat_amount_element.text.strip()[len("Trans Fat") :].strip()
+              response["Fat"]["Trans Fat"]["Amount"] = trans_fat_amount_text
+              
+              trans_fat_dv_element = nutrition_elements[9]
+              trans_fat_dv_text = trans_fat_dv_element.text.strip()
+              response["Fat"]["Trans Fat"]["Daily Value"] = trans_fat_dv_text
+              
+              sugar_amount_element = nutrition_elements[10]
+              sugar_amount_text = sugar_amount_element.text.strip()[len("Sugars") :].strip()
+              response["Carbohydrates"]["Sugar"]["Amount"] = sugar_amount_text
+              
+              sugar_dv_element = nutrition_elements[11]
+              sugar_dv_text = sugar_dv_element.text.strip()
+              response["Carbohydrates"]["Sugar"]["Daily Value"] = sugar_dv_text
+              
+              chol_amount_element = nutrition_elements[12]
+              chol_amount_text = chol_amount_element.text.strip()[len("Cholesterol") :].strip()
+              response["Cholesterol"]["Amount"] = chol_amount_text
+              
+              chol_dv_element = nutrition_elements[13]
+              chol_dv_text = chol_dv_element.text.strip()
+              response["Cholesterol"]["Daily Value"] = chol_dv_text
+              
+              protein_amount_element = nutrition_elements[14]
+              protein_amount_text = protein_amount_element.text.strip()[len("Protein") :].strip()
+              response["Protein"]["Amount"] = protein_amount_text
+              
+              protein_dv_element = nutrition_elements[15]
+              protein_dv_text = protein_dv_element.text.strip()
+              response["Protein"]["Daily Value"] = protein_dv_text
+              
+              sodium_amount_element = nutrition_elements[16]
+              sodium_amount_text = sodium_amount_element.text.strip()[len("Sodium") :].strip()
+              response["Sodium"]["Amount"] = sodium_amount_text
+              
+              sodium_dv_element = nutrition_elements[17]
+              sodium_dv_text = sodium_dv_element.text.strip()
+              response["Sodium"]["Daily Value"] = sodium_dv_text
+            except Exception as e:
+              logger.error(f"Exception occurred: {e}")
+            return response
         except Exception as e:
-            print("Error: Failed to extract ingredients. " + str(e))
-            return {
-                "Ingredients": [],
-            }
-
-    def get_allergens(self, soup: BeautifulSoup = None):
-        if soup is None or not isinstance(soup, BeautifulSoup):
-            print("Error: No soup object found.")
-            return {
-                "Allergens": [],
-            }
-        try:
-            element = soup.find_all(class_=self.ALLERGENS_CLASS)[0]
-            text = element.text.strip()
-            if text.startswith(self.ALLERGENS_PREFIX):
-                text = text[len(self.ALLERGENS_PREFIX) :].strip()
-            items = [item.strip().capitalize() for item in text.split(",")]
-            return {
-                "Allergens": items,
-            }
-        except Exception as e:
-            print("Error: Failed to extract allergens. " + str(e))
-            return {
-                "Allergens": [],
-            }
-
-    def get_basic_info(self, soup: BeautifulSoup = None):
-        if soup is None or not isinstance(soup, BeautifulSoup):
-            print("Error: No soup object found.")
-            return {
-                "Name": "",
-                "Serving Size": "",
-                "Calories": "",
-                "Calories from Fat": "",
-            }
-        try:
-            elements = soup.find_all("div", id="facts2")
-            size, calories, fat_calories = "", "", ""
-            for element in elements:
-                text = element.text.strip()
-                if self.SERVING_SIZE_PREFIX in element.text:
-                    size = text[len(self.SERVING_SIZE_PREFIX) :].strip() or ""
-                elif (
-                    self.CALORIES_PREFIX in element.text
-                    and self.CALORIES_FAT_PREFIX not in element.text
-                ):
-                    stripped = text[len(self.CALORIES_PREFIX) :].strip()
-                    calories = stripped if stripped.isnumeric() else ""
-                elif self.CALORIES_FAT_PREFIX in element.text:
-                    stripped = text[len(self.CALORIES_FAT_PREFIX) :].strip()
-                    fat_calories = stripped if stripped.isnumeric() else ""
-            element = soup.find_all("h2")[0]
-            name = element.text.strip() or ""
-            return {
-                "Name": name,
-                "Serving Size": size,
-                "Calories": calories,
-                "Calories from Fat": fat_calories,
-            }
-        except Exception as e:
-            print("Error: Failed to extract serving size. " + str(e))
-            return {"Name": "", "Serving Size": "", "Calories": ""}
+            logger.error(f"Exception occurred: {e}")
 
 
 def test_scraper():
+    link = "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=313998"
     scraper = Scraper()
-    link = "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=520401"
-
     soup = scraper.get_html(link=link)
-    allergens = scraper.get_allergens(soup=soup)
-    ingredients = scraper.get_ingredients(soup=soup)
-    basic_info = scraper.get_basic_info(soup=soup)
-
-    print(allergens["Allergens"])
-    print(ingredients["Ingredients"])
-    print(basic_info["Name"])
-    print(basic_info["Serving Size"])
-    print(basic_info["Calories"])
-    print(basic_info["Calories from Fat"])
+    info = scraper.get_info(soup=soup)
+    logger.info(info)
+    pprint.pprint(info)
 
 
 if __name__ == "__main__":
