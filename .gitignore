@@ -180,13 +180,6 @@ temp/
 
 # Heroku-specific files (Backend)
 /backend/.heroku/
-/backend/Procfile
-
-# ===============================
-# Migrations (Backend)
-# ===============================
-# Django migrations (optional)
-/backend/**/migrations/
 
 # ===============================
 # Miscellaneous

@@ -1,5 +1,4 @@
-"""
-API manager class for the /dining/ endpoint from the StudentApp API.
+"""API manager class for the /dining/ endpoint from the StudentApp API.
 
 This module fetches data from the following endpoints:
 
@@ -10,7 +9,8 @@ This module fetches data from the following endpoints:
 Copyright © 2021-2024 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
-https://github.com/hoagieclub/meal/blob/main/LICENSE
+
+    https://github.com/hoagieclub/meal/blob/main/LICENSE
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -39,7 +39,7 @@ class Dining(StudentApp):
         self.schemas = Schemas()
 
     def get_locations(self, fmt: str = "xml") -> dict:
-        """Fetches a list of dining locations in XML format."""
+        """Fetch a list of dining locations in XML format."""
         logger.info("Fetching dining locations.")
         response = self._make_request(
             self.DINING_LOCATIONS,
@@ -53,11 +53,11 @@ class Dining(StudentApp):
         return self._parse_xml(response)
 
     def get_events(self, placeID: str = "1007") -> dict:
-        """
-        Fetches dining venue open hours as an iCal stream for a given placeID,
-        where "1007" seems to correspond to the Princeton Dining Calendar.
+        """Fetch dining venue open hours as an iCal stream for a given placeID.
+        
+        Note: "1007" seems to correspond to the Princeton Dining Calendar.
 
-        Note: The response uses LF line-endings with a Content-Type of text/plain
+        Remark: The response uses LF line-endings with a Content-Type of text/plain
         but is actually in iCal (text/calendar) format.
 
         Args:
@@ -65,6 +65,7 @@ class Dining(StudentApp):
 
         Returns:
             dict: Parsed iCal data with event details (summary, start time, end time, etc.).
+
         """
         logger.info(f"Fetching dining events for placeID: {placeID}.")
         params = {"placeID": placeID}
@@ -72,8 +73,7 @@ class Dining(StudentApp):
         return self._parse_ical(response)
 
     def get_menu(self, locationID: str, menuID: str) -> dict:
-        """
-        Fetches the menu for a specific dining location.
+        """Fetch the menu for a specific dining location.
 
         Args:
             locationID (str): The ID of the dining location.
@@ -81,6 +81,7 @@ class Dining(StudentApp):
 
         Returns:
             dict: A JSON object containing the menu details.
+
         """
         logger.info(f"Fetching dining menu for locationID: {locationID}, menuID: {menuID}.")
         params = {"locationID": locationID, "menuID": menuID}
@@ -89,7 +90,7 @@ class Dining(StudentApp):
         return response
 
 
-def test_dining_locations():
+def _test_dining_locations():
     # Create an instance of the Dining class
     dining = Dining()
 
@@ -120,7 +121,7 @@ def test_dining_locations():
         logger.error(f"Error fetching dining locations: {e}")
 
 
-def test_get_events():
+def _test_get_events():
     dining = Dining()
     logger.info("Testing: Get Dining Events...")
     try:
@@ -143,7 +144,7 @@ def test_get_events():
         logger.error(f"Error fetching dining events: {e}")
 
 
-def test_dining_apis():
+def _test_dining_apis():
     dining = Dining()
     response = dining.get_locations()
 
@@ -173,7 +174,7 @@ def test_dining_apis():
 
         try:
             # Fetch the menu data
-            menu_data = dining.get_menu(locationID=dbid, menuID="2024-10-09-Dinner")
+            menu_data = dining.get_menu(locationID=dbid, menuID="2024-10-24-Dinner")
             logger.debug(f"Raw menu data fetched: {menu_data}")
 
             # Now check if menu_data is a dictionary and has the "menus" key
@@ -200,6 +201,6 @@ def test_dining_apis():
 
 
 if __name__ == "__main__":
-    test_dining_locations()
-    test_get_events()
-    test_dining_apis()
+    _test_dining_locations()
+    _test_get_events()
+    _test_dining_apis()
