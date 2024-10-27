@@ -154,9 +154,16 @@ backend/.venv/
 /backend/*.py,cover
 
 # ===============================
+# Linter Caches & Configurations
+# ===============================
+# Ruff cache
+.ruff_cache/
+
+# ===============================
 # Temporary Files
 # ===============================
 # Temporary files (Global)
+**/.empty/
 tmp/
 temp/
 /backend/tmp/
@@ -189,7 +196,7 @@ temp/
 /frontend/public/static/
 
 # Ignore static files generated during build (Backend)
-/backend/hoagiemeal/static/
+/backend/staticfiles/
 
 # Ignore mock files (if not to be committed)
 /frontend/mock/
