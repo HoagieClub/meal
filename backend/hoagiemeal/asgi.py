@@ -1,5 +1,4 @@
-"""
-ASGI config for Hoagie Meal app.
+"""ASGI config for Hoagie Meal app.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

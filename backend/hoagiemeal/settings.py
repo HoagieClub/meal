@@ -1,5 +1,4 @@
-"""
-Django settings for Hoagie Meal app.
+"""Django settings for Hoagie Meal app.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/5.1/topics/settings/

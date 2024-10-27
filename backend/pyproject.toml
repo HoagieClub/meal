@@ -1,10 +1,10 @@
 [project]
 name = "hoagiemeal"
-version = "0.0.1"
+version = "0.0.2"
 description = "Meal by Hoagie"
 readme = "README.md"
-requires-python = ">=3.12"
-license = {file = "LICENSE"}
+requires-python = ">=3.10, >=3.12"
+license = {file = "../LICENSE"}
 
 authors = [
     { name = "Hoagie Club", email = "hoagie@princeton.edu" },
@@ -50,6 +50,7 @@ classifiers = [
 
 dependencies = [
     "requests>=2.32.3",
+    "ruff>=0.7.0",
     "django>=5.1",
     "msgspec>=0.18.6",
     "python-dotenv>=1.0.1",
@@ -60,9 +61,6 @@ dependencies = [
     "beautifulsoup4>=4.12.3",
 ]
 
-[tool.setuptools]
-packages = ["hoagiemeal"]
-
 # ===============================
 # Project URLs
 # ===============================
@@ -70,9 +68,6 @@ packages = ["hoagiemeal"]
 Homepage = "https://meal.hoagie.io/"
 Repository = "https://github.com/hoagieclub/meal/"
 
-# ===============================
-# Ruff Configuration
-# ===============================
 [tool.ruff]
 # Exclude commonly ignored directories from linting
 exclude = [
@@ -100,7 +95,7 @@ exclude = [
 ]
 
 # General Ruff settings
-line-length = 119
+line-length = 119 # Slight deviation from Google style since we are using Django.
 indent-width = 4
 target-version = "py312"
 
@@ -108,9 +103,14 @@ target-version = "py312"
 # Ruff Linting Rules
 # -------------------------------
 [tool.ruff.lint]
-# Enable specific linting rules
-select = ["E4", "E7", "E9", "F", "B", "Q"]
-ignore = []
+
+# Enable pydocstyle rules for Google-style docstrings
+select = ["E4", "E7", "E9", "F", "B", "Q", "D"] # Flake8 rules, Bugbear, Quotes, etc.
+
+ignore = [
+    "D203",  # Ignore conflicts for one-liner docstring style
+    "D213",  # Allow Google-style multi-line docstrings with different line breaks
+]
 
 # Define fixable and unfixable rules
 fixable = ["ALL"]
@@ -133,5 +133,11 @@ skip-magic-trailing-comma = false       # Respect magic trailing commas
 line-ending = "auto"                    # Automatically detect line endings
 
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hoagiemeal"]
+
+[tool.uv.workspace]
+members = ["."]
