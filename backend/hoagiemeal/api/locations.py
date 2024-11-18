@@ -1,10 +1,10 @@
-"""
-API manager class for the /locations/search endpoint from the StudentApp API.
+"""API manager class for the /locations/search endpoint from the StudentApp API.
 
 Copyright © 2021-2024 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
-https://github.com/hoagieclub/meal/blob/main/LICENSE
+
+    https://github.com/hoagieclub/meal/blob/main/LICENSE
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,14 @@ from hoagiemeal.logger import logger
 
 
 class Locations(StudentApp):
-    """
-    Fetches the name and ID of a location provided a home/office address.
-    """
+    """Fetch the name and ID of a location provided a home/office address."""
 
     def __init__(self):
         super().__init__()
         self.LOCATIONS = "/locations/search"
 
     def get_location(self, office: str) -> dict:
-        """
-        Fetches the name and ID of a location provided an address.
+        """Fetch the name and ID of a location provided an address.
 
         Args:
             office (str): The address of the location.
@@ -48,12 +45,13 @@ class Locations(StudentApp):
                     "name": "Stanworth Apartments"
                 }
             }
+
         """
         params = {"office": office}
         return self._make_request(self.LOCATIONS, params=params)
 
 
-def test_locations():
+def _test_locations():
     locations = Locations()
     office_address = "45 Stanworth Apartments"
 
@@ -67,4 +65,4 @@ def test_locations():
 
 
 if __name__ == "__main__":
-    test_locations()
+    _test_locations()

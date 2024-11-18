@@ -1,5 +1,4 @@
-"""
-Django settings for Hoagie Meal backend.
+"""Django settings for Hoagie Meal backend.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/5.1/topics/settings/
@@ -9,6 +8,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 import os
+
+import dj_database_url
+import django_heroku
 
 from pathlib import Path
 from dotenv import load_dotenv
@@ -74,13 +76,12 @@ WSGI_APPLICATION = "hoagiemeal.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+os.environ["DATABASE_URL"] = os.getenv("TEST_DATABASE_URL") if DEBUG else os.getenv("DATABASE_URL")
+DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"), ssl_require=False)}
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
+# Set the custom user model for Hoagie Meal
+AUTH_USER_MODEL = "hoagiemeal.CustomUser"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -117,8 +118,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = "static/"
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Configure Django App for Heroku.
+django_heroku.settings(locals(), databases=False)

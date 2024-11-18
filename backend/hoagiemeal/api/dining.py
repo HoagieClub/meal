@@ -1,5 +1,4 @@
-"""
-API manager class for the /dining/ endpoint from the StudentApp API.
+"""API manager class for the /dining/ endpoint from the StudentApp API.
 
 This module fetches data from the following endpoints:
 
@@ -10,7 +9,8 @@ This module fetches data from the following endpoints:
 Copyright © 2021-2024 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
-https://github.com/hoagieclub/meal/blob/main/LICENSE
+
+    https://github.com/hoagieclub/meal/blob/main/LICENSE
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -44,8 +44,7 @@ class DiningAPI(StudentApp):
         self.schemas = Schemas()
 
     def get_locations(self, fmt: str = "xml") -> dict:
-        """
-        Fetch a list of dining locations in XML format.
+        """Fetch a list of dining locations in XML format.
 
         NOTE: The API expects the parameters to be in camelCase.
 

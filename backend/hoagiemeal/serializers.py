@@ -1,5 +1,4 @@
-"""
-Django serializer for the Hoagie Meal backend.
+"""Django serializer for the Hoagie Meal backend.
 """
 
 from rest_framework import serializers

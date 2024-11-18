@@ -1,10 +1,10 @@
-"""
-Colorful logger module for the Hoagie Meal backend.
+"""Colorful logger module for the Hoagie Meal backend.
 
 Copyright © 2021-2024 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
-https://github.com/hoagieclub/meal/blob/main/LICENSE
+
+    https://github.com/hoagieclub/meal/blob/main/LICENSE
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,11 +26,16 @@ init(autoreset=True)
 
 
 class ColorFormatter(logging.Formatter):
-    """
-    A custom log formatter that applies color based on the log level using the Colorama library.
-
+    """A custom log formatter that applies color based on the log level using the Colorama library.
+    
     Attributes:
         LOG_COLORS (dict): A dictionary mapping log levels to their corresponding color codes.
+
+    Methods:
+        format(record):
+            Applies the appropriate color to the log message based on the log level.
+            The formatted log message includes details like the log level, timestamp, filename, and line number.
+
     """
 
     # Colors for each log level
@@ -53,14 +58,14 @@ class ColorFormatter(logging.Formatter):
         )
 
     def format(self, record):
-        """
-        Formats a log record with the appropriate color based on the log level.
+        """Format a log record with the appropriate color based on the log level.
 
         Args:
             record (logging.LogRecord): The log record to format.
 
         Returns:
-            str: The formatted log message with colors applied.
+            str: The formatted log message with the corresponding color applied.
+
         """
         # Apply color based on the log level
         level_color = self.LOG_COLORS.get(record.levelno, Fore.WHITE)
@@ -74,14 +79,14 @@ class ColorFormatter(logging.Formatter):
 
 
 def setup_logger():
-    """
-    Sets up a logger with a custom color formatter that logs to standard output (stdout).
-
+    """Set up a logger with a custom color formatter that logs to standard output (stdout).
+    
     The logger is configured with the ColorFormatter to format log messages with color based on the log level.
     The log level is set to INFO by default, but this can be changed to show more or less detailed messages.
 
     Returns:
         logging.Logger: A logger instance that logs formatted messages to stdout.
+
     """
     handler = logging.StreamHandler(sys.stdout)
 

@@ -1,5 +1,4 @@
-"""
-Interactive Test Client for Hoagie Meal Dining API.
+"""Interactive Test Client for Hoagie Meal Dining API.
 
 This script allows users to interactively query dining information based on
 meal type, location, and date.
@@ -29,8 +28,7 @@ from hoagiemeal.utils.logger import logger
 
 
 def prompt_user_choice(prompt, choices):
-    """
-    Prompt the user to select a choice from the provided list.
+    """Prompt the user to select a choice from the provided list.
 
     Args:
         prompt (str): The prompt message to display.
@@ -38,6 +36,7 @@ def prompt_user_choice(prompt, choices):
 
     Returns:
         str: The selected choice.
+
     """
     while True:
         print(f"\n{prompt}")
@@ -54,8 +53,7 @@ def prompt_user_choice(prompt, choices):
 
 
 def prompt_user_input(prompt, input_type=str, allow_empty=False):
-    """
-    Prompt the user to input a value.
+    """Prompt the user to input a value.
 
     Args:
         prompt (str): The prompt message to display.
@@ -64,6 +62,7 @@ def prompt_user_input(prompt, input_type=str, allow_empty=False):
 
     Returns:
         The user input converted to the specified type.
+
     """
     while True:
         user_input = input(f"{prompt}: ").strip()
@@ -76,14 +75,14 @@ def prompt_user_input(prompt, input_type=str, allow_empty=False):
 
 
 def prompt_yes_no(prompt):
-    """
-    Prompt the user with a yes/no question.
+    """Prompt the user with a yes/no question.
 
     Args:
         prompt (str): The question to ask.
 
     Returns:
         bool: True if the user answers yes, False otherwise.
+
     """
     while True:
         response = input(f"{prompt} (y/n): ").strip().lower()
@@ -96,11 +95,11 @@ def prompt_yes_no(prompt):
 
 
 def get_user_queries():
-    """
-    Collect query parameters from the user.
+    """Collect query parameters from the user.
 
     Returns:
         dict: A dictionary containing the user's query parameters.
+
     """
     print("Welcome to the Hoagie Meal Dining API Interactive Test Client!")
     print(
@@ -172,8 +171,7 @@ def get_user_queries():
 
 
 def filter_locations(locations, search_terms):
-    """
-    Filter dining locations based on search terms.
+    """Filter dining locations based on search terms.
 
     Args:
         locations (list): A list of location dictionaries.
@@ -181,6 +179,7 @@ def filter_locations(locations, search_terms):
 
     Returns:
         list: A list of matching location dictionaries.
+
     """
     filtered = []
     for loc in locations:
@@ -191,11 +190,11 @@ def filter_locations(locations, search_terms):
 
 
 def display_locations(locations):
-    """
-    Display a list of dining locations.
+    """Display a list of dining locations.
 
     Args:
         locations (list): A list of location dictionaries.
+
     """
     if not locations:
         print("No dining locations found matching your criteria.")
@@ -210,12 +209,12 @@ def display_locations(locations):
 
 
 def display_menus(menu_data, location_name):
-    """
-    Display menu items for a given location.
+    """Display menu items for a given location.
 
     Args:
         menu_data (dict): The menu data dictionary.
         location_name (str): The name of the dining location.
+
     """
     if not menu_data or "menus" not in menu_data:
         print(f"No menu data available for {location_name}.")
@@ -235,11 +234,11 @@ def display_menus(menu_data, location_name):
 
 
 def display_events(events):
-    """
-    Display dining events.
+    """Display dining events.
 
     Args:
         events (list): A list of event dictionaries.
+
     """
     if not events:
         print("No dining events available.")
@@ -260,12 +259,12 @@ def display_events(events):
 
 
 def execute_queries(dining_api, queries):
-    """
-    Execute the user's queries against the DiningAPI.
+    """Execute the user's queries against the DiningAPI.
 
     Args:
         dining_api (DiningAPI): An instance of the DiningAPI.
         queries (dict): The user's query parameters.
+
     """
     logger.info("\nExecuting your queries...\n")
 
@@ -332,8 +331,7 @@ def execute_queries(dining_api, queries):
 
 
 def main():
-    """
-    The main function to run the interactive test client.
+    """The main function to run the interactive test client.
     """
     dining_api = DiningAPI()
     queries = get_user_queries()

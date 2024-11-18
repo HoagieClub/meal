@@ -1,10 +1,10 @@
-"""
-API manager class for the /places/open endpoint from the StudentApp API.
+"""API manager class for the /places/open endpoint from the StudentApp API.
 
 Copyright © 2021-2024 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
-https://github.com/hoagieclub/meal/blob/main/LICENSE
+
+    https://github.com/hoagieclub/meal/blob/main/LICENSE
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +22,14 @@ from hoagiemeal.logger import logger
 
 
 class Places(StudentApp):
-    """
-    Fetches availability of various campus venues.
-    """
+    """Fetches availability of various campus venues."""
 
     def __init__(self):
         super().__init__()
         self.PLACES_OPEN = "/places/open"
 
     def get_open_places(self) -> dict:
-        """
-        Retrieve a list of venues in a category (default: all dining venues)
+        """Retrieve a list of venues in a category (default: all dining venues)
         with their current open status.
 
         The "open" property will be either "yes" or "no".
@@ -46,11 +43,12 @@ class Places(StudentApp):
                 "id": "1",
                 "open": "yes"
             }]
+
         """
         return self._make_request(self.PLACES_OPEN)  # JSON-only endpoint.
 
 
-def test_places_open(formatted: bool = True):
+def _test_places_open(formatted: bool = True):
     places = Places()
     logger.debug("Testing: Get Open Places...")
     try:
@@ -90,4 +88,4 @@ def test_places_open(formatted: bool = True):
 
 
 if __name__ == "__main__":
-    test_places_open()
+    _test_places_open()

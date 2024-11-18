@@ -1,5 +1,4 @@
-"""
-WSGI config for Hoagie Meal backend.
+"""WSGI config for Hoagie Meal backend.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

@@ -39,8 +39,7 @@ class Dining(StudentApp):
         self.schemas = Schemas()
 
     def get_locations(self, fmt: str = "xml") -> dict:
-        """
-        Fetch a list of dining locations in XML format.
+        """Fetch a list of dining locations in XML format.
         
         NOTE: The API expects the parameters to be in camelCase.
         
@@ -49,6 +48,7 @@ class Dining(StudentApp):
 
         Returns:
             dict: A dictionary containing the dining locations.
+
         """
         logger.info("Fetching dining locations.")
         response = self._make_request(

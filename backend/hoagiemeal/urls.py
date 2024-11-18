@@ -1,5 +1,4 @@
-"""
-URL endpoints for Hoagie Meal backend.
+"""URL endpoints for Hoagie Meal backend.
 """
 
 from django.contrib import admin

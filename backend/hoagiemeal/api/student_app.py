@@ -1,5 +1,4 @@
-"""
-Hoagie API Client Manager for communicating with the Princeton OIT API.
+"""Hoagie API Client Manager for communicating with the Princeton OIT API.
 
 This module facilitates interaction with Princeton OIT's API by handling
 authentication, retry logic, and efficient JSON parsing.
@@ -9,7 +8,8 @@ Access is restricted to permitted users. To be whitelisted, contact Princeton OI
 Copyright © 2021-2024 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
-https://github.com/hoagieclub/meal/blob/main/LICENSE
+
+    https://github.com/hoagieclub/meal/blob/main/LICENSE
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -42,10 +42,7 @@ REFRESH_TOKEN_URL = "https://api.princeton.edu:443/token"
 
 
 class StudentApp:
-    """
-    Base class for interacting with the Princeton StudentApp API,
-    handling token authentication and requests.
-    """
+    """Base class for interacting with the Princeton StudentApp API."""
 
     def __init__(self):
         self.CONSUMER_KEY = os.environ.get("CONSUMER_KEY")
@@ -55,7 +52,7 @@ class StudentApp:
         self._refresh_token(grant_type="client_credentials")
 
     def _refresh_token(self, **kwargs: dict):
-        """Fetches a new access token using client credentials."""
+        """Fetch a new access token using client credentials."""
         headers = {
             "Authorization": "Basic "
             + base64.b64encode(f"{self.CONSUMER_KEY}:{self.CONSUMER_SECRET}".encode("utf-8")).decode("utf-8")
@@ -73,8 +70,7 @@ class StudentApp:
             raise DecodeError("Failed to decode token refresh response") from e
 
     def _make_request(self, endpoint: str, params: dict = None, fmt: str = "json", formatted: bool = True) -> dict | str:
-        """
-        Sends a GET request to the specified endpoint. Defaults to JSON format.
+        """Send a GET request to the specified endpoint. Defaults to JSON format.
         
         Processing of data (e.g. decoding, formatting, etc.) should be handled externally.
         """
@@ -104,7 +100,7 @@ class StudentApp:
             raise requests.RequestException(f"Request failed: {e}") from e
 
     def validate_xml(self, xml_str: str, xsd_str: str) -> bool:
-        """Validates an XML string against an XSD schema provided by Princeton OIT."""
+        """Validate an XML string against an XSD schema provided by Princeton OIT."""
         try:
             schema = xmlschema.XMLSchema(xsd_str)
             schema.validate(xml_str)
@@ -122,7 +118,7 @@ class StudentApp:
         logger.info("XML namespaces removed.")
 
     def _xml_to_dict(self, element: ET.Element) -> dict:
-        """Converts an XML element and its children into a Python dictionary."""
+        """Convert an XML element and its children into a Python dictionary."""
         data = {element.tag: {} if element.attrib else None}
         children = list(element)
 
@@ -151,7 +147,7 @@ class StudentApp:
         return data
 
     def _parse_xml(self, xml: str) -> dict:
-        """Parses the XML response and converts it into a Python dictionary."""
+        """Parse the XML response and converts it into a Python dictionary."""
         try:
             root = ET.fromstring(xml)
             self._remove_xml_namespace(root)
@@ -164,7 +160,7 @@ class StudentApp:
             raise ValueError(f"Failed to parse XML response: {e}") from e
 
     def _parse_ical(self, ical_text: str) -> dict:
-        """Parses iCal text and returns a structured dictionary."""
+        """Parse iCal text and returns a structured dictionary."""
         cal = Calendar.from_ical(ical_text)
         calendar_info = {}
         events = []
