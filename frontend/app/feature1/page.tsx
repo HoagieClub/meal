@@ -1,141 +1,185 @@
 /**
- * @overview Sample page 1 for the Hoagie Meal app.
+ * @overview Panel display for meal information based on places.
  *
  * Copyright © 2021-2024 Hoagie Club and affiliates.
  *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/template/LICENSE.
- *
- * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ * Licensed under the MIT License.
  */
 
 'use client';
 
-import { useState } from 'react';
-import { RadioGroup, Text, Heading, Pane, majorScale, Spinner, Button, Alert } from 'evergreen-ui';
-import Link from 'next/link';
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { Pane, Text, Heading, majorScale } from 'evergreen-ui';
 import View from '@/components/View';
 
-export default function Feature1() {
-  const { user, error, isLoading } = useUser();
+// Sample data for meal categories
+const categories = [
+  {
+    category: 'Main Entree',
+    name: 'Orange Beef with Broccoli',
+    calories: 250,
+    protein: 25,
+    icons: ['🍂', '🥜'],
+  },
+  {
+    category: 'Vegetarian + Vegan Entree',
+    name: 'Pan-Asian Orange Tofu',
+    calories: 200,
+    protein: 20,
+    icons: ['🥚'],
+  },
+  {
+    category: 'Soups',
+    name: 'Cream of Mushroom Soup',
+    calories: 150,
+    protein: 10,
+    icons: ['🥛'],
+  },
+];
 
-  // If the user data is loading, show a spinner.
-  if (isLoading) return <Spinner />;
+// Data for places with open/closed status
+const places: Record<string, string> = {
+  'Rocky / Mathey': 'no',
+  Forbes: 'no',
+  Whitman: 'yes',
+  'Yeh / NCW': 'yes',
+  // Add more entries as needed
+};
 
-  // If there is an error, display the error message.
-  if (error) return <div>{error.message}</div>;
-
-  // Option 1: Documentation information.
-  const option1 = (
-    <Pane>
-      <Text size={500}>
-        <b>Documentation</b>
-        <br />
-      </Text>
-      <Text size={400}>
-        Exceptional software engineers <b>devour</b> documentation. Read the Hoagie docs!
-      </Text>
-    </Pane>
-  );
-
-  // Option 2: UI Library information.
-  const option2 = (
-    <Pane>
-      <Text size={500}>
-        <b>UI Library</b>
-        <br />
-      </Text>
-      <Text size={400}>
-        Our UI Design is mainly powered by the <b>Evergreen</b> library.
-      </Text>
-    </Pane>
-  );
-
-  // Option 3: Components Library information.
-  const option3 = (
-    <Pane>
-      <Text size={500}>
-        <b>Components Library</b>
-        <br />
-      </Text>
-      <Text size={400}>
-        Complementary to Evergreen, we use the <b>ShadCN</b> library to compose beautiful
-        components.
-      </Text>
-    </Pane>
-  );
-
-  // State for radio group options and selected value.
-  const [options] = useState([
-    { label: option1, value: 'docs' },
-    { label: option2, value: 'ui' },
-    { label: option3, value: 'components' },
-  ]);
-  const [optionValue, setOptionValue] = useState('docs');
-
-  /**
-   * Returns the appropriate URL based on the selected option.
-   *
-   * @returns {string} The URL to navigate to based on the selected option.
-   */
-  const getNextUrl = () => {
-    switch (optionValue) {
-      case 'docs':
-        return 'https://docs.hoagie.io/';
-      case 'ui':
-        return 'https://evergreen.segment.com/foundations';
-      case 'components':
-        return 'https://ui.shadcn.com/';
-      default:
-        return '/';
-    }
-  };
-
-  // Render buttons for navigating to the selected resource or going back.
-  const bottomButtons = (
-    <Pane>
-      <Link href={getNextUrl()} target='_blank'>
-        <Button size='large' appearance='primary' float='right'>
-          Learn More
-        </Button>
-      </Link>
-      <Link href='/'>
-        <Button size='large' float='left'>
-          Back
-        </Button>
-      </Link>
-    </Pane>
-  );
-
-  // Render the radio group form for selecting a resource option.
-  const SelectForm = (
-    <Pane marginBottom={majorScale(4)}>
-      <Heading size={900} marginTop={majorScale(2)} marginBottom={majorScale(1)}>
-        Hi, {user?.name}
-      </Heading>
-      <Text size={500}>Welcome to the template app! Here are some resources to get started:</Text>
-      <RadioGroup
-        size={16}
-        value={optionValue}
-        options={options}
-        isRequired
-        marginTop={majorScale(3)}
-        onChange={(event) => setOptionValue(event.target.value)}
-      />
-    </Pane>
-  );
-
+export default function MealPanelDisplay() {
   return (
     <View>
-      {SelectForm}
-      <Pane marginBottom={32}>
-        <Alert intent='warning' title='NOTE!' marginTop={24}>
-          This is a Hoagie Meal app. You are encouraged to change things and play around with it!
-        </Alert>
+      <Pane
+        display='grid'
+        gridTemplateColumns='repeat(auto-fit, minmax(400px, 1fr))' // Ensures each column has a minimum width
+        gap={majorScale(4)}
+        padding={majorScale(4)}
+        maxWidth='1200px' // Restrict maximum width for a more balanced layout on large screens
+        marginX='auto' // Center the grid horizontally
+      >
+        {Object.entries(places).map(([location, status], index) => (
+          <Pane
+            key={index}
+            background='white'
+            border='muted'
+            padding={majorScale(3)}
+            borderRadius={8}
+            elevation={2}
+            display='flex'
+            flexDirection='column'
+            justifyContent='space-between'
+            minWidth='400px' // Ensures each panel has a minimum width, preventing squishing
+          >
+            {/* Header with Location and Status */}
+            <Pane
+              display='flex'
+              justifyContent='space-between'
+              alignItems='center'
+              marginBottom={majorScale(3)}
+            >
+              <Heading size={900} color='black'>
+                {location}
+              </Heading>
+              <Text size={400} color={status === 'yes' ? 'green' : 'red'} fontWeight='bold'>
+                {status === 'yes' ? 'Open' : 'Closed'}
+              </Text>
+            </Pane>
+
+            {/* Nutritional Headers */}
+            <Pane
+              display='grid'
+              gridTemplateColumns='1fr 100px 100px' // Columns for Meal (empty), Calories, Protein
+              gap={majorScale(2)}
+              marginBottom={majorScale(2)}
+            >
+              {/* Empty cell to align with Meal names */}
+              <Text></Text>
+              <Text
+                size={400}
+                fontWeight='bold'
+                color='black'
+                textAlign='center'
+                // Adjust vertical alignment if necessary
+              >
+                Calories
+              </Text>
+              <Text
+                size={400}
+                fontWeight='bold'
+                color='black'
+                textAlign='center'
+                // Adjust vertical alignment if necessary
+              >
+                Protein (g)
+              </Text>
+            </Pane>
+
+            {/* Meal Categories */}
+            <Pane flex='1' overflowY='auto'>
+              {categories.map((item, itemIndex) => (
+                <Pane key={itemIndex} marginBottom={majorScale(3)}>
+                  {/* Category Name */}
+                  <Text size={500} fontWeight='bold' color='black' marginBottom={majorScale(1)}>
+                    {item.category}
+                  </Text>
+
+                  {/* Meal Name and Nutritional Info */}
+                  <Pane
+                    display='grid'
+                    gridTemplateColumns='1fr 100px 100px' // Match the header's gridTemplateColumns
+                    gap={majorScale(2)}
+                    alignItems='start' // Align items to the top
+                  >
+                    {/* Meal Name and Icons */}
+                    <Pane display='flex' flexDirection='column'>
+                      <Text color='green' size={400} textDecoration='underline'>
+                        {item.name}
+                      </Text>
+                      {/* Icons below the meal name */}
+                      <Pane display='flex' gap={majorScale(1)} marginTop={4}>
+                        {item.icons.map((icon, iconIndex) => (
+                          <Text key={iconIndex} fontSize={20}>
+                            {icon}
+                          </Text>
+                        ))}
+                      </Pane>
+                    </Pane>
+
+                    {/* Calories */}
+                    <Text
+                      size={400}
+                      textAlign='center'
+                      marginTop={-majorScale(1)} // Move up slightly
+                    >
+                      {item.calories}
+                    </Text>
+
+                    {/* Protein */}
+                    <Text
+                      size={400}
+                      textAlign='center'
+                      marginTop={-majorScale(1)} // Move up slightly
+                    >
+                      {item.protein}
+                    </Text>
+                  </Pane>
+                </Pane>
+              ))}
+            </Pane>
+
+            {/* More Details Link */}
+            <Pane textAlign='center' marginTop={majorScale(2)}>
+              <Text
+                color='muted'
+                size={400}
+                cursor='pointer'
+                hover={{ textDecoration: 'underline' }}
+              >
+                More Details
+              </Text>
+            </Pane>
+          </Pane>
+        ))}
       </Pane>
-      {bottomButtons}
     </View>
   );
 }
