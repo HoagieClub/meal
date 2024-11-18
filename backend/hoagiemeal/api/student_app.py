@@ -29,7 +29,7 @@ import msgspec.json as msj
 import xmlschema
 from dotenv import load_dotenv
 from icalendar import Calendar
-from hoagiemeal.logger import logger
+from hoagiemeal.utils.logger import logger
 from msgspec import DecodeError
 
 load_dotenv()

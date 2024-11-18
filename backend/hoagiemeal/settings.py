@@ -1,4 +1,4 @@
-"""Django settings for Hoagie Meal app.
+"""Django settings for Hoagie Meal backend.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/5.1/topics/settings/
@@ -25,8 +25,8 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
-
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"] + os.getenv("ALLOWED_HOSTS", "").split(",")
+CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 INSTALLED_APPS = [
@@ -36,12 +36,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
+    "rest_framework",
     "hoagiemeal",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",

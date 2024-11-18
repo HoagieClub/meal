@@ -3,13 +3,20 @@
  *
  * Copyright © 2021-2024 Hoagie Club and affiliates.
  *
- * Licensed under the MIT License.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree or at
+ * 
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
 'use client';
 
 import { Pane, Text, Heading, majorScale } from 'evergreen-ui';
 import View from '@/components/View';
+import { useGetMenu } from '@/hooks/use-endpoints';
 
 // Sample data for meal categories
 const categories = [
@@ -46,6 +53,13 @@ const places: Record<string, string> = {
 };
 
 export default function MealPanelDisplay() {
+  // These are hard-coded for now but they can be parsed from another hook.
+  // const locationId = '1088';
+  // const menuId = '560027';
+
+  // const { data: menuData } = useGetMenu(locationId, menuId);
+  // console.log(menuData);
+
   return (
     <View>
       <Pane
