@@ -24,9 +24,9 @@ This software is provided "as-is", without warranty of any kind.
 
 import msgspec.json as msj
 
-from hoagiemeal.utils import deprecated
-from hoagiemeal.logger import logger
-from student_app import StudentApp
+from hoagiemeal.utils.deprecated import deprecated
+from hoagiemeal.utils.logger import logger
+from hoagiemeal.api.student_app import StudentApp
 
 
 class Schemas(StudentApp):

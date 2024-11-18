@@ -1,5 +1,8 @@
-"""
-General utility functions for the Hoagie Meal app.
+# Hoagie Meal Utilities
+
+General utility functions for the Hoagie Meal backend.
+
+---
 
 Copyright © 2021-2024 Hoagie Club and affiliates.
 
@@ -13,18 +16,3 @@ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, subject to the following conditions:
 
 This software is provided "as-is", without warranty of any kind.
-"""
-
-import functools
-from hoagiemeal.logger import logger
-
-def deprecated(reason: str = ""):
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapped_func(*args, **kwargs):
-            logger.warning(f"Deprecated function {func.__name__} called. Reason: {reason}")
-            return func(*args, **kwargs)
-
-        return wrapped_func
-
-    return decorator

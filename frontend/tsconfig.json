@@ -20,16 +20,8 @@
         "name": "next"
       }
     ],
-    "baseUrl": "./",
     "paths": {
-      "@/app/*": ["app/*"],
-      "@/types": ["types.ts"],
-      "@/classes": ["classes.ts"],
-      "@/hooks/*": ["mock/*"],
-      "@/store/*": ["store/*"],
-      "@/components/*": ["components/*"],
-      "@/lib/*": ["lib/*"],
-      "@/mock/*": ["mock/*"]
+      "@/*": ["./*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "postcss.config.ts", ".next/types/**/*.ts", "next.config.mjs", ".eslint.config.ts"],
