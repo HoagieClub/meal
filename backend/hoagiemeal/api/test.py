@@ -6,7 +6,7 @@ This module fetches data from the following endpoints:
 - /dining/events
 - /dining/menus
 
-Copyright © 2021-2024 Hoagie Club and affiliates.
+Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
 
@@ -40,9 +40,9 @@ class Dining(StudentApp):
 
     def get_locations(self, fmt: str = "xml") -> dict:
         """Fetch a list of dining locations in XML format.
-        
+
         NOTE: The API expects the parameters to be in camelCase.
-        
+
         Args:
             fmt (str): The format of the response. Defaults to "xml".
 
@@ -64,7 +64,7 @@ class Dining(StudentApp):
 
     def get_events(self, place_id: str = "1007") -> dict:
         """Fetch dining venue open hours as an iCal stream for a given place_id.
-        
+
         NOTE: "1007" seems to correspond to the Princeton Dining Calendar.
         NOTE: The API expects the parameters to be in camelCase.
 
@@ -85,7 +85,7 @@ class Dining(StudentApp):
 
     def get_menu(self, location_id: str, menu_id: str) -> dict:
         """Fetch the menu for a specific dining location.
-        
+
         NOTE: The API expects the parameters to be in camelCase.
 
         Args:
@@ -138,7 +138,7 @@ def _test_get_events():
     dining = Dining()
     logger.info("Testing: Get Dining Events...")
     try:
-        events = dining.get_events(place_id="1007") # 1007 ~ Princeton Dining Calendar?
+        events = dining.get_events(place_id="1007")  # 1007 ~ Princeton Dining Calendar?
         logger.info(f"Dining Events fetched: {events}")
 
         # Iterate and log each event detail
@@ -202,7 +202,7 @@ def _test_dining_apis():
                     logger.info(f" - Menu Item ID: {menu_id}")
                     logger.info(f"   Name: {menu_name}")
                     logger.info(f"   Description: {description}")
-                    logger.info(f"   Link: {link}") # Scrape data from this link
+                    logger.info(f"   Link: {link}")  # Scrape data from this link
                 logger.info("---" * 40)
             else:
                 logger.warning(f"No valid menu data available for {name} (location ID: {dbid}).")

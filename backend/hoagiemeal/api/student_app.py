@@ -5,7 +5,7 @@ authentication, retry logic, and efficient JSON parsing.
 
 Access is restricted to permitted users. To be whitelisted, contact Princeton OIT.
 
-Copyright © 2021-2024 Hoagie Club and affiliates.
+Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
 
@@ -69,9 +69,11 @@ class StudentApp:
             logger.error(f"Failed to decode token refresh response: {e}")
             raise DecodeError("Failed to decode token refresh response") from e
 
-    def _make_request(self, endpoint: str, params: dict = None, fmt: str = "json", formatted: bool = True) -> dict | str:
+    def _make_request(
+        self, endpoint: str, params: dict = None, fmt: str = "json", formatted: bool = True
+    ) -> dict | str:
         """Send a GET request to the specified endpoint. Defaults to JSON format.
-        
+
         Processing of data (e.g. decoding, formatting, etc.) should be handled externally.
         """
         headers = {
@@ -114,7 +116,7 @@ class StudentApp:
         """Generalized namespace removal from XML tags."""
         for element in document.iter():
             if "}" in element.tag:
-                element.tag = element.tag.split("}", 1)[1] # Remove namespace
+                element.tag = element.tag.split("}", 1)[1]  # Remove namespace
         logger.info("XML namespaces removed.")
 
     def _xml_to_dict(self, element: ET.Element) -> dict:

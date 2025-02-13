@@ -1,6 +1,6 @@
 """Web scraper for extracting and structuring menu item information.
 
-Copyright © 2021-2024 Hoagie Club and affiliates.
+Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
 
@@ -31,9 +31,9 @@ class Scraper:
         CALORIES_SIZE_ID (str): HTML ID used to locate calorie and serving size elements.
         NUTRITION_ID (str): HTML ID used to locate nutrition facts.
         NAME_QUERY (str): HTML tag used to locate the menu item name.
-        EMPTY_MENU_SCHEMA (dict): A default schema for structured menu information, 
-                                  including "Name", "Serving Size", "Calories", 
-                                  "Calories from Fat", and detailed nutritional sections 
+        EMPTY_MENU_SCHEMA (dict): A default schema for structured menu information,
+                                  including "Name", "Serving Size", "Calories",
+                                  "Calories from Fat", and detailed nutritional sections
                                   for "Fat", "Carbohydrates", "Protein", and "Vitamins".
 
     """
@@ -116,12 +116,12 @@ class Scraper:
         """Fetch and parse HTML content from the specified URL.
 
         Args:
-            link (str): The URL to fetch HTML content from. If None or empty, 
+            link (str): The URL to fetch HTML content from. If None or empty,
                         logs an error and returns None.
 
         Returns:
-            BeautifulSoup: Parsed HTML content as a BeautifulSoup object if the request 
-                        is successful. Returns None if no link is provided or if an 
+            BeautifulSoup: Parsed HTML content as a BeautifulSoup object if the request
+                        is successful. Returns None if no link is provided or if an
                         exception occurs during fetching.
 
         """
@@ -146,7 +146,7 @@ class Scraper:
         """Extract menu item information.
 
         Args:
-            soup (BeautifulSoup): Parsed HTML content containing menu item data. If None 
+            soup (BeautifulSoup): Parsed HTML content containing menu item data. If None
                 or invalid, an empty schema is returned.
 
         Returns:

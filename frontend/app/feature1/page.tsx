@@ -1,7 +1,7 @@
 /**
  * @overview Panel display for meal information based on places.
  *
- * Copyright © 2021-2024 Hoagie Club and affiliates.
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
@@ -53,12 +53,12 @@ const places: Record<string, string> = {
 };
 
 export default function MealPanelDisplay() {
-  // These are hard-coded for now but they can be parsed from another hook.
-  // const locationId = '1088';
-  // const menuId = '560027';
+  // TODO: These are hard-coded for now but they can be parsed from another hook.
+  const locationId = '1088';
+  const menuId = '560027';
 
-  // const { data: menuData } = useGetMenu(locationId, menuId);
-  // console.log(menuData);
+  const { data: menuData } = useGetMenu(locationId, menuId);
+  console.log(menuData);
 
   return (
     <View>
@@ -112,7 +112,7 @@ export default function MealPanelDisplay() {
                 fontWeight='bold'
                 color='black'
                 textAlign='center'
-                // Adjust vertical alignment if necessary
+              // Adjust vertical alignment if necessary
               >
                 Calories
               </Text>
@@ -121,7 +121,7 @@ export default function MealPanelDisplay() {
                 fontWeight='bold'
                 color='black'
                 textAlign='center'
-                // Adjust vertical alignment if necessary
+              // Adjust vertical alignment if necessary
               >
                 Protein (g)
               </Text>

@@ -10,7 +10,7 @@ This module fetches data from the following endpoints:
 
 To be used as reference/template; this module is deprecated, incomplete, and will be removed.
 
-Copyright © 2021-2024 Hoagie Club and affiliates.
+Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
 
@@ -28,6 +28,7 @@ This software is provided "as-is", without warranty of any kind.
 from hoagiemeal.logger import logger
 from hoagiemeal.utils import deprecated
 from student_app import StudentApp
+
 
 # TODO: This file is incomplete.
 class Courses(StudentApp):
@@ -47,10 +48,12 @@ class Courses(StudentApp):
         response = self._make_request(self.COURSES_TERMS, params=params, fmt=fmt)
         return self._parse_xml(response) if fmt == "xml" else response
 
-    def get_courses(self, term: str = "", subject: str = "", catnum: str = "", search: str = "", fmt: str = "json") -> dict:
+    def get_courses(
+        self, term: str = "", subject: str = "", catnum: str = "", search: str = "", fmt: str = "json"
+    ) -> dict:
         """Fetch a list of courses for a given term, with optional filters."""
         params = {"term": term, "subject": subject, "catnum": catnum, "search": search, fmt: fmt}
-        
+
         return self._make_request(self.COURSES_COURSES, params=params, fmt=fmt)
 
     def get_seats(self, term: str, course_ids: str, fmt: str = "json") -> dict:

@@ -1,6 +1,6 @@
 """Colorful logger module for the Hoagie Meal backend.
 
-Copyright © 2021-2024 Hoagie Club and affiliates.
+Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
 
@@ -27,7 +27,7 @@ init(autoreset=True)
 
 class ColorFormatter(logging.Formatter):
     """A custom log formatter that applies color based on the log level using the Colorama library.
-    
+
     Attributes:
         LOG_COLORS (dict): A dictionary mapping log levels to their corresponding color codes.
 
@@ -80,7 +80,7 @@ class ColorFormatter(logging.Formatter):
 
 def setup_logger():
     """Set up a logger with a custom color formatter that logs to standard output (stdout).
-    
+
     The logger is configured with the ColorFormatter to format log messages with color based on the log level.
     The log level is set to INFO by default, but this can be changed to show more or less detailed messages.
 

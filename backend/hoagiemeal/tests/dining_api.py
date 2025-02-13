@@ -8,7 +8,7 @@ Users can choose specific parameters or fetch all available data.
 Usage:
     $ python manage.py test_dining
 
-Copyright © 2021-2024 Hoagie Club and affiliates.
+Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
 https://github.com/hoagieclub/meal/blob/main/LICENSE
@@ -331,8 +331,7 @@ def execute_queries(dining_api, queries):
 
 
 def main():
-    """The main function to run the interactive test client.
-    """
+    """The main function to run the interactive test client."""
     dining_api = DiningAPI()
     queries = get_user_queries()
     execute_queries(dining_api, queries)

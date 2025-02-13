@@ -1,7 +1,7 @@
 /**
  * @overview Next.js Route Handler to fetch dining locations data.
  *
- * Copyright © 2021-2024 Hoagie Club and affiliates.
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
@@ -23,7 +23,7 @@ const DEBUG = process.env.NODE_ENV !== 'production';
 export async function GET() {
   try {
     const res = await request.get<DiningLocation[]>()(ROUTE, {
-      arg: { 
+      arg: {
         category_id: '2',
         fmt: 'xml'
       }
@@ -37,7 +37,7 @@ export async function GET() {
     }
 
     const locations = res.data?.locations?.location || [];
-    
+
     return NextResponse.json({
       data: toCamelCase(locations),
       message: 'Successfully fetched dining locations',

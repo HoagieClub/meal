@@ -7,7 +7,7 @@ the Princeton OIT API:
 - dining
 - places
 
-Copyright © 2021-2024 Hoagie Club and affiliates.
+Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
 
@@ -63,6 +63,7 @@ class Schemas(StudentApp):
         response = self._make_request(self.PLACES_JSD, fmt="json")
         return response
 
+
 @deprecated(reason="This API is not used in the Hoagie Meal app.")
 def _test_courses_xsd(to_json: bool = False):
     logger.debug("Testing courses XSD schema.")
@@ -70,11 +71,13 @@ def _test_courses_xsd(to_json: bool = False):
     result = schemas.get_courses_xsd()
     logger.info(f"Courses XSD: {result}")
 
+
 def _test_dining_xsd(to_json: bool = False):
     logger.debug("Testing dining XSD schema.")
     schemas = Schemas()
     result = schemas.get_dining_xsd()
     logger.info(f"Dining XSD: {result}")
+
 
 @deprecated(reason="This API is not used in the Hoagie Meal app.")
 def _test_courses_jsd(formatted: bool = True):
@@ -85,6 +88,7 @@ def _test_courses_jsd(formatted: bool = True):
         response = msj.format(response, indent=0)
     logger.info(f"Courses JSD: {response}")
 
+
 def _test_places_jsd(formatted: bool = True):
     logger.debug("Testing places JSD schema.")
     schemas = Schemas()
@@ -93,9 +97,9 @@ def _test_places_jsd(formatted: bool = True):
         response = msj.format(response, indent=0)
     logger.info(f"Places JSD: {response}")
 
+
 if __name__ == "__main__":
     _test_courses_xsd(to_json=True)
     _test_dining_xsd(to_json=True)
     _test_courses_jsd(formatted=True)
     _test_places_jsd(formatted=True)
-

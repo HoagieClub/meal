@@ -1,7 +1,7 @@
 /**
  * @overview Hook for fetching various Hoagie Meal API endpoints.
  *
- * Copyright © 2021-2024 Hoagie Club and affiliates.
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
@@ -81,7 +81,7 @@ export const useGetLocations = (config?: FetchConfig) => {
  */
 export const useGetEvents = (
   placeId: string = '1007', 
-  config?: FetchConfig
+  config?: FetchConfig,
 ) => {
   const endpoint = `/api/dining/events?placeId=${encodeURIComponent(placeId)}`;
   return useSWR<ApiResponse<DiningEvent[]>>(
@@ -102,12 +102,12 @@ export const useGetEvents = (
 export const useGetMenu = (
   locationId: string,
   menuId: string,
-  config?: FetchConfig
+  config?: FetchConfig,
 ) => {
   const endpoint = `/api/dining/menu?locationId=${encodeURIComponent(locationId)}&menuId=${encodeURIComponent(menuId)}`;
   return useSWR<ApiResponse<MenuItem[]>>(
     endpoint,
     get<MenuItem[]>(),
-    config
+    config,
   );
 };

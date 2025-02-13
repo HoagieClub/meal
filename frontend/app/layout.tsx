@@ -1,7 +1,7 @@
 /**
  * @overview Root layout component for the Hoagie Meal app. Styles apply to all children.
  *
- * Copyright © 2021-2024 Hoagie Club and affiliates.
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/template/LICENSE.
@@ -18,9 +18,9 @@ import { getSession } from '@auth0/nextjs-auth0';
 
 import Layout from '@/lib/hoagie-ui/Layout';
 import Nav from '@/lib/hoagie-ui/Nav';
-import Footer from '@/lib/hoagie-ui/Footer';
 import Theme from '@/lib/hoagie-ui/Theme';
 import { Toaster } from '@/components/ui/sonner';
+import { hoagie } from "@/app/hoagie";
 import '@/lib/hoagie-ui/Theme/theme.css';
 import './globals.css';
 
@@ -52,7 +52,6 @@ async function Content({ children }: { children: ReactNode }): Promise<JSX.Eleme
         <Nav name='meal' tabs={tabs} user={user} />
         {children}
         <Toaster />
-        <Footer />
       </Layout>
     </Theme>
   );
@@ -68,6 +67,13 @@ async function Content({ children }: { children: ReactNode }): Promise<JSX.Eleme
 export default function RootLayout({ children }: { children: ReactNode }): JSX.Element {
   return (
     <html lang='en'>
+      <head>
+          <script
+              dangerouslySetInnerHTML={{
+                  __html: `(${hoagie.toString()})();`,
+              }}
+          />
+      </head>
       <UserProvider>
         <body className='antialiased'>
           <Content>{children}</Content>

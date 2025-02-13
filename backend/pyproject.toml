@@ -51,7 +51,6 @@ classifiers = [
 dependencies = [
     "requests>=2.32.3",
     "ruff>=0.7.0",
-    "ruff>=0.7.0",
     "django>=5.1",
     "django-cors-headers>=4.6.0",
     "dj-database-url>=2.3.0",

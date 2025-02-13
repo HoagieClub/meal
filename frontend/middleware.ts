@@ -3,7 +3,7 @@
  * Middleware allows you to intercept requests before they reach the server.
  * Learn more: https://nextjs.org/docs/app/building-your-application/routing/middleware
  *
- * Copyright © 2021-2024 Hoagie Club and affiliates.
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/template/LICENSE.
@@ -31,7 +31,7 @@ export function middleware(req: NextRequest) {
     if (!token) {
       // Login and redirect to nextUrl
       const loginUrl = new URL('/api/auth/login', req.url);
-      loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname); 
+      loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname);
       return NextResponse.redirect(loginUrl);
     }
   }
