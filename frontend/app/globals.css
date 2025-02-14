@@ -10,13 +10,18 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@config "../tailwind.config.ts";
+@import "tailwindcss";
 
 @layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+  
   :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
@@ -106,19 +111,19 @@
   }
 
   .hoagie {
-    font-family: 'Poppins', sans-serif !important;
+    font-family: 'Poppins', sans-serif;
   }
 
   .logo {
     @apply font-semibold;
-    font-size: 1.6rem !important;
+    font-size: 1.6rem;
   }
 
   .beta {
     display: inline-block;
     top: 22px;
     right: -38px;
-    @apply text-xs font-bold !important;
+    @apply text-xs font-bold;
   }
 }
 

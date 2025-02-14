@@ -10,9 +10,10 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-module.exports = {
+const config = {
   plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
+    "@tailwindcss/postcss": {},
   },
-}
+};
+
+export default config;

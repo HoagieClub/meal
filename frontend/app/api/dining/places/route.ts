@@ -48,7 +48,7 @@ export async function GET(req: Request) {
     const data = toCamelCase(res.data) as Place[];
 
     const response: PlacesResponse = {
-      data,
+      places: data,
       message: 'Successfully fetched open places',
       status: 200,
     };

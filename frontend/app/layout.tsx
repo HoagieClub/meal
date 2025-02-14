@@ -25,6 +25,13 @@ import { hoagie } from "@/app/hoagie";
 import '@/app/globals.css';
 import '@/lib/hoagie-ui/Theme/theme.css';
 
+import { Poppins } from 'next/font/google';
+
+const poppins = Poppins({
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin'],
+});
+
 export const metadata = {
   title: 'Meal by Hoagie',
   description: 'Slogan TBD.', // TODO: Create a catchy slogan!
@@ -69,7 +76,7 @@ async function Content({ children }: { children: ReactNode }): Promise<JSX.Eleme
  */
 export default function RootLayout({ children }: { children: ReactNode }): JSX.Element {
   return (
-    <html lang='en' className="bg-hoagiemeal-dark-green">
+    <html lang='en' className={`bg-hoagiemeal-dark-green ${poppins.className}`}>
       <head>
         <script
           dangerouslySetInnerHTML={{

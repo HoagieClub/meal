@@ -107,6 +107,7 @@ class BaseToolProcessor(Generic[ChunkT], ABC):
     """Base class for processing tool calls from any AI model."""
 
     def __init__(self) -> None:
+        """Initialize the tool processor."""
         self.current_tool = ToolCallState()
 
     def process_chunk(self, chunk: ChunkT) -> Optional[StreamOutput]:
