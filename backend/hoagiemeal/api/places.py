@@ -28,6 +28,7 @@ class PlacesAPI(StudentApp):
     """Fetches availability of various campus venues."""
 
     def __init__(self):
+        """Initialize the PlacesAPI class."""
         super().__init__()
         self.PLACES_OPEN = "/places/open"
 

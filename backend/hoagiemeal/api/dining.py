@@ -37,6 +37,7 @@ class DiningAPI(StudentApp):
     """Handle functionalities related to dining information, such as locations, menus, and events."""
 
     def __init__(self):
+        """Initialize the DiningAPI class."""
         super().__init__()
         self.DINING_LOCATIONS = "/dining/locations"
         self.DINING_EVENTS = "/dining/events"

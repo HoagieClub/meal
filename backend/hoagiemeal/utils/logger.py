@@ -53,6 +53,12 @@ class ColorFormatter(logging.Formatter):
     LEVEL_COLOR = Style.BRIGHT
 
     def __init__(self, fmt=None):
+        """Initialize the ColorFormatter with a custom log format.
+
+        Args:
+            fmt (str, optional): The log format string. Defaults to the default format.
+
+        """
         super().__init__(
             fmt or "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s", "%Y-%m-%d %H:%M:%S"
         )

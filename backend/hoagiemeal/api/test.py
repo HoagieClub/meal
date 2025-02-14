@@ -32,6 +32,7 @@ class Dining(StudentApp):
     """Handles functionalities related to dining information, such as locations, menus, and events."""
 
     def __init__(self):
+        """Initialize the Dining class."""
         super().__init__()
         self.DINING_LOCATIONS = "/dining/locations"
         self.DINING_EVENTS = "/dining/events"
@@ -53,7 +54,7 @@ class Dining(StudentApp):
         logger.info("Fetching dining locations.")
         response = self._make_request(
             self.DINING_LOCATIONS,
-            params={"categoryId": "2"},  # how do i get 3 as well?
+            params={"categoryId": "2"},  # TODO: How do we get 3 as well?
             fmt=fmt,
         )
         schema = self.schemas.get_dining_xsd()

@@ -25,6 +25,7 @@ class Locations(StudentApp):
     """Fetch the name and ID of a location provided a home/office address."""
 
     def __init__(self):
+        """Initialize the Locations class."""
         super().__init__()
         self.LOCATIONS = "/locations/search"
 

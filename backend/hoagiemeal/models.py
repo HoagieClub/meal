@@ -1,4 +1,4 @@
-"""Web scraper for extracting and structuring menu item information.
+"""Django models for the HoagieMeal database schema.
 
 Copyright © 2021-2025 Hoagie Club and affiliates.
 
@@ -25,7 +25,21 @@ from pgvector.django import VectorField
 
 
 class CustomUser(AbstractUser):
-    """HoagieMeal user."""
+    """Extend user model for the HoagieMeal application.
+
+    Inherits from Django's AbstractUser to include additional
+    attributes relevant to dietary tracking.
+
+    Attributes:
+        net_id (str): University NetID; unique identifier for campus users.
+        class_year (int): Expected graduation year, validated between 1900 and 2100.
+        dietary_restrictions (list of str): List of dietary restrictions/preferences.
+        daily_calorie_target (int): Target daily calorie intake (max 10000).
+        daily_protein_target (int): Target daily protein intake (max 1000).
+        created_at (datetime): Timestamp when the record was created.
+        updated_at (datetime): Timestamp when the record was last updated.
+
+    """
 
     net_id = models.CharField(
         max_length=20, unique=True, null=True, blank=True, db_index=True, help_text=_("University NetID")
@@ -49,16 +63,41 @@ class CustomUser(AbstractUser):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Meta class for the CustomUser model."""
+
         db_table = "users"
         verbose_name = _("user")
         verbose_name_plural = _("users")
 
     def __str__(self):
+        """Return the string representation of the CustomUser instance.
+
+        Returns:
+            str: The user's full name and net_id.
+
+        """
         return f"{self.get_full_name()} ({self.net_id})"
 
 
 class DiningHall(models.Model):
-    """Represents a dining facility on campus. Maps to the dining API's location data."""
+    """Represent a dining facility on campus.
+
+    This model maps to the dining API's location data.
+
+    Attributes:
+        name (str): Name of the dining hall.
+        map_name (str): Name used for mapping purposes.
+        database_id (int): Unique API location identifier.
+        latitude (Decimal): Latitude coordinate.
+        longitude (Decimal): Longitude coordinate.
+        building_name (str): Name of the building.
+        amenities (list of str): List of available amenities.
+        is_active (bool): Operational status of the dining hall.
+        operation_hours (dict): Operating hours in JSON format.
+        created_at (datetime): Timestamp when the record was created.
+        updated_at (datetime): Timestamp when the record was last updated.
+
+    """
 
     name = models.CharField(max_length=255, unique=True)
     map_name = models.CharField(max_length=255)
@@ -73,6 +112,8 @@ class DiningHall(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Meta class for the DiningHall model."""
+
         db_table = "dining_halls"
         indexes = [
             models.Index(fields=["database_id"]),
@@ -80,13 +121,29 @@ class DiningHall(models.Model):
         ]
 
     def __str__(self):
+        """Return the string representation of the DiningHall instance.
+
+        Returns:
+            str: The dining hall name along with the building name.
+
+        """
         return f"{self.name} ({self.building_name})"
 
 
 class Menu(models.Model):
-    """Represents a daily menu for a specific meal at a dining hall."""
+    """Represent a daily menu for a specific meal at a dining hall.
+
+    Attributes:
+        dining_hall (DiningHall): Associated dining hall.
+        date (date): Date for which the menu is applicable.
+        meal (str): Meal type code (e.g., "BR" for Breakfast).
+        last_fetched (datetime): Timestamp when the menu was last updated from the API.
+
+    """
 
     class MealType(models.TextChoices):
+        """Meal type choices for the Menu model."""
+
         BREAKFAST = "BR", _("Breakfast")
         LUNCH = "LU", _("Lunch")
         DINNER = "DI", _("Dinner")
@@ -97,6 +154,8 @@ class Menu(models.Model):
     last_fetched = models.DateTimeField(auto_now=True, help_text=_("Last time menu was updated from API"))
 
     class Meta:
+        """Meta class for the Menu model."""
+
         db_table = "menus"
         unique_together = ("dining_hall", "date", "meal")
         indexes = [
@@ -104,11 +163,31 @@ class Menu(models.Model):
         ]
 
     def __str__(self):
+        """Return the string representation of the Menu instance.
+
+        Returns:
+            str: A formatted string with the dining hall name, meal type, and date.
+
+        """
         return f"{self.dining_hall.name} - {self.get_meal_display()} on {self.date}"
 
 
 class MenuItem(models.Model):
-    """Core food item model representing a dish served in dining halls."""
+    """Represent a dish served in dining halls.
+
+    Attributes:
+        id (int): Primary key.
+        api_id (int): Original menu item ID from the external API.
+        menu (Menu): The menu this item belongs to.
+        name (str): Name of the menu item.
+        description (str): Description of the dish.
+        link (str): URL linking to more details about the dish.
+        allergens (list of str): List of allergens present.
+        ingredients (list of str): List of ingredients used.
+        created_at (datetime): Timestamp when the record was created.
+        updated_at (datetime): Timestamp when the record was last updated.
+
+    """
 
     id = models.BigAutoField(primary_key=True)
     api_id = models.PositiveIntegerField(unique=True, help_text=_("Original menu item ID from the API"))
@@ -122,6 +201,8 @@ class MenuItem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Meta class for the MenuItem model."""
+
         db_table = "menu_items"
         indexes = [
             models.Index(fields=["name"]),
@@ -129,11 +210,40 @@ class MenuItem(models.Model):
         ]
 
     def __str__(self):
+        """Return the string representation of the MenuItem instance.
+
+        Returns:
+            str: The menu item name along with its API ID.
+
+        """
         return f"{self.name} ({self.api_id})"
 
 
 class MenuItemNutrient(models.Model):
-    """Detailed nutritional information for menu items."""
+    """Provide detailed nutritional information for a menu item.
+
+    Attributes:
+        menu_item (MenuItem): Associated menu item.
+        serving_size (str): Serving size description.
+        serving_unit (str): Unit for the serving size.
+        calories (int): Total calories per serving.
+        calories_from_fat (int): Calories derived from fat.
+        total_fat (Decimal): Total fat content.
+        saturated_fat (Decimal): Saturated fat content.
+        trans_fat (Decimal): Trans fat content.
+        cholesterol (Decimal): Cholesterol content.
+        sodium (Decimal): Sodium content.
+        total_carbohydrates (Decimal): Total carbohydrates content.
+        dietary_fiber (Decimal): Dietary fiber content.
+        sugars (Decimal): Sugar content.
+        protein (Decimal): Protein content.
+        vitamin_d (Decimal): Vitamin D content.
+        potassium (Decimal): Potassium content.
+        calcium (Decimal): Calcium content.
+        iron (Decimal): Iron content.
+        updated_at (datetime): Timestamp when the nutrient information was last updated.
+
+    """
 
     menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="nutrient_info")
     serving_size = models.CharField(max_length=50, blank=True)
@@ -156,6 +266,8 @@ class MenuItemNutrient(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Meta class for the MenuItemNutrient model."""
+
         db_table = "menu_item_nutrients"
         indexes = [
             models.Index(fields=["calories"]),
@@ -163,11 +275,28 @@ class MenuItemNutrient(models.Model):
         ]
 
     def __str__(self):
+        """Return the string representation of the MenuItemNutrient instance.
+
+        Returns:
+            str: Nutritional details linked to the menu item.
+
+        """
         return f"Nutrients for {self.menu_item.name}"
 
 
 class UserMealLog(models.Model):
-    """Tracks user meal consumption with portion sizes and timestamps."""
+    """Track user meal consumption including portion sizes and timestamps.
+
+    Attributes:
+        user (CustomUser): User who consumed the meal.
+        menu_item (MenuItem): The consumed menu item.
+        portions (Decimal): Number of servings consumed.
+        consumed_at (datetime): Timestamp when the meal was consumed.
+        meal_type (str): Meal type code corresponding to the Menu.MealType choices.
+        notes (str): Additional notes about the meal consumption.
+        created_at (datetime): Timestamp when the log was created.
+
+    """
 
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="meal_logs")
     menu_item = models.ForeignKey(MenuItem, on_delete=models.CASCADE, related_name="consumption_logs")
@@ -184,6 +313,8 @@ class UserMealLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        """Meta class for the UserMealLog model."""
+
         db_table = "user_meal_logs"
         indexes = [
             models.Index(fields=["user", "consumed_at"]),
@@ -191,11 +322,24 @@ class UserMealLog(models.Model):
         ]
 
     def __str__(self):
+        """Return the string representation of the UserMealLog instance.
+
+        Returns:
+            str: A formatted string with the user's name, menu item name, and portions consumed.
+
+        """
         return f"{self.user.get_full_name()} - {self.menu_item.name} ({self.portions} servings)"
 
 
 class FoodVector(models.Model):
-    """Stores vector embeddings for menu items to power ML-based recommendations."""
+    """Store vector embeddings for menu items to power machine learning recommendations.
+
+    Attributes:
+        menu_item (MenuItem): Associated menu item.
+        vector (VectorField): Vector embedding representing menu item characteristics.
+        last_updated (datetime): Timestamp when the vector was last updated.
+
+    """
 
     menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="food_vector")
     vector = VectorField(
@@ -205,17 +349,40 @@ class FoodVector(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Meta class for the FoodVector model."""
+
         db_table = "food_vectors"
         indexes = [
             models.Index(fields=["vector"], name="food_vector_idx", opclasses=["vector_ops"]),
         ]
 
     def __str__(self):
+        """Return the string representation of the FoodVector instance.
+
+        Returns:
+            str: A brief description linking the vector to its menu item.
+
+        """
         return f"Vector for {self.menu_item.name}"
 
 
 class MenuItemMetrics(models.Model):
-    """Aggregated metrics and cached computations for menu items. Updated periodically via celery tasks."""
+    """Aggregate metrics and cached computations for menu items.
+
+    Updated periodically via celery tasks.
+
+    Attributes:
+        menu_item (MenuItem): Associated menu item.
+        times_served (int): Number of times the item has been served.
+        times_consumed (int): Number of times the item has been consumed.
+        avg_portion_size (Decimal): Average portion size consumed.
+        popularity_score (Decimal): Calculated popularity score.
+        seasonal_availability (list of int): Monthly availability pattern (1-12).
+        last_served (date): Last date the item was served.
+        common_pairings (list of int): IDs of commonly co-consumed menu items.
+        updated_at (datetime): Timestamp when the metrics were last updated.
+
+    """
 
     menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="metrics")
     times_served = models.PositiveIntegerField(default=0)
@@ -234,6 +401,8 @@ class MenuItemMetrics(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Meta class for the MenuItemMetrics model."""
+
         db_table = "menu_item_metrics"
         indexes = [
             models.Index(fields=["popularity_score"]),
@@ -242,11 +411,29 @@ class MenuItemMetrics(models.Model):
         ]
 
     def __str__(self):
+        """Return the string representation of the MenuItemMetrics instance.
+
+        Returns:
+            str: A summary string linking metrics to the associated menu item.
+
+        """
         return f"Metrics for {self.menu_item.name}"
 
 
 class UserDietaryProfile(models.Model):
-    """Detailed dietary profile for personalized recommendations."""
+    """Detail dietary profile for personalized recommendations.
+
+    Attributes:
+        user (CustomUser): Associated user.
+        favorite_menu_items (QuerySet[MenuItem]): Menu items marked as favorites.
+        excluded_ingredients (list of str): Ingredients the user wishes to avoid.
+        preferred_dining_halls (QuerySet[DiningHall]): Dining halls preferred by the user.
+        cuisine_preferences (dict): Weighted cuisine type preferences.
+        meal_time_preferences (dict): Preferred dining times.
+        sustainability_preference (bool): Preference for sustainable options.
+        updated_at (datetime): Timestamp when the profile was last updated.
+
+    """
 
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="dietary_profile")
     favorite_menu_items = models.ManyToManyField(MenuItem, related_name="favorited_by")
@@ -258,7 +445,15 @@ class UserDietaryProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        """Meta class for the UserDietaryProfile model."""
+
         db_table = "user_dietary_profiles"
 
     def __str__(self):
+        """Return the string representation of the UserDietaryProfile instance.
+
+        Returns:
+            str: A description linking the dietary profile to the user.
+
+        """
         return f"Dietary Profile - {self.user.get_full_name()}"

@@ -33,6 +33,7 @@ class Schemas(StudentApp):
     """Fetch XML and JSON schemas for the /courses/, /dining/, and /places/ endpoints."""
 
     def __init__(self):
+        """Initialize the Schemas class."""
         super().__init__()
         self.COURSES_XSD = "/courses/xsd"
         self.DINING_XSD = "/dining/xsd"
