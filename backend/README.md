@@ -11,7 +11,7 @@ Before you begin, ensure you have [uv](docs.astral.sh/uv) installed.
 1. Create a virtual environment and activate it:
 
 ```zsh
-uv venv --prompt hoagiemeal --python 3.12.7 .venv
+uv venv --prompt hoagiemeal .venv
 source .venv/bin/activate
 ```
 

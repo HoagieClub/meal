@@ -1,1 +1,1 @@
-"""Django management commands for the HoagieMeal backend."""
+"""Django management commands for the Hoagie Meal backend."""

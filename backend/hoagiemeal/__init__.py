@@ -1,1 +1,1 @@
-"""Django app for the HoagieMeal backend."""
+"""Django app for the Hoagie Meal backend."""

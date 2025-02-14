@@ -1,1 +1,1 @@
-"""Django migrations for the HoagieMeal database schema."""
+"""Django migrations for the Hoagie Meal database schema."""

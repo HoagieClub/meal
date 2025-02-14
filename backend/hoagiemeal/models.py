@@ -1,4 +1,4 @@
-"""Django models for the HoagieMeal database schema.
+"""Django models for the Hoagie Meal database schema.
 
 Copyright © 2021-2025 Hoagie Club and affiliates.
 
@@ -25,7 +25,7 @@ from pgvector.django import VectorField
 
 
 class CustomUser(AbstractUser):
-    """Extend user model for the HoagieMeal application.
+    """Extend user model for the Hoagie Meal application.
 
     Inherits from Django's AbstractUser to include additional
     attributes relevant to dietary tracking.
@@ -88,8 +88,8 @@ class DiningHall(models.Model):
         name (str): Name of the dining hall.
         map_name (str): Name used for mapping purposes.
         database_id (int): Unique API location identifier.
-        latitude (Decimal): Latitude coordinate.
-        longitude (Decimal): Longitude coordinate.
+        latitude (float): Latitude coordinate.
+        longitude (float): Longitude coordinate.
         building_name (str): Name of the building.
         amenities (list of str): List of available amenities.
         is_active (bool): Operational status of the dining hall.
@@ -228,19 +228,19 @@ class MenuItemNutrient(models.Model):
         serving_unit (str): Unit for the serving size.
         calories (int): Total calories per serving.
         calories_from_fat (int): Calories derived from fat.
-        total_fat (Decimal): Total fat content.
-        saturated_fat (Decimal): Saturated fat content.
-        trans_fat (Decimal): Trans fat content.
-        cholesterol (Decimal): Cholesterol content.
-        sodium (Decimal): Sodium content.
-        total_carbohydrates (Decimal): Total carbohydrates content.
-        dietary_fiber (Decimal): Dietary fiber content.
-        sugars (Decimal): Sugar content.
-        protein (Decimal): Protein content.
-        vitamin_d (Decimal): Vitamin D content.
-        potassium (Decimal): Potassium content.
-        calcium (Decimal): Calcium content.
-        iron (Decimal): Iron content.
+        total_fat (float): Total fat content.
+        saturated_fat (float): Saturated fat content.
+        trans_fat (float): Trans fat content.
+        cholesterol (float): Cholesterol content.
+        sodium (float): Sodium content.
+        total_carbohydrates (float): Total carbohydrates content.
+        dietary_fiber (float): Dietary fiber content.
+        sugars (float): Sugar content.
+        protein (float): Protein content.
+        vitamin_d (float): Vitamin D content.
+        potassium (float): Potassium content.
+        calcium (float): Calcium content.
+        iron (float): Iron content.
         updated_at (datetime): Timestamp when the nutrient information was last updated.
 
     """
@@ -290,7 +290,7 @@ class UserMealLog(models.Model):
     Attributes:
         user (CustomUser): User who consumed the meal.
         menu_item (MenuItem): The consumed menu item.
-        portions (Decimal): Number of servings consumed.
+        portions (float): Number of servings consumed.
         consumed_at (datetime): Timestamp when the meal was consumed.
         meal_type (str): Meal type code corresponding to the Menu.MealType choices.
         notes (str): Additional notes about the meal consumption.
@@ -375,8 +375,8 @@ class MenuItemMetrics(models.Model):
         menu_item (MenuItem): Associated menu item.
         times_served (int): Number of times the item has been served.
         times_consumed (int): Number of times the item has been consumed.
-        avg_portion_size (Decimal): Average portion size consumed.
-        popularity_score (Decimal): Calculated popularity score.
+        avg_portion_size (float): Average portion size consumed.
+        popularity_score (float): Calculated popularity score.
         seasonal_availability (list of int): Monthly availability pattern (1-12).
         last_served (date): Last date the item was served.
         common_pairings (list of int): IDs of commonly co-consumed menu items.

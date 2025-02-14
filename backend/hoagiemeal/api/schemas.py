@@ -1,9 +1,8 @@
-"""API manager class for the /{basePath}/xsd|jsd endpoint from the StudentApp API.
+"""API manager class for the /{base_path}/xsd|jsd endpoint from the StudentApp API.
 
 This module provides the XML and JSON schemas for the following base paths from
 the Princeton OIT API:
 
-- courses
 - dining
 - places
 
@@ -24,28 +23,18 @@ This software is provided "as-is", without warranty of any kind.
 
 import msgspec.json as msj
 
-from hoagiemeal.utils.deprecated import deprecated
 from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.student_app import StudentApp
 
 
 class Schemas(StudentApp):
-    """Fetch XML and JSON schemas for the /courses/, /dining/, and /places/ endpoints."""
+    """Fetch XML and JSON schemas for the /dining/, and /places/ endpoints."""
 
     def __init__(self):
         """Initialize the Schemas class."""
         super().__init__()
-        self.COURSES_XSD = "/courses/xsd"
         self.DINING_XSD = "/dining/xsd"
-        self.COURSES_JSD = "/courses/jsd"
         self.PLACES_JSD = "/places/jsd"
-
-    def get_courses_xsd(self, to_json: bool = False) -> dict | str:
-        """Fetch the XSD schema for courses."""
-        response = self._make_request(self.COURSES_XSD, fmt="xml")
-        if to_json:
-            response = self._parse_xml(response)
-        return response
 
     def get_dining_xsd(self, to_json: bool = False) -> dict | str:
         """Fetch the XSD schema for dining."""
@@ -54,23 +43,10 @@ class Schemas(StudentApp):
             response = self._parse_xml(response)
         return response
 
-    def get_courses_jsd(self) -> dict:
-        """Fetch the JSON schema for courses."""
-        response = self._make_request(self.COURSES_JSD, fmt="json")
-        return response
-
     def get_places_jsd(self) -> dict:
         """Fetch the JSON schema for places."""
         response = self._make_request(self.PLACES_JSD, fmt="json")
         return response
-
-
-@deprecated(reason="This API is not used in the Hoagie Meal app.")
-def _test_courses_xsd(to_json: bool = False):
-    logger.debug("Testing courses XSD schema.")
-    schemas = Schemas()
-    result = schemas.get_courses_xsd()
-    logger.info(f"Courses XSD: {result}")
 
 
 def _test_dining_xsd(to_json: bool = False):
@@ -78,16 +54,6 @@ def _test_dining_xsd(to_json: bool = False):
     schemas = Schemas()
     result = schemas.get_dining_xsd()
     logger.info(f"Dining XSD: {result}")
-
-
-@deprecated(reason="This API is not used in the Hoagie Meal app.")
-def _test_courses_jsd(formatted: bool = True):
-    logger.debug("Testing courses JSD schema.")
-    schemas = Schemas()
-    response = schemas.get_courses_jsd()
-    if formatted:
-        response = msj.format(response, indent=0)
-    logger.info(f"Courses JSD: {response}")
 
 
 def _test_places_jsd(formatted: bool = True):
@@ -100,7 +66,5 @@ def _test_places_jsd(formatted: bool = True):
 
 
 if __name__ == "__main__":
-    _test_courses_xsd(to_json=True)
     _test_dining_xsd(to_json=True)
-    _test_courses_jsd(formatted=True)
     _test_places_jsd(formatted=True)

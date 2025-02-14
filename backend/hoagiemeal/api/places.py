@@ -20,6 +20,7 @@ import msgspec.json as msj
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.views.decorators.cache import cache_page
+
 from hoagiemeal.api.student_app import StudentApp
 from hoagiemeal.utils.logger import logger
 

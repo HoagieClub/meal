@@ -1,1 +1,1 @@
-"""Test runner for the HoagieMeal backend."""
+"""Test runner for the Hoagie Meal backend."""

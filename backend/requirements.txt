@@ -8,7 +8,11 @@ dj-database-url==2.3.0
     # via hoagiemeal (pyproject.toml)
 django==5.1.2
     # via hoagiemeal (pyproject.toml)
+django-cors-headers==4.7.0
+    # via hoagiemeal (pyproject.toml)
 django-heroku==0.3.1
+    # via hoagiemeal (pyproject.toml)
+djangorestframework==3.15.2
     # via hoagiemeal (pyproject.toml)
 icalendar==6.0.1
     # via hoagiemeal (pyproject.toml)
