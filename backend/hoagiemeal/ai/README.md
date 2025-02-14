@@ -1,7 +1,6 @@
-# Hoagie Meal Recommendation Algorithm
+# Hoagie Meal AI
 
-This directory contains the recommendation algorithm that suggests food items
-and dining venues to users.
+This directory contains the AI research, engineering, and algorithms used by Hoagie Meal.
 
 ---
 
