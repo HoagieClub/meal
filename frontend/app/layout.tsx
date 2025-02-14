@@ -4,7 +4,7 @@
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/template/LICENSE.
+ * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
@@ -21,8 +21,8 @@ import Nav from '@/lib/hoagie-ui/Nav';
 import Theme from '@/lib/hoagie-ui/Theme';
 import { Toaster } from '@/components/ui/sonner';
 import { hoagie } from "@/app/hoagie";
-// Import globals.css first to ensure Tailwind styles take precedence
-import './globals.css';
+
+import '@/app/globals.css';
 import '@/lib/hoagie-ui/Theme/theme.css';
 
 export const metadata = {
@@ -69,16 +69,16 @@ async function Content({ children }: { children: ReactNode }): Promise<JSX.Eleme
  */
 export default function RootLayout({ children }: { children: ReactNode }): JSX.Element {
   return (
-    <html lang='en' className="h-full">
+    <html lang='en' className="bg-hoagiemeal-dark-green">
       <head>
-          <script
-              dangerouslySetInnerHTML={{
-                  __html: `(${hoagie.toString()})();`,
-              }}
-          />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(${hoagie.toString()})();`,
+          }}
+        />
       </head>
       <UserProvider>
-        <body className='min-h-full antialiased bg-background text-foreground'>
+        <body className='antialiased'>
           <Content>{children}</Content>
           <Analytics />
           <SpeedInsights />

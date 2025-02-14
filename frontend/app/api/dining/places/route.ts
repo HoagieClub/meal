@@ -18,7 +18,7 @@ import toCamelCase from '@/utils/toCamelCase';
 import type { Place, PlacesResponse } from '@/types/places';
 
 const ROUTE = '/places/open';
-const DEBUG = process.env.DEBUG?.toLowerCase() === 'true';
+const DEBUG = process.env.NODE_ENV === 'development';
 
 console.log(process.env.HOAGIE_API_URL);
 

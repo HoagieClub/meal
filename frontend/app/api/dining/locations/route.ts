@@ -17,48 +17,52 @@ import { request } from '@/lib/http';
 import type { DiningLocation } from '@/types/dining';
 import toCamelCase from '@/utils/toCamelCase';
 
-const ROUTE = '/api/dining/locations/';
-const DEBUG = process.env.NODE_ENV !== 'production';
+const ROUTE = '/api/dining/locations';
+const DEBUG = process.env.NODE_ENV === 'development';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const res = await request.get<DiningLocation[]>()(ROUTE, {
-      arg: {
-        category_id: '2',
-        fmt: 'xml'
-      }
-    });
+    const { searchParams } = new URL(req.url);
+    const fmt = searchParams.get('fmt') ?? 'xml';
 
-    if (!res.data || res.data.length === 0) {
+    const res = await request.get<any>()(ROUTE, { arg: { category_id: '2', fmt } });
+    DEBUG && console.log('Backend response:', res);
+
+    const locations =
+      fmt === 'xml'
+        ? res.data?.locations?.location ?? []
+        : Array.isArray(res.data)
+          ? res.data
+          : res.data?.data ?? [];
+
+    if (!locations?.length)
       return NextResponse.json(
-        { error: 'No dining locations found' },
+        {
+          error: 'No dining locations found',
+          message: 'No dining locations available',
+          status: 404,
+          data: []
+        },
         { status: 404 }
       );
-    }
-
-    const locations = res.data?.locations?.location || [];
 
     return NextResponse.json({
       data: toCamelCase(locations),
       message: 'Successfully fetched dining locations',
       status: 200
     });
-
   } catch (error: unknown) {
     DEBUG && console.error('Error:', error);
-
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    const details = DEBUG ? (error instanceof Error ? error.stack : String(error)) : undefined;
+    const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
     return NextResponse.json(
       {
         error: 'Failed to fetch dining locations',
-        message: error instanceof Error ? error.message : 'Unexpected error',
-        ...(DEBUG && {
-          details: error instanceof Error ? error.stack : String(error)
-        })
+        message,
+        ...(details && { details })
       },
-      {
-        status: error instanceof Error && 'status' in error ?
-          (error as any).status : 500
-      }
+      { status }
     );
   }
 }

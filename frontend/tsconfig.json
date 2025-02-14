@@ -24,6 +24,6 @@
       "@/*": ["./*"]
     },
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "postcss.config.ts", ".next/types/**/*.ts", "next.config.mjs", ".eslint.config.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "postcss.config.js", ".next/types/**/*.ts", "next.config.mjs", ".eslint.config.ts"],
   "exclude": ["node_modules"]
 }

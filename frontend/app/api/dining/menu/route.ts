@@ -19,7 +19,7 @@ import { getCurrentMenuId } from '@/utils/dining';
 import toCamelCase from '@/utils/toCamelCase';
 
 const ROUTE = '/api/dining/menu/';
-const DEBUG = process.env.NODE_ENV !== 'production';
+const DEBUG = process.env.DEBUG === 'development';
 
 export async function GET(req: Request) {
   try {

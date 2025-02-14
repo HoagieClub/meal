@@ -1,5 +1,5 @@
 /**
- * @overview Expected response structure from the /api/places endpoint.
+ * @overview Expected response structure from the /api/places/open endpoint.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -14,9 +14,30 @@
  */
 
 // The status indicating whether a place is open or closed.
-export type PlaceStatus = 'yes' | 'no'; // TODO: Closing soon status
+export type PlaceStatus = 'yes' | 'no' | 'soon';
 
-// Represents a campus venue or place.
+// Base venue type
+export type VenueType = 'residential' | 'cafe' | 'specialty';
+
+// Known venue name fragments to help classify automatically
+export const RESIDENTIAL_VENUES = [
+  'Forbes College',
+  'Rockefeller College',
+  'Mathey College',
+  'Whitman & Butler Colleges',
+  'Graduate College',
+  'Yeh College & New College West',
+] as const;
+
+export const CAFE_FRAGMENTS = [
+  'Cafe',
+  'CaFe',
+  'Tea Room',
+  'Studio 34',
+  'Gallery',
+] as const;
+
+// Base interface for all dining venues
 export interface Place {
   // Unique identifier for the place.
   id: string;
@@ -27,6 +48,21 @@ export interface Place {
   // The open/closed status of the place.
   open: PlaceStatus;
 }
+
+// Specialized venue types
+export interface ResidentialVenue extends Place {
+  type: 'residential';
+}
+
+export interface CafeVenue extends Place {
+  type: 'cafe';
+}
+
+export interface SpecialtyVenue extends Place {
+  type: 'specialty';
+}
+
+export type DiningVenue = ResidentialVenue | CafeVenue | SpecialtyVenue;
 
 // The expected successful response from the /api/places endpoint.
 export interface PlacesResponse {

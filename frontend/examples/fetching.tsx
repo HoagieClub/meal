@@ -22,7 +22,6 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import useSWR from 'swr'
 import { request } from '@/lib/http';
 import type { ApiResponse } from '@/types/http';
 import type { PlacesResponse } from '@/types/places';
@@ -58,3 +57,4 @@ async function getOpenPlaces() {
 }
 
 getOpenPlaces();
+export default getOpenPlaces;
