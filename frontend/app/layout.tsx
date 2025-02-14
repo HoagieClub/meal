@@ -21,8 +21,9 @@ import Nav from '@/lib/hoagie-ui/Nav';
 import Theme from '@/lib/hoagie-ui/Theme';
 import { Toaster } from '@/components/ui/sonner';
 import { hoagie } from "@/app/hoagie";
-import '@/lib/hoagie-ui/Theme/theme.css';
+// Import globals.css first to ensure Tailwind styles take precedence
 import './globals.css';
+import '@/lib/hoagie-ui/Theme/theme.css';
 
 export const metadata = {
   title: 'Meal by Hoagie',
@@ -41,16 +42,18 @@ async function Content({ children }: { children: ReactNode }): Promise<JSX.Eleme
   const user = session?.user;
 
   const tabs = [
-    { title: 'Menus', href: '/feature1' },
-    { title: 'Meals', href: '/feature2' },
-    { title: 'Nutrients', href: '/feature3' },
+    { title: 'Discover', href: '/feature3' },
+    { title: 'Menu', href: '/feature1' },
+    { title: 'Goals', href: '/feature2' },
   ];
 
   return (
     <Theme palette='green'>
       <Layout>
         <Nav name='meal' tabs={tabs} user={user} />
-        {children}
+        <div className="min-h-screen w-full">
+          {children}
+        </div>
         <Toaster />
       </Layout>
     </Theme>
@@ -66,7 +69,7 @@ async function Content({ children }: { children: ReactNode }): Promise<JSX.Eleme
  */
 export default function RootLayout({ children }: { children: ReactNode }): JSX.Element {
   return (
-    <html lang='en'>
+    <html lang='en' className="h-full">
       <head>
           <script
               dangerouslySetInnerHTML={{
@@ -75,7 +78,7 @@ export default function RootLayout({ children }: { children: ReactNode }): JSX.E
           />
       </head>
       <UserProvider>
-        <body className='antialiased'>
+        <body className='min-h-full antialiased bg-background text-foreground'>
           <Content>{children}</Content>
           <Analytics />
           <SpeedInsights />

@@ -19,7 +19,7 @@ import requests
 import pprint
 from bs4 import BeautifulSoup
 from copy import deepcopy
-from hoagiemeal.logger import logger
+from hoagiemeal.utils.logger import logger
 
 
 class Scraper:
@@ -375,7 +375,7 @@ class Scraper:
 
 def _test_scraper():
     """Test the dining hall menus scraper."""
-    link = "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=390047"
+    link = "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=510454"
     scraper = Scraper()
     soup = scraper.get_html(link=link)
     info = scraper.get_info(soup=soup)

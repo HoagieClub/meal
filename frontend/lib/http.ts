@@ -15,6 +15,14 @@
 import { ApiResponse, HoagieRequest, RequestConfig, HttpMethod } from '@/types/http';
 import { valid } from '@/utils/http';
 
+// process.env is automatically handled for server components
+const API_URL = process.env.HOAGIE_API_URL;
+
+if (!API_URL && typeof window === 'undefined') {
+  // Only warn on server-side
+  console.warn('HOAGIE_API_URL is not defined. API requests may fail.');
+}
+
 /**
 * Makes HTTP requests to the Hoagie API.
 * 
@@ -42,7 +50,7 @@ export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {
       throw new Error(`Invalid HTTP method: ${config.method}`);
     }
 
-    const url = `${process.env.HOAGIE_API_URL}${endpoint}`;
+    const url = `${API_URL}${endpoint}`;
     const options: RequestInit = {
       method: config.method || 'GET',
       credentials: 'include',
@@ -50,7 +58,6 @@ export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {
         'Content-Type': 'application/json',
         ...(config.headers || {}),
       },
-      mode: 'no-cors', // TODO: Eventually fix CORS issues
     };
 
     // Add the request body if the method is not GET and arguments are provided
@@ -81,3 +88,10 @@ export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {
     }
   };
 }) as HoagieRequest;
+
+// Add method helpers
+request.get = (headers?: HeadersInit) => request({ method: 'GET', headers });
+request.post = (headers?: HeadersInit) => request({ method: 'POST', headers });
+request.put = (headers?: HeadersInit) => request({ method: 'PUT', headers });
+request.patch = (headers?: HeadersInit) => request({ method: 'PATCH', headers });
+request.delete = (headers?: HeadersInit) => request({ method: 'DELETE', headers });

@@ -17,11 +17,14 @@ This software is provided "as-is", without warranty of any kind.
 
 import msgspec.json as msj
 
-from student_app import StudentApp
-from hoagiemeal.logger import logger
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.views.decorators.cache import cache_page
+from hoagiemeal.api.student_app import StudentApp
+from hoagiemeal.utils.logger import logger
 
 
-class Places(StudentApp):
+class PlacesAPI(StudentApp):
     """Fetches availability of various campus venues."""
 
     def __init__(self):
@@ -29,10 +32,9 @@ class Places(StudentApp):
         self.PLACES_OPEN = "/places/open"
 
     def get_open_places(self) -> dict:
-        """Retrieve a list of venues in a category (default: all dining venues)
-        with their current open status.
+        """Retrieve a list of venues in a category.
 
-        The "open" property will be either "yes" or "no".
+        NOTE: The "open" property will be either "yes" or "no".
 
         Returns:
             dict: A JSON object containing venue names, IDs, and their open status.
@@ -48,8 +50,21 @@ class Places(StudentApp):
         return self._make_request(self.PLACES_OPEN)  # JSON-only endpoint.
 
 
+@api_view(["GET"])
+@cache_page(60 * 5)  # Cache for 5 minutes
+def get_open_places(request):
+    """Django view function to get open places."""
+    try:
+        places_api = PlacesAPI()
+        open_places = places_api.get_open_places()
+        return Response(msj.decode(open_places))
+    except Exception as e:
+        logger.error(f"Error in get_open_places view: {e}")
+        return Response({"error": str(e)}, status=500)
+
+
 def _test_places_open(formatted: bool = True):
-    places = Places()
+    places = PlacesAPI()
     logger.debug("Testing: Get Open Places...")
     try:
         open_places = places.get_open_places()

@@ -15,10 +15,12 @@ import type { Config } from "tailwindcss";
 const config: Config = {
 	darkMode: ["class"],
 	content: [
+		"./app/**/*.{js,ts,jsx,tsx,mdx}",
 		"./pages/**/*.{js,ts,jsx,tsx,mdx}",
 		"./components/**/*.{js,ts,jsx,tsx,mdx}",
-		"./app/**/*.{js,ts,jsx,tsx,mdx}",
+		"./lib/**/*.{js,ts,jsx,tsx,mdx}",
 	],
+	important: true, // This ensures Tailwind styles take precedence
 	theme: {
 		extend: {
 			colors: {
@@ -70,6 +72,9 @@ const config: Config = {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		require("@tailwindcss/forms")
+	],
 };
 export default config;
