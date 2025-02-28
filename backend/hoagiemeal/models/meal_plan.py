@@ -170,7 +170,7 @@ class SwipeTransactionIndividual(models.Model):
     class Meta:
         """Meta class for the SwipeTransaction model."""
 
-        db_table = "swipe_transactions"
+        db_table = "swipe_transactions_individual"
         indexes = [
             models.Index(fields=["user", "transaction_time"]),
             models.Index(fields=["is_late_meal"]),

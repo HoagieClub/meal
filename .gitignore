@@ -208,3 +208,11 @@ temp/
 # Custom Ignored Files
 # ===============================
 # Add any additional files or directories you wish to ignore here
+
+# ===============================
+# Script Outputs
+# ===============================
+# Ignore all script output directories
+**/outputs/
+/backend/scripts/outputs/
+/scripts/outputs/

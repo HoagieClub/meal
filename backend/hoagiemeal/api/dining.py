@@ -1,4 +1,4 @@
-"""API manager class for the /dining/ endpoint from the StudentApp API.
+"""API manager class for the /dining/ endpoints from the StudentApp API.
 
 This module fetches data from the following endpoints:
 
@@ -21,11 +21,12 @@ copies of the Software, subject to the following conditions:
 This software is provided "as-is", without warranty of any kind.
 """
 
+import datetime
 import msgspec.json as msj
+import pytz
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.exceptions import APIException
 from django.views.decorators.cache import cache_page
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -39,7 +40,7 @@ from hoagiemeal.serializers import MenuRatingSerializer, MenuRatingCreateSeriali
 
 
 class DiningAPI(StudentApp):
-    """Handle functionalities related to dining information, such as locations, menus, and events."""
+    """Handles functionalities related to dining information, such as locations, menus, and events."""
 
     def __init__(self):
         """Initialize the DiningAPI class."""
@@ -49,31 +50,67 @@ class DiningAPI(StudentApp):
         self.DINING_MENU = "/dining/menu"
         self.schemas = Schemas()
 
-    def get_locations(self, fmt: str = "xml") -> dict:
+    def get_locations(self, category_id: str = "2", fmt: str = "xml") -> dict:
         """Fetch a list of dining locations in XML format.
 
         NOTE: The API expects the parameters to be in camelCase.
 
         Args:
+            category_id (str): The category ID to fetch. Defaults to "2".
+                               Use "2" for residential colleges, "3" for cafes/specialty venues.
             fmt (str): The format of the response. Defaults to "xml".
 
         Returns:
             dict: A dictionary containing the dining locations.
 
         """
-        try:
-            response = self._make_request(
-                self.DINING_LOCATIONS,
-                params={"categoryId": "2"},
-                fmt=fmt,
-            )
-            schema = self.schemas.get_dining_xsd()
-            if not self.validate_xml(response, schema):
-                raise APIException("Invalid XML format for dining locations")
-            return self._parse_xml(response)
-        except Exception as e:
-            logger.error(f"Error fetching dining locations: {e}")
-            raise APIException(str(e)) from e
+        logger.info(f"Fetching dining locations for category {category_id}.")
+        response = self._make_request(
+            self.DINING_LOCATIONS,
+            params={"categoryId": category_id},
+            fmt=fmt,
+        )
+        schema = self.schemas.get_dining_xsd()
+        if not self.validate_xml(response, schema):
+            logger.error(f"Invalid XML format for dining locations (category {category_id}).")
+            raise ValueError(f"Invalid XML format for dining locations (category {category_id}).")
+        return self._parse_xml(response)
+
+    def get_all_category_locations(self, category_ids=None, fmt: str = "xml") -> dict:
+        """Fetch dining locations from multiple categories and combine them.
+
+        Args:
+            category_ids (list): List of category IDs to fetch. Defaults to ["2", "3"].
+            fmt (str): The format of the response. Defaults to "xml".
+
+        Returns:
+            dict: A dictionary containing combined dining locations from all categories.
+
+        """
+        if category_ids is None:
+            category_ids = ["2", "3"]  # Default to residential colleges and cafes/specialty venues
+
+        logger.info(f"Fetching dining locations for categories: {', '.join(category_ids)}")
+
+        all_locations = {"locations": {"location": []}}
+
+        for category_id in category_ids:
+            try:
+                response = self.get_locations(category_id=category_id, fmt=fmt)
+                if response and "locations" in response and "location" in response["locations"]:
+                    locations = response["locations"]["location"]
+                    if isinstance(locations, list):
+                        all_locations["locations"]["location"].extend(locations)
+                    else:
+                        # If there's only one location, it might not be in a list
+                        all_locations["locations"]["location"].append(locations)
+                    logger.info(
+                        f"Added {len(locations) if isinstance(locations, list) else 1} locations from category {category_id}"
+                    )
+            except Exception as e:
+                logger.error(f"Error fetching locations for category {category_id}: {e}")
+
+        return all_locations
 
     def get_events(self, place_id: str = "1007") -> dict:
         """Fetch dining venue open hours as an iCal stream for a given place_id.
@@ -91,12 +128,10 @@ class DiningAPI(StudentApp):
             dict: Parsed iCal data with event details (summary, start time, end time, etc.).
 
         """
-        try:
-            response = self._make_request(self.DINING_EVENTS, params={"placeId": place_id}, fmt="ical")
-            return self._parse_ical(response)
-        except Exception as e:
-            logger.error(f"Error fetching dining events: {e}")
-            raise APIException(str(e)) from e
+        logger.info(f"Fetching dining events for place_id: {place_id}.")
+        params = {"placeID": place_id}
+        response = self._make_request(self.DINING_EVENTS, params=params, fmt="ical")
+        return self._parse_ical(response)
 
     def get_menu(self, location_id: str, menu_id: str) -> dict:
         """Fetch the menu for a specific dining location.
@@ -111,12 +146,11 @@ class DiningAPI(StudentApp):
             dict: A JSON object containing the menu details.
 
         """
-        try:
-            response = self._make_request(self.DINING_MENU, params={"locationId": location_id, "menuId": menu_id})
-            return msj.decode(response)
-        except Exception as e:
-            logger.error(f"Error fetching menu: {e}")
-            raise APIException(str(e)) from e
+        logger.info(f"Fetching dining menu for location_id: {location_id}, menu_id: {menu_id}.")
+        params = {"locationID": location_id, "menuID": menu_id}
+        response = self._make_request(self.DINING_MENU, params=params)
+        response = msj.decode(response)
+        return response
 
 
 #################### Exposed endpoints #########################
@@ -125,36 +159,53 @@ dining_api = DiningAPI()
 
 
 @api_view(["GET"])
-@cache_page(60 * 15)
-def get_locations(request):
-    """Get all dining locations."""
-    locations = dining_api.get_locations()
-    location_list = locations.get("locations", {}).get("location", [])
-    return Response({"data": location_list, "message": "Successfully fetched dining locations"})
+@cache_page(60 * 5)
+def get_dining_locations(request):
+    """Django view function to get dining locations."""
+    try:
+        category_ids = request.GET.getlist("category_id", ["2", "3"])
+        locations = dining_api.get_all_category_locations(category_ids)
+        return Response(locations)
+    except Exception as e:
+        logger.error(f"Error in get_dining_locations view: {e}")
+        return Response({"error": str(e)}, status=500)
 
 
 @api_view(["GET"])
 @cache_page(60 * 5)
-def get_events(request):
-    """Get dining events/hours."""
-    place_id = request.query_params.get("place_id", "1007")
-    events = dining_api.get_events(place_id)
-    return Response({"data": events.get("events", []), "message": "Successfully fetched dining events"})
+def get_dining_events(request):
+    """Django view function to get dining events."""
+    try:
+        category_ids = request.GET.getlist("category_id", ["2", "3"])
+        date_str = request.GET.get("date", None)
+
+        if date_str:
+            events = get_dining_events_for_date(date_str, category_ids)
+        else:
+            events = get_all_dining_events(category_ids)
+
+        return Response(events)
+    except Exception as e:
+        logger.error(f"Error in get_dining_events view: {e}")
+        return Response({"error": str(e)}, status=500)
 
 
 @api_view(["GET"])
 @cache_page(60 * 5)
-def get_menu(request):
-    """Get menu for a specific location."""
-    location_id = request.query_params.get("location_id")
-    menu_id = request.query_params.get("menu_id")
+def get_dining_menu(request):
+    """Django view function to get dining menu."""
+    try:
+        location_id = request.GET.get("location_id")
+        menu_id = request.GET.get("menu_id")
 
-    if not location_id or not menu_id:
-        return Response({"error": "location_id and menu_id are required"}, status=400)
+        if not location_id or not menu_id:
+            return Response({"error": "location_id and menu_id are required"}, status=400)
 
-    menu = dining_api.get_menu(location_id, menu_id)
-
-    return Response({"data": menu.get("menus", []), "message": "Successfully fetched menu"})
+        menu = dining_api.get_menu(location_id, menu_id)
+        return Response(menu)
+    except Exception as e:
+        logger.error(f"Error in get_dining_menu view: {e}")
+        return Response({"error": str(e)}, status=500)
 
 
 @api_view(["GET"])
@@ -167,6 +218,7 @@ def get_menu_item_with_ratings(request, menu_item_id):
 
     Returns:
         Response: The menu item with its ratings.
+
     """
     try:
         menu_item = MenuItem.objects.get(id=menu_item_id)
@@ -187,6 +239,7 @@ def get_menu_item_ratings(request, menu_item_id):
 
     Returns:
         Response: The ratings for the menu item.
+
     """
     try:
         menu_item = MenuItem.objects.get(id=menu_item_id)
@@ -209,6 +262,7 @@ def create_menu_item_rating(request, menu_item_id):
 
     Returns:
         Response: The created rating.
+
     """
     try:
         menu_item = MenuItem.objects.get(id=menu_item_id)
@@ -239,6 +293,7 @@ def manage_rating(request, rating_id):
 
     Returns:
         Response: The response based on the action.
+
     """
     try:
         rating = MenuRating.objects.get(id=rating_id)
@@ -279,6 +334,7 @@ def get_user_ratings(request):
 
     Returns:
         Response: The user's ratings.
+
     """
     ratings = MenuRating.objects.filter(user=request.user)
     serializer = MenuRatingSerializer(ratings, many=True)
@@ -294,6 +350,7 @@ def get_top_rated_menu_items(request):
 
     Returns:
         Response: The top-rated menu items.
+
     """
     # Get menu items with at least 3 ratings
     menu_items = (
@@ -304,3 +361,297 @@ def get_top_rated_menu_items(request):
 
     serializer = MenuItemWithRatingsSerializer(menu_items, many=True, context={"request": request})
     return Response(serializer.data)
+
+
+# Utility functions for working with dining data
+
+
+def get_all_dining_locations(category_ids=None):
+    """Fetch all dining locations and return them as a list of dictionaries.
+
+    Args:
+        category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
+
+    Returns:
+        list: A list of dictionaries containing location information.
+
+    """
+    if category_ids is None:
+        category_ids = ["2", "3"]  # Default to residential colleges and cafes/specialty venues
+
+    dining = DiningAPI()
+    try:
+        # Use the new method to get locations from all categories
+        response = dining.get_all_category_locations(category_ids)
+        locations = []
+
+        for location in response["locations"]["location"]:
+            loc_info = {
+                "name": location.get("name"),
+                "map_name": location.get("mapName"),
+                "dbid": location.get("dbid"),
+                "latitude": location["geoloc"].get("lat"),
+                "longitude": location["geoloc"].get("long"),
+                "building_name": location["building"].get("name"),
+            }
+
+            # Handle both single and multiple amenities
+            amenities_data = location["amenities"]["amenity"]
+            if isinstance(amenities_data, list):
+                loc_info["amenities"] = [amenity["name"] for amenity in amenities_data]
+            else:
+                loc_info["amenities"] = [amenities_data["name"]]
+
+            locations.append(loc_info)
+
+        logger.info(f"Retrieved {len(locations)} dining locations from categories: {', '.join(category_ids)}")
+        return locations
+    except Exception as e:
+        logger.error(f"Error fetching dining locations: {e}")
+        return []
+
+
+def get_events_for_location(dbid, location_name):
+    """Fetch events for a specific dining location.
+
+    Args:
+        dbid (str): The database ID of the location.
+        location_name (str): The name of the location (for logging).
+
+    Returns:
+        list: A list of event dictionaries.
+
+    """
+    dining = DiningAPI()
+    try:
+        logger.info(f"Fetching events for {location_name} (ID: {dbid})")
+        events_data = dining.get_events(place_id=dbid)
+        events = events_data.get("events", [])
+
+        # Format the events for better readability
+        formatted_events = []
+        for event in events:
+            formatted_event = {
+                "summary": event.get("summary", "No Summary"),
+                "start": event.get("start", "No Start Time"),
+                "end": event.get("end", "No End Time"),
+                "description": event.get("description", "No Description"),
+            }
+            formatted_events.append(formatted_event)
+
+        logger.info(f"Retrieved {len(formatted_events)} events for {location_name}")
+        return formatted_events
+    except Exception as e:
+        logger.error(f"Error fetching events for {location_name} (ID: {dbid}): {e}")
+        return []
+
+
+def get_events_for_location_with_date(dbid, location_name, date_str=None):
+    """Fetch events for a specific dining location with an optional date filter.
+
+    Args:
+        dbid (str): The database ID of the location.
+        location_name (str): The name of the location (for logging).
+        date_str (str, optional): Date string in YYYY-MM-DD format. Defaults to None.
+
+    Returns:
+        list: A list of event dictionaries.
+
+    """
+    dining = DiningAPI()
+    try:
+        logger.info(f"Fetching events for {location_name} (ID: {dbid})")
+
+        # Try to add date parameter if provided
+        params = {"placeId": dbid}
+        if date_str:
+            # Add date parameter if API supports it
+            params["date"] = date_str
+            logger.info(f"Using date parameter: {date_str}")
+
+        # Use the standard get_events method
+        events_data = dining.get_events(place_id=dbid)
+        events = events_data.get("events", [])
+
+        # Format the events for better readability
+        formatted_events = []
+        for event in events:
+            formatted_event = {
+                "summary": event.get("summary", "No Summary"),
+                "start": event.get("start", "No Start Time"),
+                "end": event.get("end", "No End Time"),
+                "description": event.get("description", "No Description"),
+            }
+
+            # Filter by date if specified
+            if date_str and isinstance(formatted_event["start"], datetime.datetime):
+                event_date = formatted_event["start"].date()
+                filter_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+
+                if event_date == filter_date:
+                    formatted_events.append(formatted_event)
+            else:
+                formatted_events.append(formatted_event)
+
+        logger.info(f"Retrieved {len(formatted_events)} events for {location_name}")
+        return formatted_events
+    except Exception as e:
+        logger.error(f"Error fetching events for {location_name} (ID: {dbid}): {e}")
+        return []
+
+
+def analyze_date_range(all_location_events):
+    """Analyze the date range of the events data.
+
+    Args:
+        all_location_events (dict): Dictionary mapping location names to events.
+
+    Returns:
+        tuple: (earliest_date, latest_date, total_days)
+
+    """
+    earliest_date = None
+    latest_date = None
+
+    # Collect all dates from all events
+    all_dates = []
+
+    for name, data in all_location_events.items():
+        logger.info(f"Analyzing date range for {name}")
+
+        events = data["events"]
+
+        for event in events:
+            start_time = event["start"]
+            end_time = event["end"]
+
+            if isinstance(start_time, datetime.datetime):
+                all_dates.append(start_time.date())
+
+            if isinstance(end_time, datetime.datetime):
+                all_dates.append(end_time.date())
+
+    # Find the earliest and latest dates
+    if all_dates:
+        earliest_date = min(all_dates)
+        latest_date = max(all_dates)
+
+        # Calculate the total number of days
+        total_days = (latest_date - earliest_date).days + 1
+
+        return (earliest_date, latest_date, total_days)
+
+    return (None, None, 0)
+
+
+def get_all_dining_events(category_ids=None):
+    """Fetch events for all dining locations.
+
+    Args:
+        category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
+
+    Returns:
+        dict: Dictionary mapping location names to events.
+
+    """
+    if category_ids is None:
+        category_ids = ["2", "3"]  # Default to residential colleges and cafes/specialty venues
+
+    logger.info(f"Fetching events for all dining locations in categories: {', '.join(category_ids)}...")
+
+    # Get all dining locations from specified categories
+    locations = get_all_dining_locations(category_ids)
+
+    # Dictionary to store location name -> events mapping
+    all_location_events = {}
+
+    # Fetch events for each location
+    for location in locations:
+        name = location["name"]
+        dbid = location["dbid"]
+
+        events = get_events_for_location(dbid, name)
+        all_location_events[name] = {"location_info": location, "events": events}
+
+    return all_location_events
+
+
+def get_dining_events_for_date(date_str, category_ids=None):
+    """Fetch events for all dining locations for a specific date.
+
+    Args:
+        date_str (str): Date string in YYYY-MM-DD format.
+        category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
+
+    Returns:
+        dict: Dictionary mapping location names to events.
+
+    """
+    if category_ids is None:
+        category_ids = ["2", "3"]  # Default to residential colleges and cafes/specialty venues
+
+    logger.info(f"Fetching events for all dining locations on {date_str} in categories: {', '.join(category_ids)}...")
+
+    # Get all dining locations from specified categories
+    locations = get_all_dining_locations(category_ids)
+
+    # Dictionary to store location name -> events mapping
+    all_location_events = {}
+
+    # Fetch events for each location
+    for location in locations:
+        name = location["name"]
+        dbid = location["dbid"]
+
+        events = get_events_for_location_with_date(dbid, name, date_str)
+        all_location_events[name] = {"location_info": location, "events": events}
+
+    return all_location_events
+
+
+def convert_utc_to_eastern(dt):
+    """Convert a UTC datetime to Eastern Time.
+
+    Args:
+        dt: A datetime object in UTC
+
+    Returns:
+        A datetime object in Eastern Time with proper timezone info
+
+    """
+    # If it's not a datetime object, return as is
+    if not isinstance(dt, datetime.datetime):
+        return dt
+
+    # If the datetime has no timezone info, assume it's UTC
+    if dt.tzinfo is None:
+        dt = pytz.utc.localize(dt)
+
+    # Convert to Eastern Time
+    eastern = pytz.timezone("US/Eastern")
+    return dt.astimezone(eastern)
+
+
+# For testing directly
+if __name__ == "__main__":
+    print("WARNING: This script should be run through Django's management command:")
+    print("python manage.py test_dining")
+    print("\nAttempting to run directly, but this may fail if Django is not properly configured.")
+
+    # Try to set up Django environment
+    import os
+    import django
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hoagiemeal.settings")
+    try:
+        django.setup()
+        # Test getting all dining locations
+        locations = get_all_dining_locations()
+        print(f"Retrieved {len(locations)} dining locations")
+
+        # Test getting all dining events
+        events = get_all_dining_events()
+        print(f"Retrieved events for {len(events)} dining locations")
+    except Exception as e:
+        print(f"Error: {e}")
+        print("Please use the management command instead.")
