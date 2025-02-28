@@ -3,7 +3,17 @@
 from django.contrib import admin
 from django.urls import path
 
-from hoagiemeal.api.dining import get_locations, get_events, get_menu
+from hoagiemeal.api.dining import (
+    get_locations,
+    get_events,
+    get_menu,
+    get_menu_item_with_ratings,
+    get_menu_item_ratings,
+    create_menu_item_rating,
+    manage_rating,
+    get_user_ratings,
+    get_top_rated_menu_items,
+)
 from hoagiemeal.api.places import get_open_places
 
 
@@ -13,4 +23,11 @@ urlpatterns = [
     path("api/dining/events/", get_events, name="dining-events"),
     path("api/dining/menu/", get_menu, name="dining-menu"),
     path("api/dining/places/open/", get_open_places, name="dining-places-open"),
+    # Menu ratings API endpoints
+    path("api/menu-items/<int:menu_item_id>/", get_menu_item_with_ratings, name="menu-item-with-ratings"),
+    path("api/menu-items/<int:menu_item_id>/ratings/", get_menu_item_ratings, name="menu-item-ratings"),
+    path("api/menu-items/<int:menu_item_id>/rate/", create_menu_item_rating, name="create-menu-item-rating"),
+    path("api/ratings/<int:rating_id>/", manage_rating, name="manage-rating"),
+    path("api/user/ratings/", get_user_ratings, name="user-ratings"),
+    path("api/menu-items/top-rated/", get_top_rated_menu_items, name="top-rated-menu-items"),
 ]

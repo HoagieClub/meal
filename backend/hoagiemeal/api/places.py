@@ -105,4 +105,18 @@ def _test_places_open(formatted: bool = True):
 
 
 if __name__ == "__main__":
-    _test_places_open()
+    print("WARNING: This script should be run through Django's management command:")
+    print("python manage.py test_places")
+    print("\nAttempting to run directly, but this may fail if Django is not properly configured.")
+
+    # Try to set up Django environment
+    import os
+    import django
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hoagiemeal.settings")
+    try:
+        django.setup()
+        _test_places_open()
+    except Exception as e:
+        print(f"Error: {e}")
+        print("Please use the management command instead.")
