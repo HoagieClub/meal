@@ -65,3 +65,13 @@ export function isCafe(venue: Place): venue is CafeVenue {
 export function isSpecialty(venue: Place): venue is SpecialtyVenue {
   return venue.type === 'specialty';
 }
+
+export type Venue = {
+  name: string;
+  category: string;
+};
+
+export function classifyVenue(venueName: string): string {
+  if (venueName.includes("Dining Hall")) return "dining";
+  return "other";
+}
