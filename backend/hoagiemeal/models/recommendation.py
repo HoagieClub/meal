@@ -20,6 +20,9 @@ from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator, MaxValueValidator
 from pgvector.django import VectorField
 
+from hoagiemeal.models.menu import MenuItem
+from hoagiemeal.models.user import CustomUser
+
 
 class FoodVector(models.Model):
     """Stores vector representations of menu items for recommendation.
@@ -293,12 +296,11 @@ class RecommendationFeedback(models.Model):
         """
         return f"Feedback on {self.recommendation.menu_item.name}: {self.rating or 'No rating'}"
 
-
+# TODO: Not sure if needed
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from pgvector.django import VectorField
-
 
 class BanditModel(models.Model):
     """Store bandit model parameters for recommendation algorithm.

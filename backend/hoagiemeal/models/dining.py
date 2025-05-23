@@ -53,16 +53,16 @@ class DiningVenue(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        """Meta class for the DiningHall model."""
+        """Meta class for the DiningVenue model."""
 
-        db_table = "dining_halls"
+        db_table = "dining_venues"
         indexes = [
             models.Index(fields=["database_id"]),
             models.Index(fields=["name"]),
         ]
 
     def __str__(self):
-        """Return the string representation of the DiningHall instance.
+        """Return the string representation of the DiningVenue instance.
 
         Returns:
             str: The dining hall name along with the building name.

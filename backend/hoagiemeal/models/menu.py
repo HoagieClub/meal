@@ -21,16 +21,13 @@ from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from hoagiemeal.models.dining import DiningVenue
 
 class Menu(models.Model):
     """Represent a daily menu for a specific meal at a dining hall.
 
     Attributes:
-        dining_hall (DiningHall): Associated dining hall.
-        date (date): Date for which the menu is applicable.
-        meal (str): Meal type code (e.g., "BR" for Breakfast).
-        last_fetched (datetime): Timestamp when the menu was last updated from the API.
-
+        dining_hall (DiningVenue): Associated dining hall.
     """
 
     class MealType(models.TextChoices):
@@ -40,7 +37,7 @@ class Menu(models.Model):
         LUNCH = "LU", _("Lunch")
         DINNER = "DI", _("Dinner")
 
-    dining_hall = models.ForeignKey(DiningHall, on_delete=models.CASCADE, related_name="menus")
+    dining_hall = models.ForeignKey(DiningVenue, on_delete=models.CASCADE, related_name="menus")
     date = models.DateField(default=timezone.now, db_index=True)
     meal = models.CharField(max_length=2, choices=MealType.choices, db_index=True)
     last_fetched = models.DateTimeField(auto_now=True, help_text=_("Last time menu was updated from API"))
@@ -245,6 +242,7 @@ class MenuRating(models.Model):
         taste_rating (float): Specific rating for taste (1.0-5.0).
         presentation_rating (float): Specific rating for presentation (1.0-5.0).
         value_rating (float): Specific rating for value/portion size (1.0-5.0).
+
     """
 
     class DiningExperience(models.TextChoices):
@@ -318,5 +316,6 @@ class MenuRating(models.Model):
 
         Returns:
             str: A description of the rating.
+
         """
         return f"Rating {self.rating} for {self.menu_item.name} by {self.user.get_full_name()}"

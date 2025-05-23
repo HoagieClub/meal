@@ -265,7 +265,7 @@ class SwipeTransactionMarketplace(models.Model):
     class Meta:
         """Meta class for the SwipeTransaction model."""
 
-        db_table = "swipe_transactions"
+        db_table = "swipe_transactions_marketplace"
         indexes = [
             models.Index(fields=["seller"]),
             models.Index(fields=["buyer"]),

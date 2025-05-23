@@ -15,4 +15,5 @@ copies of the Software, subject to the following conditions:
 This software is provided "as-is", without warranty of any kind.
 """
 
+
 from hoagiemeal.models import CustomUser

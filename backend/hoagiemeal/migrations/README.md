@@ -7,7 +7,7 @@ Migration history log for the Hoagie Meal backend.
 Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
-https://github.com/hoagieclub/meal/blob/main/LICENSE
+[https://github.com/hoagieclub/meal/blob/main/LICENSE](https://github.com/hoagieclub/meal/blob/main/LICENSE)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

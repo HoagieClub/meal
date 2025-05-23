@@ -21,6 +21,9 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.contrib.postgres.fields import ArrayField
 
+from hoagiemeal.models.menu import MenuItem
+from hoagiemeal.models.dining import DiningVenue
+
 
 class CustomUser(AbstractUser):
     """Extend user model for the Hoagie Meal application.
@@ -84,7 +87,7 @@ class UserDietaryProfile(models.Model):
         user (CustomUser): Associated user.
         favorite_menu_items (QuerySet[MenuItem]): Menu items marked as favorites.
         excluded_ingredients (list of str): Ingredients the user wishes to avoid.
-        preferred_dining_halls (QuerySet[DiningHall]): Dining halls preferred by the user.
+        preferred_dining_halls (QuerySet[DiningVenue]): Dining halls preferred by the user.
         cuisine_preferences (dict): Weighted cuisine type preferences.
         meal_time_preferences (dict): Preferred dining times.
         sustainability_preference (bool): Preference for sustainable options.
@@ -95,7 +98,7 @@ class UserDietaryProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="dietary_profile")
     favorite_menu_items = models.ManyToManyField(MenuItem, related_name="favorited_by")
     excluded_ingredients = ArrayField(models.CharField(max_length=100), blank=True, default=list)
-    preferred_dining_halls = models.ManyToManyField(DiningHall, related_name="preferred_by")
+    preferred_dining_halls = models.ManyToManyField(DiningVenue, related_name="preferred_by")
     cuisine_preferences = models.JSONField(default=dict, help_text=_("Weighted cuisine type preferences"))
     meal_time_preferences = models.JSONField(default=dict, help_text=_("Preferred dining times"))
     sustainability_preference = models.BooleanField(default=False, help_text=_("Preference for sustainable options"))

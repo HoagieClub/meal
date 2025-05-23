@@ -4,9 +4,9 @@ from django.contrib import admin
 from django.urls import path
 
 from hoagiemeal.api.dining import (
-    get_locations,
-    get_events,
-    get_menu,
+    get_dining_locations,
+    get_dining_events,
+    get_dining_menu,
     get_menu_item_with_ratings,
     get_menu_item_ratings,
     create_menu_item_rating,
@@ -19,9 +19,9 @@ from hoagiemeal.api.places import get_open_places
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/dining/locations/", get_locations, name="dining-locations"),
-    path("api/dining/events/", get_events, name="dining-events"),
-    path("api/dining/menu/", get_menu, name="dining-menu"),
+    path("api/dining/locations/", get_dining_locations, name="dining-locations"),
+    path("api/dining/events/", get_dining_events, name="dining-events"),
+    path("api/dining/menu/", get_dining_menu, name="dining-menu"),
     path("api/dining/places/open/", get_open_places, name="dining-places-open"),
     # Menu ratings API endpoints
     path("api/menu-items/<int:menu_item_id>/", get_menu_item_with_ratings, name="menu-item-with-ratings"),
