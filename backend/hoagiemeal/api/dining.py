@@ -23,14 +23,19 @@ This software is provided "as-is", without warranty of any kind.
 
 import msgspec.json as msj
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
 from django.views.decorators.cache import cache_page
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from django.db import models
 
 from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.student_app import StudentApp
 from hoagiemeal.api.schemas import Schemas
+from hoagiemeal.models.menu import MenuItem, MenuRating
+from hoagiemeal.serializers import MenuRatingSerializer, MenuRatingCreateSerializer, MenuItemWithRatingsSerializer
 
 
 class DiningAPI(StudentApp):
@@ -150,3 +155,152 @@ def get_menu(request):
     menu = dining_api.get_menu(location_id, menu_id)
 
     return Response({"data": menu.get("menus", []), "message": "Successfully fetched menu"})
+
+
+@api_view(["GET"])
+def get_menu_item_with_ratings(request, menu_item_id):
+    """Get a menu item with its ratings.
+
+    Args:
+        request: The HTTP request.
+        menu_item_id: The ID of the menu item.
+
+    Returns:
+        Response: The menu item with its ratings.
+    """
+    try:
+        menu_item = MenuItem.objects.get(id=menu_item_id)
+    except MenuItem.DoesNotExist:
+        return Response({"error": "Menu item not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = MenuItemWithRatingsSerializer(menu_item, context={"request": request})
+    return Response(serializer.data)
+
+
+@api_view(["GET"])
+def get_menu_item_ratings(request, menu_item_id):
+    """Get all ratings for a menu item.
+
+    Args:
+        request: The HTTP request.
+        menu_item_id: The ID of the menu item.
+
+    Returns:
+        Response: The ratings for the menu item.
+    """
+    try:
+        menu_item = MenuItem.objects.get(id=menu_item_id)
+    except MenuItem.DoesNotExist:
+        return Response({"error": "Menu item not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    ratings = menu_item.ratings.all()
+    serializer = MenuRatingSerializer(ratings, many=True)
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_menu_item_rating(request, menu_item_id):
+    """Create a rating for a menu item.
+
+    Args:
+        request: The HTTP request.
+        menu_item_id: The ID of the menu item.
+
+    Returns:
+        Response: The created rating.
+    """
+    try:
+        menu_item = MenuItem.objects.get(id=menu_item_id)
+    except MenuItem.DoesNotExist:
+        return Response({"error": "Menu item not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Add menu_item to the request data
+    data = request.data.copy()
+    data["menu_item"] = menu_item.id
+
+    serializer = MenuRatingCreateSerializer(data=data, context={"request": request})
+
+    if serializer.is_valid():
+        rating = serializer.save()
+        return Response(MenuRatingSerializer(rating).data, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET", "PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def manage_rating(request, rating_id):
+    """Get, update, or delete a rating.
+
+    Args:
+        request: The HTTP request.
+        rating_id: The ID of the rating.
+
+    Returns:
+        Response: The response based on the action.
+    """
+    try:
+        rating = MenuRating.objects.get(id=rating_id)
+    except MenuRating.DoesNotExist:
+        return Response({"error": "Rating not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Check if the user is the owner of the rating
+    if rating.user != request.user:
+        return Response(
+            {"error": "You do not have permission to perform this action"}, status=status.HTTP_403_FORBIDDEN
+        )
+
+    if request.method == "GET":
+        serializer = MenuRatingSerializer(rating)
+        return Response(serializer.data)
+
+    elif request.method == "PUT":
+        serializer = MenuRatingCreateSerializer(rating, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            updated_rating = serializer.save()
+            return Response(MenuRatingSerializer(updated_rating).data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == "DELETE":
+        rating.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_user_ratings(request):
+    """Get all ratings by the current user.
+
+    Args:
+        request: The HTTP request.
+
+    Returns:
+        Response: The user's ratings.
+    """
+    ratings = MenuRating.objects.filter(user=request.user)
+    serializer = MenuRatingSerializer(ratings, many=True)
+    return Response(serializer.data)
+
+
+@api_view(["GET"])
+def get_top_rated_menu_items(request):
+    """Get the top-rated menu items.
+
+    Args:
+        request: The HTTP request.
+
+    Returns:
+        Response: The top-rated menu items.
+    """
+    # Get menu items with at least 3 ratings
+    menu_items = (
+        MenuItem.objects.annotate(avg_rating=models.Avg("ratings__rating"), num_ratings=models.Count("ratings"))
+        .filter(num_ratings__gte=3)
+        .order_by("-avg_rating")[:10]
+    )
+
+    serializer = MenuItemWithRatingsSerializer(menu_items, many=True, context={"request": request})
+    return Response(serializer.data)

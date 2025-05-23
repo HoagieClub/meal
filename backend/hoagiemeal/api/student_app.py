@@ -37,10 +37,11 @@ from msgspec import DecodeError
 load_dotenv()
 
 ACTIVE_DIRECTORY_BASE_URL = "https://api.princeton.edu:443/active-directory/"
-PRINCETON_INFO_BASE_URL   = "https://api.princeton.edu:443/princeton-info/"
-STUDENT_APP_BASE_URL      = "https://api.princeton.edu:443/student-app"
-WINTER_EVENTS_BASE_URL    = "https://api.princeton.edu:443/winter-events/"
-REFRESH_TOKEN_URL         = "https://api.princeton.edu:443/token"
+PRINCETON_INFO_BASE_URL = "https://api.princeton.edu:443/princeton-info/"
+STUDENT_APP_BASE_URL = "https://api.princeton.edu:443/student-app"
+WINTER_EVENTS_BASE_URL = "https://api.princeton.edu:443/winter-events/"
+REFRESH_TOKEN_URL = "https://api.princeton.edu:443/token"
+
 
 class StudentApp:
     """Base class for interacting with the Princeton StudentApp API."""

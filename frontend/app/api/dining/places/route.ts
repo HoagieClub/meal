@@ -20,8 +20,6 @@ import type { Place, PlacesResponse } from '@/types/places';
 const ROUTE = '/places/open';
 const DEBUG = process.env.NODE_ENV === 'development';
 
-console.log(process.env.HOAGIE_API_URL);
-
 export async function GET(req: Request) {
   /**
    * @description Fetches open places availability.
