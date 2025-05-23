@@ -36,9 +36,11 @@ import {
   ChevronRightIcon,
 } from 'evergreen-ui';
 import Link from 'next/link';
+import { request } from '@/lib/http';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import AuthButton from '@/lib/hoagie-ui/AuthButton';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { classifyVenue, Venue } from '@/utils/places';
 import type { VenueType, PlaceStatus } from '@/types/places';
 
 import DiningLocations from '@/examples/locations';
@@ -130,8 +132,49 @@ export default function Index() {
       popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
       dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
       category: 'residential'
-    }
+    },
+    {
+      name: 'Cafe',
+      status: 'yes',
+      busyness: 'High',
+      currentMeal: 'Dinner',
+      hours: '5:00 PM - 8:00 PM',
+      popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
+      dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
+      category: 'cafe'
+    },
+    {
+      name: 'Specialty',
+      status: 'yes',
+      busyness: 'High',
+      currentMeal: 'Dinner',
+      hours: '5:00 PM - 8:00 PM',
+      popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
+      dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
+      category: 'specialty'
+    },
   ];
+
+  const Page = () => {
+    const [venues, setVenues] = useState<Venue[]>([]);
+    useEffect(() => {
+      // Fetch dining locations
+      fetch("/dining/locations")
+        .then((response) => response.json())
+        .then((data) => {
+          const classifiedVenues = data.map((venue: { name: string }) => ({
+            name: venue.name,
+            category: classifyVenue(venue.name),
+          }));
+  
+          setVenues(classifiedVenues);
+          console.log(classifiedVenues);
+        })
+        .catch((error) => console.error("Error fetching venues:", error));
+    }, []);
+
+  }
+
 
   const [activeCategory, setActiveCategory] = useState<VenueType>('residential');
   const filteredLocations = locations.filter(loc => loc.category === activeCategory);

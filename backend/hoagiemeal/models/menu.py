@@ -28,10 +28,6 @@ class Menu(models.Model):
 
     Attributes:
         dining_hall (DiningVenue): Associated dining hall.
-        date (date): Date for which the menu is applicable.
-        meal (str): Meal type code (e.g., "BR" for Breakfast).
-        last_fetched (datetime): Timestamp when the menu was last updated from the API.
-
     """
 
     class MealType(models.TextChoices):

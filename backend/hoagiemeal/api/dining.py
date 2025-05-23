@@ -655,3 +655,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error: {e}")
         print("Please use the management command instead.")
+
+    return Response({"data": menu.get("menus", []), "message": "Successfully fetched menu"})
