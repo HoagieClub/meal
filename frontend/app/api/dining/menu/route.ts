@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -27,17 +27,14 @@ export async function GET(req: Request) {
     const locationId = searchParams.get('locationId');
 
     if (!locationId) {
-      return NextResponse.json(
-        { error: 'Missing locationId parameter' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing locationId parameter' }, { status: 400 });
     }
 
     // If no menuId provided, get the next relevant menu
     const menuId = searchParams.get('menuId') || getCurrentMenuId();
 
     const res = await request.get<MenuItem[]>()(ROUTE, {
-      arg: { location_id: locationId, menu_id: menuId }
+      arg: { location_id: locationId, menu_id: menuId },
     });
 
     if (!res.data || res.data.length === 0) {
@@ -50,9 +47,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       data: toCamelCase(res.data),
       message: `Successfully fetched ${menuId} menu`,
-      status: 200
+      status: 200,
     });
-
   } catch (error: unknown) {
     DEBUG && console.error('Error:', error);
 
@@ -61,12 +57,11 @@ export async function GET(req: Request) {
         error: 'Failed to fetch menu',
         message: error instanceof Error ? error.message : 'Unexpected error',
         ...(DEBUG && {
-          details: error instanceof Error ? error.stack : String(error)
-        })
+          details: error instanceof Error ? error.stack : String(error),
+        }),
       },
       {
-        status: error instanceof Error && 'status' in error ?
-          (error as any).status : 500
+        status: error instanceof Error && 'status' in error ? (error as any).status : 500,
       }
     );
   }

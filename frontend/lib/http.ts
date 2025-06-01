@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -24,23 +24,23 @@ if (!API_URL && typeof window === 'undefined') {
 }
 
 /**
-* Makes HTTP requests to the Hoagie API.
-* 
-* @param config - Optional request configuration (method, headers)
-* @returns Async function taking endpoint and optional args
-* 
-* @example (recommended)
-* useSWR('/endpoint', request.get())
-* useSWRMutation('/endpoint', request.post())
-* 
-* @example (custom headers)
-* request.get({ Authorization: 'Bearer token' })
-* 
-* @example (minimal syntactic sugar)
-* request({ method: 'GET', headers: {...} })
-* 
-* @throws On invalid HTTP method or failed request
-*/
+ * Makes HTTP requests to the Hoagie API.
+ *
+ * @param config - Optional request configuration (method, headers)
+ * @returns Async function taking endpoint and optional args
+ *
+ * @example (recommended)
+ * useSWR('/endpoint', request.get())
+ * useSWRMutation('/endpoint', request.post())
+ *
+ * @example (custom headers)
+ * request.get({ Authorization: 'Bearer token' })
+ *
+ * @example (minimal syntactic sugar)
+ * request({ method: 'GET', headers: {...} })
+ *
+ * @throws On invalid HTTP method or failed request
+ */
 export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {}) => {
   return async (
     endpoint: string,

@@ -21,6 +21,9 @@ copies of the Software, subject to the following conditions:
 This software is provided "as-is", without warranty of any kind.
 """
 
+import json
+import os
+
 import datetime
 import msgspec.json as msj
 import pytz
@@ -38,6 +41,8 @@ from hoagiemeal.api.schemas import Schemas
 from hoagiemeal.models.menu import MenuItem, MenuRating
 from hoagiemeal.serializers import MenuRatingSerializer, MenuRatingCreateSerializer, MenuItemWithRatingsSerializer
 
+
+USE_SAMPLE_MENUS = True  # Toggle this to False later when the API is fixed
 
 class DiningAPI(StudentApp):
     """Handles functionalities related to dining information, such as locations, menus, and events."""
@@ -149,6 +154,7 @@ class DiningAPI(StudentApp):
         logger.info(f"Fetching dining menu for location_id: {location_id}, menu_id: {menu_id}.")
         params = {"locationID": location_id, "menuID": menu_id}
         response = self._make_request(self.DINING_MENU, params=params)
+        logger.info(f"Menu response: {response}")
         response = msj.decode(response)
         return response
 
@@ -201,12 +207,28 @@ def get_dining_menu(request):
         if not location_id or not menu_id:
             return Response({"error": "location_id and menu_id are required"}, status=400)
 
+        if USE_SAMPLE_MENUS:
+            sample_data_path = os.path.join(os.path.dirname(__file__), "../archives/menus.json")
+
+            try:
+                with open(sample_data_path, "r") as f:
+                    sample_menu_data = json.load(f)
+            except Exception as e:
+                return Response({"error": f"Failed to load sample menu file: {e}"}, status=500)
+
+            if menu_id in sample_menu_data:
+                return Response(sample_menu_data[menu_id])
+            else:
+                return Response({"error": f"No sample data found for menu_id: {menu_id}"}, status=404)
+
+        # Live API fallback
         menu = dining_api.get_menu(location_id, menu_id)
         return Response(menu)
+
     except Exception as e:
         logger.error(f"Error in get_dining_menu view: {e}")
         return Response({"error": str(e)}, status=500)
-
+    
 
 @api_view(["GET"])
 def get_menu_item_with_ratings(request, menu_item_id):

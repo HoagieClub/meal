@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -44,6 +44,10 @@ import { classifyVenue, Venue } from '@/utils/places';
 import type { VenueType, PlaceStatus } from '@/types/places';
 
 import DiningLocations from '@/examples/locations';
+import getDiningLocationsServerSide from '@/examples/locationsServerSide';
+import { useGetMenu } from '@/hooks/use-endpoints';
+
+const FRONTEND_URL = process.env.HOAGIE_URL;
 
 // Extended venue type for UI display
 // TODO: This is temporary logic for the UI and should be replaced with stronger types.
@@ -57,7 +61,12 @@ interface UIVenue {
   dietaryOptions: string[];
   category: VenueType;
 }
+type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
+interface ParsedMenuId {
+  date: string; // e.g. "2025-05-15"
+  meal: MealType; // e.g. "Lunch"
+}
 // Generate 14 days starting with today (in Eastern Time)
 // Index 0 is "Today", the rest are formatted as "Wed, Feb 13"
 const generateFourteenDays = () => {
@@ -69,7 +78,8 @@ const generateFourteenDays = () => {
   });
   const days = [];
   for (let i = 0; i < 14; i++) {
-    const d = new Date();
+    // const d = new Date();
+    const d = new Date('2025-05-14');
     d.setDate(d.getDate() + i);
     const label = i === 0 ? 'Today' : etFormatter.format(d);
     days.push({ label, date: d });
@@ -82,103 +92,102 @@ export default function Index() {
   const theme = useTheme();
 
   // Sample dining hall data
-  const locations: UIVenue[] = [
-    {
-      name: 'Rocky / Mathey',
-      status: 'soon',
-      busyness: 'Medium',
-      currentMeal: 'Dinner',
-      hours: '5:00 PM - 8:00 PM',
-      popular: ['Orange Beef with Broccoli', 'Pan-Asian Orange Tofu'],
-      dietaryOptions: ['Vegetarian', 'Halal', 'Gluten-Free'],
-      category: 'residential'
-    },
-    {
-      name: 'Forbes',
-      status: 'yes',
-      busyness: 'High',
-      currentMeal: 'Dinner',
-      hours: '5:00 PM - 8:00 PM',
-      popular: ['Grilled Salmon', 'Beyond Burger'],
-      dietaryOptions: ['Vegan', 'Gluten-Free'],
-      category: 'residential'
-    },
-    {
-      name: 'Butler',
-      status: 'yes',
-      busyness: 'Low',
-      currentMeal: 'Dinner',
-      hours: '5:00 PM - 8:00 PM',
-      popular: ['Build Your Own Stir-Fry', 'Fresh Sushi Rolls'],
-      dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
-      category: 'residential'
-    },
-    {
-      name: 'NCW / Yeh',
-      status: 'yes',
-      busyness: 'Medium',
-      currentMeal: 'Dinner',
-      hours: '5:00 PM - 8:00 PM',
-      popular: ['Korean BBQ Bowl', 'Vegetable Curry'],
-      dietaryOptions: ['Vegetarian', 'Gluten-Free', 'Halal'],
-      category: 'residential'
-    },
-    {
-      name: 'Whitman',
-      status: 'yes',
-      busyness: 'High',
-      currentMeal: 'Dinner',
-      hours: '5:00 PM - 8:00 PM',
-      popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
-      dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
-      category: 'residential'
-    },
-    {
-      name: 'Cafe',
-      status: 'yes',
-      busyness: 'High',
-      currentMeal: 'Dinner',
-      hours: '5:00 PM - 8:00 PM',
-      popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
-      dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
-      category: 'cafe'
-    },
-    {
-      name: 'Specialty',
-      status: 'yes',
-      busyness: 'High',
-      currentMeal: 'Dinner',
-      hours: '5:00 PM - 8:00 PM',
-      popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
-      dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
-      category: 'specialty'
-    },
-  ];
+  // const locations: UIVenue[] = [
+  //   {
+  //     name: 'Rocky / Mathey',
+  //     status: 'soon',
+  //     busyness: 'Medium',
+  //     currentMeal: 'Dinner',
+  //     hours: '5:00 PM - 8:00 PM',
+  //     popular: ['Orange Beef with Broccoli', 'Pan-Asian Orange Tofu'],
+  //     dietaryOptions: ['Vegetarian', 'Halal', 'Gluten-Free'],
+  //     category: 'residential',
+  //   },
+  //   {
+  //     name: 'Forbes',
+  //     status: 'yes',
+  //     busyness: 'High',
+  //     currentMeal: 'Dinner',
+  //     hours: '5:00 PM - 8:00 PM',
+  //     popular: ['Grilled Salmon', 'Beyond Burger'],
+  //     dietaryOptions: ['Vegan', 'Gluten-Free'],
+  //     category: 'residential',
+  //   },
+  //   {
+  //     name: 'Butler',
+  //     status: 'yes',
+  //     busyness: 'Low',
+  //     currentMeal: 'Dinner',
+  //     hours: '5:00 PM - 8:00 PM',
+  //     popular: ['Build Your Own Stir-Fry', 'Fresh Sushi Rolls'],
+  //     dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
+  //     category: 'residential',
+  //   },
+  //   {
+  //     name: 'NCW / Yeh',
+  //     status: 'yes',
+  //     busyness: 'Medium',
+  //     currentMeal: 'Dinner',
+  //     hours: '5:00 PM - 8:00 PM',
+  //     popular: ['Korean BBQ Bowl', 'Vegetable Curry'],
+  //     dietaryOptions: ['Vegetarian', 'Gluten-Free', 'Halal'],
+  //     category: 'residential',
+  //   },
+  //   {
+  //     name: 'Whitman',
+  //     status: 'yes',
+  //     busyness: 'High',
+  //     currentMeal: 'Dinner',
+  //     hours: '5:00 PM - 8:00 PM',
+  //     popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
+  //     dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
+  //     category: 'residential',
+  //   },
+  //   {
+  //     name: 'Cafe',
+  //     status: 'yes',
+  //     busyness: 'High',
+  //     currentMeal: 'Dinner',
+  //     hours: '5:00 PM - 8:00 PM',
+  //     popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
+  //     dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
+  //     category: 'cafe',
+  //   },
+  //   {
+  //     name: 'Specialty',
+  //     status: 'yes',
+  //     busyness: 'High',
+  //     currentMeal: 'Dinner',
+  //     hours: '5:00 PM - 8:00 PM',
+  //     popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
+  //     dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
+  //     category: 'specialty',
+  //   },
+  // ];
 
   const Page = () => {
     const [venues, setVenues] = useState<Venue[]>([]);
     useEffect(() => {
       // Fetch dining locations
-      fetch("/dining/locations")
+      fetch('/dining/locations')
         .then((response) => response.json())
         .then((data) => {
           const classifiedVenues = data.map((venue: { name: string }) => ({
             name: venue.name,
             category: classifyVenue(venue.name),
           }));
-  
+
           setVenues(classifiedVenues);
           console.log(classifiedVenues);
         })
-        .catch((error) => console.error("Error fetching venues:", error));
+        .catch((error) => console.error('Error fetching venues:', error));
     }, []);
+  };
 
-  }
-
+  const [locations, setLocations] = useState<UIVenue[]>([]);
 
   const [activeCategory, setActiveCategory] = useState<VenueType>('residential');
-  const filteredLocations = locations.filter(loc => loc.category === activeCategory);
-
+  const filteredLocations = locations.filter((loc) => loc.category === activeCategory);
 
   // State for current week (0 = current week, 1 = next week) and selected day (index within the week)
   const [weekIndex, setWeekIndex] = useState(0);
@@ -202,11 +211,132 @@ export default function Index() {
   // Helper to convert status to UI status
   const getStatusDisplay = (status: PlaceStatus) => {
     switch (status) {
-      case 'yes': return { text: 'Open', color: 'success' as const };
-      case 'no': return { text: 'Closed', color: 'danger' as const };
-      case 'soon': return { text: 'Closing Soon', color: 'warning' as const };
+      case 'yes':
+        return { text: 'Open', color: 'success' as const };
+      case 'no':
+        return { text: 'Closed', color: 'danger' as const };
+      case 'soon':
+        return { text: 'Closing Soon', color: 'warning' as const };
     }
   };
+
+  //Given a Date (or date‑string) and a meal type, return "YYYY-MM-DD-<Meal>".
+
+  function formatMenuId(dateInput: Date | string, meal: MealType): string {
+    const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (isNaN(d.getTime())) {
+      throw new Error(`Invalid date: ${dateInput}`);
+    }
+    // Ensure meal is valid:
+    if (meal !== 'Breakfast' && meal !== 'Lunch' && meal !== 'Dinner') {
+      throw new Error(`Meal must be "Breakfast","Lunch","Dinner". Got "${meal}"`);
+    }
+
+    // Extract YYYY, MM, DD with zero-padding:
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+    const dd = String(d.getDate()).padStart(2, '0');
+
+    return `${yyyy}-${mm}-${dd}-${meal}`;
+  }
+
+  // console.log('testing locations');
+  // console.log(getDiningLocationsServerSide());
+
+  useEffect(() => {
+    // Fetch dining hall menu
+    // Attempt using route handlers
+    // fetch('/api/dining/menu?location_id=5&menu_id=2025-02-27-Breakfast')
+    //   .then((response) => response.json())
+    //   .then((data) => {
+    //     console.log(data);
+    //   })
+    //   .catch((error) => console.error('Error fetching venues:', error));
+
+    // let data = await getDiningLocationsServerSide()
+    // let headers = new Headers();
+
+    // headers.append('Content-Type', 'application/json');
+    // headers.append('Accept', 'application/json');
+
+    // headers.append('Access-Control-Allow-Origin', 'http://localhost:3000');
+    // headers.append('Access-Control-Allow-Origin', 'http://localhost:8000');
+
+    // headers.append('Access-Control-Allow-Credentials', 'true');
+
+    // headers.append('GET', 'POST');
+
+    // headers.append('Authorization', 'Basic ');
+
+    fetch(
+      `http://localhost:8000/api/dining/menu/?location_id=5&menu_id=${formatMenuId(selectedDay.date, 'Lunch')}`,
+      {
+        method: 'GET',
+        // headers: headers,
+        credentials: 'include',
+      }
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Data received from menu endpoint:');
+        console.log(data);
+
+        // `data.locations.location` is an array of “raw” venue‐objects
+        const formatted: UIVenue[] = data.locations.location.map((rawItem: any) => {
+          return {
+            // 1) take the name straight from the API:
+            name: rawItem.name,
+
+            // 2) any field not in the API you’ll have to invent or derive.
+            //    Here I’m hard‐coding some dummy values; swap in your own logic.
+            status: 'yes', // e.g. you could check rawItem.menu || rawItem.eventsFeedConfig
+            busyness: 'Medium', // e.g. call a helper like getBusyness(rawItem)
+            currentMeal: 'Dinner', // e.g. derive from time‑of‑day or from your menu endpoint
+            hours: '5:00 PM – 8:00 PM', // e.g. parse rawItem.eventsFeedConfig or set a default
+
+            // 3) if you want “popular” to come from the API’s menu, you can pull
+            //    the first two items’ names (adjust as needed):
+            popular: Array.isArray(rawItem.menu.menus)
+              ? rawItem.menu.menus.slice(0, 2).map((m: any) => m.name)
+              : [],
+
+            // 4) likewise, you can gather dietaryOptions by scanning `rawItem.menu.menus`
+            //    for keywords like “Vegetarian”/“Halal”/“Gluten‐Free” in the description.
+            //    Here is one simple example that looks at every menu item’s “description”:
+            dietaryOptions: Array.isArray(rawItem.menu.menus)
+              ? Array.from(
+                  new Set(
+                    rawItem.menu.menus.flatMap((m: any) => {
+                      const desc: string = m.description || '';
+                      const opts: string[] = [];
+                      if (desc.includes('Vegetarian')) opts.push('Vegetarian');
+                      if (desc.includes('Vegan')) opts.push('Vegan');
+                      if (desc.includes('Halal')) opts.push('Halal');
+                      if (desc.includes('Gluten')) opts.push('Gluten‑Free');
+                      return opts;
+                    })
+                  )
+                )
+              : [],
+
+            // 5) finally, “category” is not in the API—so pick it however you like:
+            //    for example, check if rawItem.name contains “College” or “Cafe” etc.
+            category: rawItem.name.includes('Cafe')
+              ? 'cafe'
+              : rawItem.name.includes('Specialty')
+                ? 'specialty'
+                : 'residential',
+          };
+        });
+
+        setLocations(formatted);
+      })
+      .catch((error) => console.error('Error fetching venues:', error));
+  }, [selectedDayIndex]);
+
+  // const res = useGetMenu('5', '2025-02-27-Breakfast');
+  // console.log('Menu data:');
+  // console.log(res.data);
 
   const MainContent = () => (
     <Pane>
@@ -214,21 +344,21 @@ export default function Index() {
       <Pane marginBottom={majorScale(3)}>
         <TabNavigation>
           <Tab
-            id="residential"
+            id='residential'
             isSelected={activeCategory === 'residential'}
             onSelect={() => setActiveCategory('residential')}
           >
             Dining Halls
           </Tab>
           <Tab
-            id="cafe"
+            id='cafe'
             isSelected={activeCategory === 'cafe'}
             onSelect={() => setActiveCategory('cafe')}
           >
             Cafés
           </Tab>
           <Tab
-            id="specialty"
+            id='specialty'
             isSelected={activeCategory === 'specialty'}
             onSelect={() => setActiveCategory('specialty')}
           >
@@ -240,14 +370,14 @@ export default function Index() {
       {/* Day Navigation with Arrow Buttons */}
       <Pane
         marginBottom={majorScale(3)}
-        display="flex"
-        alignItems="center"
+        display='flex'
+        alignItems='center'
         paddingX={minorScale(2)}
       >
         <Button
           height={28}
           marginRight={minorScale(1)}
-          appearance="minimal"
+          appearance='minimal'
           disabled={weekIndex === 0}
           onClick={() => {
             setWeekIndex(0);
@@ -264,8 +394,8 @@ export default function Index() {
           <ChevronLeftIcon size={16} />
         </Button>
 
-        <Pane flex={1} overflow="hidden">
-          <TabNavigation display="flex" style={{ margin: 0, padding: 0 }}>
+        <Pane flex={1} overflow='hidden'>
+          <TabNavigation display='flex' style={{ margin: 0, padding: 0 }}>
             {currentWeekDays.map((day, idx) => {
               const formattedDay = day.label === 'Today' ? 'Today' : day.label.replace(',', '');
               return (
@@ -295,7 +425,7 @@ export default function Index() {
         <Button
           height={28}
           marginLeft={minorScale(1)}
-          appearance="minimal"
+          appearance='minimal'
           disabled={weekIndex === 1}
           onClick={() => {
             setWeekIndex(1);
@@ -315,14 +445,14 @@ export default function Index() {
 
       {/* Quick Filters */}
       <Pane
-        display="flex"
+        display='flex'
         gap={minorScale(1)}
         marginBottom={majorScale(2)}
-        overflowX="auto"
+        overflowX='auto'
         paddingBottom={minorScale(1)}
       >
         {['Open Now', 'Vegetarian', 'Vegan', 'Halal', 'Gluten-Free'].map((filter) => (
-          <Badge key={filter} appearance="green" marginRight={8} cursor="pointer">
+          <Badge key={filter} appearance='green' marginRight={8} cursor='pointer'>
             {filter}
           </Badge>
         ))}
@@ -335,7 +465,7 @@ export default function Index() {
 
       {/* Locations Grid */}
       <Pane
-        display="grid"
+        display='grid'
         gridTemplateColumns={['1fr', '1fr', 'repeat(2, 1fr)']}
         gap={majorScale(2)}
       >
@@ -343,18 +473,18 @@ export default function Index() {
           <Pane
             key={location.name}
             elevation={1}
-            backgroundColor="white"
+            backgroundColor='white'
             borderRadius={8}
             padding={majorScale(2)}
           >
-            <Pane display="flex" justifyContent="space-between" alignItems="flex-start">
+            <Pane display='flex' justifyContent='space-between' alignItems='flex-start'>
               <Pane>
                 <Heading size={700}>{location.name}</Heading>
-                <Pane display="flex" gap={majorScale(2)} marginTop={minorScale(1)}>
-                  <Text size={300} color="muted">
+                <Pane display='flex' gap={majorScale(2)} marginTop={minorScale(1)}>
+                  <Text size={300} color='muted'>
                     <TimeIcon marginRight={minorScale(1)} /> {location.hours}
                   </Text>
-                  <Text size={300} color="muted">
+                  <Text size={300} color='muted'>
                     <PersonIcon marginRight={minorScale(1)} /> {location.busyness}
                   </Text>
                 </Pane>
@@ -362,11 +492,7 @@ export default function Index() {
               {/* Use our new status helper */}
               {(() => {
                 const status = getStatusDisplay(location.status);
-                return (
-                  <StatusIndicator color={status.color}>
-                    {status.text}
-                  </StatusIndicator>
-                );
+                return <StatusIndicator color={status.color}>{status.text}</StatusIndicator>;
               })()}
             </Pane>
 
@@ -376,7 +502,7 @@ export default function Index() {
                 <FullStackedChartIcon color={theme.colors.green500} marginRight={minorScale(1)} />
                 Popular Now
               </Text>
-              <Pane display="flex" gap={minorScale(2)} marginTop={minorScale(1)} flexWrap="wrap">
+              <Pane display='flex' gap={minorScale(2)} marginTop={minorScale(1)} flexWrap='wrap'>
                 {location.popular.map((item) => (
                   <Pane
                     key={item}
@@ -391,9 +517,9 @@ export default function Index() {
             </Pane>
 
             {/* Dietary Options */}
-            <Pane display="flex" gap={minorScale(1)} flexWrap="wrap">
+            <Pane display='flex' gap={minorScale(1)} flexWrap='wrap'>
               {location.dietaryOptions.map((option) => (
-                <Badge key={option} color="neutral">
+                <Badge key={option} color='neutral'>
                   {option}
                 </Badge>
               ))}
@@ -409,9 +535,9 @@ export default function Index() {
   else if (error) Profile = <div>{error.message}</div>;
   else if (user) {
     Profile = (
-      <Pane width="100%">
-        <Pane display="flex" justifyContent="space-between" marginBottom={majorScale(3)}>
-          <Button height={40} iconBefore={FilterIcon} appearance="minimal">
+      <Pane width='100%'>
+        <Pane display='flex' justifyContent='space-between' marginBottom={majorScale(3)}>
+          <Button height={40} iconBefore={FilterIcon} appearance='minimal'>
             Filters
           </Button>
         </Pane>
@@ -424,9 +550,9 @@ export default function Index() {
 
   return (
     <Pane
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
+      display='flex'
+      justifyContent='center'
+      alignItems='center'
       marginX={majorScale(1)}
       paddingBottom={majorScale(4)}
       paddingTop={majorScale(8)}
@@ -434,18 +560,18 @@ export default function Index() {
       <Pane
         borderRadius={8}
         elevation={1}
-        background="white"
+        background='white'
         marginX={20}
-        maxWidth="800px"
-        width="100%"
+        maxWidth='800px'
+        width='100%'
         paddingX={majorScale(3)}
         paddingY={majorScale(4)}
       >
-        <Heading size={900} className="hoagie" textAlign="center" marginBottom={majorScale(2)}>
+        <Heading size={900} className='hoagie' textAlign='center' marginBottom={majorScale(2)}>
           Hoagie Meal
         </Heading>
 
-        <Pane display="flex" flexDirection="column" alignItems="center">
+        <Pane display='flex' flexDirection='column' alignItems='center'>
           {Profile}
         </Pane>
       </Pane>
