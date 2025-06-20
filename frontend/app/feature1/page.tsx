@@ -1,140 +1,48 @@
-/**
- * @overview Panel display for meal information based on places.
- *
- * Copyright © 2021-2025 Hoagie Club and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree or at
- *
- *    https://github.com/hoagieclub/meal/LICENSE.
- *
- * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
- */
-
+// pages/index.tsx
 'use client';
 
-import {
-  Pane,
-  majorScale,
-  minorScale,
-  Heading,
-  Spinner,
-  Button,
-  FullStackedChartIcon,
-  useTheme,
-  StatusIndicator,
-  Badge,
-  TabNavigation,
-  Tab,
-  Text,
-  TimeIcon,
-  PersonIcon,
-  FilterIcon,
-  CalendarIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from 'evergreen-ui';
-import Link from 'next/link';
+import React, { useEffect, useState, useMemo } from 'react';
 import { request } from '@/lib/http';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import AuthButton from '@/lib/hoagie-ui/AuthButton';
-import { useEffect, useState } from 'react';
 import { classifyVenue, Venue } from '@/utils/places';
 import type { VenueType, PlaceStatus } from '@/types/places';
-
+import Link from 'next/link';
+import {
+  Pane,
+  Heading,
+  Text,
+  Checkbox,
+  Button,
+  Switch,
+  majorScale,
+  minorScale,
+  useTheme,
+  Spinner,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from 'evergreen-ui';
+import Modal from '@/components/Modal';
 import DiningLocations from '@/examples/locations';
 import getDiningLocationsServerSide from '@/examples/locationsServerSide';
 import { useGetMenu } from '@/hooks/use-endpoints';
+import DiningHallCard from '@/components/DiningHallCard';
 
-const FRONTEND_URL = process.env.HOAGIE_URL;
-
-// Extended venue type for UI display
-// TODO: This is temporary logic for the UI and should be replaced with stronger types.
-interface UIVenue {
-  name: string;
-  status: PlaceStatus;
-  busyness: 'Low' | 'Medium' | 'High';
-  currentMeal: string;
-  hours: string;
-  popular: string[];
-  dietaryOptions: string[];
-  category: VenueType;
-}
 type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
-interface ParsedMenuId {
-  date: string; // e.g. "2025-05-15"
-  meal: MealType; // e.g. "Lunch"
+interface RawVenue {
+  name: string;
+  menu: { menus?: Array<{ name: string; description: string; link: string }> };
 }
-// Generate 14 days starting with today (in Eastern Time)
-// Index 0 is "Today", the rest are formatted as "Wed, Feb 13"
-const generateFourteenDays = () => {
-  const etFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
-    month: 'short',
-    day: 'numeric',
-    weekday: 'short',
-  });
-  const days = [];
-  for (let i = 0; i < 14; i++) {
-    // const d = new Date();
-    const d = new Date('2025-05-14');
-    d.setDate(d.getDate() + i);
-    const label = i === 0 ? 'Today' : etFormatter.format(d);
-    days.push({ label, date: d });
-  }
-  return days;
-};
 
-export default function Index() {
-  const { user, error, isLoading } = useUser();
-  const theme = useTheme();
+interface UIMenuItem {
+  name: string;
+  description: string;
+  link: string;
+}
 
-  // Sample dining hall data
-  // const locations: UIVenue[] = [
-  //   {
-  //     name: 'Rocky / Mathey',
-  //     status: 'soon',
-  //     busyness: 'Medium',
-  //     currentMeal: 'Dinner',
-  //     hours: '5:00 PM - 8:00 PM',
-  //     popular: ['Orange Beef with Broccoli', 'Pan-Asian Orange Tofu'],
-  //     dietaryOptions: ['Vegetarian', 'Halal', 'Gluten-Free'],
-  //     category: 'residential',
-  //   },
-  //   {
-  //     name: 'Forbes',
-  //     status: 'yes',
-  //     busyness: 'High',
-  //     currentMeal: 'Dinner',
-  //     hours: '5:00 PM - 8:00 PM',
-  //     popular: ['Grilled Salmon', 'Beyond Burger'],
-  //     dietaryOptions: ['Vegan', 'Gluten-Free'],
-  //     category: 'residential',
-  //   },
-  //   {
-  //     name: 'Butler',
-  //     status: 'yes',
-  //     busyness: 'Low',
-  //     currentMeal: 'Dinner',
-  //     hours: '5:00 PM - 8:00 PM',
-  //     popular: ['Build Your Own Stir-Fry', 'Fresh Sushi Rolls'],
-  //     dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
-  //     category: 'residential',
-  //   },
-  //   {
-  //     name: 'NCW / Yeh',
-  //     status: 'yes',
-  //     busyness: 'Medium',
-  //     currentMeal: 'Dinner',
-  //     hours: '5:00 PM - 8:00 PM',
-  //     popular: ['Korean BBQ Bowl', 'Vegetable Curry'],
-  //     dietaryOptions: ['Vegetarian', 'Gluten-Free', 'Halal'],
-  //     category: 'residential',
-  //   },
-  //   {
-  //     name: 'Whitman',
   //     status: 'yes',
   //     busyness: 'High',
   //     currentMeal: 'Dinner',
@@ -162,419 +70,532 @@ export default function Index() {
   //     popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
   //     dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
   //     category: 'specialty',
-  //   },
-  // ];
+interface UIVenue {
+  name: string;
+  items: Record<'Main Entrée' | 'Vegetarian + Vegan Entrée' | 'Soups', UIMenuItem[]>;
+  allergens: Set<string>;
+  calories: Record<string, number>;
+  protein: Record<string, number>;
+}
 
-  const Page = () => {
-    const [venues, setVenues] = useState<Venue[]>([]);
-    useEffect(() => {
-      // Fetch dining locations
-      fetch('/dining/locations')
-        .then((response) => response.json())
-        .then((data) => {
-          const classifiedVenues = data.map((venue: { name: string }) => ({
-            name: venue.name,
-            category: classifyVenue(venue.name),
-          }));
+const MEAL_RANGES: Record<MealType, string> = {
+  Breakfast: '7:30 AM – 10:30 AM',
+  Lunch: '11:30 AM – 2:00 PM',
+  Dinner: '5:00 PM – 8:00 PM',
+};
 
-          setVenues(classifiedVenues);
-          console.log(classifiedVenues);
-        })
-        .catch((error) => console.error('Error fetching venues:', error));
-    }, []);
+const ALLERGEN_EMOJI: Record<string, string> = {
+  peanut: '🥜',
+  'tree nut': '🌰',
+  egg: '🥚',
+  dairy: '🥛',
+  wheat: '🌾',
+};
+
+function categorize(items: UIMenuItem[]) {
+  const out = {
+    'Main Entrée': [] as UIMenuItem[],
+    'Vegetarian + Vegan Entrée': [] as UIMenuItem[],
+    Soups: [] as UIMenuItem[],
   };
-
-  const [locations, setLocations] = useState<UIVenue[]>([]);
-
-  const [activeCategory, setActiveCategory] = useState<VenueType>('residential');
-  const filteredLocations = locations.filter((loc) => loc.category === activeCategory);
-
-  // State for current week (0 = current week, 1 = next week) and selected day (index within the week)
-  const [weekIndex, setWeekIndex] = useState(0);
-  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-
-  // Generate 14 days and slice out the current week (7 days per week)
-  const daysArray = generateFourteenDays();
-  const currentWeekDays = daysArray.slice(weekIndex * 7, weekIndex * 7 + 7);
-  const selectedDay = currentWeekDays[selectedDayIndex];
-
-  // Formatter for full date (e.g., "Wednesday, February 13, 2025")
-  const fullFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
+  items.forEach((i) => {
+    const nm = i.name.toLowerCase();
+    const ds = i.description.toLowerCase();
+    if (nm.includes('soup')) out.Soups.push(i);
+    else if (ds.includes('vegan') || nm.includes('tofu') || nm.includes('vegetable'))
+      out['Vegetarian + Vegan Entrée'].push(i);
+    else out['Main Entrée'].push(i);
   });
-  const fullDateString = fullFormatter.format(selectedDay.date);
+  return out;
+}
 
-  // Helper to convert status to UI status
-  const getStatusDisplay = (status: PlaceStatus) => {
-    switch (status) {
-      case 'yes':
-        return { text: 'Open', color: 'success' as const };
-      case 'no':
-        return { text: 'Closed', color: 'danger' as const };
-      case 'soon':
-        return { text: 'Closing Soon', color: 'warning' as const };
-    }
+function extractAllergens(items: UIMenuItem[]) {
+  const set = new Set<string>();
+  items.forEach((i) => {
+    const ds = i.description.toLowerCase();
+    ['peanut', 'tree nut', 'egg', 'dairy', 'wheat'].forEach(
+      (all) => ds.includes(all) && set.add(all)
+    );
+  });
+  return set;
+}
+
+export default function Index() {
+  const theme = useTheme();
+  const { user, error, isLoading } = useUser();
+
+  const backgroundByMeal: Record<MealType, string> = {
+    Breakfast: theme.colors.green100,
+    Lunch: theme.colors.green200,
+    Dinner: theme.colors.green400,
   };
 
-  //Given a Date (or date‑string) and a meal type, return "YYYY-MM-DD-<Meal>".
+  // ─── Date + Meal ─────────────────────────────────────────────────────────
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date('2025-05-14'));
+  const [meal, setMeal] = useState<MealType>('Breakfast');
+  const FRONTEND_URL = process.env.HOAGIE_URL;
+  const PAGE_BG = backgroundByMeal[meal];
 
-  function formatMenuId(dateInput: Date | string, meal: MealType): string {
-    const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
-    if (isNaN(d.getTime())) {
-      throw new Error(`Invalid date: ${dateInput}`);
-    }
-    // Ensure meal is valid:
-    if (meal !== 'Breakfast' && meal !== 'Lunch' && meal !== 'Dinner') {
-      throw new Error(`Meal must be "Breakfast","Lunch","Dinner". Got "${meal}"`);
-    }
+  const prevDay = () =>
+    setSelectedDate((d) => {
+      const t = new Date(d);
+      t.setDate(t.getDate() - 1);
+      return t;
+    });
+  const nextDay = () =>
+    setSelectedDate((d) => {
+      const t = new Date(d);
+      t.setDate(t.getDate() + 1);
+      return t;
+    });
 
-    // Extract YYYY, MM, DD with zero-padding:
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-    const dd = String(d.getDate()).padStart(2, '0');
-
+  function formatMenuId(date: Date, meal: MealType): string {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}-${meal}`;
   }
 
-  // console.log('testing locations');
-  // console.log(getDiningLocationsServerSide());
+  // ─── Filters ─────────────────────────────────────────────────────────────
+  const initialHalls = [
+    'Forbes College',
+    'Mathey College',
+    'Rockefeller College',
+    'Whitman & Butler Colleges',
+    'Yeh College & New College West',
+    'Center for Jewish Life',
+    'Graduate College',
+  ];
+  const [halls] = useState<string[]>(initialHalls);
+  const DIETARY = ['Vegetarian', 'Vegan', 'Halal', 'Kosher', 'Gluten-free'];
+  const ALLERGENS = ['Peanut', 'Tree nut', 'Egg', 'Dairy', 'Wheat'];
+
+  // what actually drives filtering
+  const [appliedHalls, setAppliedHalls] = useState<string[]>(initialHalls);
+  const [appliedDietary, setAppliedDietary] = useState<string[]>([...DIETARY]);
+  const [appliedAllergens, setAppliedAllergens] = useState<string[]>([...ALLERGENS]);
+
+  // temporary UI selections
+  const [tempHalls, setTempHalls] = useState<string[]>(initialHalls);
+  const [tempDietary, setTempDietary] = useState<string[]>([...DIETARY]);
+  const [tempAllergens, setTempAllergens] = useState<string[]>([...ALLERGENS]);
+
+  const [filterOpen, setFilterOpen] = useState(true);
+  const [modalHall, setModalHall] = useState<UIVenue | null>(null);
+
+  const toggle = (
+    val: string,
+    arr: string[],
+    setter: React.Dispatch<React.SetStateAction<string[]>>
+  ) => setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
+
+  // reset only the temp selections
+  const resetTemp = () => {
+    setTempHalls([...halls]);
+    setTempDietary([...DIETARY]);
+    setTempAllergens([...ALLERGENS]);
+  };
+
+  // ─── Load & Transform Data ───────────────────────────────────────────────
+  const [loading, setLoading] = useState(false);
+  const [venues, setVenues] = useState<UIVenue[]>([]);
 
   useEffect(() => {
-    // Fetch dining hall menu
-    // Attempt using route handlers
-    // fetch('/api/dining/menu?location_id=5&menu_id=2025-02-27-Breakfast')
-    //   .then((response) => response.json())
-    //   .then((data) => {
-    //     console.log(data);
-    //   })
-    //   .catch((error) => console.error('Error fetching venues:', error));
+    setLoading(true);
+    const menuId = formatMenuId(selectedDate, meal);
 
-    // let data = await getDiningLocationsServerSide()
-    // let headers = new Headers();
+    fetch(`http://localhost:8000/api/dining/menu/?location_id=5&menu_id=${menuId}`, {
+      credentials: 'include',
+    })
+      .then((r) => r.json())
+      .then((data: { locations: { location: RawVenue[] } }) => {
+        const ui = data.locations.location.map((raw) => {
+          const items = (raw.menu.menus || []).map((x) => ({
+            name: x.name,
+            description: x.description,
+            link: x.link,
+          }));
+          return {
+            name: raw.name,
+            items: categorize(items),
+            allergens: extractAllergens(items),
+            calories: Object.fromEntries(
+              items.map((i) => [i.name, 100 + Math.floor(Math.random() * 200)])
+            ),
+            protein: Object.fromEntries(
+              items.map((i) => [i.name, 5 + Math.floor(Math.random() * 15)])
+            ),
+          } as UIVenue;
+        });
+        setVenues(ui);
+      })
+      .catch(() => setVenues([]))
+      .finally(() => setLoading(false));
+  }, [selectedDate, meal]);
 
-    // headers.append('Content-Type', 'application/json');
-    // headers.append('Accept', 'application/json');
-
-    // headers.append('Access-Control-Allow-Origin', 'http://localhost:3000');
-    // headers.append('Access-Control-Allow-Origin', 'http://localhost:8000');
-
-    // headers.append('Access-Control-Allow-Credentials', 'true');
-
-    // headers.append('GET', 'POST');
-
-    // headers.append('Authorization', 'Basic ');
-
-    fetch(
-      `http://localhost:8000/api/dining/menu/?location_id=5&menu_id=${formatMenuId(selectedDay.date, 'Lunch')}`,
-      {
-        method: 'GET',
-        // headers: headers,
-        credentials: 'include',
-      }
-    )
+  useEffect(() => {
+    // Fetch dining locations
+    fetch('/dining/locations')
       .then((response) => response.json())
       .then((data) => {
-        console.log('Data received from menu endpoint:');
-        console.log(data);
-
-        // `data.locations.location` is an array of “raw” venue‐objects
-        const formatted: UIVenue[] = data.locations.location.map((rawItem: any) => {
-          return {
-            // 1) take the name straight from the API:
-            name: rawItem.name,
-
-            // 2) any field not in the API you’ll have to invent or derive.
-            //    Here I’m hard‐coding some dummy values; swap in your own logic.
-            status: 'yes', // e.g. you could check rawItem.menu || rawItem.eventsFeedConfig
-            busyness: 'Medium', // e.g. call a helper like getBusyness(rawItem)
-            currentMeal: 'Dinner', // e.g. derive from time‑of‑day or from your menu endpoint
-            hours: '5:00 PM – 8:00 PM', // e.g. parse rawItem.eventsFeedConfig or set a default
-
-            // 3) if you want “popular” to come from the API’s menu, you can pull
-            //    the first two items’ names (adjust as needed):
-            popular: Array.isArray(rawItem.menu.menus)
-              ? rawItem.menu.menus.slice(0, 2).map((m: any) => m.name)
-              : [],
-
-            // 4) likewise, you can gather dietaryOptions by scanning `rawItem.menu.menus`
-            //    for keywords like “Vegetarian”/“Halal”/“Gluten‐Free” in the description.
-            //    Here is one simple example that looks at every menu item’s “description”:
-            dietaryOptions: Array.isArray(rawItem.menu.menus)
-              ? Array.from(
-                  new Set(
-                    rawItem.menu.menus.flatMap((m: any) => {
-                      const desc: string = m.description || '';
-                      const opts: string[] = [];
-                      if (desc.includes('Vegetarian')) opts.push('Vegetarian');
-                      if (desc.includes('Vegan')) opts.push('Vegan');
-                      if (desc.includes('Halal')) opts.push('Halal');
-                      if (desc.includes('Gluten')) opts.push('Gluten‑Free');
-                      return opts;
-                    })
-                  )
-                )
-              : [],
-
-            // 5) finally, “category” is not in the API—so pick it however you like:
-            //    for example, check if rawItem.name contains “College” or “Cafe” etc.
-            category: rawItem.name.includes('Cafe')
-              ? 'cafe'
-              : rawItem.name.includes('Specialty')
-                ? 'specialty'
-                : 'residential',
-          };
-        });
-
-        setLocations(formatted);
+        const classifiedVenues = data.map((venue: { name: string }) => ({
+          name: venue.name,
+          category: classifyVenue(venue.name),
+        }));
+        setVenues(classifiedVenues);
+        console.log(classifiedVenues);
       })
       .catch((error) => console.error('Error fetching venues:', error));
-  }, [selectedDayIndex]);
+  }, []);
 
-  // const res = useGetMenu('5', '2025-02-27-Breakfast');
-  // console.log('Menu data:');
-  // console.log(res.data);
+  // ─── Prepare Display ─────────────────────────────────────────────────────
+  const displayData = useMemo(() => {
+    return appliedHalls.map((name) => {
+      const v = venues.find((v) => v.name === name);
+      if (!v) {
+        return {
+          name,
+          items: {
+            'Main Entrée': [],
+            'Vegetarian + Vegan Entrée': [],
+            Soups: [],
+          },
+          allergens: new Set<string>(),
+          calories: {},
+          protein: {},
+        } as UIVenue;
+      }
+      const items = {} as UIVenue['items'];
+      (Object.keys(v.items) as (keyof typeof v.items)[]).forEach((cat) => {
+        items[cat] = v.items[cat].filter((i) => {
+          const ds = i.description.toLowerCase();
+          if (!appliedDietary.includes('Vegetarian') && ds.includes('vegetarian')) return false;
+          if (!appliedDietary.includes('Vegan') && ds.includes('vegan')) return false;
+          for (const a of ALLERGENS)
+            if (!appliedAllergens.includes(a) && ds.includes(a.toLowerCase())) return false;
+          return true;
+        });
+      });
+      return { ...v, items };
+    });
+  }, [venues, appliedHalls, appliedDietary, appliedAllergens]);
 
-  const MainContent = () => (
-    <Pane>
-      {/* Location Type Tabs */}
-      <Pane marginBottom={majorScale(3)}>
-        <TabNavigation>
-          <Tab
-            id='residential'
-            isSelected={activeCategory === 'residential'}
-            onSelect={() => setActiveCategory('residential')}
-          >
-            Dining Halls
-          </Tab>
-          <Tab
-            id='cafe'
-            isSelected={activeCategory === 'cafe'}
-            onSelect={() => setActiveCategory('cafe')}
-          >
-            Cafés
-          </Tab>
-          <Tab
-            id='specialty'
-            isSelected={activeCategory === 'specialty'}
-            onSelect={() => setActiveCategory('specialty')}
-          >
-            Specialty
-          </Tab>
-        </TabNavigation>
-      </Pane>
+  // const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-      {/* Day Navigation with Arrow Buttons */}
-      <Pane
-        marginBottom={majorScale(3)}
-        display='flex'
-        alignItems='center'
-        paddingX={minorScale(2)}
-      >
-        <Button
-          height={28}
-          marginRight={minorScale(1)}
-          appearance='minimal'
-          disabled={weekIndex === 0}
-          onClick={() => {
-            setWeekIndex(0);
-            setSelectedDayIndex(0);
-          }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 0,
-            boxShadow: 'none',
-          }}
-        >
-          <ChevronLeftIcon size={16} />
-        </Button>
-
-        <Pane flex={1} overflow='hidden'>
-          <TabNavigation display='flex' style={{ margin: 0, padding: 0 }}>
-            {currentWeekDays.map((day, idx) => {
-              const formattedDay = day.label === 'Today' ? 'Today' : day.label.replace(',', '');
-              return (
-                <Tab
-                  key={`${day.label}-${idx}`}
-                  id={day.label}
-                  isSelected={idx === selectedDayIndex}
-                  onSelect={() => setSelectedDayIndex(idx)}
-                  height={28}
-                  style={{
-                    padding: '0 12px',
-                    margin: 0,
-                    whiteSpace: 'nowrap',
-                    borderBottom:
-                      idx === selectedDayIndex
-                        ? `2px solid ${theme.colors.blue500}`
-                        : '2px solid transparent',
-                  }}
-                >
-                  {formattedDay}
-                </Tab>
-              );
-            })}
-          </TabNavigation>
-        </Pane>
-
-        <Button
-          height={28}
-          marginLeft={minorScale(1)}
-          appearance='minimal'
-          disabled={weekIndex === 1}
-          onClick={() => {
-            setWeekIndex(1);
-            setSelectedDayIndex(0);
-          }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 0,
-            boxShadow: 'none',
-          }}
-        >
-          <ChevronRightIcon size={16} />
-        </Button>
-      </Pane>
-
-      {/* Quick Filters */}
-      <Pane
-        display='flex'
-        gap={minorScale(1)}
-        marginBottom={majorScale(2)}
-        overflowX='auto'
-        paddingBottom={minorScale(1)}
-      >
-        {['Open Now', 'Vegetarian', 'Vegan', 'Halal', 'Gluten-Free'].map((filter) => (
-          <Badge key={filter} appearance='green' marginRight={8} cursor='pointer'>
-            {filter}
-          </Badge>
-        ))}
-      </Pane>
-
-      {/* Selected Day Display */}
-      <Pane marginBottom={majorScale(2)}>
-        <Heading size={600}>{fullDateString}</Heading>
-      </Pane>
-
-      {/* Locations Grid */}
-      <Pane
-        display='grid'
-        gridTemplateColumns={['1fr', '1fr', 'repeat(2, 1fr)']}
-        gap={majorScale(2)}
-      >
-        {filteredLocations.map((location) => (
-          <Pane
-            key={location.name}
-            elevation={1}
-            backgroundColor='white'
-            borderRadius={8}
-            padding={majorScale(2)}
-          >
-            <Pane display='flex' justifyContent='space-between' alignItems='flex-start'>
-              <Pane>
-                <Heading size={700}>{location.name}</Heading>
-                <Pane display='flex' gap={majorScale(2)} marginTop={minorScale(1)}>
-                  <Text size={300} color='muted'>
-                    <TimeIcon marginRight={minorScale(1)} /> {location.hours}
-                  </Text>
-                  <Text size={300} color='muted'>
-                    <PersonIcon marginRight={minorScale(1)} /> {location.busyness}
-                  </Text>
-                </Pane>
-              </Pane>
-              {/* Use our new status helper */}
-              {(() => {
-                const status = getStatusDisplay(location.status);
-                return <StatusIndicator color={status.color}>{status.text}</StatusIndicator>;
-              })()}
-            </Pane>
-
-            {/* Popular Items */}
-            <Pane marginY={majorScale(2)}>
-              <Text size={300} fontWeight={500}>
-                <FullStackedChartIcon color={theme.colors.green500} marginRight={minorScale(1)} />
-                Popular Now
-              </Text>
-              <Pane display='flex' gap={minorScale(2)} marginTop={minorScale(1)} flexWrap='wrap'>
-                {location.popular.map((item) => (
-                  <Pane
-                    key={item}
-                    backgroundColor={theme.colors.green100}
-                    borderRadius={8}
-                    padding={minorScale(2)}
-                  >
-                    <Text size={300}>{item}</Text>
-                  </Pane>
-                ))}
-              </Pane>
-            </Pane>
-
-            {/* Dietary Options */}
-            <Pane display='flex' gap={minorScale(1)} flexWrap='wrap'>
-              {location.dietaryOptions.map((option) => (
-                <Badge key={option} color='neutral'>
-                  {option}
-                </Badge>
-              ))}
-            </Pane>
-          </Pane>
-        ))}
-      </Pane>
-    </Pane>
-  );
-
-  let Profile;
-  if (isLoading) Profile = <Spinner />;
-  else if (error) Profile = <div>{error.message}</div>;
-  else if (user) {
-    Profile = (
-      <Pane width='100%'>
-        <Pane display='flex' justifyContent='space-between' marginBottom={majorScale(3)}>
-          <Button height={40} iconBefore={FilterIcon} appearance='minimal'>
-            Filters
-          </Button>
-        </Pane>
-        <MainContent />
+  if (loading) {
+    return (
+      <Pane height='100vh' display='flex' alignItems='center' justifyContent='center'>
+        <Spinner />
       </Pane>
     );
-  } else {
-    Profile = <AuthButton />;
   }
 
   return (
-    <Pane
-      display='flex'
-      justifyContent='center'
-      alignItems='center'
-      marginX={majorScale(1)}
-      paddingBottom={majorScale(4)}
-      paddingTop={majorScale(8)}
-    >
+    <Pane display='flex' height='100vh' background={PAGE_BG}>
+      {/* ─── FILTER SIDEBAR ───────────────────────────────────────────── */}
       <Pane
-        borderRadius={8}
-        elevation={1}
-        background='white'
-        marginX={20}
-        maxWidth='800px'
-        width='100%'
-        paddingX={majorScale(3)}
-        paddingY={majorScale(4)}
+        // display={['none', 'flex']}
+        flexDirection='column'
+        width={280}
+        padding={majorScale(3)}
+        // overflowY='auto'
+        // maxHeight='calc(100vh - 60px)'
       >
-        <Heading size={900} className='hoagie' textAlign='center' marginBottom={majorScale(2)}>
-          Hoagie Meal
-        </Heading>
+        <Pane
+          display='flex'
+          flexDirection='column'
+          background='white'
+          borderRadius={8}
+          padding={majorScale(3)}
+          maxHeight='100%'
+          boxShadow='0 2px 12px rgba(0,0,0,0.06)'
+        >
+          {/* Toggle */}
+          <Pane
+            display='flex'
+            alignItems='center'
+            justifyContent='space-between'
+            cursor='pointer'
+            onClick={() => setFilterOpen((o) => !o)}
+            marginBottom={filterOpen ? majorScale(3) : 0}
+          >
+            <Text size={500} fontWeight={600} color={theme.colors.gray700}>
+              {filterOpen ? 'Hide Filters' : 'Show Filters'}
+            </Text>
+            {filterOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
+          </Pane>
 
-        <Pane display='flex' flexDirection='column' alignItems='center'>
-          {Profile}
+          <Pane overflowY='auto' marginBottom={majorScale(3)}>
+            {filterOpen && (
+              <>
+                {/* Dining Halls */}
+                <Text
+                  size={400}
+                  fontWeight={600}
+                  marginBottom={minorScale(1)}
+                  color={theme.colors.gray800}
+                >
+                  Dining Halls
+                </Text>
+                <Pane
+                  display='flex'
+                  flexWrap='wrap'
+                  gap={minorScale(1)}
+                  marginBottom={majorScale(3)}
+                >
+                  {initialHalls.map((hall) => (
+                    <Checkbox
+                      key={hall}
+                      label={hall}
+                      checked={tempHalls.includes(hall)}
+                      onChange={() => toggle(hall, tempHalls, setTempHalls)}
+                      color={theme.colors.green700}
+                      marginRight={minorScale(1)}
+                      marginBottom={minorScale(1)}
+                    />
+                  ))}
+                </Pane>
+
+                {/* Dietary */}
+                <Text
+                  size={400}
+                  fontWeight={600}
+                  marginBottom={minorScale(1)}
+                  color={theme.colors.gray800}
+                >
+                  Dietary
+                </Text>
+                <Pane
+                  display='flex'
+                  flexWrap='wrap'
+                  gap={minorScale(1)}
+                  marginBottom={majorScale(3)}
+                >
+                  {DIETARY.map((diet) => (
+                    <Checkbox
+                      key={diet}
+                      label={diet}
+                      checked={tempDietary.includes(diet)}
+                      onChange={() => toggle(diet, tempDietary, setTempDietary)}
+                      color={theme.colors.green700}
+                      marginRight={minorScale(1)}
+                      marginBottom={minorScale(1)}
+                    />
+                  ))}
+                </Pane>
+
+                {/* Allergens */}
+                <Text
+                  size={400}
+                  fontWeight={600}
+                  marginBottom={minorScale(1)}
+                  color={theme.colors.gray800}
+                >
+                  Allergens
+                </Text>
+                <Pane
+                  display='flex'
+                  flexWrap='wrap'
+                  gap={minorScale(1)}
+                  marginBottom={majorScale(4)}
+                >
+                  {ALLERGENS.map((allergen) => (
+                    <Checkbox
+                      key={allergen}
+                      label={`${ALLERGEN_EMOJI[allergen.toLowerCase()]} ${allergen}`}
+                      checked={tempAllergens.includes(allergen)}
+                      onChange={() => toggle(allergen, tempAllergens, setTempAllergens)}
+                      color={theme.colors.green700}
+                      marginRight={minorScale(1)}
+                      marginBottom={minorScale(1)}
+                    />
+                  ))}
+                </Pane>
+              </>
+            )}
+          </Pane>
+          {/* Actions */}
+          <Pane display='flex' justifyContent='space-between'>
+            <Button
+              onClick={() => {
+                const resetHalls = [...halls];
+                const resetDietary = [...DIETARY];
+                const resetAllergens = [...ALLERGENS];
+
+                // Reset temp
+                setTempHalls(resetHalls);
+                setTempDietary(resetDietary);
+                setTempAllergens(resetAllergens);
+
+                // Apply immediately
+                setAppliedHalls(resetHalls);
+                setAppliedDietary(resetDietary);
+                setAppliedAllergens(resetAllergens);
+              }}
+            >
+              Reset
+            </Button>
+            <Button
+              appearance='primary'
+              intent='success'
+              onClick={() => {
+                setAppliedHalls(tempHalls);
+                setAppliedDietary(tempDietary);
+                setAppliedAllergens(tempAllergens);
+              }}
+            >
+              Apply
+            </Button>
+          </Pane>
         </Pane>
       </Pane>
+
+      {/* ─── MAIN VIEW ──────────────────────────────────────────────────────── */}
+      <Pane flex={1} overflowY='auto' padding={majorScale(6)}>
+        {/* Header */}
+        <Pane
+          display='flex'
+          alignItems='center'
+          justifyContent='space-between'
+          marginBottom={majorScale(5)}
+        >
+          <Pane>
+            <Heading size={900} color={theme.colors.green700} fontWeight={900}>
+              {meal.toUpperCase()}
+            </Heading>
+            <Text size={500} color={theme.colors.green600} fontWeight={600}>
+              {MEAL_RANGES[meal]}
+            </Text>
+          </Pane>
+
+          {/* Date + arrows */}
+          <Pane display='flex' alignItems='center' gap={minorScale(2)}>
+            <Button
+              background='white'
+              border={`1px solid ${theme.colors.green700}`}
+              borderRadius={999}
+              padding={minorScale(1)}
+              appearance='minimal'
+              display='flex'
+              alignItems='center'
+              justifyContent='center'
+              onClick={prevDay}
+            >
+              <ChevronLeftIcon size={16} />
+            </Button>
+
+            <Text size={600} color={theme.colors.green700}>
+              {selectedDate.toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'numeric',
+                day: 'numeric',
+              })}
+            </Text>
+            <Button
+              background='white'
+              border={`1px solid ${theme.colors.green700}`}
+              borderRadius={999}
+              padding={minorScale(1)}
+              appearance='minimal'
+              display='flex'
+              alignItems='center'
+              justifyContent='center'
+              onClick={nextDay}
+            >
+              <ChevronRightIcon size={16} />
+            </Button>
+          </Pane>
+
+          {/* Meal tabs + nutrition */}
+          <Pane display='flex' alignItems='center' gap={majorScale(2)}>
+            <Pane
+              display='flex'
+              border={`1px solid ${theme.colors.green700}`}
+              borderRadius={999}
+              background={theme.colors.green25}
+              overflow='hidden'
+            >
+              {(['Breakfast', 'Lunch', 'Dinner'] as MealType[]).map((m) => (
+                <Pane
+                  key={m}
+                  paddingX={majorScale(3)}
+                  paddingY={minorScale(1)}
+                  background={meal === m ? theme.colors.green700 : 'transparent'}
+                  fontSize={13}
+                  fontWeight={600}
+                  color={meal === m ? 'white' : theme.colors.green800}
+                  cursor='pointer'
+                  onClick={() => setMeal(m)}
+                >
+                  {m}
+                </Pane>
+              ))}
+            </Pane>
+            <Pane display='flex' alignItems='center'>
+              <Text size={400} marginRight={minorScale(1)}>
+                Nutrition
+              </Text>
+              <Switch />
+            </Pane>
+          </Pane>
+        </Pane>
+
+        {/* Grid of cards */}
+        <Pane
+          display='grid'
+          gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
+          gap={majorScale(1)}
+        >
+          {displayData.map((hall) => (
+            <DiningHallCard
+              key={hall.name}
+              hall={hall}
+              // expanded={expanded}
+              setModalHall={setModalHall}
+              ALLERGEN_EMOJI={ALLERGEN_EMOJI}
+              theme={theme}
+            />
+          ))}
+        </Pane>
+      </Pane>
+
+      {/* ─── RIGHT SIDEBAR (desktop only) ─────────────────────────────────── */}
+      <Pane
+        // display={['none', 'flex']}
+        flexDirection='column'
+        width={200}
+        padding={majorScale(3)}
+        overflowY='auto'
+        zIndex={2}
+      >
+        <Heading size={600} color={theme.colors.green900}>
+          Allergens
+        </Heading>
+        <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
+          {ALLERGENS.map((a) => (
+            <Pane key={a} display='flex' alignItems='center'>
+              <Pane
+                width={28}
+                height={28}
+                display='inline-flex'
+                alignItems='center'
+                justifyContent='center'
+                borderRadius={14}
+                background={theme.colors.green300}
+                border={`1px solid ${theme.colors.green700}`}
+                marginRight={minorScale(1)}
+              >
+                <Text size={200}>{ALLERGEN_EMOJI[a.toLowerCase()]}</Text>
+              </Pane>
+              <Text size={400} color={theme.colors.green900}>
+                {a}
+              </Text>
+            </Pane>
+          ))}
+        </Pane>
+      </Pane>
+      {/* Modal */}
+      <Modal isShown={!!modalHall} onClose={() => setModalHall(null)} hall={modalHall} />
     </Pane>
   );
 }
