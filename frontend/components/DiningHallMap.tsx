@@ -3,14 +3,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import {
-  Pane,
-  Heading,
-  Text,
-  Spinner,
-  majorScale,
-  minorScale,
-} from 'evergreen-ui';
+import { Pane, Heading, Text, Spinner, majorScale, minorScale } from 'evergreen-ui';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -39,7 +32,7 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
 
 const ClosestDiningMap = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [closest, setClosest] = useState<typeof diningHalls[0] | null>(null);
+  const [closest, setClosest] = useState<(typeof diningHalls)[0] | null>(null);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -65,7 +58,13 @@ const ClosestDiningMap = () => {
 
   if (!userLocation) {
     return (
-      <Pane height='100vh' background='#D8F6C7' display='flex' alignItems='center' justifyContent='center'>
+      <Pane
+        height='100vh'
+        background='#D8F6C7'
+        display='flex'
+        alignItems='center'
+        justifyContent='center'
+      >
         <Spinner />
       </Pane>
     );

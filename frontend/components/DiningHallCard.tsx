@@ -1,5 +1,5 @@
 // components/DiningHallCard.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Pane,
   Heading,
@@ -10,9 +10,7 @@ import {
   minorScale,
   majorScale,
 } from 'evergreen-ui';
-import NutritionLabel from "./NutritionLabel"
-import MenuSection from "./MenuSection"
-import Link from 'next/link';
+import MenuSection from './MenuSection';
 
 interface UIMenuItem {
   name: string;
@@ -39,10 +37,9 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
   setModalHall,
   ALLERGEN_EMOJI,
   theme,
-  showNutrition
+  showNutrition,
 }) => {
-
-  console.log(hall)
+  console.log(hall);
   return (
     <Pane
       key={hall.name}
@@ -75,39 +72,38 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         </Text></>}
       </Pane> */}
 
-        <MenuSection
-      label="Main Entrée"
-      items={hall.items['Main Entrée']}
-      allergens={hall.allergens}
-      calories={hall.calories}
-      protein={hall.protein}
-      ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-      showNutrition={showNutrition}
-      limitItems={true}
-    />
+      <MenuSection
+        label='Main Entrée'
+        items={hall.items['Main Entrée']}
+        allergens={hall.allergens}
+        calories={hall.calories}
+        protein={hall.protein}
+        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
+        showNutrition={showNutrition}
+        limitItems={true}
+      />
 
-    <MenuSection
-      label="Vegetarian + Vegan Entrée"
-      items={hall.items['Vegetarian + Vegan Entrée']}
-      allergens={hall.allergens}
-      calories={hall.calories}
-      protein={hall.protein}
-      ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-      showNutrition={showNutrition}
-      limitItems={true}
-    />
+      <MenuSection
+        label='Vegetarian + Vegan Entrée'
+        items={hall.items['Vegetarian + Vegan Entrée']}
+        allergens={hall.allergens}
+        calories={hall.calories}
+        protein={hall.protein}
+        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
+        showNutrition={showNutrition}
+        limitItems={true}
+      />
 
-    <MenuSection
-      label="Soups"
-      items={hall.items['Soups']}
-      allergens={hall.allergens}
-      calories={hall.calories}
-      protein={hall.protein}
-      ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-      showNutrition={showNutrition}
-      limitItems={true}
-
-    />
+      <MenuSection
+        label='Soups'
+        items={hall.items['Soups']}
+        allergens={hall.allergens}
+        calories={hall.calories}
+        protein={hall.protein}
+        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
+        showNutrition={showNutrition}
+        limitItems={true}
+      />
       <Pane display='flex' justifyContent='center' marginTop={majorScale(3)}>
         <Button
           appearance='minimal'
