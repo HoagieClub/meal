@@ -24,7 +24,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from 'evergreen-ui';
-import Modal from '@/components/Modal';
+import HallMenuModal from '@/components/HallMenuModal';
 import DiningLocations from '@/examples/locations';
 import getDiningLocationsServerSide from '@/examples/locationsServerSide';
 import { useGetMenu } from '@/hooks/use-endpoints';
@@ -43,33 +43,6 @@ interface UIMenuItem {
   link: string;
 }
 
-  //     status: 'yes',
-  //     busyness: 'High',
-  //     currentMeal: 'Dinner',
-  //     hours: '5:00 PM - 8:00 PM',
-  //     popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
-  //     dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
-  //     category: 'residential',
-  //   },
-  //   {
-  //     name: 'Cafe',
-  //     status: 'yes',
-  //     busyness: 'High',
-  //     currentMeal: 'Dinner',
-  //     hours: '5:00 PM - 8:00 PM',
-  //     popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
-  //     dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
-  //     category: 'cafe',
-  //   },
-  //   {
-  //     name: 'Specialty',
-  //     status: 'yes',
-  //     busyness: 'High',
-  //     currentMeal: 'Dinner',
-  //     hours: '5:00 PM - 8:00 PM',
-  //     popular: ['Wood-Fired Pizza', 'Mediterranean Bowl'],
-  //     dietaryOptions: ['Vegetarian', 'Vegan', 'Halal'],
-  //     category: 'specialty',
 interface UIVenue {
   name: string;
   items: Record<'Main Entrée' | 'Vegetarian + Vegan Entrée' | 'Soups', UIMenuItem[]>;
@@ -88,8 +61,12 @@ const ALLERGEN_EMOJI: Record<string, string> = {
   peanut: '🥜',
   'tree nut': '🌰',
   egg: '🥚',
-  dairy: '🥛',
+  milk: '🥛',
   wheat: '🌾',
+  soybeans: '🌱',
+  crustacean: '🦞',
+  alcohol: '🍺',
+  gluten: '🍞'
 };
 
 function categorize(items: UIMenuItem[]) {
@@ -113,7 +90,7 @@ function extractAllergens(items: UIMenuItem[]) {
   const set = new Set<string>();
   items.forEach((i) => {
     const ds = i.description.toLowerCase();
-    ['peanut', 'tree nut', 'egg', 'dairy', 'wheat'].forEach(
+    ['peanut', 'tree nut', 'egg', 'milk', 'wheat', 'soybeans', 'crustacean', 'alcohol', 'gluten'].forEach(
       (all) => ds.includes(all) && set.add(all)
     );
   });
@@ -133,6 +110,8 @@ export default function Index() {
   // ─── Date + Meal ─────────────────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date('2025-05-14'));
   const [meal, setMeal] = useState<MealType>('Breakfast');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showNutrition, setShowNutrition] = useState(true);
   const FRONTEND_URL = process.env.HOAGIE_URL;
   const PAGE_BG = backgroundByMeal[meal];
 
@@ -168,7 +147,7 @@ export default function Index() {
   ];
   const [halls] = useState<string[]>(initialHalls);
   const DIETARY = ['Vegetarian', 'Vegan', 'Halal', 'Kosher', 'Gluten-free'];
-  const ALLERGENS = ['Peanut', 'Tree nut', 'Egg', 'Dairy', 'Wheat'];
+  const ALLERGENS = ['Peanut', 'Tree nut', 'Egg', 'Milk', 'Wheat', 'Soybeans', 'Crustacean', 'Alcohol', 'Gluten'];
 
   // what actually drives filtering
   const [appliedHalls, setAppliedHalls] = useState<string[]>(initialHalls);
@@ -180,7 +159,7 @@ export default function Index() {
   const [tempDietary, setTempDietary] = useState<string[]>([...DIETARY]);
   const [tempAllergens, setTempAllergens] = useState<string[]>([...ALLERGENS]);
 
-  const [filterOpen, setFilterOpen] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
 
   const toggle = (
@@ -250,7 +229,9 @@ export default function Index() {
 
   // ─── Prepare Display ─────────────────────────────────────────────────────
   const displayData = useMemo(() => {
-    return appliedHalls.map((name) => {
+    return appliedHalls
+      .filter((name) => name.toLowerCase().includes(searchTerm.toLowerCase()))
+      .map((name) => {
       const v = venues.find((v) => v.name === name);
       if (!v) {
         return {
@@ -278,7 +259,7 @@ export default function Index() {
       });
       return { ...v, items };
     });
-  }, [venues, appliedHalls, appliedDietary, appliedAllergens]);
+  }, [venues, appliedHalls, appliedDietary, appliedAllergens, searchTerm]);
 
   // const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -291,24 +272,24 @@ export default function Index() {
   }
 
   return (
-    <Pane display='flex' height='100vh' background={PAGE_BG}>
+    <Pane display='flex' className="sm:h-[calc(100vh)] sm:flex-row flex-col" background={PAGE_BG}>
       {/* ─── FILTER SIDEBAR ───────────────────────────────────────────── */}
       <Pane
         // display={['none', 'flex']}
         flexDirection='column'
         width={280}
         padding={majorScale(3)}
+        className="max-w-[100%] hidden sm:inline z-20"
         // overflowY='auto'
         // maxHeight='calc(100vh - 60px)'
       >
         <Pane
           display='flex'
-          flexDirection='column'
           background='white'
-          borderRadius={8}
-          padding={majorScale(3)}
+          borderRadius={12}
           maxHeight='100%'
           boxShadow='0 2px 12px rgba(0,0,0,0.06)'
+          className={`fixed px-4 py-2 sm:relative sm:px-4 sm:py-4 flex-col`}
         >
           {/* Toggle */}
           <Pane
@@ -319,10 +300,10 @@ export default function Index() {
             onClick={() => setFilterOpen((o) => !o)}
             marginBottom={filterOpen ? majorScale(3) : 0}
           >
-            <Text size={500} fontWeight={600} color={theme.colors.gray700}>
-              {filterOpen ? 'Hide Filters' : 'Show Filters'}
+            <Text size={500} fontWeight={400} color={theme.colors.gray700}>
+              {filterOpen ? 'Hide Filters' : 'Filter By'}
             </Text>
-            {filterOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
+            {filterOpen ? <ChevronUpIcon color="green600" className="h-6 w-6" /> : <ChevronDownIcon color="green600" className="h-6 w-6" />}
           </Pane>
 
           <Pane overflowY='auto' marginBottom={majorScale(3)}>
@@ -415,7 +396,7 @@ export default function Index() {
             )}
           </Pane>
           {/* Actions */}
-          <Pane display='flex' justifyContent='space-between'>
+          <Pane display='flex' justifyContent='space-between' gap={minorScale(3)}>
             <Button
               onClick={() => {
                 const resetHalls = [...halls];
@@ -432,6 +413,9 @@ export default function Index() {
                 setAppliedDietary(resetDietary);
                 setAppliedAllergens(resetAllergens);
               }}
+              borderRadius={8}
+              backgroundColor={theme.colors.green100}
+              className="w-full"
             >
               Reset
             </Button>
@@ -443,6 +427,9 @@ export default function Index() {
                 setAppliedDietary(tempDietary);
                 setAppliedAllergens(tempAllergens);
               }}
+              borderRadius={8}
+              backgroundColor={theme.colors.green600}
+              className="w-full hover:opacity-90"
             >
               Apply
             </Button>
@@ -451,13 +438,14 @@ export default function Index() {
       </Pane>
 
       {/* ─── MAIN VIEW ──────────────────────────────────────────────────────── */}
-      <Pane flex={1} overflowY='auto' padding={majorScale(6)}>
+      <Pane flex={1} className="overflow-x-hidden px-4 sm:overflow-y-auto">
         {/* Header */}
         <Pane
           display='flex'
           alignItems='center'
           justifyContent='space-between'
-          marginBottom={majorScale(5)}
+          marginY={majorScale(3)}
+          className="flex-col sm:flex-row text-center"
         >
           <Pane>
             <Heading size={900} color={theme.colors.green700} fontWeight={900}>
@@ -469,7 +457,7 @@ export default function Index() {
           </Pane>
 
           {/* Date + arrows */}
-          <Pane display='flex' alignItems='center' gap={minorScale(2)}>
+          <Pane display='flex' alignItems='center' gap={minorScale(2)} className="my-4">
             <Button
               background='white'
               border={`1px solid ${theme.colors.green700}`}
@@ -507,56 +495,92 @@ export default function Index() {
           </Pane>
 
           {/* Meal tabs + nutrition */}
-          <Pane display='flex' alignItems='center' gap={majorScale(2)}>
-            <Pane
-              display='flex'
-              border={`1px solid ${theme.colors.green700}`}
-              borderRadius={999}
-              background={theme.colors.green25}
-              overflow='hidden'
-            >
-              {(['Breakfast', 'Lunch', 'Dinner'] as MealType[]).map((m) => (
-                <Pane
-                  key={m}
-                  paddingX={majorScale(3)}
-                  paddingY={minorScale(1)}
-                  background={meal === m ? theme.colors.green700 : 'transparent'}
-                  fontSize={13}
-                  fontWeight={600}
-                  color={meal === m ? 'white' : theme.colors.green800}
-                  cursor='pointer'
-                  onClick={() => setMeal(m)}
-                >
-                  {m}
-                </Pane>
-              ))}
-            </Pane>
-            <Pane display='flex' alignItems='center'>
-              <Text size={400} marginRight={minorScale(1)}>
-                Nutrition
-              </Text>
-              <Switch />
-            </Pane>
+          <Pane display='flex' flexDirection="column" gap={majorScale(2)}>
+              <Pane display='flex' alignItems='center' gap={majorScale(2)}>
+              <Pane
+                display='flex'
+                border={`1px solid ${theme.colors.green700}`}
+                borderRadius={999}
+                background={theme.colors.green25}
+                overflow='hidden'
+              >
+                {(['Breakfast', 'Lunch', 'Dinner'] as MealType[]).map((m) => (
+                  <Pane
+                    key={m}
+                    paddingX={majorScale(2)}
+                    paddingY={minorScale(1)}
+                    background={meal === m ? theme.colors.green700 : 'transparent'}
+                    fontSize={13}
+                    fontWeight={600}
+                    color={meal === m ? 'white' : theme.colors.green800}
+                    cursor='pointer'
+                    onClick={() => setMeal(m)}
+                  >
+                    {m}
+                  </Pane>
+                ))}
+              </Pane>
+              <Pane display='flex' alignItems='center'>
+                <Text size={400} fontWeight={600} color={theme.colors.green700} marginX={minorScale(2)}>
+                  Nutrition
+                </Text>
+                <Switch checked={showNutrition} onChange={() => setShowNutrition((p) => !p)} />
+              </Pane>
+              </Pane>
+
+            <Pane>
+            <input
+              type='text'
+              placeholder='Search dining halls...'
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: 15,
+                border: `1px solid ${theme.colors.green700}`,
+                fontSize: 14,
+              }}
+            />
+          </Pane>
           </Pane>
         </Pane>
 
         {/* Grid of cards */}
-        <Pane
-          display='grid'
-          gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
-          gap={majorScale(1)}
-        >
-          {displayData.map((hall) => (
-            <DiningHallCard
-              key={hall.name}
-              hall={hall}
-              // expanded={expanded}
-              setModalHall={setModalHall}
-              ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-              theme={theme}
-            />
-          ))}
-        </Pane>
+        {displayData.length === 0 ? (
+  <Pane
+    display="flex"
+    alignItems="center"
+    justifyContent="center"
+    paddingY={majorScale(8)}
+    flexDirection="column"
+    width="100%"
+  >
+    <Text size={500} color="muted" fontStyle="italic">
+      Nothing found. Try adjusting your filters or search.
+    </Text>
+  </Pane>
+) : (
+  <Pane
+    display='grid'
+    overflowY='auto'
+    paddingBottom={majorScale(6)}
+    gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
+    gap={majorScale(1)}
+    className="h-full"
+  >
+    {displayData.map((hall) => (
+      <DiningHallCard
+        key={hall.name}
+        hall={hall}
+        setModalHall={setModalHall}
+        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
+        theme={theme}
+        showNutrition={showNutrition}
+      />
+    ))}
+  </Pane>
+)}
       </Pane>
 
       {/* ─── RIGHT SIDEBAR (desktop only) ─────────────────────────────────── */}
@@ -595,7 +619,7 @@ export default function Index() {
         </Pane>
       </Pane>
       {/* Modal */}
-      <Modal isShown={!!modalHall} onClose={() => setModalHall(null)} hall={modalHall} />
+      <HallMenuModal isShown={!!modalHall} onClose={() => setModalHall(null)} hall={modalHall} ALLERGEN_EMOJI={ALLERGEN_EMOJI}/>
     </Pane>
   );
 }
