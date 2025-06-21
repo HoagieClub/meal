@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
-import { Separator } from "./ui/separator"
 
 interface UIMenuItem {
   name: string;
@@ -21,7 +20,6 @@ interface MenuSectionProps {
   limitItems?: boolean; // Show only the first item if true
 }
 
-
 const MenuSection: React.FC<MenuSectionProps> = ({
   label,
   items,
@@ -30,33 +28,33 @@ const MenuSection: React.FC<MenuSectionProps> = ({
   protein,
   ALLERGEN_EMOJI,
   showNutrition,
-  limitItems
+  limitItems,
 }) => {
   const theme = useTheme();
-  
+
   const displayItems = limitItems ? items.slice(0, 1) : items;
 
   return (
     <Pane marginBottom={majorScale(3)}>
       {/* Section header */}
       <Pane
-        display="grid"
+        display='grid'
         gridTemplateColumns={showNutrition ? '2fr 1fr 1fr' : '1fr'}
         borderBottom={`1px solid ${theme.colors.green300}`}
         paddingBottom={minorScale(1)}
       >
-        <Text fontSize={14} fontWeight={600} className="my-auto">
+        <Text fontSize={14} fontWeight={600} className='my-auto'>
           {label}
         </Text>
         {showNutrition && (
           <>
-            <Text size={300} fontWeight={500} textAlign="right" className="my-auto">
+            <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
               Calories
-              <Text size={200} color="muted" display="block">
+              <Text size={200} color='muted' display='block'>
                 (per serving)
               </Text>
             </Text>
-            <Text size={300} fontWeight={500} textAlign="right" className="my-auto">
+            <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
               Protein (g)
             </Text>
           </>
@@ -64,74 +62,69 @@ const MenuSection: React.FC<MenuSectionProps> = ({
       </Pane>
 
       {/* Items */}
-{displayItems.length === 0 ? (
-  <Text size={300} color="muted" fontStyle="italic" marginTop={minorScale(1)}>
-    Nothing available
-  </Text>
-) : (
-  <Pane
-    
-    marginTop={minorScale(1)}
-  >
-    {displayItems.map((item) => (
-      <React.Fragment key={item.name}>
-        <Pane
-            display="grid"
-            gridTemplateColumns={showNutrition ? '2fr 1fr 1fr' : '1fr'}
-            rowGap={minorScale(1)}
-            marginTop={minorScale(1)}
-            borderBottom={`0.9px solid ${theme.colors.green300}`}
-        >
-              <Pane display="flex" flexDirection="column" marginY={majorScale(1)}>
-                <Link href={`/feature4?url=${encodeURIComponent(item.link)}`}>
-                  <Text color="green700" fontWeight={500}>
-                    {item.name}
-                  </Text>
-                </Link>
-                <Pane display="flex" gap={minorScale(1)} marginTop={minorScale(1)}>
+      {displayItems.length === 0 ? (
+        <Text size={300} color='muted' fontStyle='italic' marginTop={minorScale(1)}>
+          Nothing available
+        </Text>
+      ) : (
+        <Pane marginTop={minorScale(1)}>
+          {displayItems.map((item) => (
+            <React.Fragment key={item.name}>
+              <Pane
+                display='grid'
+                gridTemplateColumns={showNutrition ? '2fr 1fr 1fr' : '1fr'}
+                rowGap={minorScale(1)}
+                marginTop={minorScale(1)}
+                borderBottom={`0.9px solid ${theme.colors.green300}`}
+              >
+                <Pane display='flex' flexDirection='column' marginY={majorScale(1)}>
+                  <Link href={`/feature4?url=${encodeURIComponent(item.link)}`}>
+                    <Text color='green700' fontWeight={500}>
+                      {item.name}
+                    </Text>
+                  </Link>
+                  <Pane display='flex' gap={minorScale(1)} marginTop={minorScale(1)}>
                     {(() => {
-                        const matched = Array.from(allergens).filter((a) =>
+                      const matched = Array.from(allergens).filter((a) =>
                         item.description.toLowerCase().includes(a.toLowerCase())
-                        );
+                      );
 
-                        return matched.length > 0 ? (
+                      return matched.length > 0 ? (
                         matched.map((a) => (
-                            <Pane
+                          <Pane
                             key={a}
-                            display="inline-flex"
-                            alignItems="center"
-                            justifyContent="center"
+                            display='inline-flex'
+                            alignItems='center'
+                            justifyContent='center'
                             width={24}
                             height={24}
                             borderRadius={12}
                             background={theme.colors.green100}
                             border={`1px solid ${theme.colors.green700}`}
-                            >
+                          >
                             <Text>{ALLERGEN_EMOJI[a.toLowerCase()]}</Text>
-                            </Pane>
+                          </Pane>
                         ))
-                        ) : (
-                        <Text textSize={4} color="muted" fontStyle="italic">
-                            No allergens
+                      ) : (
+                        <Text color='muted' fontStyle='italic'>
+                          No allergens
                         </Text>
-                        );
+                      );
                     })()}
-                    </Pane>
+                  </Pane>
+                </Pane>
+                {showNutrition && (
+                  <>
+                    <Text size={300} textAlign='right' marginY={majorScale(1)}>
+                      {calories[item.name]}
+                    </Text>
+                    <Text size={300} textAlign='right' marginY={majorScale(1)}>
+                      {protein[item.name]}
+                    </Text>
+                  </>
+                )}
               </Pane>
-              {showNutrition && (
-                <>
-                  <Text size={300} textAlign="right" marginY={majorScale(1)}>
-                    {calories[item.name]}
-                  </Text>
-                  <Text size={300} textAlign="right" marginY={majorScale(1)}>
-                    {protein[item.name]}
-                  </Text>
-                </>
-              )}
-                      </Pane>
-
             </React.Fragment>
-            
           ))}
         </Pane>
       )}

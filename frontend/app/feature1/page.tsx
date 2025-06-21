@@ -66,7 +66,7 @@ const ALLERGEN_EMOJI: Record<string, string> = {
   soybeans: '🌱',
   crustacean: '🦞',
   alcohol: '🍺',
-  gluten: '🍞'
+  gluten: '🍞',
 };
 
 function categorize(items: UIMenuItem[]) {
@@ -90,9 +90,17 @@ function extractAllergens(items: UIMenuItem[]) {
   const set = new Set<string>();
   items.forEach((i) => {
     const ds = i.description.toLowerCase();
-    ['peanut', 'tree nut', 'egg', 'milk', 'wheat', 'soybeans', 'crustacean', 'alcohol', 'gluten'].forEach(
-      (all) => ds.includes(all) && set.add(all)
-    );
+    [
+      'peanut',
+      'tree nut',
+      'egg',
+      'milk',
+      'wheat',
+      'soybeans',
+      'crustacean',
+      'alcohol',
+      'gluten',
+    ].forEach((all) => ds.includes(all) && set.add(all));
   });
   return set;
 }
@@ -147,7 +155,17 @@ export default function Index() {
   ];
   const [halls] = useState<string[]>(initialHalls);
   const DIETARY = ['Vegetarian', 'Vegan', 'Halal', 'Kosher', 'Gluten-free'];
-  const ALLERGENS = ['Peanut', 'Tree nut', 'Egg', 'Milk', 'Wheat', 'Soybeans', 'Crustacean', 'Alcohol', 'Gluten'];
+  const ALLERGENS = [
+    'Peanut',
+    'Tree nut',
+    'Egg',
+    'Milk',
+    'Wheat',
+    'Soybeans',
+    'Crustacean',
+    'Alcohol',
+    'Gluten',
+  ];
 
   // what actually drives filtering
   const [appliedHalls, setAppliedHalls] = useState<string[]>(initialHalls);
@@ -232,33 +250,33 @@ export default function Index() {
     return appliedHalls
       .filter((name) => name.toLowerCase().includes(searchTerm.toLowerCase()))
       .map((name) => {
-      const v = venues.find((v) => v.name === name);
-      if (!v) {
-        return {
-          name,
-          items: {
-            'Main Entrée': [],
-            'Vegetarian + Vegan Entrée': [],
-            Soups: [],
-          },
-          allergens: new Set<string>(),
-          calories: {},
-          protein: {},
-        } as UIVenue;
-      }
-      const items = {} as UIVenue['items'];
-      (Object.keys(v.items) as (keyof typeof v.items)[]).forEach((cat) => {
-        items[cat] = v.items[cat].filter((i) => {
-          const ds = i.description.toLowerCase();
-          if (!appliedDietary.includes('Vegetarian') && ds.includes('vegetarian')) return false;
-          if (!appliedDietary.includes('Vegan') && ds.includes('vegan')) return false;
-          for (const a of ALLERGENS)
-            if (!appliedAllergens.includes(a) && ds.includes(a.toLowerCase())) return false;
-          return true;
+        const v = venues.find((v) => v.name === name);
+        if (!v) {
+          return {
+            name,
+            items: {
+              'Main Entrée': [],
+              'Vegetarian + Vegan Entrée': [],
+              Soups: [],
+            },
+            allergens: new Set<string>(),
+            calories: {},
+            protein: {},
+          } as UIVenue;
+        }
+        const items = {} as UIVenue['items'];
+        (Object.keys(v.items) as (keyof typeof v.items)[]).forEach((cat) => {
+          items[cat] = v.items[cat].filter((i) => {
+            const ds = i.description.toLowerCase();
+            if (!appliedDietary.includes('Vegetarian') && ds.includes('vegetarian')) return false;
+            if (!appliedDietary.includes('Vegan') && ds.includes('vegan')) return false;
+            for (const a of ALLERGENS)
+              if (!appliedAllergens.includes(a) && ds.includes(a.toLowerCase())) return false;
+            return true;
+          });
         });
+        return { ...v, items };
       });
-      return { ...v, items };
-    });
   }, [venues, appliedHalls, appliedDietary, appliedAllergens, searchTerm]);
 
   // const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -272,14 +290,14 @@ export default function Index() {
   }
 
   return (
-    <Pane display='flex' className="sm:h-[calc(100vh)] sm:flex-row flex-col" background={PAGE_BG}>
+    <Pane display='flex' className='sm:h-[calc(100vh)] sm:flex-row flex-col' background={PAGE_BG}>
       {/* ─── FILTER SIDEBAR ───────────────────────────────────────────── */}
       <Pane
         // display={['none', 'flex']}
         flexDirection='column'
         width={280}
         padding={majorScale(3)}
-        className="max-w-[100%] hidden sm:inline z-20"
+        className='max-w-[100%] hidden sm:inline z-20'
         // overflowY='auto'
         // maxHeight='calc(100vh - 60px)'
       >
@@ -303,7 +321,11 @@ export default function Index() {
             <Text size={500} fontWeight={400} color={theme.colors.gray700}>
               {filterOpen ? 'Hide Filters' : 'Filter By'}
             </Text>
-            {filterOpen ? <ChevronUpIcon color="green600" className="h-6 w-6" /> : <ChevronDownIcon color="green600" className="h-6 w-6" />}
+            {filterOpen ? (
+              <ChevronUpIcon color='green600' className='h-6 w-6' />
+            ) : (
+              <ChevronDownIcon color='green600' className='h-6 w-6' />
+            )}
           </Pane>
 
           <Pane overflowY='auto' marginBottom={majorScale(3)}>
@@ -415,7 +437,7 @@ export default function Index() {
               }}
               borderRadius={8}
               backgroundColor={theme.colors.green100}
-              className="w-full"
+              className='w-full'
             >
               Reset
             </Button>
@@ -429,7 +451,7 @@ export default function Index() {
               }}
               borderRadius={8}
               backgroundColor={theme.colors.green600}
-              className="w-full hover:opacity-90"
+              className='w-full hover:opacity-90'
             >
               Apply
             </Button>
@@ -438,14 +460,14 @@ export default function Index() {
       </Pane>
 
       {/* ─── MAIN VIEW ──────────────────────────────────────────────────────── */}
-      <Pane flex={1} className="overflow-x-hidden px-4 sm:overflow-y-auto">
+      <Pane flex={1} className='overflow-x-hidden px-4 sm:overflow-y-auto'>
         {/* Header */}
         <Pane
           display='flex'
           alignItems='center'
           justifyContent='space-between'
           marginY={majorScale(3)}
-          className="flex-col sm:flex-row text-center"
+          className='flex-col sm:flex-row text-center'
         >
           <Pane>
             <Heading size={900} color={theme.colors.green700} fontWeight={900}>
@@ -457,7 +479,7 @@ export default function Index() {
           </Pane>
 
           {/* Date + arrows */}
-          <Pane display='flex' alignItems='center' gap={minorScale(2)} className="my-4">
+          <Pane display='flex' alignItems='center' gap={minorScale(2)} className='my-4'>
             <Button
               background='white'
               border={`1px solid ${theme.colors.green700}`}
@@ -495,8 +517,8 @@ export default function Index() {
           </Pane>
 
           {/* Meal tabs + nutrition */}
-          <Pane display='flex' flexDirection="column" gap={majorScale(2)}>
-              <Pane display='flex' alignItems='center' gap={majorScale(2)}>
+          <Pane display='flex' flexDirection='column' gap={majorScale(2)}>
+            <Pane display='flex' alignItems='center' gap={majorScale(2)}>
               <Pane
                 display='flex'
                 border={`1px solid ${theme.colors.green700}`}
@@ -521,66 +543,71 @@ export default function Index() {
                 ))}
               </Pane>
               <Pane display='flex' alignItems='center'>
-                <Text size={400} fontWeight={600} color={theme.colors.green700} marginX={minorScale(2)}>
+                <Text
+                  size={400}
+                  fontWeight={600}
+                  color={theme.colors.green700}
+                  marginX={minorScale(2)}
+                >
                   Nutrition
                 </Text>
                 <Switch checked={showNutrition} onChange={() => setShowNutrition((p) => !p)} />
               </Pane>
-              </Pane>
+            </Pane>
 
             <Pane>
-            <input
-              type='text'
-              placeholder='Search dining halls...'
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: 15,
-                border: `1px solid ${theme.colors.green700}`,
-                fontSize: 14,
-              }}
-            />
-          </Pane>
+              <input
+                type='text'
+                placeholder='Search dining halls...'
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: 15,
+                  border: `1px solid ${theme.colors.green700}`,
+                  fontSize: 14,
+                }}
+              />
+            </Pane>
           </Pane>
         </Pane>
 
         {/* Grid of cards */}
         {displayData.length === 0 ? (
-  <Pane
-    display="flex"
-    alignItems="center"
-    justifyContent="center"
-    paddingY={majorScale(8)}
-    flexDirection="column"
-    width="100%"
-  >
-    <Text size={500} color="muted" fontStyle="italic">
-      Nothing found. Try adjusting your filters or search.
-    </Text>
-  </Pane>
-) : (
-  <Pane
-    display='grid'
-    overflowY='auto'
-    paddingBottom={majorScale(6)}
-    gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
-    gap={majorScale(1)}
-    className="h-full"
-  >
-    {displayData.map((hall) => (
-      <DiningHallCard
-        key={hall.name}
-        hall={hall}
-        setModalHall={setModalHall}
-        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-        theme={theme}
-        showNutrition={showNutrition}
-      />
-    ))}
-  </Pane>
-)}
+          <Pane
+            display='flex'
+            alignItems='center'
+            justifyContent='center'
+            paddingY={majorScale(8)}
+            flexDirection='column'
+            width='100%'
+          >
+            <Text size={500} color='muted' fontStyle='italic'>
+              Nothing found. Try adjusting your filters or search.
+            </Text>
+          </Pane>
+        ) : (
+          <Pane
+            display='grid'
+            overflowY='auto'
+            paddingBottom={majorScale(6)}
+            gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
+            gap={majorScale(1)}
+            className='h-full'
+          >
+            {displayData.map((hall) => (
+              <DiningHallCard
+                key={hall.name}
+                hall={hall}
+                setModalHall={setModalHall}
+                ALLERGEN_EMOJI={ALLERGEN_EMOJI}
+                theme={theme}
+                showNutrition={showNutrition}
+              />
+            ))}
+          </Pane>
+        )}
       </Pane>
 
       {/* ─── RIGHT SIDEBAR (desktop only) ─────────────────────────────────── */}
@@ -619,7 +646,12 @@ export default function Index() {
         </Pane>
       </Pane>
       {/* Modal */}
-      <HallMenuModal isShown={!!modalHall} onClose={() => setModalHall(null)} hall={modalHall} ALLERGEN_EMOJI={ALLERGEN_EMOJI}/>
+      <HallMenuModal
+        isShown={!!modalHall}
+        onClose={() => setModalHall(null)}
+        hall={modalHall}
+        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
+      />
     </Pane>
   );
 }

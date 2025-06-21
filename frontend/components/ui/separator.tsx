@@ -10,12 +10,5 @@ export const Separator: React.FC<SeparatorProps> = ({
   height = '2px',
   marginTop = minorScale(3),
 }) => {
-  return (
-    <Pane
-      background="green700"
-      height={height}
-      marginTop={marginTop}
-      borderRadius={2}
-    />
-  );
+  return <Pane background='green700' height={height} marginTop={marginTop} borderRadius={2} />;
 };
