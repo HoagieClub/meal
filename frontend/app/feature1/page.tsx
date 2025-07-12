@@ -8,6 +8,7 @@ import AuthButton from '@/lib/hoagie-ui/AuthButton';
 import { classifyVenue, Venue } from '@/utils/places';
 import type { VenueType, PlaceStatus } from '@/types/places';
 import Link from 'next/link';
+import FilterSidebar from '../../components/FilterSidebar';
 import {
   Pane,
   Heading,
@@ -154,7 +155,7 @@ export default function Index() {
     'Graduate College',
   ];
   const [halls] = useState<string[]>(initialHalls);
-  const DIETARY = ['Vegetarian', 'Vegan', 'Halal', 'Kosher', 'Gluten-free'];
+  const DIETARY = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
   const ALLERGENS = [
     'Peanut',
     'Tree nut',
@@ -171,6 +172,7 @@ export default function Index() {
   const [appliedHalls, setAppliedHalls] = useState<string[]>(initialHalls);
   const [appliedDietary, setAppliedDietary] = useState<string[]>([...DIETARY]);
   const [appliedAllergens, setAppliedAllergens] = useState<string[]>([...ALLERGENS]);
+  const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories');
 
   // temporary UI selections
   const [tempHalls, setTempHalls] = useState<string[]>(initialHalls);
@@ -212,6 +214,7 @@ export default function Index() {
             description: x.description,
             link: x.link,
           }));
+          console.log(items);
           return {
             name: raw.name,
             items: categorize(items),
@@ -246,38 +249,83 @@ export default function Index() {
   }, []);
 
   // ─── Prepare Display ─────────────────────────────────────────────────────
+  // pages/index.tsx, inside your Index() before return:
   const displayData = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+
+    // Have they narrowed by diet or allergen?
+    const isDietFilterActive = appliedDietary.length < DIETARY.length;
+    const isAllergenFilterActive = appliedAllergens.length < ALLERGENS.length;
+
+    // Only apply text‐search if there actually is a non‐empty term
+    const isSearchActive = term !== '';
+
+    // If _no_ dietary/allergen/search filters, return every applied hall, unfiltered:
+    if (!isDietFilterActive && !isAllergenFilterActive && !isSearchActive) {
+      return appliedHalls
+        .map((h) => venues.find((v) => v.name === h))
+        .filter((v): v is UIVenue => !!v);
+    }
+
+    // Otherwise, filter each hall’s dishes
     return appliedHalls
-      .filter((name) => name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .map((name) => {
-        const v = venues.find((v) => v.name === name);
-        if (!v) {
-          return {
-            name,
-            items: {
-              'Main Entrée': [],
-              'Vegetarian + Vegan Entrée': [],
-              Soups: [],
-            },
-            allergens: new Set<string>(),
-            calories: {},
-            protein: {},
-          } as UIVenue;
-        }
-        const items = {} as UIVenue['items'];
-        (Object.keys(v.items) as (keyof typeof v.items)[]).forEach((cat) => {
-          items[cat] = v.items[cat].filter((i) => {
-            const ds = i.description.toLowerCase();
-            if (!appliedDietary.includes('Vegetarian') && ds.includes('vegetarian')) return false;
-            if (!appliedDietary.includes('Vegan') && ds.includes('vegan')) return false;
-            for (const a of ALLERGENS)
-              if (!appliedAllergens.includes(a) && ds.includes(a.toLowerCase())) return false;
+      .map((hallName) => {
+        const venue = venues.find((v) => v.name === hallName);
+        if (!venue) return null;
+
+        // New items object where we'll push matching dishes
+        const items: UIVenue['items'] = {
+          'Main Entrée': [],
+          'Vegetarian + Vegan Entrée': [],
+          Soups: [],
+        };
+        let hasAny = false;
+
+        for (const cat of Object.keys(venue.items) as (keyof typeof venue.items)[]) {
+          items[cat] = venue.items[cat].filter((dish) => {
+            const text = (dish.name + ' ' + dish.description).toLowerCase();
+
+            // 1) dietary filter
+            if (isDietFilterActive) {
+              if (!appliedDietary.includes('Vegetarian') && text.includes('vegetarian')) {
+                return false;
+              }
+              if (!appliedDietary.includes('Vegan') && text.includes('vegan')) {
+                return false;
+              }
+            }
+
+            // 2) allergen filter
+            if (isAllergenFilterActive) {
+              for (const a of ALLERGENS) {
+                if (!appliedAllergens.includes(a) && text.includes(a.toLowerCase())) {
+                  return false;
+                }
+              }
+            }
+
+            // 3) text search filter
+            if (isSearchActive && !text.includes(term)) {
+              return false;
+            }
+
+            hasAny = true;
             return true;
           });
-        });
-        return { ...v, items };
-      });
-  }, [venues, appliedHalls, appliedDietary, appliedAllergens, searchTerm]);
+        }
+
+        if (!hasAny) return null;
+        return { ...venue, items } as UIVenue;
+      })
+      .filter((v): v is UIVenue => v !== null);
+  }, [
+    venues,
+    appliedHalls,
+    appliedDietary,
+    appliedAllergens,
+    searchTerm,
+    // DIETARY and ALLERGENS are constants defined above
+  ]);
 
   // const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -292,233 +340,112 @@ export default function Index() {
   return (
     <Pane display='flex' className='sm:h-[calc(100vh)] sm:flex-row flex-col' background={PAGE_BG}>
       {/* ─── FILTER SIDEBAR ───────────────────────────────────────────── */}
-      <Pane
-        // display={['none', 'flex']}
-        flexDirection='column'
-        width={280}
-        padding={majorScale(3)}
-        className='max-w-[100%] hidden sm:inline z-20'
-        // overflowY='auto'
-        // maxHeight='calc(100vh - 60px)'
-      >
-        <Pane
-          display='flex'
-          background='white'
-          borderRadius={12}
-          maxHeight='100%'
-          boxShadow='0 2px 12px rgba(0,0,0,0.06)'
-          className={`fixed px-4 py-2 sm:relative sm:px-4 sm:py-4 flex-col`}
-        >
-          {/* Toggle */}
-          <Pane
-            display='flex'
-            alignItems='center'
-            justifyContent='space-between'
-            cursor='pointer'
-            onClick={() => setFilterOpen((o) => !o)}
-            marginBottom={filterOpen ? majorScale(3) : 0}
-          >
-            <Text size={500} fontWeight={400} color={theme.colors.gray700}>
-              {filterOpen ? 'Hide Filters' : 'Filter By'}
-            </Text>
-            {filterOpen ? (
-              <ChevronUpIcon color='green600' className='h-6 w-6' />
-            ) : (
-              <ChevronDownIcon color='green600' className='h-6 w-6' />
-            )}
-          </Pane>
-
-          <Pane overflowY='auto' marginBottom={majorScale(3)}>
-            {filterOpen && (
-              <>
-                {/* Dining Halls */}
-                <Text
-                  size={400}
-                  fontWeight={600}
-                  marginBottom={minorScale(1)}
-                  color={theme.colors.gray800}
-                >
-                  Dining Halls
-                </Text>
-                <Pane
-                  display='flex'
-                  flexWrap='wrap'
-                  gap={minorScale(1)}
-                  marginBottom={majorScale(3)}
-                >
-                  {initialHalls.map((hall) => (
-                    <Checkbox
-                      key={hall}
-                      label={hall}
-                      checked={tempHalls.includes(hall)}
-                      onChange={() => toggle(hall, tempHalls, setTempHalls)}
-                      color={theme.colors.green700}
-                      marginRight={minorScale(1)}
-                      marginBottom={minorScale(1)}
-                    />
-                  ))}
-                </Pane>
-
-                {/* Dietary */}
-                <Text
-                  size={400}
-                  fontWeight={600}
-                  marginBottom={minorScale(1)}
-                  color={theme.colors.gray800}
-                >
-                  Dietary
-                </Text>
-                <Pane
-                  display='flex'
-                  flexWrap='wrap'
-                  gap={minorScale(1)}
-                  marginBottom={majorScale(3)}
-                >
-                  {DIETARY.map((diet) => (
-                    <Checkbox
-                      key={diet}
-                      label={diet}
-                      checked={tempDietary.includes(diet)}
-                      onChange={() => toggle(diet, tempDietary, setTempDietary)}
-                      color={theme.colors.green700}
-                      marginRight={minorScale(1)}
-                      marginBottom={minorScale(1)}
-                    />
-                  ))}
-                </Pane>
-
-                {/* Allergens */}
-                <Text
-                  size={400}
-                  fontWeight={600}
-                  marginBottom={minorScale(1)}
-                  color={theme.colors.gray800}
-                >
-                  Allergens
-                </Text>
-                <Pane
-                  display='flex'
-                  flexWrap='wrap'
-                  gap={minorScale(1)}
-                  marginBottom={majorScale(4)}
-                >
-                  {ALLERGENS.map((allergen) => (
-                    <Checkbox
-                      key={allergen}
-                      label={`${ALLERGEN_EMOJI[allergen.toLowerCase()]} ${allergen}`}
-                      checked={tempAllergens.includes(allergen)}
-                      onChange={() => toggle(allergen, tempAllergens, setTempAllergens)}
-                      color={theme.colors.green700}
-                      marginRight={minorScale(1)}
-                      marginBottom={minorScale(1)}
-                    />
-                  ))}
-                </Pane>
-              </>
-            )}
-          </Pane>
-          {/* Actions */}
-          <Pane display='flex' justifyContent='space-between' gap={minorScale(3)}>
-            <Button
-              onClick={() => {
-                const resetHalls = [...halls];
-                const resetDietary = [...DIETARY];
-                const resetAllergens = [...ALLERGENS];
-
-                // Reset temp
-                setTempHalls(resetHalls);
-                setTempDietary(resetDietary);
-                setTempAllergens(resetAllergens);
-
-                // Apply immediately
-                setAppliedHalls(resetHalls);
-                setAppliedDietary(resetDietary);
-                setAppliedAllergens(resetAllergens);
-              }}
-              borderRadius={8}
-              backgroundColor={theme.colors.green100}
-              className='w-full'
-            >
-              Reset
-            </Button>
-            <Button
-              appearance='primary'
-              intent='success'
-              onClick={() => {
-                setAppliedHalls(tempHalls);
-                setAppliedDietary(tempDietary);
-                setAppliedAllergens(tempAllergens);
-              }}
-              borderRadius={8}
-              backgroundColor={theme.colors.green600}
-              className='w-full hover:opacity-90'
-            >
-              Apply
-            </Button>
-          </Pane>
-        </Pane>
-      </Pane>
+      <FilterSidebar
+        initialHalls={initialHalls}
+        tempHalls={tempHalls}
+        toggleHall={(h) => toggle(h, tempHalls, setTempHalls)}
+        DIETARY={DIETARY}
+        tempDietary={tempDietary}
+        toggleDietary={(d) => toggle(d, tempDietary, setTempDietary)}
+        ALLERGENS={ALLERGENS}
+        tempAllergens={tempAllergens}
+        toggleAllergen={(a) => toggle(a, tempAllergens, setTempAllergens)}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        showNutrition={showNutrition}
+        setShowNutrition={setShowNutrition}
+        onReset={resetTemp}
+        onApply={() => {
+          setAppliedHalls(tempHalls);
+          setAppliedDietary(tempDietary);
+          setAppliedAllergens(tempAllergens);
+        }}
+      />
 
       {/* ─── MAIN VIEW ──────────────────────────────────────────────────────── */}
-      <Pane flex={1} className='overflow-x-hidden px-4 sm:overflow-y-auto'>
+      <Pane flex={1} className='overflow-x-hidden px-4'>
         {/* Header */}
         <Pane
           display='flex'
           alignItems='center'
           justifyContent='space-between'
           marginY={majorScale(3)}
-          className='flex-col sm:flex-row text-center'
+          className='flex-col sm:flex-row text-left'
         >
-          <Pane>
-            <Heading size={900} color={theme.colors.green700} fontWeight={900}>
+          <Pane width={240}>
+            <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
               {meal.toUpperCase()}
             </Heading>
-            <Text size={500} color={theme.colors.green600} fontWeight={600}>
+            <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
               {MEAL_RANGES[meal]}
             </Text>
           </Pane>
 
           {/* Date + arrows */}
-          <Pane display='flex' alignItems='center' gap={minorScale(2)} className='my-4'>
-            <Button
-              background='white'
-              border={`1px solid ${theme.colors.green700}`}
-              borderRadius={999}
-              padding={minorScale(1)}
-              appearance='minimal'
-              display='flex'
-              alignItems='center'
-              justifyContent='center'
-              onClick={prevDay}
-            >
-              <ChevronLeftIcon size={16} />
-            </Button>
+          <Pane display='flex' gap={minorScale(2)} className='flex-col flex justify-center my-4'>
+            <Pane display='flex' alignItems='center' gap={minorScale(2)}>
+              <Button
+                background='white'
+                border={`1px solid ${theme.colors.green700}`}
+                borderRadius={999}
+                padding={minorScale(1)}
+                appearance='minimal'
+                onClick={prevDay}
+              >
+                <ChevronLeftIcon size={20} />
+              </Button>
 
-            <Text size={600} color={theme.colors.green700}>
-              {selectedDate.toLocaleDateString('en-US', {
-                weekday: 'long',
-                month: 'numeric',
-                day: 'numeric',
-              })}
-            </Text>
-            <Button
-              background='white'
+              <Text className='text-2xl' color={theme.colors.green700}>
+                {selectedDate.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'numeric',
+                  day: 'numeric',
+                })}
+              </Text>
+
+              <Button
+                background='white'
+                border={`1px solid ${theme.colors.green700}`}
+                borderRadius={999}
+                padding={minorScale(1)}
+                appearance='minimal'
+                onClick={nextDay}
+              >
+                <ChevronRightIcon size={20} />
+              </Button>
+            </Pane>
+
+            {/* ── Meal tabs ────────────────────────────── */}
+            <Pane
+              display='flex'
+              // width={240}
               border={`1px solid ${theme.colors.green700}`}
               borderRadius={999}
-              padding={minorScale(1)}
-              appearance='minimal'
-              display='flex'
-              alignItems='center'
-              justifyContent='center'
-              onClick={nextDay}
+              background={theme.colors.green25}
+              overflow='hidden'
             >
-              <ChevronRightIcon size={16} />
-            </Button>
+              {(['Breakfast', 'Lunch', 'Dinner'] as MealType[]).map((m) => (
+                <Pane
+                  key={m}
+                  flex={1}
+                  textAlign='center'
+                  paddingY={minorScale(1)}
+                  cursor='pointer'
+                  background={meal === m ? theme.colors.green700 : 'transparent'}
+                  color={meal === m ? 'white' : theme.colors.green800}
+                  className='text-xs px-4'
+                  fontWeight={300}
+                  onClick={() => setMeal(m)}
+                >
+                  {m}
+                </Pane>
+              ))}
+            </Pane>
           </Pane>
 
           {/* Meal tabs + nutrition */}
           <Pane display='flex' flexDirection='column' gap={majorScale(2)}>
-            <Pane display='flex' alignItems='center' gap={majorScale(2)}>
+            {/* <Pane display='flex' alignItems='center' gap={majorScale(2)}>
               <Pane
                 display='flex'
                 border={`1px solid ${theme.colors.green700}`}
@@ -569,7 +496,7 @@ export default function Index() {
                   fontSize: 14,
                 }}
               />
-            </Pane>
+            </Pane> */}
           </Pane>
         </Pane>
 
