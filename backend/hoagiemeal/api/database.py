@@ -20,7 +20,9 @@ from django.db.models import Model
 from django.forms.models import model_to_dict
 
 import datetime
-from typing import List, Optional, Dict, Any, Literal, Optional
+from typing import List, Optional, Dict, Any, Literal, Optional, TypeVar, Type
+
+T = TypeVar("T", bound=Model)
 
 
 class DatabaseAPI:
@@ -73,10 +75,12 @@ class DatabaseAPI:
         mode: Literal["include", "exclude"] = "include",
         qs: QuerySet,
     ) -> QuerySet:
-        if mode == "include":
-            return qs.filter(**{f"{field}__contains": values})
-        elif mode == "exclude":
-            return qs.exclude(**{f"{field}__overlap": values})
+        qs = (
+            qs.filter(**{f"{field}__contains": values})
+            if mode == "include"
+            else qs.exclude(**{f"{field}__overlap": values})
+        )
+        return qs
 
     def _apply_number_filter(
         self,
@@ -86,16 +90,30 @@ class DatabaseAPI:
         mode: Literal["exact", "greater", "less"],
         qs: QuerySet,
     ) -> QuerySet:
-        if mode == "exact":
-            return qs.filter(**{f"{field}__exact": amount})
-        elif mode == "greater":
-            return qs.filter(**{f"{field}__gte": amount})
-        elif mode == "less":
-            return qs.filter(**{f"{field}__lte": amount})
+        lookup = {"exact": "exact", "greater": "gte", "less": "lte"}[mode]
+        return qs.filter(**{f"{field}__{lookup}": amount})
 
-    def _get_single(self, model_cls: type[Model], **filters) -> Optional[Model]:
+    def _get_single(self, model_cls: Type[T], **filters) -> Optional[T]:
+        if not filters or all(v is None for v in filters.values()):
+            raise ValueError("At least one filter must be provided.")
         qs = model_cls.objects.filter(**{k: v for k, v in filters.items() if v})
         return qs.first()
+
+    def _apply_pagination_and_limiting(
+        self,
+        qs: QuerySet,
+        limit: Optional[int],
+        page: Optional[int],
+        per_page: Optional[int],
+    ) -> QuerySet | Page:
+        limit = limit if limit is not None else self.DEFAULT_LIMIT
+        limit = min(limit, self.MAX_LIMIT)
+        per_page = per_page if per_page is not None else self.DEFAULT_PER_PAGE
+        if limit is not None and page is not None:
+            raise ValueError("Cannot perform both limiting and pagination simultaneously.")
+        if page is not None:
+            return self._paginate(qs=qs, page=page, per_page=per_page)
+        return self._limit(qs=qs, limit=limit)
 
     def list_menu_items(
         self,
@@ -105,13 +123,8 @@ class DatabaseAPI:
         page: Optional[int] = None,
         per_page: Optional[int] = None,
     ) -> QuerySet["MenuItem"] | Page:
-        limit = limit if limit is not None else self.DEFAULT_LIMIT
-        per_page = per_page if per_page is not None else self.DEFAULT_PER_PAGE
-        qs: QuerySet = MenuItem.objects.all()
-        qs = qs.order_by(order_by)
-        qs = self._paginate(qs=qs, page=page, per_page=per_page) if page else qs
-        qs = self._limit(qs=qs, limit=limit)
-        return qs
+        qs: QuerySet = MenuItem.objects.all().order_by(order_by)
+        return self._apply_pagination_and_limiting(qs=qs, limit=limit, page=page, per_page=per_page)
 
     def filter_menu_items(
         self,
@@ -120,53 +133,49 @@ class DatabaseAPI:
         description: Optional[str] = None,
         menu_id: Optional[int] = None,
         allergens: Optional[List[str]] = None,
-        allergens_mode: Literal["include", "exclude"] = "include",
+        allergens_mode: Optional[Literal["include", "exclude"]] = "include",
         ingredients: Optional[List[str]] = None,
-        ingredients_mode: Literal["include", "exclude"] = "include",
-        after: datetime.datetime | None = None,
-        before: datetime.datetime | None = None,
-        order_by: str = "name",
+        ingredients_mode: Optional[Literal["include", "exclude"]] = "include",
+        after: Optional[datetime.datetime] = None,
+        before: Optional[datetime.datetime] = None,
+        order_by: Optional[str] = "name",
         limit: Optional[int] = None,
         page: Optional[int] = None,
         per_page: Optional[int] = None,
     ) -> QuerySet["MenuItem"] | Page:
-        limit = limit if limit is not None else self.DEFAULT_LIMIT
-        per_page = per_page if per_page is not None else self.DEFAULT_PER_PAGE
-        qs: QuerySet = MenuItem.objects.all()
-
-        qs = qs.filter(name__icontains=name) if name else qs
-        qs = qs.filter(description__icontains=description) if description else qs
-        qs = qs.filter(menu_id=menu_id) if menu_id else qs
-        qs = self._apply_date_filter(after=after, before=before, qs=qs) if after or before else qs
-        qs = (
-            self._apply_array_filter(
-                field="allergens", values=allergens, mode=allergens_mode, qs=qs
+        qs: QuerySet = MenuItem.objects.all().order_by(order_by or "name")
+        if name is not None:
+            qs = qs.filter(name__icontains=name)
+        if description is not None:
+            qs = qs.filter(description__icontains=description) if description else qs
+        if menu_id is not None:
+            qs = qs.filter(menu_id=menu_id) if menu_id else qs
+        if after is not None or before is not None:
+            qs = (
+                self._apply_date_filter(after=after, before=before, qs=qs)
+                if after or before
+                else qs
             )
-            if allergens
-            else qs
-        )
-        qs = (
-            self._apply_array_filter(
-                field="ingredients", values=ingredients, mode=ingredients_mode, qs=qs
+        if allergens is not None:
+            qs = self._apply_array_filter(
+                field="allergens", values=allergens, mode=allergens_mode or "include", qs=qs
             )
-            if ingredients
-            else qs
-        )
-
-        qs = qs.order_by(order_by)
-        qs = self._paginate(qs=qs, page=page, per_page=per_page) if page else qs
-        qs = self._limit(qs=qs, limit=limit)
-        return qs
+        if ingredients is not None:
+            qs = self._apply_array_filter(
+                field="ingredients",
+                values=ingredients,
+                mode=ingredients_mode or "include",
+                qs=qs,
+            )
+        return self._apply_pagination_and_limiting(qs=qs, limit=limit, page=page, per_page=per_page)
 
     def retrieve_menu_item(
         self,
         *,
         id: Optional[int] = None,
-        api_id: Optional[str] = None,
+        api_id: Optional[int] = None,
         link: Optional[str] = None,
     ) -> Optional["MenuItem"]:
-        if id is None and api_id is None and link is None:
-            raise ValueError("At least one of id, api_id, or link must be provided.")
         return self._get_single(MenuItem, id=id, api_id=api_id, link=link)
 
     def list_menus(
@@ -177,18 +186,13 @@ class DatabaseAPI:
         page: Optional[int] = None,
         per_page: Optional[int] = None,
     ) -> QuerySet["Menu"] | Page:
-        limit = limit if limit is not None else self.DEFAULT_LIMIT
-        per_page = per_page if per_page is not None else self.DEFAULT_PER_PAGE
-        qs: QuerySet = Menu.objects.all()
-        qs = qs.order_by(order_by)
-        qs = self._paginate(qs=qs, page=page, per_page=per_page) if page else qs
-        qs = self._limit(qs=qs, limit=limit)
-        return qs
+        qs: QuerySet = Menu.objects.all().order_by(order_by)
+        return self._apply_pagination_and_limiting(qs=qs, limit=limit, page=page, per_page=per_page)
 
     def filter_menus(
         self,
         *,
-        dining_hall_id: Optional[int] = None,
+        dining_venue_id: Optional[int] = None,
         date: Optional[datetime.date] = None,
         last_fetched: Optional[datetime.datetime] = None,
         after: Optional[datetime.datetime] = None,
@@ -198,40 +202,28 @@ class DatabaseAPI:
         page: Optional[int] = None,
         per_page: Optional[int] = None,
     ) -> QuerySet["Menu"] | Page:
-        limit = limit if limit is not None else self.DEFAULT_LIMIT
-        per_page = per_page if per_page is not None else self.DEFAULT_PER_PAGE
-        qs: QuerySet = Menu.objects.all()
-
-        qs = qs.filter(dining_hall_id=dining_hall_id) if dining_hall_id else qs
-        qs = qs.filter(date=date) if date else qs
-        qs = qs.filter(last_fetched__gte=last_fetched) if last_fetched else qs
-        qs = self._apply_date_filter(after=after, before=before, qs=qs) if after or before else qs
-
-        qs = qs.order_by(order_by)
-        qs = self._paginate(qs=qs, page=page, per_page=per_page) if page else qs
-        qs = self._limit(qs=qs, limit=limit)
-        return qs
+        qs: QuerySet = Menu.objects.all().order_by(order_by)
+        if dining_venue_id is not None:
+            qs = qs.filter(dining_venue_id=dining_venue_id)
+        if date is not None:
+            qs = qs.filter(date=date)
+        if last_fetched is not None:
+            qs = qs.filter(last_fetched__gte=last_fetched)
+        if after is not None or before is not None:
+            qs = self._apply_date_filter(after=after, before=before, qs=qs)
+        return self._apply_pagination_and_limiting(qs=qs, limit=limit, page=page, per_page=per_page)
 
     def retrieve_menu(
         self,
         *,
         id: Optional[int] = None,
-        dining_hall_id: Optional[int] = None,
+        dining_venue_id: Optional[int] = None,
         date: Optional[datetime.date] = None,
     ) -> Optional["Menu"]:
-        if id is None and (dining_hall_id is None or date is None):
-            raise ValueError("Either id or both dining_hall_id and date must be provided.")
-        return self._get_single(Menu, id=id, dining_hall_id=dining_hall_id, date=date)
-
-    def retrieve_menu_by_dining_hall_and_date(
-        self, *, dining_hall_id: int, date: datetime.date
-    ) -> Optional["Menu"]:
-        return self._get_single(Menu, dining_hall_id=dining_hall_id, date=date)
+        return self._get_single(Menu, id=id, dining_venue_id=dining_venue_id, date=date)
 
     def list_dining_venues(self, *, order_by: str = "name") -> QuerySet["DiningVenue"]:
-        qs: QuerySet = DiningVenue.objects.all()
-        qs = qs.order_by(order_by)
-        return qs
+        return DiningVenue.objects.all().order_by(order_by)
 
     def filter_dining_venues(
         self,
@@ -243,27 +235,25 @@ class DatabaseAPI:
         amenities_mode: Literal["include", "exclude"] = "include",
     ) -> QuerySet["DiningVenue"]:
         qs: QuerySet = DiningVenue.objects.all()
-        qs = qs.filter(name__icontains=name) if name else qs
-        qs = qs.filter(is_active=is_active) if is_active is not None else qs
-        qs = qs.filter(building_name__icontains=building_name) if building_name else qs
-        qs = (
-            self._apply_array_filter(
+        if name:
+            qs = qs.filter(name__icontains=name)
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active)
+        if building_name:
+            qs = qs.filter(building_name__icontains=building_name)
+        if amenities:
+            qs = self._apply_array_filter(
                 field="amenities", values=amenities, mode=amenities_mode, qs=qs
             )
-            if amenities
-            else qs
-        )
         return qs
 
     def retrieve_dining_venue(
         self,
         *,
-        id: int | None = None,
-        name: str | None = None,
-        database_id: str | None = None,
+        id: Optional[int] = None,
+        name: Optional[str] = None,
+        database_id: Optional[int] = None,
     ) -> Optional["DiningVenue"]:
-        if id is None and name is None and database_id is None:
-            raise ValueError("At least one of id, name, or database_id must be provided.")
         return self._get_single(DiningVenue, id=id, name=name, database_id=database_id)
 
     def list_users(
@@ -274,14 +264,8 @@ class DatabaseAPI:
         page: Optional[int] = None,
         per_page: Optional[int] = None,
     ) -> QuerySet["CustomUser"] | Page:
-        limit = limit if limit is not None else self.DEFAULT_LIMIT
-        per_page = per_page if per_page is not None else self.DEFAULT_PER_PAGE
-
-        qs: QuerySet = CustomUser.objects.all()
-        qs = qs.order_by(order_by)
-        qs = self._paginate(qs=qs, page=page, per_page=per_page) if page else qs
-        qs = self._limit(qs=qs, limit=limit)
-        return qs
+        qs: QuerySet = CustomUser.objects.all().order_by(order_by)
+        return self._apply_pagination_and_limiting(qs=qs, limit=limit, page=page, per_page=per_page)
 
     def filter_users(
         self,
@@ -302,49 +286,36 @@ class DatabaseAPI:
         page: Optional[int] = None,
         per_page: Optional[int] = None,
     ) -> QuerySet["CustomUser"] | Page:
-        limit = limit if limit is not None else self.DEFAULT_LIMIT
-        per_page = per_page if per_page is not None else self.DEFAULT_PER_PAGE
-
-        qs: QuerySet = CustomUser.objects.all()
-        qs = qs.filter(is_staff=is_staff) if is_staff is not None else qs
-        qs = qs.filter(is_active=is_active) if is_active is not None else qs
-        qs = qs.filter(class_year=class_year) if class_year else qs
-        qs = (
-            self._apply_array_filter(
+        qs: QuerySet = CustomUser.objects.all().order_by(order_by)
+        if is_staff is not None:
+            qs = qs.filter(is_staff=is_staff)
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active)
+        if class_year:
+            qs = qs.filter(class_year=class_year)
+        if dietary_restrictions:
+            qs = self._apply_array_filter(
                 field="dietary_restrictions",
                 values=dietary_restrictions,
                 mode=dietary_restrictions_mode,
                 qs=qs,
             )
-            if dietary_restrictions
-            else qs
-        )
-        qs = (
-            self._apply_number_filter(
+        if daily_calorie_goal:
+            qs = self._apply_number_filter(
                 field="dietary_profile__daily_calorie_goal",
                 amount=daily_calorie_goal,
                 mode=daily_calorie_goal_mode,
                 qs=qs,
             )
-            if daily_calorie_goal
-            else qs
-        )
-        qs = (
-            self._apply_number_filter(
+        if daily_protein_goal:
+            qs = self._apply_number_filter(
                 field="dietary_profile__daily_protein_goal",
                 amount=daily_protein_goal,
                 mode=daily_protein_goal_mode,
                 qs=qs,
             )
-            if daily_protein_goal
-            else qs
-        )
         qs = self._apply_date_filter(after=after, before=before, qs=qs) if after or before else qs
-
-        qs = qs.order_by(order_by)
-        qs = self._paginate(qs=qs, page=page, per_page=per_page) if page else qs
-        qs = self._limit(qs=qs, limit=limit)
-        return qs
+        return self._apply_pagination_and_limiting(qs=qs, limit=limit, page=page, per_page=per_page)
 
     def retrieve_user(
         self,
@@ -354,43 +325,33 @@ class DatabaseAPI:
         email: Optional[str] = None,
         net_id: Optional[str] = None,
     ) -> Optional["CustomUser"]:
-        if id is None and username is None and email is None and net_id is None:
-            raise ValueError("At least one of id, username, email, or net_id must be provided.")
         return self._get_single(CustomUser, id=id, username=username, email=email, net_id=net_id)
 
     def retrieve_menu_item_nutrients(
         self, *, id: Optional[int] = None, menu_item_id: Optional[int] = None
     ) -> Optional[MenuItemNutrient]:
-        if id is None and menu_item_id is None:
-            raise ValueError("At least one of id or menu_item_id must be provided.")
         return self._get_single(MenuItemNutrient, id=id, menu_item_id=menu_item_id)
 
     def retrieve_menu_item_rating(
         self, *, id: Optional[int] = None, menu_item_id: Optional[int] = None
     ) -> Optional[MenuRating]:
-        if id is None and menu_item_id is None:
-            raise ValueError("At least one of id or menu_item_id must be provided.")
         return self._get_single(MenuRating, id=id, menu_item_id=menu_item_id)
 
     def retrieve_user_dietary_profile(
         self, *, id: Optional[int] = None, user_id: Optional[int] = None
     ) -> Optional[UserDietaryProfile]:
-        if id is None and user_id is None:
-            raise ValueError("At least one of id or user_id must be provided.")
         return self._get_single(UserDietaryProfile, id=id, user_id=user_id)
 
     def retrieve_user_meal_plan(
         self, *, id: Optional[int] = None, user_id: Optional[int] = None
     ) -> Optional[UserMealPlan]:
-        if id is None and user_id is None:
-            raise ValueError("At least one of id or user_id must be provided.")
         return self._get_single(UserMealPlan, id=id, user_id=user_id)
 
     def create_dining_venue(
         self,
         *,
         name: str,
-        database_id: Optional[str] = None,
+        database_id: Optional[int] = None,
         is_active: bool = True,
         building_name: Optional[str] = None,
         amenities: Optional[List[str]] = None,
@@ -416,17 +377,14 @@ class DatabaseAPI:
     def create_menu(
         self,
         *,
-        dining_hall_id: int,
+        dining_venue_id: int,
         date: datetime.date,
         last_fetched: Optional[datetime.datetime] = None,
     ) -> Optional[Menu]:
-        existing_menu = self.retrieve_menu_by_dining_hall_and_date(
-            dining_hall_id=dining_hall_id, date=date
-        )
+        existing_menu = self.retrieve_menu(dining_venue_id=dining_venue_id, date=date)
         if existing_menu:
             return existing_menu
-
-        new_menu = Menu(dining_hall_id=dining_hall_id, date=date, last_fetched=last_fetched)
+        new_menu = Menu(dining_venue_id=dining_venue_id, date=date, last_fetched=last_fetched)
         new_menu.save()
         return new_menu
 
@@ -434,23 +392,16 @@ class DatabaseAPI:
         self,
         *,
         name: str,
-        description: Optional[str] = None,
         menu_id: int,
-        allergens: Optional[List[str]] = None,
-        ingredients: Optional[List[str]] = None,
-        api_id: Optional[str] = None,
+        api_id: Optional[int] = None,
         link: Optional[str] = None,
     ) -> Optional[MenuItem]:
         existing_item = self.retrieve_menu_item(api_id=api_id, link=link)
         if existing_item:
             return existing_item
-
         new_item = MenuItem(
             name=name,
-            description=description,
             menu_id=menu_id,
-            allergens=allergens,
-            ingredients=ingredients,
             api_id=api_id,
             link=link,
         )
@@ -479,11 +430,15 @@ class DatabaseAPI:
         return new_nutrient
 
 
-if __name__ == "__main__":
+def first_test():
     db_api = DatabaseAPI()
+    MenuItemNutrient.objects.all().delete()
+    MenuItem.objects.all().delete()
+    Menu.objects.all().delete()
+    DiningVenue.objects.all().delete()
 
-    new_dining_venue = db_api.create_dining_venue(
-        name="Test Dining Hall",
+    test_dining_venue = db_api.create_dining_venue(
+        name="Test Dining Venue",
         database_id=1,
         is_active=True,
         building_name="Test Building",
@@ -491,26 +446,24 @@ if __name__ == "__main__":
         latitude=40.7128,
         longitude=-74.0060,
     )
+    print(f"Added Dining Venue: {test_dining_venue.name}")
 
-    new_menu = db_api.create_menu(
-        dining_hall_id=3, date=datetime.date.today(), last_fetched=datetime.datetime.now()
+    test_menu = db_api.create_menu(
+        dining_venue_id=test_dining_venue.database_id,
+        date=datetime.date.today(),
+        last_fetched=datetime.datetime.now(),
     )
-    if new_menu:
-        print(f"Added Menu: {new_menu.date} at Dining Hall ID: {new_menu.dining_hall_id}")
+    print(f"Added Menu: {test_menu.id}")
 
-    new_menu_item = db_api.create_menu_item(
+    test_menu_item = db_api.create_menu_item(
         name="Test Item",
-        description="A test menu item",
-        menu_id=5,
-        allergens=["gluten"],
-        ingredients=["wheat", "sugar"],
+        menu_id=test_menu.id,
         api_id=1,
         link="http://example.com/test-item",
     )
-    if new_menu_item:
-        print(f"Added Menu Item: {new_menu_item.name}")
+    print(f"Added Menu Item: {test_menu_item.name}")
 
-    new_menu_nutrients = db_api.create_menu_item_nutrients(
+    test_menu_item_nutrients = db_api.create_menu_item_nutrients(
         dict={
             "serving_size": "1 cup",
             "serving_unit": "cup",
@@ -530,20 +483,19 @@ if __name__ == "__main__":
             "calcium": 200.0,
             "iron": 1.0,
         },
-        menu_item_id=3,
+        menu_item_id=test_menu_item.id,
     )
+    print(f"Added Nutrients for Menu Item ID: {test_menu_item_nutrients.menu_item_id}")
 
     print("-" * 40)
-    print("Menu Item Nutrients for Menu Item ID 3:")
-    menu_item_nutrients = db_api.retrieve_menu_item_nutrients(menu_item_id=3)
-    if menu_item_nutrients:
-        print(model_to_dict(new_menu_nutrients))
+    print(f"Menu Item Nutrients for Menu Item ID {test_menu_item.id}:")
+    menu_item_nutrients = db_api.retrieve_menu_item_nutrients(menu_item_id=test_menu_item.id)
+    print(model_to_dict(menu_item_nutrients))
 
     print("-" * 40)
-    print("Menu Item with ID 3:")
-    menu_item = db_api.retrieve_menu_item(id=3)
-    if menu_item:
-        print(model_to_dict(menu_item))
+    print(f"Menu Item with ID: {test_menu_item.id}")
+    menu_item = db_api.retrieve_menu_item(id=test_menu_item.id)
+    print(model_to_dict(menu_item))
 
     print("-" * 40)
     print("Listing all dining venues:")
@@ -552,7 +504,11 @@ if __name__ == "__main__":
         print(model_to_dict(venue))
 
     print("-" * 40)
-    print("Finding menus for dining hall ID 3:")
-    menus = db_api.filter_menus(dining_hall_id=3, date=datetime.date.today())
+    print(f"Finding menus for dining hall ID: {test_dining_venue.database_id}")
+    menus = db_api.filter_menus(dining_venue_id=test_dining_venue.database_id)
     for menu in menus:
         print(model_to_dict(menu))
+
+
+if __name__ == "__main__":
+    first_test()

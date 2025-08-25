@@ -37,7 +37,7 @@ class Menu(models.Model):
         LUNCH = "LU", _("Lunch")
         DINNER = "DI", _("Dinner")
 
-    dining_hall = models.ForeignKey(DiningVenue, on_delete=models.CASCADE, related_name="menus")
+    dining_venue = models.ForeignKey(DiningVenue, on_delete=models.CASCADE, related_name="menus")
     date = models.DateField(default=timezone.now, db_index=True)
     meal = models.CharField(max_length=2, choices=MealType.choices, db_index=True)
     last_fetched = models.DateTimeField(auto_now=True, help_text=_("Last time menu was updated from API"))
@@ -46,9 +46,9 @@ class Menu(models.Model):
         """Meta class for the Menu model."""
 
         db_table = "menus"
-        unique_together = ("dining_hall", "date", "meal")
+        unique_together = ("dining_venue", "date", "meal")
         indexes = [
-            models.Index(fields=["dining_hall", "date", "meal"]),
+            models.Index(fields=["dining_venue", "date", "meal"]),
         ]
 
     def __str__(self):
@@ -58,7 +58,7 @@ class Menu(models.Model):
             str: A formatted string with the dining hall name, meal type, and date.
 
         """
-        return f"{self.dining_hall.name} - {self.get_meal_display()} on {self.date}"
+        return f"{self.dining_venue.name} - {self.get_meal_display()} on {self.date}"
 
 
 class MenuItem(models.Model):

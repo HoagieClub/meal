@@ -98,7 +98,7 @@ class UserDietaryProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="dietary_profile")
     favorite_menu_items = models.ManyToManyField(MenuItem, related_name="favorited_by")
     excluded_ingredients = ArrayField(models.CharField(max_length=100), blank=True, default=list)
-    preferred_dining_halls = models.ManyToManyField(DiningVenue, related_name="preferred_by")
+    # preferred_dining_venues = models.ManyToManyField(DiningVenue, related_name="preferred_by")
     cuisine_preferences = models.JSONField(default=dict, help_text=_("Weighted cuisine type preferences"))
     meal_time_preferences = models.JSONField(default=dict, help_text=_("Preferred dining times"))
     sustainability_preference = models.BooleanField(default=False, help_text=_("Preference for sustainable options"))

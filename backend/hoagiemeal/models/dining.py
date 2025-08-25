@@ -42,7 +42,7 @@ class DiningVenue(models.Model):
 
     name = models.CharField(max_length=255, unique=True)
     map_name = models.CharField(max_length=255)
-    database_id = models.PositiveIntegerField(unique=True, help_text=_("API's location identifier"))
+    database_id = models.PositiveIntegerField(unique=True, help_text=_("API's location identifier"), primary_key=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     building_name = models.CharField(max_length=255)
