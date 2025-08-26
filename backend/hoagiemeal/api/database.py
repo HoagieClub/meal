@@ -71,25 +71,30 @@ class DatabaseAPI:
         self,
         *,
         field: str,
-        values: List[str],
+        values: Optional[List[str]] = None,
         mode: Literal["include", "exclude"] = "include",
         qs: QuerySet,
     ) -> QuerySet:
-        qs = (
-            qs.filter(**{f"{field}__contains": values})
-            if mode == "include"
-            else qs.exclude(**{f"{field}__overlap": values})
-        )
-        return qs
+        if mode not in ["include", "exclude"]:
+            raise ValueError("Mode must be either 'include' or 'exclude'.")
+        if not values:
+            return qs
+        if mode == "include":
+            return qs.filter(**{f"{field}__contains": values})
+        return qs.exclude(**{f"{field}__overlap": values})
 
     def _apply_number_filter(
         self,
         *,
         field: str,
-        amount: float | int,
+        amount: float | int | None = None,
         mode: Literal["exact", "greater", "less"],
         qs: QuerySet,
     ) -> QuerySet:
+        if amount is None:
+            return qs
+        if mode not in ["exact", "greater", "less"]:
+            raise ValueError("Mode must be either 'exact', 'greater', or 'less'.")
         lookup = {"exact": "exact", "greater": "gte", "less": "lte"}[mode]
         return qs.filter(**{f"{field}__{lookup}": amount})
 
@@ -106,9 +111,11 @@ class DatabaseAPI:
         page: Optional[int],
         per_page: Optional[int],
     ) -> QuerySet | Page:
-        limit = limit if limit is not None else self.DEFAULT_LIMIT
+        if limit is None:
+            limit = self.DEFAULT_LIMIT
         limit = min(limit, self.MAX_LIMIT)
-        per_page = per_page if per_page is not None else self.DEFAULT_PER_PAGE
+        if per_page is None:
+            per_page = self.DEFAULT_PER_PAGE
         if limit is not None and page is not None:
             raise ValueError("Cannot perform both limiting and pagination simultaneously.")
         if page is not None:
@@ -147,26 +154,19 @@ class DatabaseAPI:
         if name is not None:
             qs = qs.filter(name__icontains=name)
         if description is not None:
-            qs = qs.filter(description__icontains=description) if description else qs
+            qs = qs.filter(description__icontains=description)
         if menu_id is not None:
-            qs = qs.filter(menu_id=menu_id) if menu_id else qs
-        if after is not None or before is not None:
-            qs = (
-                self._apply_date_filter(after=after, before=before, qs=qs)
-                if after or before
-                else qs
-            )
-        if allergens is not None:
-            qs = self._apply_array_filter(
-                field="allergens", values=allergens, mode=allergens_mode or "include", qs=qs
-            )
-        if ingredients is not None:
-            qs = self._apply_array_filter(
-                field="ingredients",
-                values=ingredients,
-                mode=ingredients_mode or "include",
-                qs=qs,
-            )
+            qs = qs.filter(menu_id=menu_id)
+        qs = self._apply_date_filter(after=after, before=before, qs=qs)
+        qs = self._apply_array_filter(
+            field="allergens", values=allergens, mode=allergens_mode or "include", qs=qs
+        )
+        qs = self._apply_array_filter(
+            field="ingredients",
+            values=ingredients,
+            mode=ingredients_mode or "include",
+            qs=qs,
+        )
         return self._apply_pagination_and_limiting(qs=qs, limit=limit, page=page, per_page=per_page)
 
     def retrieve_menu_item(
@@ -197,7 +197,7 @@ class DatabaseAPI:
         last_fetched: Optional[datetime.datetime] = None,
         after: Optional[datetime.datetime] = None,
         before: Optional[datetime.datetime] = None,
-        order_by: str = "date",
+        order_by: Optional[str] = "date",
         limit: Optional[int] = None,
         page: Optional[int] = None,
         per_page: Optional[int] = None,
@@ -209,8 +209,7 @@ class DatabaseAPI:
             qs = qs.filter(date=date)
         if last_fetched is not None:
             qs = qs.filter(last_fetched__gte=last_fetched)
-        if after is not None or before is not None:
-            qs = self._apply_date_filter(after=after, before=before, qs=qs)
+        qs = self._apply_date_filter(after=after, before=before, qs=qs)
         return self._apply_pagination_and_limiting(qs=qs, limit=limit, page=page, per_page=per_page)
 
     def retrieve_menu(
@@ -241,10 +240,9 @@ class DatabaseAPI:
             qs = qs.filter(is_active=is_active)
         if building_name:
             qs = qs.filter(building_name__icontains=building_name)
-        if amenities:
-            qs = self._apply_array_filter(
-                field="amenities", values=amenities, mode=amenities_mode, qs=qs
-            )
+        qs = self._apply_array_filter(
+            field="amenities", values=amenities, mode=amenities_mode, qs=qs
+        )
         return qs
 
     def retrieve_dining_venue(
@@ -259,7 +257,7 @@ class DatabaseAPI:
     def list_users(
         self,
         *,
-        order_by: str = "username",
+        order_by: Optional[str] = "username",
         limit: Optional[int] = None,
         page: Optional[int] = None,
         per_page: Optional[int] = None,
@@ -281,7 +279,7 @@ class DatabaseAPI:
         daily_protein_goal_mode: Literal["exact", "greater", "less"] = "greater",
         after: Optional[datetime.datetime] = None,
         before: Optional[datetime.datetime] = None,
-        order_by: str = "username",
+        order_by: Optional[str] = "username",
         limit: Optional[int] = None,
         page: Optional[int] = None,
         per_page: Optional[int] = None,
@@ -293,27 +291,24 @@ class DatabaseAPI:
             qs = qs.filter(is_active=is_active)
         if class_year:
             qs = qs.filter(class_year=class_year)
-        if dietary_restrictions:
-            qs = self._apply_array_filter(
-                field="dietary_restrictions",
-                values=dietary_restrictions,
-                mode=dietary_restrictions_mode,
-                qs=qs,
-            )
-        if daily_calorie_goal:
-            qs = self._apply_number_filter(
-                field="dietary_profile__daily_calorie_goal",
-                amount=daily_calorie_goal,
-                mode=daily_calorie_goal_mode,
-                qs=qs,
-            )
-        if daily_protein_goal:
-            qs = self._apply_number_filter(
-                field="dietary_profile__daily_protein_goal",
-                amount=daily_protein_goal,
-                mode=daily_protein_goal_mode,
-                qs=qs,
-            )
+        qs = self._apply_array_filter(
+            field="dietary_restrictions",
+            values=dietary_restrictions,
+            mode=dietary_restrictions_mode,
+            qs=qs,
+        )
+        qs = self._apply_number_filter(
+            field="dietary_profile__daily_calorie_goal",
+            amount=daily_calorie_goal,
+            mode=daily_calorie_goal_mode,
+            qs=qs,
+        )
+        qs = self._apply_number_filter(
+            field="dietary_profile__daily_protein_goal",
+            amount=daily_protein_goal,
+            mode=daily_protein_goal_mode,
+            qs=qs,
+        )
         qs = self._apply_date_filter(after=after, before=before, qs=qs) if after or before else qs
         return self._apply_pagination_and_limiting(qs=qs, limit=limit, page=page, per_page=per_page)
 
@@ -351,28 +346,25 @@ class DatabaseAPI:
         self,
         *,
         name: str,
-        database_id: Optional[int] = None,
-        is_active: bool = True,
+        database_id: int,
+        is_active: Optional[bool] = True,
         building_name: Optional[str] = None,
         amenities: Optional[List[str]] = None,
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
     ) -> Optional[DiningVenue]:
-        existing_dining_venue = self.retrieve_dining_venue(name=name, database_id=database_id)
-        if existing_dining_venue:
-            return existing_dining_venue
-
-        new_dining_venue = DiningVenue(
-            name=name,
-            database_id=database_id,
-            is_active=is_active,
-            building_name=building_name,
-            amenities=amenities,
-            latitude=latitude,
-            longitude=longitude,
+        lookup_kwargs = {"name": name, "database_id": database_id}
+        defaults = {
+            "is_active": is_active,
+            "building_name": building_name,
+            "amenities": amenities,
+            "latitude": latitude,
+            "longitude": longitude,
+        }
+        dining_venue, created = DiningVenue.objects.get_or_create(
+            **lookup_kwargs, defaults=defaults
         )
-        new_dining_venue.save()
-        return new_dining_venue
+        return dining_venue
 
     def create_menu(
         self,
@@ -380,54 +372,72 @@ class DatabaseAPI:
         dining_venue_id: int,
         date: datetime.date,
         last_fetched: Optional[datetime.datetime] = None,
-    ) -> Optional[Menu]:
-        existing_menu = self.retrieve_menu(dining_venue_id=dining_venue_id, date=date)
-        if existing_menu:
-            return existing_menu
-        new_menu = Menu(dining_venue_id=dining_venue_id, date=date, last_fetched=last_fetched)
-        new_menu.save()
-        return new_menu
+    ) -> Menu:
+        lookup_kwargs = {
+            "dining_venue_id": dining_venue_id,
+            "date": date,
+        }
+        defaults = {
+            "last_fetched": last_fetched,
+        }
+        menu, created = Menu.objects.get_or_create(**lookup_kwargs, defaults=defaults)
+        return menu
 
     def create_menu_item(
         self,
         *,
         name: str,
         menu_id: int,
-        api_id: Optional[int] = None,
-        link: Optional[str] = None,
-    ) -> Optional[MenuItem]:
-        existing_item = self.retrieve_menu_item(api_id=api_id, link=link)
-        if existing_item:
-            return existing_item
-        new_item = MenuItem(
-            name=name,
-            menu_id=menu_id,
-            api_id=api_id,
-            link=link,
-        )
-        new_item.save()
-        return new_item
+        description: Optional[str] = None,
+        allergens: Optional[List[str]] = None,
+        ingredients: Optional[List[str]] = None,
+        api_id: int,
+        link: str,
+    ) -> MenuItem:
+        lookup_kwargs = {"api_id": api_id, "link": link, "menu_id": menu_id, "name": name}
+        defaults = {
+            "name": name,
+            "menu_id": menu_id,
+            "description": description,
+            "allergens": allergens,
+            "ingredients": ingredients,
+            "api_id": api_id,
+            "link": link,
+        }
+        menu_item, created = MenuItem.objects.get_or_create(**lookup_kwargs, defaults=defaults)
+        return menu_item
 
     def create_menu_item_nutrients(
         self,
         *,
-        dict: Dict[str, Any],
+        nutrient_data: Dict[str, Any],
         menu_item_id: int,
-    ) -> Optional[MenuItemNutrient]:
-        existing_nutrient = self.retrieve_menu_item_nutrients(menu_item_id=menu_item_id)
-        if existing_nutrient:
-            return existing_nutrient
-
-        unallowed_fields = ["menu_item_id"]
-        allowed_fields = {
-            f.name
-            for f in MenuItemNutrient._meta.get_fields()
-            if f.name not in unallowed_fields and not f.auto_created and f.concrete
-        }
-        dict_allowed = {k: v for k, v in dict.items() if k in allowed_fields}
-        new_nutrient = MenuItemNutrient(menu_item_id=menu_item_id, **dict_allowed)
-        new_nutrient.save()
-        return new_nutrient
+    ) -> MenuItemNutrient:
+        allowed_fields = [
+            "serving_size",
+            "serving_unit",
+            "calories",
+            "calories_from_fat",
+            "total_fat",
+            "saturated_fat",
+            "trans_fat",
+            "cholesterol",
+            "sodium",
+            "total_carbohydrates",
+            "dietary_fiber",
+            "sugars",
+            "protein",
+            "vitamin_d",
+            "potassium",
+            "calcium",
+            "iron",
+        ]
+        defaults = {k: v for k, v in nutrient_data.items() if k in allowed_fields}
+        menu_item_nutrient, created = MenuItemNutrient.objects.get_or_create(
+            menu_item_id=menu_item_id,
+            defaults=defaults,
+        )
+        return menu_item_nutrient
 
 
 def first_test():
@@ -457,6 +467,9 @@ def first_test():
 
     test_menu_item = db_api.create_menu_item(
         name="Test Item",
+        description="A delicious test item",
+        allergens=["nuts", "dairy"],
+        ingredients=["ingredient1", "ingredient2"],
         menu_id=test_menu.id,
         api_id=1,
         link="http://example.com/test-item",
@@ -464,7 +477,7 @@ def first_test():
     print(f"Added Menu Item: {test_menu_item.name}")
 
     test_menu_item_nutrients = db_api.create_menu_item_nutrients(
-        dict={
+        nutrient_data={
             "serving_size": "1 cup",
             "serving_unit": "cup",
             "calories": 250,
