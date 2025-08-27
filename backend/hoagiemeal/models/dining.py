@@ -18,7 +18,6 @@ This software is provided "as-is", without warranty of any kind.
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.contrib.postgres.fields import ArrayField
-from hoagiemeal.models.managers import DiningVenueManager
 
 
 class DiningVenue(models.Model):
@@ -52,7 +51,6 @@ class DiningVenue(models.Model):
     operation_hours = models.JSONField(null=True, blank=True, help_text=_("Operating hours in JSON format"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    objects = DiningVenueManager()
 
     class Meta:
         """Meta class for the DiningVenue model."""

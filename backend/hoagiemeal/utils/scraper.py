@@ -19,7 +19,7 @@ import requests
 import pprint
 from bs4 import BeautifulSoup
 from copy import deepcopy
-# from hoagiemeal.logger import logger
+from hoagiemeal.utils.logger import logger
 
 
 class Scraper:
@@ -112,7 +112,7 @@ class Scraper:
             },
         }
 
-    def get_html(self, link: str = None) -> BeautifulSoup | None:
+    def get_html(self, link: str) -> BeautifulSoup | None:
         """Fetch and parse HTML content from the specified URL.
 
         Args:
@@ -125,17 +125,17 @@ class Scraper:
                         exception occurs during fetching.
 
         """
-        # logger.info(f"Fetching HTML content for link: {link}.")
+        logger.info(f"Fetching HTML content for link: {link}.")
         try:
             response = requests.get(link, timeout=10)
             response.raise_for_status()
             soup = BeautifulSoup(response.content, "lxml")
             return soup
         except Exception as e:
-            # logger.error(f"Unexpected error fetching HTML content: {e}")
+            logger.error(f"Unexpected error fetching HTML content: {e}")
             return None
 
-    def get_info(self, soup: BeautifulSoup = None) -> dict:
+    def get_info(self, soup: BeautifulSoup) -> dict:
         """Extract menu item information.
 
         Args:
