@@ -1,10 +1,34 @@
+"""A collection of utility functions for Django models.
+
+This module provides reusable functions for common database operations, including
+filtering, pagination, caching, and CRUD (Create, Read, Update, Delete) operations.
+It also includes specialized functions for data mapping and database-seeding tasks.
+
+The functions are designed to be generic and type-safe, making them applicable
+across different Django models.
+
+Copyright © 2021-2025 Hoagie Club and affiliates.
+
+Licensed under the MIT License. You may obtain a copy of the License at:
+
+    https://github.com/hoagieclub/meal/blob/main/LICENSE
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+This software is provided "as-is", without warranty of any kind.
+"""
+
 import os
 import sys
 import django
 from pathlib import Path
 import decimal
 import re
-import requests
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -20,7 +44,7 @@ from hoagiemeal.models.user import CustomUser, UserDietaryProfile
 from django.db.models import QuerySet, Model, Avg
 from django.core.paginator import Paginator, Page
 from django.core.cache import cache
-from django.db import transaction
+from django.db import transaction, IntegrityError
 
 import datetime
 from typing import List, Optional, Dict, Any, Literal, Optional, TypeVar, Type, Tuple
@@ -32,15 +56,18 @@ T = TypeVar("T", bound=Model)
 
 
 def paginate(qs: QuerySet, page: int, per_page: int) -> Page:
+    """Paginates a Django QuerySet."""
     paginator = Paginator(qs, per_page)
     return paginator.page(page)
 
 
 def limit(qs: QuerySet, limit: int) -> QuerySet:
+    """Limits a QuerySet to a specific number of items."""
     return qs[:limit]
 
 
 def cache(key: str, seconds: int, fn, *args, **kwargs):
+    """Caches the result of a function call."""
     cached = cache.get(key)
     if cached:
         return cached
@@ -54,6 +81,18 @@ def filter_by_datetime(
     after: Optional[datetime.datetime] = None,
     before: Optional[datetime.datetime] = None,
 ) -> QuerySet[T]:
+    """Filters a QuerySet based on a datetime range.
+
+    Filters are applied to the 'created_at' field.
+
+    Args:
+        qs (QuerySet[T]): The QuerySet to filter.
+        after (Optional[datetime.datetime]): The start of the datetime range (inclusive).
+        before (Optional[datetime.datetime]): The end of the datetime range (inclusive).
+
+    Returns:
+        QuerySet[T]: The filtered QuerySet.
+    """
     if after:
         qs = qs.filter(created_at__gte=after)
     if before:
@@ -67,6 +106,21 @@ def filter_by_list(
     values: List,
     mode: Literal["include", "exclude"] = "include",
 ) -> QuerySet[T]:
+    """Filters a QuerySet to include or exclude items with a list-based field.
+
+    This function is useful for filtering on ArrayField, JSONField, or other
+    fields that store a list of values.
+
+    Args:
+        qs (QuerySet[T]): The QuerySet to filter.
+        field (str): The name of the list field to filter on.
+        values (List): The list of values to search for.
+        mode (Literal["include", "exclude"]): Whether to include items
+            containing any of the values or exclude items with any of the values.
+
+    Returns:
+        QuerySet[T]: The filtered QuerySet.
+    """
     if mode == "include":
         qs = qs.filter(**{f"{field}__contains": values})
     elif mode == "exclude":
@@ -80,6 +134,17 @@ def filter_by_quantity(
     mode: Literal["exact", "greater", "less"],
     qs: QuerySet[T],
 ) -> QuerySet[T]:
+    """Filters a QuerySet based on a numeric field's quantity.
+
+    Args:
+        field (str): The name of the numeric field to filter on.
+        quantity (float | int): The quantity value to filter against.
+        mode (Literal["exact", "greater", "less"]): The comparison mode.
+        qs (QuerySet[T]): The QuerySet to filter.
+
+    Returns:
+        QuerySet[T]: The filtered QuerySet.
+    """
     lookup = {"exact": "exact", "greater": "gte", "less": "lte"}[mode]
     return qs.filter(**{f"{field}__{lookup}": quantity})
 
@@ -88,34 +153,110 @@ def filter_by_quantity(
 
 
 def get_or_create(
-    model_class: Type[T], lookup_kwargs: Dict[str, Any], **create_kwargs: Any
-) -> Tuple[T, bool]:
-    existing_object = model_class.objects.filter(**lookup_kwargs).first()
-    if existing_object:
-        return existing_object, False
-    else:
-        full_creation_data = {**lookup_kwargs, **create_kwargs}
-        new_object = model_class.objects.create(**full_creation_data)
-        return new_object, True
+    model_class: Type[T], data_fields: Dict[str, Any], lookup_fields: List[str]
+) -> Tuple[Optional[T], bool, str]:
+    """Retrieves an existing instance or creates a new one.
+
+    This function first attempts to get an object matching the lookup fields.
+    If it does not exist, it creates a new object using all provided data.
+    It gracefully handles race conditions and other errors.
+
+    Args:
+        model_class (Type[T]): The Django Model class.
+        data_fields (Dict[str, Any]): A dictionary of all fields to be
+            used for creation.
+        lookup_fields (List[str]): A list of field names that uniquely
+            identify the object.
+
+    Returns:
+        Tuple[Optional[T], bool, str]: A tuple containing the instance,
+        a boolean indicating if it was created, and an error message string.
+    """
+    lookup_kwargs = {field: data_fields[field] for field in lookup_fields}
+
+    try:
+        existing_object = model_class.objects.get(**lookup_kwargs)
+        return existing_object, False, ""
+    except model_class.DoesNotExist:
+        pass
+    except Exception as e:
+        error_msg = f"An unexpected error occurred during lookup: {str(e)}"
+        return None, False, error_msg
+
+    try:
+        with transaction.atomic():
+            new_object = model_class.objects.create(**data_fields)
+            return new_object, True, ""
+    except IntegrityError:
+        error_msg = f"A {model_class.__name__} instance already exists."
+        return None, False, error_msg
+    except Exception as e:
+        error_msg = f"An unexpected error occurred during creation: {str(e)}"
+        return None, False, error_msg
 
 
 def bulk_get_and_create(
     model_class: Type[T], data_list: List[Dict[str, Any]], lookup_fields: List[str]
-) -> List[Tuple[T, bool]]:
+) -> List[Tuple[Optional[T], bool, str]]:
+    """Performs get-or-create for a list of data dictionaries.
+
+    This function iterates through each item, attempts to retrieve an existing
+    object, and creates a new one if no match is found. It's robust to
+    race conditions and returns a detailed status for each item.
+
+    Args:
+        model_class (Type[T]): The Django Model class.
+        data_list (List[Dict[str, Any]]): A list of dictionaries, each
+            representing the data for a single object.
+        lookup_fields (List[str]): A list of field names that uniquely
+            identify each object.
+
+    Returns:
+        List[Tuple[Optional[T], bool, str]]: A list of tuples, each
+        containing the instance, a boolean for creation status, and an
+        error message.
+    """
     results = []
     with transaction.atomic():
         for item_data in data_list:
             lookup_kwargs = {field: item_data[field] for field in lookup_fields}
-            instance, created = model_class.objects.get_or_create(
-                **lookup_kwargs, defaults=item_data
-            )
-            results.append((instance, created))
+            try:
+                existing_object = model_class.objects.get(**lookup_kwargs)
+                results.append((existing_object, False, ""))
+                continue
+            except model_class.DoesNotExist:
+                pass
+            except Exception as e:
+                error_msg = f"An unexpected error occurred during lookup: {str(e)}"
+                results.append((None, False, error_msg))
+                continue
+
+            try:
+                new_object = model_class.objects.create(**item_data)
+                results.append((new_object, True, ""))
+            except IntegrityError:
+                error_msg = f"IntegrityError: A matching instance already exists for item."
+                results.append((None, False, error_msg))
+            except Exception as e:
+                error_msg = f"An unexpected error occurred during creation: {str(e)}"
+                results.append((None, False, error_msg))
     return results
 
 
 def update(
     model_class: Type[T], lookup_kwargs: Dict[str, Any], update_data: Dict[str, Any]
-) -> Optional[T]:
+) -> Tuple[Optional[T], bool, str]:
+    """Updates an existing model instance.
+
+    Args:
+        model_class (Type[T]): The Django Model class.
+        lookup_kwargs (Dict[str, Any]): The fields used to find the object to update.
+        update_data (Dict[str, Any]): The data to apply to the object.
+
+    Returns:
+        Tuple[Optional[T], bool, str]: A tuple containing the updated instance,
+        a boolean indicating success, and an error message string.
+    """
     try:
         with transaction.atomic():
             instance = model_class.objects.get(**lookup_kwargs)
@@ -123,16 +264,39 @@ def update(
                 if hasattr(instance, field_name):
                     setattr(instance, field_name, value)
             instance.save()
-            return instance
+            return instance, True, ""
     except model_class.DoesNotExist:
-        return None
+        error_msg = f"{model_class.__name__} instance not found for update."
+        return None, False, error_msg
+    except Exception as e:
+        error_msg = f"An unexpected error occurred during update: {str(e)}"
+        return None, False, error_msg
 
 
-def delete(model_class: Type[T], lookup_kwargs: Dict[str, Any]) -> Tuple[int, Dict[str, int]]:
-    return model_class.objects.filter(**lookup_kwargs).delete()
+def delete(
+    model_class: Type[T], lookup_kwargs: Dict[str, Any]
+) -> Tuple[Optional[Tuple[int, Dict[str, int]]], bool, str]:
+    """Deletes one or more model instances.
+
+    Args:
+        model_class (Type[T]): The Django Model class.
+        lookup_kwargs (Dict[str, Any]): The fields used to find the objects to delete.
+
+    Returns:
+        Tuple[Optional[Tuple[int, Dict[str, int]]], bool, str]: A tuple containing
+        the deletion details (number of deleted objects and per-model counts),
+        a boolean for success, and an error message string.
+    """
+    try:
+        deleted_model = model_class.objects.filter(**lookup_kwargs).delete()
+        return deleted_model, True, ""
+    except Exception as e:
+        error_msg = f"An unexpected error occurred during deletion: {str(e)}"
+        return (0, {}), False, error_msg
 
 
 def clear_table(model_class: Type[T]) -> None:
+    """Deletes all objects from a given table."""
     model_class.objects.all().delete()
 
 
@@ -142,6 +306,21 @@ def highest_rated_menu_items(
     before: Optional[datetime.datetime] = None,
     highest_first: bool = True,
 ) -> List[MenuItem]:
+    """Gets the highest or lowest rated menu items within a time range.
+
+    This function filters menu items that have ratings, annotates them with
+    an average rating, and orders them accordingly.
+
+    Args:
+        limit (int): The maximum number of menu items to return.
+        after (Optional[datetime.datetime]): The start date for the rating filter.
+        before (Optional[datetime.datetime]): The end date for the rating filter.
+        highest_first (bool): If True, returns the highest-rated items; otherwise,
+            returns the lowest-rated items.
+
+    Returns:
+        List[MenuItem]: A list of MenuItem objects.
+    """
     qs = MenuItem.objects.all()
     ratings_filter_kwargs = {}
     if after:
@@ -160,10 +339,21 @@ def highest_rated_menu_items(
     return list(qs[:limit])
 
 
-#################### Utility functions for uploading to database #########################
+#################### Utility functions for uploading API to database #########################
 
 
 def get_mapped_dining_venue_data(api_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Maps raw API data to a format suitable for the DiningVenue model.
+
+    This function extracts and cleans data from a dining API response,
+    preparing it for use in model creation or updating functions.
+
+    Args:
+        api_data (Dict[str, Any]): The raw data dictionary from the API.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing lookup and creation arguments.
+    """
     amenity_names: List[str] = []
     amenities_data = api_data.get("amenities", {})
 
@@ -195,6 +385,19 @@ def get_mapped_dining_venue_data(api_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_mapped_menu_item_data(api_data: Dict[str, Any], link_data: Dict[str, Any], menu_id: int):
+    """Maps raw API menu item data to a format for the MenuItem model.
+
+    This function handles parsing nested data, extracting allergens from the
+    description, and merging information from different API sources.
+
+    Args:
+        api_data (Dict[str, Any]): The raw menu item data from the API.
+        link_data (Dict[str, Any]): The linked nutritional data for the item.
+        menu_id (int): The ID of the parent Menu object.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing lookup and creation arguments.
+    """
     description = api_data.get("description", "")
     allergen_match = re.search(r"Allergens: (.+)", description)
     allergens_from_desc: List[str] = []
@@ -228,6 +431,18 @@ def get_mapped_menu_item_data(api_data: Dict[str, Any], link_data: Dict[str, Any
 def get_mapped_menu_item_nutrient_data(
     menu_item_id: int, link_data: Dict[str, Any]
 ) -> Dict[str, Any]:
+    """Maps nutritional data from an API link to the MenuItemNutrient model.
+
+    This function extracts and converts nutritional values, handling missing
+    or invalid data gracefully.
+
+    Args:
+        menu_item_id (int): The ID of the parent MenuItem object.
+        link_data (Dict[str, Any]): The raw nutritional data.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing lookup and creation arguments.
+    """
 
     def _safe_float_to_decimal(value: Any) -> decimal.Decimal | None:
         try:
@@ -295,13 +510,22 @@ def get_mapped_menu_item_nutrient_data(
 
 
 def insert_dining_venue_data(category_ids: Optional[List[int]] = None) -> None:
-    clear_table(DiningVenue)
+    """Inserts dining venue data from the API into the database.
+
+    This function orchestrates the process of fetching data from the API,
+    mapping it to the model's format, and using the bulk_get_and_create
+    utility to insert the records. It first clears the entire table for a fresh
+    sync.
+
+    Args:
+        category_ids (Optional[List[int]]): A list of dining category IDs to fetch.
+    """
     from hoagiemeal.api.dining import DiningAPI
 
     dining_api = DiningAPI()
     dining_venue_data = dining_api.get_all_category_locations(category_ids=category_ids)
     dining_venue_data = dining_venue_data.get("locations", {}).get("location", [])
-    
+
     dining_venues = []
     for venue in dining_venue_data:
         mapped_data = get_mapped_dining_venue_data(venue)
@@ -310,4 +534,5 @@ def insert_dining_venue_data(category_ids: Optional[List[int]] = None) -> None:
 
 
 if __name__ == "__main__":
+    clear_table(DiningVenue)
     insert_dining_venue_data()
