@@ -141,7 +141,7 @@ const NutritionLabelPage: React.FC = () => {
   const dietaryTags = classifyDietary(`${data.ingredients} ${data.allergens}`);
 
   return (
-    <Pane backgroundColor={theme.colors.green200} minHeight='100vh' padding={majorScale(4)}>
+    <Pane backgroundColor={theme.colors.green100} minHeight='100vh' padding={majorScale(4)}>
       <Pane
         display='grid'
         gap={majorScale(4)}
@@ -178,6 +178,16 @@ const NutritionLabelPage: React.FC = () => {
           <Pane display='grid' className='grid grid-cols-2 h-min'>
             <Pane marginTop={minorScale(3)} paddingBottom={minorScale(2)}>
               <Text fontSize={20} fontWeight={700} color='green700'>
+                Calories:{' '}
+              </Text>
+              <Pane paddingTop={minorScale(1)}>
+                <Text fontSize={18} fontWeight={500}>
+                  {data.calories || '—'} Cal
+                </Text>
+              </Pane>
+            </Pane>
+            <Pane marginTop={minorScale(3)} paddingBottom={minorScale(2)}>
+              <Text fontSize={20} fontWeight={700} color='green700'>
                 Serving size:{' '}
               </Text>
               <Pane paddingTop={minorScale(1)}>
@@ -189,12 +199,12 @@ const NutritionLabelPage: React.FC = () => {
             <Pane
               background='green600'
               style={{ width: 150, height: 150, margin: majorScale(2) }}
-              className='rounded-full'
+              className='rounded-full mx-auto col-span-2'
             >
               <img
-                src='https://static-00.iconduck.com/assets.00/pot-of-food-emoji-2048x2046-ojex0h0u.png'
+                src='https://www.svgrepo.com/show/490734/food-dinner.svg'
                 alt='Food'
-                className='p-2 rounded-full object-cover'
+                className='p-2 rounded-full object-contain'
               />
             </Pane>
           </Pane>
@@ -220,11 +230,9 @@ const NutritionLabelPage: React.FC = () => {
             <Text fontWeight={700} color='green700'>
               Dietary Tags:
             </Text>
-            <Pane display='flex' gap={minorScale(1)} marginTop={minorScale(1)}>
+            <Pane display='flex' className='flex-col' gap={minorScale(1)} marginTop={minorScale(1)}>
               {dietaryTags.map((tag) => (
-                <div key={tag} color='neutral'>
-                  {tag}
-                </div>
+                <Text fontWeight={300}>{tag}</Text>
               ))}
             </Pane>
           </Pane>
