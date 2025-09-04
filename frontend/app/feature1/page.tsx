@@ -395,7 +395,10 @@ export default function Index() {
                 <ChevronLeftIcon size={20} />
               </Button>
 
-              <Text className='text-2xl' color={theme.colors.green700}>
+              <Text
+                className='text-2xl text-center w-[14rem] truncate'
+                color={theme.colors.green700}
+              >
                 {selectedDate.toLocaleDateString('en-US', {
                   weekday: 'long',
                   month: 'numeric',
