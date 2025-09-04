@@ -27,8 +27,7 @@ DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-        "http://localhost:8000",
-
+    "http://localhost:8000",
 ]
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"] + os.getenv("ALLOWED_HOSTS", "").split(",")
@@ -58,6 +57,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+AUTH0_DOMAIN = os.environ.get("AUTH0_DOMAIN")
+AUTH0_ISSUER = os.environ.get("AUTH0_ISSUER")
+AUTH0_AUDIENCE = os.environ.get("AUTH0_AUDIENCE")
+
 ROOT_URLCONF = "hoagiemeal.urls"
 
 TEMPLATES = [
@@ -83,7 +86,9 @@ WSGI_APPLICATION = "hoagiemeal.wsgi.application"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 os.environ["DATABASE_URL"] = os.getenv("TEST_DATABASE_URL") if DEBUG else os.getenv("DATABASE_URL")
-DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"), ssl_require=False)}
+DATABASES = {
+    "default": dj_database_url.config(default=os.getenv("DATABASE_URL"), ssl_require=False)
+}
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 # Set the custom user model for Hoagie Meal

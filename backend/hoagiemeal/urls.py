@@ -15,6 +15,7 @@ from hoagiemeal.api.dining import (
     get_top_rated_menu_items,
 )
 from hoagiemeal.api.places import get_open_places
+from hoagiemeal.api.auth import me
 
 
 urlpatterns = [
@@ -30,4 +31,5 @@ urlpatterns = [
     path("api/ratings/<int:rating_id>/", manage_rating, name="manage-rating"),
     path("api/user/ratings/", get_user_ratings, name="user-ratings"),
     path("api/menu-items/top-rated/", get_top_rated_menu_items, name="top-rated-menu-items"),
+    path("api/auth/me/", me, name="auth-me"),
 ]

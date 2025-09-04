@@ -39,7 +39,6 @@ django.setup()
 from hoagiemeal.models.dining import DiningVenue
 from hoagiemeal.models.menu import MenuItem, Menu, MenuItemNutrient, MenuRating
 from hoagiemeal.models.meal_plan import MealPlanType, UserMealPlan, SwipeTransactionIndividual
-from hoagiemeal.models.user import CustomUser, UserDietaryProfile
 
 from django.db.models import QuerySet, Model, Avg
 from django.core.paginator import Paginator, Page
@@ -47,7 +46,7 @@ from django.core.cache import cache
 from django.db import transaction, IntegrityError
 
 import datetime
-from typing import List, Optional, Dict, Any, Literal, Optional, TypeVar, Type, Tuple
+from typing import List, Dict, Any, Literal, Optional, TypeVar, Type, Tuple
 
 T = TypeVar("T", bound=Model)
 
@@ -66,7 +65,7 @@ def limit(qs: QuerySet, limit: int) -> QuerySet:
     return qs[:limit]
 
 
-def cache(key: str, seconds: int, fn, *args, **kwargs):
+def cache_result(key: str, seconds: int, fn, *args, **kwargs):
     """Caches the result of a function call."""
     cached = cache.get(key)
     if cached:
