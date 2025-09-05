@@ -10,7 +10,7 @@ from django.http import HttpRequest
 _JWK_CLIENT = PyJWKClient(f"{settings.AUTH0_ISSUER}.well-known/jwks.json")
 
 
-def _get_bearer_token(request: HttpRequest) -> Optional[str]:
+def get_bearer_token(request: HttpRequest) -> Optional[str]:
     auth = request.headers.get("Authorization") or request.META.get("HTTP_AUTHORIZATION") or ""
     parts = auth.split()
     if len(parts) == 2 and parts[0].lower() == "bearer":
@@ -18,7 +18,7 @@ def _get_bearer_token(request: HttpRequest) -> Optional[str]:
     return None
 
 
-def verify_auth0_token(token: str) -> Dict[str, Any]:
+def decode_jwt_token(token: str) -> Dict[str, Any]:
     key = _JWK_CLIENT.get_signing_key_from_jwt(token).key
     return jwt.decode(
         token,
@@ -31,15 +31,27 @@ def verify_auth0_token(token: str) -> Dict[str, Any]:
     )
 
 
+def is_authenticated(request: HttpRequest) -> bool:
+    token = get_bearer_token(request)
+    if not token:
+        return False
+    try:
+        decode_jwt_token(token)
+        return True
+    except Exception as e:
+        logger.warning(f"Authentication failed: {e}")
+        return False
+
+
 @api_view(["GET"])
 def me(request):
-    token = _get_bearer_token(request)
+    token = get_bearer_token(request)
     if not token:
         return Response({"error": "Missing bearer token"}, status=401)
 
     try:
-        claims = verify_auth0_token(token)
-        logger.info("auth ok", extra={"sub": claims.get("sub"), "aud": claims.get("aud")})
+        claims = decode_jwt_token(token)
+        logger.info(f"Token claims: {claims}")
         return Response(claims)
 
     except ExpiredSignatureError:

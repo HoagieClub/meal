@@ -42,7 +42,7 @@ from hoagiemeal.models.menu import MenuItem, MenuRating
 from hoagiemeal.serializers import MenuRatingSerializer, MenuRatingCreateSerializer, MenuItemWithRatingsSerializer
 
 
-USE_SAMPLE_MENUS = True  # Toggle this to False later when the API is fixed
+USE_SAMPLE_MENUS = False  # Toggle this to False later when the API is fixed
 
 class DiningAPI(StudentApp):
     """Handles functionalities related to dining information, such as locations, menus, and events."""
@@ -194,7 +194,6 @@ def get_dining_events(request):
     except Exception as e:
         logger.error(f"Error in get_dining_events view: {e}")
         return Response({"error": str(e)}, status=500)
-
 
 @api_view(["GET"])
 @cache_page(60 * 5)
