@@ -117,7 +117,11 @@ export default function Index() {
   };
 
   // ─── Date + Meal ─────────────────────────────────────────────────────────
-  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date('2025-05-14'));
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now;
+  });
   const [meal, setMeal] = useState<MealType>('Breakfast');
   const [searchTerm, setSearchTerm] = useState('');
   const [showNutrition, setShowNutrition] = useState(true);
@@ -203,11 +207,12 @@ export default function Index() {
     setLoading(true);
     const menuId = formatMenuId(selectedDate, meal);
 
-    fetch(`http://localhost:8000/api/dining/menu/?location_id=5&menu_id=${menuId}`, {
+    fetch(`http://localhost:8000/api/dining/locations/with-menus/?menu_id=${menuId}`, {
       credentials: 'include',
     })
       .then((r) => r.json())
       .then((data: { locations: { location: RawVenue[] } }) => {
+        console.log(data);
         const ui = data.locations.location.map((raw) => {
           const items = (raw.menu.menus || []).map((x) => ({
             name: x.name,

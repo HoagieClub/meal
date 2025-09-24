@@ -25,6 +25,7 @@ import json
 import os
 
 import datetime
+from random import sample
 import msgspec.json as msj
 import pytz
 
@@ -39,10 +40,15 @@ from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.student_app import StudentApp
 from hoagiemeal.api.schemas import Schemas
 from hoagiemeal.models.menu import MenuItem, MenuRating
-from hoagiemeal.serializers import MenuRatingSerializer, MenuRatingCreateSerializer, MenuItemWithRatingsSerializer
+from hoagiemeal.serializers import (
+    MenuRatingSerializer,
+    MenuRatingCreateSerializer,
+    MenuItemWithRatingsSerializer,
+)
 
 
-USE_SAMPLE_MENUS = False  # Toggle this to False later when the API is fixed
+USE_SAMPLE_MENUS = True  # Toggle this to False later when the API is fixed
+
 
 class DiningAPI(StudentApp):
     """Handles functionalities related to dining information, such as locations, menus, and events."""
@@ -154,9 +160,32 @@ class DiningAPI(StudentApp):
         logger.info(f"Fetching dining menu for location_id: {location_id}, menu_id: {menu_id}.")
         params = {"locationID": location_id, "menuID": menu_id}
         response = self._make_request(self.DINING_MENU, params=params)
-        logger.info(f"Menu response: {response}")
+        logger.info(msg=f"Menu response: {response}")
         response = msj.decode(response)
         return response
+
+    def get_locations_with_menus(self, menu_id: str, category_ids=None) -> dict:
+        if category_ids is None:
+            category_ids = ["2", "3"]
+
+        combined = self.get_all_category_locations(category_ids=category_ids, fmt="xml")
+        locations_obj = combined.get("locations", {}) or {}
+        locs = locations_obj.get("location", [])
+        if not isinstance(locs, list):
+            locs = [locs] if locs else []
+
+        enriched = []
+        for loc in locs:
+            dbid = loc.get("dbid")
+            try:
+                menu = self.get_menu(location_id=dbid, menu_id=menu_id)
+            except Exception as e:
+                logger.error(f"Error fetching menu for dbid={dbid}, menu_id={menu_id}: {e}")
+                menu = {}
+            loc["menu"] = menu
+            enriched.append(loc)
+
+        return {menu_id: {"locations": {"location": enriched}}}
 
 
 #################### Exposed endpoints #########################
@@ -195,6 +224,7 @@ def get_dining_events(request):
         logger.error(f"Error in get_dining_events view: {e}")
         return Response({"error": str(e)}, status=500)
 
+
 @api_view(["GET"])
 @cache_page(60 * 5)
 def get_dining_menu(request):
@@ -214,11 +244,13 @@ def get_dining_menu(request):
                     sample_menu_data = json.load(f)
             except Exception as e:
                 return Response({"error": f"Failed to load sample menu file: {e}"}, status=500)
-
             if menu_id in sample_menu_data:
+                logger.info(sample_menu_data[menu_id])
                 return Response(sample_menu_data[menu_id])
             else:
-                return Response({"error": f"No sample data found for menu_id: {menu_id}"}, status=404)
+                return Response(
+                    {"error": f"No sample data found for menu_id: {menu_id}"}, status=404
+                )
 
         # Live API fallback
         menu = dining_api.get_menu(location_id, menu_id)
@@ -227,7 +259,7 @@ def get_dining_menu(request):
     except Exception as e:
         logger.error(f"Error in get_dining_menu view: {e}")
         return Response({"error": str(e)}, status=500)
-    
+
 
 @api_view(["GET"])
 def get_menu_item_with_ratings(request, menu_item_id):
@@ -324,7 +356,8 @@ def manage_rating(request, rating_id):
     # Check if the user is the owner of the rating
     if rating.user != request.user:
         return Response(
-            {"error": "You do not have permission to perform this action"}, status=status.HTTP_403_FORBIDDEN
+            {"error": "You do not have permission to perform this action"},
+            status=status.HTTP_403_FORBIDDEN,
         )
 
     if request.method == "GET":
@@ -375,13 +408,31 @@ def get_top_rated_menu_items(request):
     """
     # Get menu items with at least 3 ratings
     menu_items = (
-        MenuItem.objects.annotate(avg_rating=models.Avg("ratings__rating"), num_ratings=models.Count("ratings"))
+        MenuItem.objects.annotate(
+            avg_rating=models.Avg("ratings__rating"), num_ratings=models.Count("ratings")
+        )
         .filter(num_ratings__gte=3)
         .order_by("-avg_rating")[:10]
     )
 
     serializer = MenuItemWithRatingsSerializer(menu_items, many=True, context={"request": request})
     return Response(serializer.data)
+
+
+@api_view(["GET"])
+@cache_page(60 * 5)
+def get_dining_locations_with_menus(request):
+    try:
+        menu_id = request.GET.get("menu_id")
+        if not menu_id:
+            return Response({"error": "menu_id is required"}, status=400)
+
+        category_ids = request.GET.getlist("category_id", ["2", "3"])
+        data = dining_api.get_locations_with_menus(menu_id=menu_id, category_ids=category_ids)
+        return Response(data.get(menu_id, {"locations": {"location": []}}))
+    except Exception as e:
+        logger.error(f"Error in get_dining_locations_with_menus: {e}")
+        return Response({"error": str(e)}, status=500)
 
 
 # Utility functions for working with dining data
@@ -425,7 +476,9 @@ def get_all_dining_locations(category_ids=None):
 
             locations.append(loc_info)
 
-        logger.info(f"Retrieved {len(locations)} dining locations from categories: {', '.join(category_ids)}")
+        logger.info(
+            f"Retrieved {len(locations)} dining locations from categories: {', '.join(category_ids)}"
+        )
         return locations
     except Exception as e:
         logger.error(f"Error fetching dining locations: {e}")
@@ -578,7 +631,9 @@ def get_all_dining_events(category_ids=None):
     if category_ids is None:
         category_ids = ["2", "3"]  # Default to residential colleges and cafes/specialty venues
 
-    logger.info(f"Fetching events for all dining locations in categories: {', '.join(category_ids)}...")
+    logger.info(
+        f"Fetching events for all dining locations in categories: {', '.join(category_ids)}..."
+    )
 
     # Get all dining locations from specified categories
     locations = get_all_dining_locations(category_ids)
@@ -611,7 +666,9 @@ def get_dining_events_for_date(date_str, category_ids=None):
     if category_ids is None:
         category_ids = ["2", "3"]  # Default to residential colleges and cafes/specialty venues
 
-    logger.info(f"Fetching events for all dining locations on {date_str} in categories: {', '.join(category_ids)}...")
+    logger.info(
+        f"Fetching events for all dining locations on {date_str} in categories: {', '.join(category_ids)}..."
+    )
 
     # Get all dining locations from specified categories
     locations = get_all_dining_locations(category_ids)

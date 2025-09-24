@@ -13,6 +13,7 @@ from hoagiemeal.api.dining import (
     manage_rating,
     get_user_ratings,
     get_top_rated_menu_items,
+    get_dining_locations_with_menus
 )
 from hoagiemeal.api.places import get_open_places
 from hoagiemeal.api.auth import me
@@ -21,6 +22,7 @@ from hoagiemeal.api.auth import me
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/dining/locations/", get_dining_locations, name="dining-locations"),
+    path("api/dining/locations/with-menus/", get_dining_locations_with_menus, name="dining-locations-with-menus"),
     path("api/dining/events/", get_dining_events, name="dining-events"),
     path("api/dining/menu/", get_dining_menu, name="dining-menu"),
     path("api/dining/places/open/", get_open_places, name="dining-places-open"),
