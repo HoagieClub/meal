@@ -32,7 +32,6 @@ export async function GET(req: Request) {
 
     // If no menuId provided, get the next relevant menu
     const menuId = searchParams.get('menuId') || getCurrentMenuId();
-
     const res = await request.get<MenuItem[]>()(ROUTE, {
       arg: { location_id: locationId, menu_id: menuId },
     });
