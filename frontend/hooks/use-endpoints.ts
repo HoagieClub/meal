@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -24,38 +24,38 @@ import type { DiningLocation, DiningEvent, MenuItem } from '@/types/dining';
  * @param url The API endpoint to fetch data from.
  * @returns A promise that resolves to the API response.
  */
-const get = request.get = <T>(headers?: HeadersInit) => request<T>({ method: 'GET', headers });
+const get = (request.get = <T>(headers?: HeadersInit) => request<T>({ method: 'GET', headers }));
 
 /**
-* Makes a POST request using the request.post method.
-*
-* @param headers Optional headers to include in the request.
-* @returns A promise that resolves to the API response.
-*/
+ * Makes a POST request using the request.post method.
+ *
+ * @param headers Optional headers to include in the request.
+ * @returns A promise that resolves to the API response.
+ */
 request.post = <T>(headers?: HeadersInit) => request<T>({ method: 'POST', headers });
 
 /**
-* Makes a PUT request using the request.put method.
-*
-* @param headers Optional headers to include in the request.
-* @returns A promise that resolves to the API response.
-*/
+ * Makes a PUT request using the request.put method.
+ *
+ * @param headers Optional headers to include in the request.
+ * @returns A promise that resolves to the API response.
+ */
 request.put = <T>(headers?: HeadersInit) => request<T>({ method: 'PUT', headers });
 
 /**
-* Makes a PATCH request using the request.patch method.
-*
-* @param headers Optional headers to include in the request.
-* @returns A promise that resolves to the API response.
-*/
+ * Makes a PATCH request using the request.patch method.
+ *
+ * @param headers Optional headers to include in the request.
+ * @returns A promise that resolves to the API response.
+ */
 request.patch = <T>(headers?: HeadersInit) => request<T>({ method: 'PATCH', headers });
 
 /**
-* Makes a DELETE request using the request.delete method.
-*
-* @param headers Optional headers to include in the request.
-* @returns A promise that resolves to the API response.
-*/
+ * Makes a DELETE request using the request.delete method.
+ *
+ * @param headers Optional headers to include in the request.
+ * @returns A promise that resolves to the API response.
+ */
 request.delete = <T>(headers?: HeadersInit) => request<T>({ method: 'DELETE', headers });
 
 /**
@@ -79,16 +79,9 @@ export const useGetLocations = (config?: FetchConfig) => {
  * @param config Optional SWR fetch configuration.
  * @returns SWR response containing ApiResponse with an array of DiningEvent.
  */
-export const useGetEvents = (
-  placeId: string = '1007', 
-  config?: FetchConfig,
-) => {
+export const useGetEvents = (placeId: string = '1007', config?: FetchConfig) => {
   const endpoint = `/api/dining/events?placeId=${encodeURIComponent(placeId)}`;
-  return useSWR<ApiResponse<DiningEvent[]>>(
-    endpoint,
-    get<DiningEvent[]>(),
-    config
-  );
+  return useSWR<ApiResponse<DiningEvent[]>>(endpoint, get<DiningEvent[]>(), config);
 };
 
 /**
@@ -99,15 +92,7 @@ export const useGetEvents = (
  * @param config Optional SWR fetch configuration.
  * @returns SWR response containing ApiResponse with an array of MenuItem.
  */
-export const useGetMenu = (
-  locationId: string,
-  menuId: string,
-  config?: FetchConfig,
-) => {
+export const useGetMenu = (locationId: string, menuId: string, config?: FetchConfig) => {
   const endpoint = `/api/dining/menu?locationId=${encodeURIComponent(locationId)}&menuId=${encodeURIComponent(menuId)}`;
-  return useSWR<ApiResponse<MenuItem[]>>(
-    endpoint,
-    get<MenuItem[]>(),
-    config,
-  );
+  return useSWR<ApiResponse<MenuItem[]>>(endpoint, get<MenuItem[]>(), config);
 };

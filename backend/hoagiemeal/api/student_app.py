@@ -27,10 +27,12 @@ import xml.etree.ElementTree as ET
 
 import msgspec.json as msj
 import xmlschema
+
 from dotenv import load_dotenv
 from icalendar import Calendar
 from hoagiemeal.utils.logger import logger
 from msgspec import DecodeError
+
 
 load_dotenv()
 
@@ -45,6 +47,7 @@ class StudentApp:
     """Base class for interacting with the Princeton StudentApp API."""
 
     def __init__(self):
+        """Initialize the StudentApp class."""
         self.CONSUMER_KEY = os.environ.get("CONSUMER_KEY")
         self.CONSUMER_SECRET = os.environ.get("CONSUMER_SECRET")
         self.ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
@@ -85,18 +88,17 @@ class StudentApp:
             response = requests.get(url, params=params, headers=headers)
             response.raise_for_status()
             logger.debug(f"Request to {url} successful.")
-            match fmt:
-                case "json":
-                    response = response.content
-                    return response
-                case "xml":
-                    response = response.text
-                    return response
-                case "ical":
-                    response = response.text
-                    return response
-                case _:
-                    return response
+            if fmt == "json":
+                response = response.content
+                return response
+            elif fmt == "xml":
+                response = response.text
+                return response
+            elif fmt == "ical":
+                response = response.text
+                return response
+            else:
+                return response
         except requests.RequestException as e:
             logger.error(f"Request to {url} failed: {e}")
             raise requests.RequestException(f"Request failed: {e}") from e
@@ -145,7 +147,7 @@ class StudentApp:
             else:
                 data[element.tag] = element.text.strip()
 
-        logger.info(f"XML element {element.tag} converted to dict.")
+        logger.debug(f"XML element {element.tag} converted to dict.")
         return data
 
     def _parse_xml(self, xml: str) -> dict:

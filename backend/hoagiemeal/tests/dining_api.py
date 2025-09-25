@@ -331,7 +331,7 @@ def execute_queries(dining_api, queries):
 
 
 def main():
-    """The main function to run the interactive test client."""
+    """Run the interactive test client."""
     dining_api = DiningAPI()
     queries = get_user_queries()
     execute_queries(dining_api, queries)

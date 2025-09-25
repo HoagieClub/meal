@@ -21,14 +21,19 @@ export interface DiningLocation {
   name: string;
   mapName: string;
   dbid: string;
-  status: 'yes' | 'no';  // Open/closed status
+  maploc: string;
   geoloc: {
     lat: string;
     long: string;
   };
   building: {
-    name: string;
     location_id: string;
+    name: string;
+  };
+  eventsFeedConfig: {
+    locationID: string;
+    baseURL: string;
+    menuURL: string;
   };
   amenities: {
     amenity: Array<{ name: string }> | { name: string };
@@ -58,5 +63,12 @@ export interface MenuItem {
   // TODO: Might want to adjust these fields later
   calories?: number;
   protein?: number;
-  link?: string;    // Keeping this from original type
+  link?: string;
+}
+
+// The expected successful response from the /api/dining/locations endpoint.
+export interface DiningLocationsResponse {
+  data: DiningLocation[];
+  message: string;
+  status?: number;  // Optional since it's not always present in responses
 }

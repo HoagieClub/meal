@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -15,24 +15,32 @@
 import { ApiResponse, HoagieRequest, RequestConfig, HttpMethod } from '@/types/http';
 import { valid } from '@/utils/http';
 
+// process.env is automatically handled for server components
+const API_URL = process.env.HOAGIE_API_URL;
+
+if (!API_URL && typeof window === 'undefined') {
+  // Only warn on server-side
+  console.warn('HOAGIE_API_URL is not defined. API requests may fail.');
+}
+
 /**
-* Makes HTTP requests to the Hoagie API.
-* 
-* @param config - Optional request configuration (method, headers)
-* @returns Async function taking endpoint and optional args
-* 
-* @example (recommended)
-* useSWR('/endpoint', request.get())
-* useSWRMutation('/endpoint', request.post())
-* 
-* @example (custom headers)
-* request.get({ Authorization: 'Bearer token' })
-* 
-* @example (minimal syntactic sugar)
-* request({ method: 'GET', headers: {...} })
-* 
-* @throws On invalid HTTP method or failed request
-*/
+ * Makes HTTP requests to the Hoagie API.
+ *
+ * @param config - Optional request configuration (method, headers)
+ * @returns Async function taking endpoint and optional args
+ *
+ * @example (recommended)
+ * useSWR('/endpoint', request.get())
+ * useSWRMutation('/endpoint', request.post())
+ *
+ * @example (custom headers)
+ * request.get({ Authorization: 'Bearer token' })
+ *
+ * @example (minimal syntactic sugar)
+ * request({ method: 'GET', headers: {...} })
+ *
+ * @throws On invalid HTTP method or failed request
+ */
 export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {}) => {
   return async (
     endpoint: string,
@@ -42,7 +50,7 @@ export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {
       throw new Error(`Invalid HTTP method: ${config.method}`);
     }
 
-    const url = `${process.env.HOAGIE_API_URL}${endpoint}`;
+    const url = `${API_URL}${endpoint}`;
     const options: RequestInit = {
       method: config.method || 'GET',
       credentials: 'include',
@@ -50,7 +58,6 @@ export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {
         'Content-Type': 'application/json',
         ...(config.headers || {}),
       },
-      mode: 'no-cors', // TODO: Eventually fix CORS issues
     };
 
     // Add the request body if the method is not GET and arguments are provided
@@ -81,3 +88,10 @@ export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {
     }
   };
 }) as HoagieRequest;
+
+// Add method helpers
+request.get = (headers?: HeadersInit) => request({ method: 'GET', headers });
+request.post = (headers?: HeadersInit) => request({ method: 'POST', headers });
+request.put = (headers?: HeadersInit) => request({ method: 'PUT', headers });
+request.patch = (headers?: HeadersInit) => request({ method: 'PATCH', headers });
+request.delete = (headers?: HeadersInit) => request({ method: 'DELETE', headers });

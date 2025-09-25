@@ -4,7 +4,7 @@
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/template/LICENSE.
+ * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
@@ -53,7 +53,7 @@ export type Nav = {
  * Nav is a navbar meant for internal navigations throughout
  * different Hoagie applications.
  */
-function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = false }: Nav) {
+function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = true }: Nav) {
   const theme = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -89,15 +89,20 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = fal
                 <LogoComponent />
               ) : (
                 <Pane>
-                  <Text is='h2' display='inline-block' className='hoagie logo' color={theme.colors.gray900}>
+                  <Text
+                    is='h2'
+                    display='inline-block'
+                    className='hoagie logo'
+                    color={theme.colors.gray900}
+                  >
                     hoagie
                   </Text>
                   <Text is='h2' display='inline-block' className='hoagie logo' color={theme.title}>
                     {name}
                   </Text>
                   {beta && (
-                    <Text className='hoagie beta' position='absolute' color={theme.colors.gray900}>
-                      (BETA)
+                    <Text className='hoagie beta' position='absolute' color={theme.colors.green900}>
+                      BETA
                     </Text>
                   )}
                 </Pane>

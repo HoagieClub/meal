@@ -18,7 +18,7 @@ import toCamelCase from '@/utils/toCamelCase';
 import type { DiningEvent } from '@/types/dining';
 
 const ROUTE = '/api/dining/events/';
-const DEBUG = process.env.NODE_ENV !== 'production';
+const DEBUG = process.env.NODE_ENV === 'development';
 
 export async function GET(req: Request) {
   try {

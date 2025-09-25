@@ -104,7 +104,7 @@ export default function Index() {
             <br />
           </Pane>
         </div>
-        <div>© 2024 Hoagie Club.</div>
+        <div>© 2025 Hoagie Club.</div>
       </Pane>
     </Pane>
   );
