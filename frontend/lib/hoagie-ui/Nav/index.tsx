@@ -53,7 +53,7 @@ export type Nav = {
  * Nav is a navbar meant for internal navigations throughout
  * different Hoagie applications.
  */
-function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = false }: Nav) {
+function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = true }: Nav) {
   const theme = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -89,15 +89,20 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = fal
                 <LogoComponent />
               ) : (
                 <Pane>
-                  <Text is='h2' display='inline-block' className='hoagie logo' color={theme.colors.gray900}>
+                  <Text
+                    is='h2'
+                    display='inline-block'
+                    className='hoagie logo'
+                    color={theme.colors.gray900}
+                  >
                     hoagie
                   </Text>
                   <Text is='h2' display='inline-block' className='hoagie logo' color={theme.title}>
                     {name}
                   </Text>
                   {beta && (
-                    <Text className='hoagie beta' position='absolute' color={theme.colors.gray900}>
-                      (BETA)
+                    <Text className='hoagie beta' position='absolute' color={theme.colors.green900}>
+                      BETA
                     </Text>
                   )}
                 </Pane>

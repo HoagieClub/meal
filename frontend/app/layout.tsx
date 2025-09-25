@@ -20,7 +20,7 @@ import Layout from '@/lib/hoagie-ui/Layout';
 import Nav from '@/lib/hoagie-ui/Nav';
 import Theme from '@/lib/hoagie-ui/Theme';
 import { Toaster } from '@/components/ui/sonner';
-import { hoagie } from "@/app/hoagie";
+import { hoagie } from '@/app/hoagie';
 
 import '@/app/globals.css';
 import '@/lib/hoagie-ui/Theme/theme.css';
@@ -49,18 +49,17 @@ async function Content({ children }: { children: ReactNode }): Promise<JSX.Eleme
   const user = session?.user;
 
   const tabs = [
-    { title: 'Discover', href: '/feature3' },
     { title: 'Menu', href: '/feature1' },
     { title: 'Goals', href: '/feature2' },
+    { title: 'About Us', href: '/feature3' },
+    { title: 'Profile', href: '/feature5' },
   ];
 
   return (
     <Theme palette='green'>
       <Layout>
         <Nav name='meal' tabs={tabs} user={user} />
-        <div className="min-h-screen w-full">
-          {children}
-        </div>
+        <div className='min-h-screen w-full'>{children}</div>
         <Toaster />
       </Layout>
     </Theme>
