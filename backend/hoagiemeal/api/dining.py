@@ -47,7 +47,7 @@ from hoagiemeal.serializers import (
 )
 
 
-USE_SAMPLE_MENUS = True  # Toggle this to False later when the API is fixed
+USE_SAMPLE_MENUS = False  # Toggle this to False later when the API is fixed
 
 
 class DiningAPI(StudentApp):

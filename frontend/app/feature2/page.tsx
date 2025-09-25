@@ -702,17 +702,15 @@ export default function DietPlanner() {
       if (!response.ok) return [];
       const data = await response.json();
       const preliminaryItems: Omit<FoodItem, 'nutrition'>[] = [];
-      data.locations.location.forEach((loc: any) => {
-        (loc.menu.menus || []).forEach((item: any) => {
-          if (item.link) {
-            preliminaryItems.push({
-              name: item.name,
-              location: loc.name,
-              description: item.description,
-              link: item.link,
-            });
-          }
-        });
+      data.menus.forEach((item: any) => {
+        if (item.link) {
+          preliminaryItems.push({
+            name: item.name,
+            location: item.name,
+            description: item.description,
+            link: item.link,
+          });
+        }
       });
       if (preliminaryItems.length === 0) return [];
       // Once we have the items, we need to fetch the nutrition for each one.
