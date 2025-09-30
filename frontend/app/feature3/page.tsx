@@ -85,6 +85,14 @@ const teamMembers = [
       linkedin: 'https://www.linkedin.com/in/angcai/',
     },
   },
+  {
+    name: 'Zashaan Shaik',
+    role: 'Developer',
+    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=ZS',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/zashaan-shaik/',
+    },
+  },
 ];
 
 /**
