@@ -78,11 +78,11 @@ const teamLeads = [
 const teamMembers = [
   // Add your name, role, and image here!
   {
-    name: 'John Doe',
-    role: 'Frontend Developer',
-    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=JD',
+    name: 'Faylinn Wong',
+    role: 'Contributor',
+    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=FW',
     socials: {
-      linkedin: 'https://www.linkedin.com/in/abuahmed0821/',
+      linkedin: 'https://www.linkedin.com/in/faylinn-w-005890238/',
     },
   },
 ];
