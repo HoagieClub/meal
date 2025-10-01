@@ -78,11 +78,13 @@ const teamLeads = [
 const teamMembers = [
   // Add your name, role, and image here!
   {
-    name: 'John Doe',
-    role: 'Frontend Developer',
-    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=JD',
+    name: 'Caleb Kha-Uong',
+    role: 'Fullstack Developer',
+    imgSrc: 
+    'https://media.licdn.com/dms/image/v2/D5603AQHtWsVjQbCx-g/profile-displayphoto-crop_800_800/B56ZhC4LH1HUAI-/0/1753468679847?e=1762387200&v=beta&t=UgCV9uFTuzPp9ZpzV1cqTls41yTc4Nb14rTzy3HVj5g',
     socials: {
-      linkedin: 'https://www.linkedin.com/in/abuahmed0821/',
+      linkedin: 'https://www.linkedin.com/in/calebK25/',
+      website: 'https://caleb-k.com',
     },
   },
 ];
