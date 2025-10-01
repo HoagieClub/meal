@@ -78,11 +78,11 @@ const teamLeads = [
 const teamMembers = [
   // Add your name, role, and image here!
   {
-    name: 'John Doe',
-    role: 'Frontend Developer',
-    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=JD',
+    name: 'Emily Zou',
+    role: 'Full-Stack Developer',
+    imgSrc: 'https://media.licdn.com/dms/image/v2/D4E03AQGRoLN7sINVZw/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1721419898121?e=2147483647&v=beta&t=5YOXJjyWo2vSQ8IS3fnLClfiDZzGEWTqzoUJrkCduwk',
     socials: {
-      linkedin: 'https://www.linkedin.com/in/abuahmed0821/',
+      linkedin: 'https://www.linkedin.com/in/emily-zou-princeton/',
     },
   },
 ];
