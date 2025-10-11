@@ -78,6 +78,14 @@ const teamLeads = [
 const teamMembers = [
   // Add your name, role, and image here!
   {
+    name: 'Angela Cai',
+    role: 'Developer',
+    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=AC',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/angcai/',
+    },
+  },
+  {
     name: 'Caleb Kha-Uong',
     role: 'Fullstack Developer',
     imgSrc: 
