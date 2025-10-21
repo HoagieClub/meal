@@ -744,13 +744,14 @@ export default function DietPlanner() {
       let bestScore = Infinity;
       let bestFoodIndex = -1;
       // We loop through our available foods to find the one that gets us closest to our targets.
-      remainingFoods.forEach((food, index) => {
+      for (let j = 0; j < remainingFoods.length; j++) {
+        const food = remainingFoods[j];
         const newCalories = currentTotals.calories + food.nutrition.calories;
         const newProtein = currentTotals.protein + food.nutrition.protein;
         const newFat = currentTotals.fat + food.nutrition.fat;
         const newCarbs = currentTotals.carbohydrates + food.nutrition.carbohydrates;
 
-        if (newCalories > targetCalories * 1.25) return; // Don't go too far over the target.
+        if (newCalories > targetCalories * 1.25) continue; // Don't go too far over the target.
         const calError = (newCalories - targetCalories) / (targetCalories || 1);
         const proError = (newProtein - targetProtein) / (targetProtein || 1);
         const fatError = (newFat - targetFat) / (targetFat || 1);
@@ -760,13 +761,13 @@ export default function DietPlanner() {
         if (score < bestScore) {
           bestScore = score;
           bestFood = food;
-          bestFoodIndex = index;
+          bestFoodIndex = j;
         }
-      });
+      }
       if (bestFood && bestFoodIndex > -1) {
         mealCombination.push(bestFood);
         Object.keys(bestFood.nutrition).forEach((key) => {
-          currentTotals[key as keyof Nutrients] += bestFood!.nutrition[key as keyof Nutrients];
+          currentTotals[key as keyof Nutrients] += bestFood.nutrition[key as keyof Nutrients];
         });
         remainingFoods.splice(bestFoodIndex, 1);
       } else {

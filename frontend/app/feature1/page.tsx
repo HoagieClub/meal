@@ -30,6 +30,7 @@ import DiningLocations from '@/examples/locations';
 import getDiningLocationsServerSide from '@/examples/locationsServerSide';
 import { useGetMenu } from '@/hooks/use-endpoints';
 import DiningHallCard from '@/components/DiningHallCard';
+import { AllergenKey, DietKey } from '@/types/dining';
 
 type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
@@ -159,8 +160,8 @@ export default function Index() {
     'Graduate College',
   ];
   const [halls] = useState<string[]>(initialHalls);
-  const DIETARY = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
-  const ALLERGENS = [
+  const DIETARY: DietKey[] = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
+  const ALLERGENS: AllergenKey[] = [
     'Peanut',
     'Tree nut',
     'Egg',
@@ -180,16 +181,16 @@ export default function Index() {
 
   // temporary UI selections
   const [tempHalls, setTempHalls] = useState<string[]>(initialHalls);
-  const [tempDietary, setTempDietary] = useState<string[]>([...DIETARY]);
-  const [tempAllergens, setTempAllergens] = useState<string[]>([...ALLERGENS]);
+  const [tempDietary, setTempDietary] = useState<DietKey[]>([...DIETARY]);
+  const [tempAllergens, setTempAllergens] = useState<AllergenKey[]>([...ALLERGENS]);
 
   const [filterOpen, setFilterOpen] = useState(false);
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
 
-  const toggle = (
-    val: string,
-    arr: string[],
-    setter: React.Dispatch<React.SetStateAction<string[]>>
+  const toggle = <T,>(
+    val: T,
+    arr: T[],
+    setter: React.Dispatch<React.SetStateAction<T[]>>
   ) => setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
 
   // reset only the temp selections

@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -72,3 +72,15 @@ export interface DiningLocationsResponse {
   message: string;
   status?: number;  // Optional since it's not always present in responses
 }
+
+export type DietKey = 'Vegetarian' | 'Vegan' | 'Halal' | 'Kosher';
+export type AllergenKey =
+  | 'Peanut'
+  | 'Tree nut'
+  | 'Egg'
+  | 'Milk'
+  | 'Wheat'
+  | 'Soybeans'
+  | 'Crustacean'
+  | 'Alcohol'
+  | 'Gluten';

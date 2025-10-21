@@ -12,7 +12,13 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import type { Place, ResidentialVenue, CafeVenue, SpecialtyVenue } from '@/types/places';
+import type {
+  Place,
+  ResidentialVenue,
+  CafeVenue,
+  SpecialtyVenue,
+  DiningVenue,
+} from '@/types/places';
 import type { VenueType } from '@/types/places';
 import { RESIDENTIAL_VENUES, CAFE_FRAGMENTS } from '@/types/places';
 
@@ -44,7 +50,7 @@ export function classifyVenueType(name: string): VenueType {
  * @param venue - The venue to check.
  * @returns True if the venue is a residential venue, false otherwise.
  */
-export function isResidential(venue: Place): venue is ResidentialVenue {
+export function isResidential(venue: DiningVenue): venue is ResidentialVenue {
   return venue.type === 'residential';
 }
 
@@ -53,7 +59,7 @@ export function isResidential(venue: Place): venue is ResidentialVenue {
  * @param venue - The venue to check.
  * @returns True if the venue is a cafe venue, false otherwise.
  */
-export function isCafe(venue: Place): venue is CafeVenue {
+export function isCafe(venue: DiningVenue): venue is CafeVenue {
   return venue.type === 'cafe';
 }
 
@@ -62,7 +68,7 @@ export function isCafe(venue: Place): venue is CafeVenue {
  * @param venue - The venue to check.
  * @returns True if the venue is a specialty venue, false otherwise.
  */
-export function isSpecialty(venue: Place): venue is SpecialtyVenue {
+export function isSpecialty(venue: DiningVenue): venue is SpecialtyVenue {
   return venue.type === 'specialty';
 }
 
