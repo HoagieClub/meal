@@ -6,11 +6,15 @@ from hoagiemeal.utils.logger import logger
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.http import HttpRequest
+from django.contrib.auth import get_user_model
+from hoagiemeal.serializers import UserSerializer
+
+User = get_user_model()
 
 _JWK_CLIENT = PyJWKClient(f"{settings.AUTH0_ISSUER}.well-known/jwks.json")
 
-
 def get_bearer_token(request: HttpRequest) -> Optional[str]:
+    """Extract the Bearer token from the request headers."""
     auth = request.headers.get("Authorization") or request.META.get("HTTP_AUTHORIZATION") or ""
     parts = auth.split()
     if len(parts) == 2 and parts[0].lower() == "bearer":
@@ -19,6 +23,7 @@ def get_bearer_token(request: HttpRequest) -> Optional[str]:
 
 
 def decode_jwt_token(token: str) -> Dict[str, Any]:
+    """Verify the JWT token with Auth0 and return the claims."""
     key = _JWK_CLIENT.get_signing_key_from_jwt(token).key
     return jwt.decode(
         token,
@@ -29,36 +34,61 @@ def decode_jwt_token(token: str) -> Dict[str, Any]:
         options={"require": ["exp", "iat", "iss", "aud", "sub"]},
         leeway=5,
     )
+    
 
+def get_or_create_user(claims: Dict[str, Any]) -> User:
+    """Find or create a user based on Auth0 token claims."""
+    auth0_id = claims.get('sub')
+    if not auth0_id:
+        return None
 
-def is_authenticated(request: HttpRequest) -> bool:
-    token = get_bearer_token(request)
-    if not token:
-        return False
     try:
-        decode_jwt_token(token)
-        return True
+        user = User.objects.get(auth0_id=auth0_id)
+    except User.DoesNotExist:   
+        user = User.objects.create(
+            username="DummyUser",
+            email="dummyuser@example.com",
+            first_name='Dummy',
+            last_name='User',
+            auth0_id=auth0_id,
+            is_active=True
+        )
+        logger.info(f"Created new user: {user.username} (Auth0 ID: {auth0_id})")
     except Exception as e:
-        logger.warning(f"Authentication failed: {e}")
-        return False
+        logger.error(f"Error creating user: {e}")
+        return None
+    
+    return user
 
 
-@api_view(["GET"])
-def me(request):
+def authenticate_request(request: HttpRequest) -> Optional[User]:
+    """Check if the request is authenticated and return the user."""
     token = get_bearer_token(request)
     if not token:
-        return Response({"error": "Missing bearer token"}, status=401)
-
+        return None
+    
     try:
         claims = decode_jwt_token(token)
-        logger.info(f"Token claims: {claims}")
-        return Response(claims)
-
-    except ExpiredSignatureError:
-        return Response({"error": "Token expired"}, status=401)
-    except (InvalidTokenError, DecodeError) as e:
-        logger.warning(f"Invalid token: {e}")
-        return Response({"error": "Invalid token"}, status=401)
+        logger.info(f"Decoded JWT token: {claims}")
+        user = get_or_create_user(claims)
+        logger.info(f"User: {user}")
+        return user
     except Exception as e:
-        logger.error(f"Error verifying token: {e}", exc_info=True)
-        return Response({"error": "Internal Server Error"}, status=500)
+        logger.warning(f"Authentication failed: {e}")
+        return None
+    
+    
+@api_view(["GET"])
+def me(request):
+    """Get current user information."""
+    user = authenticate_request(request)
+    if not user:
+        return Response({"error": "Authentication required"}, status=401)
+    serializer = UserSerializer(user)
+    return Response(serializer.data, status=200)
+
+@api_view(["GET"])
+def verify(request):
+    """Verify if the user is authenticated."""
+    user = authenticate_request(request)
+    return Response({"authenticated": bool(user)}, status=200)

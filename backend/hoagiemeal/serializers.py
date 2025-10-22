@@ -3,7 +3,7 @@
 from rest_framework import serializers
 from django.db import models
 from hoagiemeal.models.menu import MenuItem, MenuRating
-
+from hoagiemeal.models.user import CustomUser
 
 class GeoLocationSerializer(serializers.Serializer):
     """Serializer for the GeoLocation model."""
@@ -171,3 +171,12 @@ class MenuItemWithRatingsSerializer(serializers.ModelSerializer):
             except MenuRating.DoesNotExist:
                 return None
         return None
+    
+
+class UserSerializer(serializers.ModelSerializer):
+    """Serializer for the CustomUser model."""
+    class Meta:
+        """Meta class for the UserSerializer."""
+
+        model = CustomUser
+        fields = '__all__'

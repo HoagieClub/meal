@@ -37,8 +37,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hoagiemeal.settings")
 django.setup()
 
 from hoagiemeal.models.dining import DiningVenue
-from hoagiemeal.models.menu import MenuItem, Menu, MenuItemNutrient, MenuRating
-from hoagiemeal.models.meal_plan import MealPlanType, UserMealPlan, SwipeTransactionIndividual
+from hoagiemeal.models.menu import MenuItem
 
 from django.db.models import QuerySet, Model, Avg
 from django.core.paginator import Paginator, Page

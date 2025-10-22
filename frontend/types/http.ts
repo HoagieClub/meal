@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -14,13 +14,13 @@
 
 // Strict literal types for Hoagie HTTP protocol
 export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const;
-export type HttpMethod = typeof HTTP_METHODS[number];
+export type HttpMethod = (typeof HTTP_METHODS)[number];
 
 // Base config type w/ method-specific constraints
 type MethodConfig<M extends HttpMethod> = {
   method?: M;
   headers?: HeadersInit;
-}
+};
 
 // Base response type
 export type ApiResponse<T> = {
@@ -28,7 +28,7 @@ export type ApiResponse<T> = {
   data?: T;
   message?: string;
   error?: string;
-}
+};
 
 // Prevent body in GET requests
 export type RequestConfig<M extends HttpMethod> = M extends 'GET'
@@ -49,38 +49,41 @@ export interface HoagieRequest {
   put: <T>(headers?: HeadersInit) => RequestFunction<T>;
   patch: <T>(headers?: HeadersInit) => RequestFunction<T>;
   delete: <T>(headers?: HeadersInit) => RequestFunction<T>;
+  getAuth: <T>(accessToken: string) => RequestFunction<T>;
+  postAuth: <T>(accessToken: string) => RequestFunction<T>;
+  putAuth: <T>(accessToken: string) => RequestFunction<T>;
+  patchAuth: <T>(accessToken: string) => RequestFunction<T>;
+  deleteAuth: <T>(accessToken: string) => RequestFunction<T>;
 }
 
 // SWR-specific options. Read the docs: https://swr.vercel.app/docs/getting-started
 // Goes into the hooks as configuration options for SWR. See @/hooks/use-endpoints
 export interface FetchConfig {
-  revalidateOnFocus?: boolean;     // Revalidate on window focus
+  revalidateOnFocus?: boolean; // Revalidate on window focus
   revalidateOnReconnect?: boolean; // Revalidate on network reconnect
-  refreshInterval?: number;        // Polling interval in ms (0 to disable)
-  dedupingInterval?: number;       // Cache deduplication interval in ms
-  refreshWhenHidden?: boolean;     // Refresh even if tab is hidden
-  refreshWhenOffline?: boolean;    // Refresh even if offline
-  revalidateOnMount?: boolean;     // Revalidate on component mount
-  revalidateIfStale?: boolean;     // Revalidate if data is stale
-  fallbackData?: any;              // Initial SSR data
-  suspense?: boolean;              // Enable React Suspense
-  keepPreviousData?: boolean;      // Retain old data while fetching
+  refreshInterval?: number; // Polling interval in ms (0 to disable)
+  dedupingInterval?: number; // Cache deduplication interval in ms
+  refreshWhenHidden?: boolean; // Refresh even if tab is hidden
+  refreshWhenOffline?: boolean; // Refresh even if offline
+  revalidateOnMount?: boolean; // Revalidate on component mount
+  revalidateIfStale?: boolean; // Revalidate if data is stale
+  fallbackData?: any; // Initial SSR data
+  suspense?: boolean; // Enable React Suspense
+  keepPreviousData?: boolean; // Retain old data while fetching
   onSuccess?: (data: any) => void; // Callback on fetch success
-  onError?: (err: any) => void;    // Callback on fetch failure
+  onError?: (err: any) => void; // Callback on fetch failure
 }
 
 // Next.js-specific options. Read the docs: https://nextjs.org/docs/app/building-your-application/data-fetching
-// 
+//
 export interface NextFetchConfig {
-  revalidate?: number | false;    // ISR revalidation time
-  tags?: string[];                // Tags for on-demand revalidation
-  cache?:
-  // Cache control
-  | 'force-cache'
-  | 'no-store'
-  | 'no-cache';
-  next?: {                        // Next.js 13+ config
-    revalidate?: number;          // ISR revalidation time
-    tags?: string[];              // Tags for on-demand revalidation
+  revalidate?: number | false; // ISR revalidation time
+  tags?: string[]; // Tags for on-demand revalidation
+  cache?: // Cache control
+  'force-cache' | 'no-store' | 'no-cache';
+  next?: {
+    // Next.js 13+ config
+    revalidate?: number; // ISR revalidation time
+    tags?: string[]; // Tags for on-demand revalidation
   };
 }
