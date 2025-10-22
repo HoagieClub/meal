@@ -79,7 +79,7 @@ class MenuItem(models.Model):
     """
 
     id = models.BigAutoField(primary_key=True)
-    api_id = models.PositiveIntegerField(unique=True, help_text=_("Original menu item ID from the API"))
+    api_id = models.PositiveIntegerField(help_text=_("Original menu item ID from the API")) 
     menu = models.ForeignKey(Menu, on_delete=models.CASCADE, related_name="menu_items")
     name = models.CharField(max_length=255, db_index=True)
     description = models.TextField(blank=True)
@@ -93,11 +93,12 @@ class MenuItem(models.Model):
         """Meta class for the MenuItem model."""
 
         db_table = "menu_items"
+        unique_together = ('menu', 'api_id')
         indexes = [
             models.Index(fields=["name"]),
             models.Index(fields=["api_id"]),
         ]
-
+        
     def __str__(self):
         """Return the string representation of the MenuItem instance.
 

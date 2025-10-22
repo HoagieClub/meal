@@ -158,112 +158,132 @@ class DiningAPI(StudentApp):
             return {}  # Return an empty dict on failure
 
     def get_menu(self, location_id: str, menu_id: str) -> dict:
-        """Fetch the menu for a specific dining location.
+            """Fetch the menu for a specific dining location.
+            ...
+            """
+            logger.info(f"Getting dining menu for location_id: {location_id}, menu_id: {menu_id}.")
 
-        Checks for a cached version in the database first. If not found,
-        fetches from the external API, caches it, and then returns it.
+            MEAL_TYPE_MAP = {
+                'Breakfast': 'BR',
+                'Lunch': 'LU',
+                'Dinner': 'DI'
+            }
 
-        Args:
-            location_id (str): The ID of the dining location.
-            menu_id (str): The ID of the dining menu.
-
-        Returns:
-            dict: A JSON object containing the menu details.
-        """
-        logger.info(f"Getting dining menu for location_id: {location_id}, menu_id: {menu_id}.")
-
-        MEAL_TYPE_MAP = {
-            'Breakfast': 'BR',
-            'Lunch': 'LU',
-            'Dinner': 'DI'
-        }
-
-        # 1. Parse menu_id to get date and meal type
-        try:
-            date_str, meal_type = menu_id.rsplit('-', 1)
-            menu_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-            meal_code = MEAL_TYPE_MAP.get(meal_type)
-            if not meal_code:
-                raise ValueError("Invalid meal type in menu_id")
-        except ValueError:
-            logger.error(f"Invalid menu_id format for '{menu_id}'. Falling back to API call.")
-            return self._fetch_and_decode_menu_from_api(location_id, menu_id)
-
-        # 2. Check database for a cached menu
-        try:
-            venue = DiningVenue.objects.get(database_id=location_id)
-            cached_menu = Menu.objects.filter(dining_venue=venue, date=menu_date, meal=meal_code).first()
-
-            if cached_menu:
-                logger.info(f"Cache HIT for menu_id: {menu_id}, location_id: {location_id}")
-                # CORRECTED: Changed .items to .menu_items
-                menu_items = cached_menu.menu_items.all()
-                # Manually serialize to match the expected API output format
-                serialized_items = [
-                    {
-                        "id": item.api_id,
-                        "name": item.name,
-                        "description": item.description,
-                        "link": item.link,
-                    }
-                    for item in menu_items
-                ]
-                return {"menus": serialized_items}
-
-        except DiningVenue.DoesNotExist:
-            logger.warning(f"DiningVenue with database_id {location_id} not found. Cannot check cache.")
-        except Exception as e:
-            logger.error(f"Database lookup error for menu_id {menu_id}: {e}. Falling back to API.")
-
-        # 3. Cache MISS: Fetch from the external API
-        logger.info(f"Cache MISS for menu_id: {menu_id}, location_id: {location_id}. Fetching from API.")
-        api_menu_data = self._fetch_and_decode_menu_from_api(location_id, menu_id)
-
-        # 4. Save the new data to the database (cache it)
-        if api_menu_data and "menus" in api_menu_data and api_menu_data["menus"]:
+            # 1. Parse menu_id to get date and meal type
             try:
-                # We need the venue to associate the menu with. If it's not in our DB, we can't cache.
+                date_str, meal_type = menu_id.rsplit('-', 1)
+                menu_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+                meal_code = MEAL_TYPE_MAP.get(meal_type)
+                if not meal_code:
+                    raise ValueError("Invalid meal type in menu_id")
+            except ValueError:
+                logger.error(f"Invalid menu_id format for '{menu_id}'. Falling back to API call.")
+                return self._fetch_and_decode_menu_from_api(location_id, menu_id)
+
+            # 2. Check database for a cached menu
+            try:
+                venue = DiningVenue.objects.get(database_id=location_id)
+                # Use prefetch_related for potential slight performance improvement on hit
+                cached_menu = Menu.objects.prefetch_related('menu_items').filter(
+                    dining_venue=venue, date=menu_date, meal=meal_code
+                ).first()
+
+                if cached_menu:
+                    logger.info(f"✅ CACHE HIT for menu_id: {menu_id} at location_id: {location_id}")
+                    menu_items = cached_menu.menu_items.all() # Get items from prefetched data
+                    serialized_items = [
+                        {
+                            "id": item.api_id,
+                            "name": item.name,
+                            "description": item.description,
+                            "link": item.link,
+                        }
+                        for item in menu_items
+                    ]
+                    # Return empty list if no items, matching API structure
+                    return {"menus": serialized_items}
+
+            except DiningVenue.DoesNotExist:
+                logger.warning(f"DiningVenue with database_id {location_id} not found in DB. Cannot check cache or save menu.")
+                # If the venue isn't in our DB, we can't cache, just return empty API result.
+                return self._fetch_and_decode_menu_from_api(location_id, menu_id) # Or just return {} directly? Let's try API first.
+            except Exception as e:
+                logger.error(f"Database lookup error for menu_id {menu_id}: {e}. Falling back to API.")
+
+            # --- Cache Miss Logic ---
+            logger.info(f"🚫 CACHE MISS for menu_id: {menu_id}, location_id: {location_id}. Fetching from API.")
+            
+            # 3. Fetch from the external API
+            api_menu_data = self._fetch_and_decode_menu_from_api(location_id, menu_id)
+
+            # 4. Save the result (even if empty) to the database to cache it
+            #    Only attempt to cache if the venue exists in our database.
+            try:
+                # Re-fetch venue here in case the DoesNotExist happened above
+                # Although technically it shouldn't if we reached this point, better safe.
                 venue_for_caching = DiningVenue.objects.get(database_id=location_id)
 
                 with transaction.atomic():
-                    # Create the parent Menu object
-                    new_menu, _ = Menu.objects.get_or_create(
+                    # Get or create the Menu record. This happens even if api_menu_data is empty.
+                    new_menu, created = Menu.objects.get_or_create(
                         dining_venue=venue_for_caching,
                         date=menu_date,
                         meal=meal_code,
+                        # Optionally update last_fetched if the menu already existed
+                        # defaults={'last_fetched': timezone.now()} # Need import: from django.utils import timezone
                     )
+                    # If using get_or_create defaults doesn't update, uncomment below:
+                    # if not created:
+                    #    new_menu.last_fetched = timezone.now()
+                    #    new_menu.save(update_fields=['last_fetched'])
 
-                    # Prepare menu items for efficient bulk creation
-                    # CORRECTED: Changed .items to .menu_items
-                    existing_api_ids = set(new_menu.menu_items.values_list('api_id', flat=True))
+
+                    items_in_api = api_menu_data.get("menus", []) if api_menu_data else []
                     items_to_create = []
 
-                    for item_data in api_menu_data["menus"]:
-                        api_id = item_data.get('id')
-                        if api_id and api_id not in existing_api_ids:
-                            items_to_create.append(
-                                MenuItem(
-                                    api_id=api_id,
-                                    menu=new_menu,
-                                    name=item_data.get('name'),
-                                    description=item_data.get('description'),
-                                    link=item_data.get('link'),
+                    if items_in_api: # Only proceed if the API returned some items
+                        existing_api_ids = set(new_menu.menu_items.values_list('api_id', flat=True))
+
+                        for item_data in items_in_api:
+                            api_id = item_data.get('id')
+                            # Convert api_id to integer for comparison and saving if your model field is IntegerField
+                            try:
+                                api_id_int = int(api_id) if api_id else None
+                            except (ValueError, TypeError):
+                                logger.warning(f"Invalid api_id '{api_id}' received for menu {menu_id}. Skipping item.")
+                                continue # Skip this item if api_id is invalid
+
+                            if api_id_int and api_id_int not in existing_api_ids:
+                                items_to_create.append(
+                                    MenuItem(
+                                        api_id=api_id_int, # Save as integer
+                                        menu=new_menu,
+                                        name=item_data.get('name'),
+                                        description=item_data.get('description'),
+                                        link=item_data.get('link'),
+                                    )
                                 )
-                            )
                     
                     if items_to_create:
-                        MenuItem.objects.bulk_create(items_to_create)
-                        logger.info(f"Successfully cached {len(items_to_create)} items for menu_id: {menu_id} at location_id: {location_id}")
-                    else:
+                        MenuItem.objects.bulk_create(items_to_create, ignore_conflicts=False) # Keep conflicts check
+                        logger.info(f"💾 CACHE SAVED {len(items_to_create)} new items for menu_id: {menu_id} at location_id: {location_id}")
+                    elif created : # Menu was created, but no items were added (empty menu)
+                        logger.info(f"💾 CACHE SAVED empty menu for menu_id: {menu_id} at location_id: {location_id}")
+                    else: # Menu existed, and no *new* items were found in API data
                         logger.info(f"Menu {menu_id} at location_id: {location_id} already up-to-date in cache.")
 
             except DiningVenue.DoesNotExist:
+                # This case was handled before the API call, but double-checking doesn't hurt.
                 logger.warning(f"Could not cache menu for location_id {location_id} because the venue is not in the database.")
+            except IntegrityError as e:
+                # Catch specific integrity errors like unique constraint violations during bulk_create
+                logger.error(f"Failed to cache menu items for menu_id {menu_id} due to DB constraint: {e}")
             except Exception as e:
                 logger.error(f"Failed to cache menu for menu_id {menu_id}: {e}")
-                # Do not block the response to the user if caching fails
+                # Do not block the response to the user if caching fails, return API data directly
 
-        return api_menu_data
+            # Ensure we return the API data structure even if caching failed or API was empty
+            return api_menu_data if api_menu_data else {"menus": []}
 
     def get_locations_with_menus(self, menu_id: str, category_ids=None) -> dict:
         if category_ids is None:
