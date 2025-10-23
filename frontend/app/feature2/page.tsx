@@ -15,7 +15,7 @@
 
 'use client';
 
-import { useState, useEffect, ChangeEvent, useMemo } from 'react';
+import { useState, useEffect, ChangeEvent, useMemo, useCallback } from 'react'; // IMPORT useCallback
 import {
   Pane,
   Heading,
@@ -46,6 +46,7 @@ import {
   RocketIcon,
   MoreIcon,
   useTheme,
+  // --- NEW ICONS ---
   FloppyDiskIcon,
   BookmarkIcon,
   TrashIcon,
@@ -73,17 +74,26 @@ function useLocalStorage<T>(key: string, initialValue: T) {
     }
   });
 
-  const setValue = (value: T | ((val: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+  // --- UPDATED setValue ---
+  // We wrap this in useCallback to ensure the function identity is stable across renders.
+  // This prevents the useEffect hook in DietPlanner from re-running unnecessarily.
+  const setValue = useCallback(
+    (value: T | ((val: T) => T)) => {
+      try {
+        // Use the functional update form of setStoredValue to ensure we have the latest state
+        setStoredValue((prevValue) => {
+          const valueToStore = value instanceof Function ? value(prevValue) : value;
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(key, JSON.stringify(valueToStore));
+          }
+          return valueToStore;
+        });
+      } catch (error) {
+        console.error(error);
       }
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    },
+    [key]
+  ); // The key is stable, so this function is created only once.
 
   return [storedValue, setValue] as const;
 }
@@ -601,7 +611,7 @@ const DayPlanCard = ({
                 ))}
               </Pane>
             ) : (
-              <Text color='#64748B' marginTop='auto'>
+              <Text color='#64748B' className='h-full w-full flex items-center justify-center'>
                 No suitable meal found.
               </Text>
             )}
@@ -684,7 +694,9 @@ const SavedPlansManager = ({
                       loadPlan(dateString, plan);
                       close();
                     }}
+                    gap={minorScale(3)}
                   >
+                    <CalendarIcon />
                     Week of{' '}
                     {new Date(dateString).toLocaleDateString('en-US', {
                       month: 'short',
@@ -715,6 +727,8 @@ const SavedPlansManager = ({
     </Popover>
   );
 };
+
+// --- NEW SKELETON LOADING COMPONENTS ---
 
 const SkeletonBlock: React.FC<{
   width: string | number;
@@ -903,6 +917,8 @@ export default function DietPlanner() {
     } else {
       setStoredPlan(null);
     }
+    // We only want this to run when the date changes or the *entire* savedPlans object changes.
+    // The stable `setStoredPlan` function is passed, which is now correct.
   }, [currentDate, savedPlans, setStoredPlan]); // Runs when date or saved plans change
 
   // This effect ensures that when a user selects a preset, the calorie/protein/fat values update automatically.
@@ -1142,7 +1158,7 @@ export default function DietPlanner() {
       newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
       return newDate.toISOString();
     });
-    // setStoredPlan(null); // No longer clearing the plan here
+    // The useEffect hook will automatically handle loading the new plan or setting it to null
   };
 
   // --- NEW ---: Saves the currently displayed plan to the saved plans list
@@ -1329,7 +1345,7 @@ export default function DietPlanner() {
           disabled={loading}
           className='rounded-lg'
         >
-          {loading ? <Spinner /> : 'Generate Plan'}
+          {loading ? <Spinner size={16} /> : 'Generate Plan'}
         </Button>
       </Card>
     </Pane>
