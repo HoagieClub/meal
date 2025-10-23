@@ -1,6 +1,6 @@
 import jwt
 from typing import Optional, Dict, Any
-from jwt import PyJWKClient, InvalidTokenError, ExpiredSignatureError, DecodeError
+from jwt import PyJWKClient
 from django.conf import settings
 from hoagiemeal.utils.logger import logger
 from rest_framework.decorators import api_view
@@ -10,8 +10,8 @@ from django.contrib.auth import get_user_model
 from hoagiemeal.serializers import UserSerializer
 
 User = get_user_model()
-
 _JWK_CLIENT = PyJWKClient(f"{settings.AUTH0_ISSUER}.well-known/jwks.json")
+
 
 def get_bearer_token(request: HttpRequest) -> Optional[str]:
     """Extract the Bearer token from the request headers."""
@@ -19,76 +19,98 @@ def get_bearer_token(request: HttpRequest) -> Optional[str]:
     parts = auth.split()
     if len(parts) == 2 and parts[0].lower() == "bearer":
         return parts[1].strip()
+    logger.error("No Bearer token found in request headers in get_bearer_token")
     return None
 
 
-def decode_jwt_token(token: str) -> Dict[str, Any]:
+def decode_jwt_token(token: Optional[str]) -> Optional[Any]:
     """Verify the JWT token with Auth0 and return the claims."""
-    key = _JWK_CLIENT.get_signing_key_from_jwt(token).key
-    return jwt.decode(
-        token,
-        key,
-        algorithms=["RS256"],
-        audience=settings.AUTH0_AUDIENCE,
-        issuer=settings.AUTH0_ISSUER,
-        options={"require": ["exp", "iat", "iss", "aud", "sub"]},
-        leeway=5,
-    )
+    if not token:
+        logger.error("No token found in decode_jwt_token")
+        return None
     
-
-def get_or_create_user(claims: Dict[str, Any]) -> User:
-    """Find or create a user based on Auth0 token claims."""
-    auth0_id = claims.get('sub')
-    if not auth0_id:
+    try:
+        key = _JWK_CLIENT.get_signing_key_from_jwt(token).key
+        claims = jwt.decode(
+            token,
+            key,
+            algorithms=["RS256"],
+            audience=settings.AUTH0_AUDIENCE,
+            issuer=settings.AUTH0_ISSUER,
+            options={"require": ["exp", "iat", "iss", "aud", "sub"]},
+            leeway=5,
+        )
+        return claims
+    except Exception as e:
+        logger.error(f"Error decoding JWT token: {e} in decode_jwt_token")
         return None
 
+
+def get_or_create_user(claims: Any) -> Optional[Any]:
+    """Find or create a user based on Auth0 token claims."""
+    if not claims:
+        logger.error("No claims found in get_or_create_user")
+        return None
+
+    if "sub" not in claims:
+        logger.error("No Auth0 ID found in claims in get_or_create_user")
+        return None
+
+    auth0_id = claims["sub"]
     try:
         user = User.objects.get(auth0_id=auth0_id)
-    except User.DoesNotExist:   
+        logger.info(f"Found existing user: {user.username} (Auth0 ID: {auth0_id})")
+        return user
+
+    except User.DoesNotExist:
+        logger.info(f"Creating new user: {auth0_id}")
         user = User.objects.create(
             username="DummyUser",
             email="dummyuser@example.com",
-            first_name='Dummy',
-            last_name='User',
+            first_name="Dummy",
+            last_name="User",
             auth0_id=auth0_id,
-            is_active=True
+            is_active=True,
         )
         logger.info(f"Created new user: {user.username} (Auth0 ID: {auth0_id})")
-    except Exception as e:
-        logger.error(f"Error creating user: {e}")
-        return None
-    
-    return user
+        return user
 
 
-def authenticate_request(request: HttpRequest) -> Optional[User]:
+def authenticate_request(request: HttpRequest) -> Optional[Any]:
     """Check if the request is authenticated and return the user."""
     token = get_bearer_token(request)
-    if not token:
-        return None
-    
-    try:
-        claims = decode_jwt_token(token)
-        logger.info(f"Decoded JWT token: {claims}")
-        user = get_or_create_user(claims)
-        logger.info(f"User: {user}")
-        return user
-    except Exception as e:
-        logger.warning(f"Authentication failed: {e}")
-        return None
-    
-    
+    claims = decode_jwt_token(token)
+    return get_or_create_user(claims)
+
+
+#################### Exposed endpoints #########################
+
+
 @api_view(["GET"])
 def me(request):
     """Get current user information."""
-    user = authenticate_request(request)
-    if not user:
-        return Response({"error": "Authentication required"}, status=401)
-    serializer = UserSerializer(user)
-    return Response(serializer.data, status=200)
+    try:
+        user = authenticate_request(request)
+        if not user:
+            logger.error("Authentication failed in me view")
+            return Response({"error": "Authentication required"}, status=401)
+        serializer = UserSerializer(user)
+        user_data = serializer.data
+        return Response({"authenticated": True, "user": user_data}, status=200)
+    except Exception as e:
+        logger.error(f"Error in me view: {e}")
+        return Response({"error": str(e)}, status=500)
+
 
 @api_view(["GET"])
 def verify(request):
     """Verify if the user is authenticated."""
-    user = authenticate_request(request)
-    return Response({"authenticated": bool(user)}, status=200)
+    try:
+        user = authenticate_request(request)
+        if not user:
+            logger.error("Authentication failed in verify view")
+            return Response({"authenticated": False, "user": None}, status=200)
+        return Response({"authenticated": True, "user": user.id}, status=200)
+    except Exception as e:
+        logger.error(f"Error in verify view: {e}")
+        return Response({"error": str(e)}, status=500)
