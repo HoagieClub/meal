@@ -32,7 +32,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
 }) => {
   const theme = useTheme();
 
-  const displayItems = limitItems ? items.slice(0, 1) : items;
+  const displayItems = limitItems ? items.slice(0, 3).reverse() : items;
 
   return (
     <Pane marginBottom={majorScale(3)}>

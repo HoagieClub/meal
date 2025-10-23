@@ -181,7 +181,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         showNutrition={showNutrition}
         limitItems={true}
       />
-      <Pane display='flex' justifyContent='center' marginTop={majorScale(3)}>
+      <Pane display='flex' justifyContent='center' className='mt-auto'>
         <Button
           appearance='minimal'
           iconBefore={<ChevronDownIcon />}

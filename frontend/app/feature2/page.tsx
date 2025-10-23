@@ -46,6 +46,10 @@ import {
   RocketIcon,
   MoreIcon,
   useTheme,
+  FloppyDiskIcon,
+  BookmarkIcon,
+  TrashIcon,
+  Theme,
 } from 'evergreen-ui';
 import { toast } from 'sonner';
 
@@ -608,6 +612,225 @@ const DayPlanCard = ({
   );
 };
 
+// --- NEW SAVED PLANS COMPONENT ---
+
+const SavedPlansManager = ({
+  savedPlans,
+  setSavedPlans,
+  setCurrentDate,
+  setStoredPlan,
+}: {
+  savedPlans: Record<string, WeeklyPlan>;
+  setSavedPlans: (value: Record<string, WeeklyPlan>) => void;
+  setCurrentDate: (value: string) => void;
+  setStoredPlan: (value: WeeklyPlan | null) => void;
+}) => {
+  const theme = useTheme();
+
+  const loadPlan = (dateString: string, plan: WeeklyPlan) => {
+    setCurrentDate(dateString);
+    setStoredPlan(plan);
+    toast.success(
+      `Loaded plan for week of ${new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      })}`
+    );
+  };
+
+  const deletePlan = (dateString: string) => {
+    setSavedPlans(
+      Object.fromEntries(Object.entries(savedPlans).filter(([key]) => key !== dateString))
+    );
+    toast.success('Saved plan deleted.');
+  };
+
+  return (
+    <Popover
+      position={Position.BOTTOM_RIGHT}
+      content={({ close }) => (
+        <Pane
+          padding={majorScale(2)}
+          width={320}
+          display='flex'
+          flexDirection='column'
+          gap={minorScale(2)}
+        >
+          <Heading size={400} marginBottom={majorScale(1)}>
+            Saved Plans
+          </Heading>
+          <Pane
+            maxHeight={300}
+            overflowY='auto'
+            display='flex'
+            flexDirection='column'
+            gap={minorScale(2)}
+          >
+            {Object.keys(savedPlans).length === 0 ? (
+              <Text color='muted'>You have no saved plans.</Text>
+            ) : (
+              Object.entries(savedPlans).map(([dateString, plan]) => (
+                <Pane
+                  key={dateString}
+                  display='flex'
+                  justifyContent='space-between'
+                  alignItems='center'
+                  gap={minorScale(2)}
+                >
+                  <Button
+                    flex={1}
+                    justifyContent='flex-start'
+                    onClick={() => {
+                      loadPlan(dateString, plan);
+                      close();
+                    }}
+                  >
+                    Week of{' '}
+                    {new Date(dateString).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </Button>
+                  <IconButton
+                    icon={TrashIcon}
+                    intent='danger'
+                    appearance='minimal'
+                    onClick={() => deletePlan(dateString)}
+                  />
+                </Pane>
+              ))
+            )}
+          </Pane>
+        </Pane>
+      )}
+    >
+      <IconButton
+        icon={BookmarkIcon}
+        appearance='minimal'
+        height={32}
+        title='View Saved Plans'
+        background={'white'}
+      />
+    </Popover>
+  );
+};
+
+const SkeletonBlock: React.FC<{
+  width: string | number;
+  height: string | number;
+  theme: Theme;
+  [key: string]: any;
+}> = ({ width, height, theme, ...props }) => (
+  <Pane
+    width={width}
+    height={height}
+    background={theme.colors.green100} // Use theme color
+    borderRadius={4}
+    className='pulse'
+    {...props}
+  />
+);
+
+const SkeletonNutrientProgressBar: React.FC<{ theme: Theme }> = ({ theme }) => (
+  <Pane>
+    <Pane
+      display='flex'
+      justifyContent='space-between'
+      alignItems='center'
+      marginBottom={minorScale(1)}
+    >
+      <SkeletonBlock width='40%' height={16} theme={theme} />
+      <SkeletonBlock width='30%' height={16} theme={theme} />
+    </Pane>
+    <SkeletonBlock width='100%' height={6} theme={theme} borderRadius={8} />
+  </Pane>
+);
+
+const SkeletonWeeklySummary: React.FC<{ theme: Theme }> = ({ theme }) => (
+  <Card
+    background='white'
+    borderRadius={12}
+    padding={majorScale(3)}
+    marginBottom={majorScale(3)}
+    boxShadow='0px 4px 12px rgba(0, 0, 0, 0.05)'
+  >
+    <SkeletonBlock width='30%' height={24} theme={theme} marginBottom={majorScale(2)} />
+    <Pane
+      display='grid'
+      gridTemplateColumns='repeat(auto-fit, minmax(200px, 1fr))'
+      gap={majorScale(2)}
+    >
+      <SkeletonNutrientProgressBar theme={theme} />
+      <SkeletonNutrientProgressBar theme={theme} />
+      <SkeletonNutrientProgressBar theme={theme} />
+      <SkeletonNutrientProgressBar theme={theme} />
+    </Pane>
+  </Card>
+);
+
+const SkeletonDayPlanCard: React.FC<{ theme: Theme }> = ({ theme }) => (
+  <Card
+    background='white'
+    borderRadius={12}
+    padding={majorScale(3)}
+    boxShadow='0px 4px 12px rgba(0, 0, 0, 0.05)'
+  >
+    <Pane
+      display='flex'
+      justifyContent='space-between'
+      alignItems='center'
+      marginBottom={majorScale(2)}
+    >
+      <SkeletonBlock width='40%' height={28} theme={theme} />
+    </Pane>
+
+    <Card
+      background='#F8FAFC'
+      border='1px solid #E2E8F0'
+      padding={majorScale(2)}
+      marginBottom={majorScale(3)}
+      borderRadius={8}
+    >
+      <SkeletonBlock width='25%' height={20} theme={theme} marginBottom={majorScale(2)} />
+      <Pane
+        display='grid'
+        gridTemplateColumns='repeat(auto-fit, minmax(150px, 1fr))'
+        gap={majorScale(2)}
+      >
+        <SkeletonNutrientProgressBar theme={theme} />
+        <SkeletonNutrientProgressBar theme={theme} />
+        <SkeletonNutrientProgressBar theme={theme} />
+        <SkeletonNutrientProgressBar theme={theme} />
+      </Pane>
+    </Card>
+
+    <Pane
+      display='grid'
+      gridTemplateColumns='repeat(auto-fit, minmax(250px, 1fr))'
+      gap={majorScale(2)}
+    >
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Pane
+          key={i}
+          border='1px solid #E2E8F0'
+          borderRadius={8}
+          padding={majorScale(2)}
+          display='flex'
+          flexDirection='column'
+          gap={majorScale(2)}
+        >
+          <SkeletonBlock width='30%' height={24} theme={theme} />
+          <SkeletonBlock width='80%' height={20} theme={theme} />
+          <SkeletonBlock width='60%' height={16} theme={theme} />
+          <SkeletonBlock width='90%' height={20} theme={theme} />
+          <SkeletonBlock width='50%' height={16} theme={theme} />
+        </Pane>
+      ))}
+    </Pane>
+  </Card>
+);
+
 // --- DIET PLANNER COMPONENT ---
 // And here's the star of the show: the main DietPlanner component that ties everything together!
 
@@ -642,6 +865,12 @@ export default function DietPlanner() {
   // We also remember the last generated plan.
   const [storedPlan, setStoredPlan] = useLocalStorage<WeeklyPlan | null>('dietPlannerPlan', null);
 
+  // --- NEW ---: State for multiple saved plans
+  const [savedPlans, setSavedPlans] = useLocalStorage<Record<string, WeeklyPlan>>(
+    'dietPlannerSavedPlans',
+    {}
+  );
+
   // We'll make the default date the start of the current week to be helpful.
   const getStartOfWeek = () => {
     const today = new Date();
@@ -666,6 +895,15 @@ export default function DietPlanner() {
   }, [storedPlan]);
 
   const currentDateObj = useMemo(() => new Date(currentDate), [currentDate]);
+
+  // --- NEW ---: Automatically load a saved plan if one exists for the current week
+  useEffect(() => {
+    if (savedPlans[currentDate]) {
+      setStoredPlan(savedPlans[currentDate]);
+    } else {
+      setStoredPlan(null);
+    }
+  }, [currentDate, savedPlans, setStoredPlan]); // Runs when date or saved plans change
 
   // This effect ensures that when a user selects a preset, the calorie/protein/fat values update automatically.
   useEffect(() => {
@@ -847,7 +1085,7 @@ export default function DietPlanner() {
     }
     setFormError('');
     setLoading(true);
-    setStoredPlan(null);
+    setStoredPlan(null); // Clear old plan first
     toast.loading('Crafting your weekly plan...');
     try {
       const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -897,14 +1135,29 @@ export default function DietPlanner() {
     }
   };
 
-  // Lets the user jump between weeks.
+  // --- UPDATED ---: Lets the user jump between weeks without auto-generating.
   const navigateWeek = (direction: 'prev' | 'next') => {
     setCurrentDate((dateString) => {
       const newDate = new Date(dateString);
       newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
-      handleGeneratePlan(newDate); // Generate a plan for the new week
       return newDate.toISOString();
     });
+    // setStoredPlan(null); // No longer clearing the plan here
+  };
+
+  // --- NEW ---: Saves the currently displayed plan to the saved plans list
+  const handleSavePlan = () => {
+    if (!storedPlan) {
+      toast.error('No plan to save. Please generate a plan first.');
+      return;
+    }
+    setSavedPlans({ ...savedPlans, [currentDate]: storedPlan });
+    toast.success(
+      `Plan for week of ${currentDateObj.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      })} saved!`
+    );
   };
 
   // Before the component is mounted in the browser, we show a spinner to avoid hydration errors.
@@ -1076,7 +1329,7 @@ export default function DietPlanner() {
           disabled={loading}
           className='rounded-lg'
         >
-          {loading && !generatedPlan ? <Spinner /> : 'Generate Plan'}
+          {loading ? <Spinner /> : 'Generate Plan'}
         </Button>
       </Card>
     </Pane>
@@ -1090,9 +1343,21 @@ export default function DietPlanner() {
         alignItems='center'
         marginBottom={majorScale(3)}
       >
-        <Heading size={700} display='flex' alignItems='center' color='#1E293B'>
-          <CalendarIcon marginRight={minorScale(2)} /> Your Weekly Plan
-        </Heading>
+        <Pane display='flex' alignItems='center' gap={minorScale(2)}>
+          <Heading size={700} display='flex' alignItems='center' color='#1E293B'>
+            <CalendarIcon marginRight={minorScale(2)} /> Your Weekly Plan
+          </Heading>
+          {/* --- NEW SAVE BUTTON --- */}
+          {generatedPlan && !loading && (
+            <IconButton
+              icon={FloppyDiskIcon}
+              appearance='minimal'
+              title='Save this plan'
+              onClick={handleSavePlan}
+              background={'white'}
+            />
+          )}
+        </Pane>
         <Pane>
           <IconButton
             icon={ChevronLeftIcon}
@@ -1107,17 +1372,16 @@ export default function DietPlanner() {
           />
         </Pane>
       </Pane>
+      {/* --- NEW LOADING SKELETON --- */}
       {loading ? (
-        <Card
-          background='white'
-          borderRadius={12}
-          display='flex'
-          justifyContent='center'
-          alignItems='center'
-          height={majorScale(56)}
-        >
-          <Spinner />
-        </Card>
+        <Pane>
+          <SkeletonWeeklySummary theme={theme} />
+          <Pane display='grid' gridTemplateColumns='1fr' gap={majorScale(3)}>
+            {Array.from({ length: 7 }).map((_, i) => (
+              <SkeletonDayPlanCard key={i} theme={theme} />
+            ))}
+          </Pane>
+        </Pane>
       ) : !generatedPlan ? (
         <Card
           background='white'
@@ -1127,7 +1391,7 @@ export default function DietPlanner() {
           justifyContent='center'
           alignItems='center'
           flexDirection='column'
-          height={majorScale(57)}
+          minHeight={majorScale(57)}
           boxShadow='0px 4px 12px rgba(0, 0, 0, 0.05)'
         >
           <Pane
@@ -1142,7 +1406,17 @@ export default function DietPlanner() {
           <Heading size={600} color='#1E293B'>
             Ready to Launch Your Plan?
           </Heading>
-          <Text color='#64748b' marginTop={minorScale(2)} textAlign='center'>
+          <Text color='#64748b' marginTop={minorScale(2)} textAlign='center' maxWidth={400}>
+            You are viewing the week of{' '}
+            <Text fontWeight={600} color='#334155'>
+              {currentDateObj.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+              })}
+            </Text>
+            .
+          </Text>
+          <Text color='#64748b' marginTop={minorScale(1)} textAlign='center'>
             Configure your diet settings and click 'Generate Plan' to start.
           </Text>
         </Card>
@@ -1170,25 +1444,58 @@ export default function DietPlanner() {
       minHeight='100vh'
       background={theme.colors.green100}
     >
+      {/* --- NEW PULSE ANIMATION --- */}
+      <style>
+        {`
+          @keyframes pulse {
+            0%, 100% {
+              background-color: ${theme.colors.green100};
+            }
+            50% {
+              background-color: ${theme.colors.green200};
+            }
+          }
+          .pulse {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          }
+        `}
+      </style>
       <Pane maxWidth={1400} marginX='auto' className='max-w-7xl'>
-        <Pane marginBottom={majorScale(4)}>
-          <Heading
-            is='h1'
-            size={isMobile ? 800 : 900}
-            fontWeight={900}
-            color='#047857'
-            textAlign={isMobile ? 'center' : 'left'}
-          >
-            DIET PLANNER
-          </Heading>
-          <Paragraph
-            color='#475569'
-            marginTop={minorScale(1)}
-            size={500}
-            textAlign={isMobile ? 'center' : 'left'}
-          >
-            Your personalized weekly meal plan, intelligently generated.
-          </Paragraph>
+        {/* --- UPDATED HEADER --- */}
+        <Pane
+          marginBottom={majorScale(4)}
+          display='flex'
+          justifyContent='space-between'
+          alignItems='center'
+          flexWrap='wrap'
+          gap={majorScale(1)}
+        >
+          <Pane>
+            <Heading
+              is='h1'
+              size={isMobile ? 800 : 900}
+              fontWeight={900}
+              color='#047857'
+              textAlign={isMobile ? 'center' : 'left'}
+            >
+              DIET PLANNER
+            </Heading>
+            <Paragraph
+              color='#475569'
+              marginTop={minorScale(1)}
+              size={500}
+              textAlign={isMobile ? 'center' : 'left'}
+            >
+              Your personalized weekly meal plan, intelligently generated.
+            </Paragraph>
+          </Pane>
+          {/* --- NEW SAVED PLANS MANAGER --- */}
+          <SavedPlansManager
+            savedPlans={savedPlans}
+            setSavedPlans={setSavedPlans}
+            setCurrentDate={setCurrentDate}
+            setStoredPlan={setStoredPlan}
+          />
         </Pane>
 
         {/* Here's our responsive layout magic! */}
