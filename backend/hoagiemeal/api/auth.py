@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from django.http import HttpRequest
 from django.contrib.auth import get_user_model
 from hoagiemeal.serializers import UserSerializer
+from datetime import datetime
 
 User = get_user_model()
 _JWK_CLIENT = PyJWKClient(f"{settings.AUTH0_ISSUER}.well-known/jwks.json")
@@ -28,7 +29,7 @@ def decode_jwt_token(token: Optional[str]) -> Optional[Any]:
     if not token:
         logger.error("No token found in decode_jwt_token")
         return None
-    
+
     try:
         key = _JWK_CLIENT.get_signing_key_from_jwt(token).key
         claims = jwt.decode(
@@ -60,18 +61,30 @@ def get_or_create_user(claims: Any) -> Optional[Any]:
     try:
         user = User.objects.get(auth0_id=auth0_id)
         logger.info(f"Found existing user: {user.username} (Auth0 ID: {auth0_id})")
+        """Update the last login time for the user."""
+        user.last_login = datetime.now()
+        user.save()
         return user
 
     except User.DoesNotExist:
+        """Create a new user if they don't exist."""
+        email = claims.get("https://hoagie.io/email")
+        full_name = claims.get("https://hoagie.io/name")
+        name_parts = full_name.split(" ") if full_name else []
+        first_name = name_parts[0] if len(name_parts) > 0 else ""
+        last_name = name_parts[-1] if len(name_parts) > 1 else ""
+        username = email.split("@")[0] if email else ""
+
+        user_data = {
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+            "username": username,
+            "auth0_id": auth0_id,
+            "last_login": datetime.now(),
+        }
         logger.info(f"Creating new user: {auth0_id}")
-        user = User.objects.create(
-            username="DummyUser",
-            email="dummyuser@example.com",
-            first_name="Dummy",
-            last_name="User",
-            auth0_id=auth0_id,
-            is_active=True,
-        )
+        user = User.objects.create(**user_data)
         logger.info(f"Created new user: {user.username} (Auth0 ID: {auth0_id})")
         return user
 

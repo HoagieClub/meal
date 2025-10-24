@@ -14,11 +14,27 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { handleAuth } from '@auth0/nextjs-auth0';
+import { handleAuth, handleCallback } from '@auth0/nextjs-auth0';
+import { NextRequest } from 'next/server';
+import { request } from '@/lib/http';
+
+const afterCallback = async (req: NextRequest, session: any) => {
+  if (session.accessToken) {
+    try {
+      await request.getAuth(session.accessToken)('/api/auth/verify', {});
+    } catch (error) {
+      console.log('error', error);
+    }
+  }
+  return session;
+};
 
 /**
  * Handles authentication requests.
  *
  * @returns A NextResponse object with the API response.
  */
-export const GET = handleAuth();
+
+export const GET = handleAuth({
+  callback: handleCallback({ afterCallback }),
+});
