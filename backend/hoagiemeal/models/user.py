@@ -41,7 +41,10 @@ class CustomUser(AbstractUser):
         updated_at (datetime): Timestamp when the record was last updated.
 
     """
-    auth0_id = models.CharField(max_length=255, unique=True, null=True, blank=True, db_index=True, help_text=_("Auth0 ID"))
+
+    auth0_id = models.CharField(
+        max_length=255, unique=True, null=True, blank=True, db_index=True, help_text=_("Auth0 ID")
+    )
     net_id = models.CharField(
         max_length=20, unique=True, null=True, blank=True, db_index=True, help_text=_("University NetID")
     )
@@ -53,6 +56,18 @@ class CustomUser(AbstractUser):
         blank=True,
         default=list,
         help_text=_("List of dietary restrictions/preferences"),
+    )
+    allergens = ArrayField(
+        models.CharField(max_length=50),
+        blank=True,
+        default=list,
+        help_text=_("List of allergens"),
+    )
+    dining_halls = ArrayField(
+        models.CharField(max_length=50),
+        blank=True,
+        default=list,
+        help_text=_("List of visible dining halls"),
     )
     daily_calorie_target = models.PositiveSmallIntegerField(
         null=True, blank=True, validators=[MaxValueValidator(10000)]

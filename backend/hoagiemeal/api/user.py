@@ -47,7 +47,7 @@ def decode_jwt_token(token: Optional[str]) -> Optional[Any]:
         return None
 
 
-def get_or_create_user(claims: Any) -> Optional[Any]:
+def get_or_create_user(claims: Any, create: bool = True) -> Optional[Any]:
     """Find or create a user based on Auth0 token claims."""
     if not claims:
         logger.error("No claims found in get_or_create_user")
@@ -68,6 +68,9 @@ def get_or_create_user(claims: Any) -> Optional[Any]:
 
     except User.DoesNotExist:
         """Create a new user if they don't exist."""
+        if not create:
+            return None
+
         email = claims.get("https://hoagie.io/email")
         full_name = claims.get("https://hoagie.io/name")
         name_parts = full_name.split(" ") if full_name else []
@@ -93,7 +96,7 @@ def authenticate_request(request: HttpRequest) -> Optional[Any]:
     """Check if the request is authenticated and return the user."""
     token = get_bearer_token(request)
     claims = decode_jwt_token(token)
-    return get_or_create_user(claims)
+    return claims
 
 
 #################### Exposed endpoints #########################
@@ -103,27 +106,91 @@ def authenticate_request(request: HttpRequest) -> Optional[Any]:
 def me(request):
     """Get current user information."""
     try:
-        user = authenticate_request(request)
-        if not user:
+        claims = authenticate_request(request)
+        if not claims:
             logger.error("Authentication failed in me view")
-            return Response({"error": "Authentication required"}, status=401)
-        serializer = UserSerializer(user)
-        user_data = serializer.data
-        return Response({"authenticated": True, "user": user_data}, status=200)
+            return Response({"user": None, "error": "Authentication required"}, status=401)
+
+        user = get_or_create_user(claims, create=False)
+        if not user:
+            logger.error("User not found in me view")
+            return Response({"user": None, "error": "User not found"}, status=404)
+
+        user_data = UserSerializer(user).data
+        return Response({"user": user_data}, status=200)
+
     except Exception as e:
         logger.error(f"Error in me view: {e}")
-        return Response({"error": str(e)}, status=500)
+        return Response({"user": None, "error": str(e)}, status=500)
 
 
 @api_view(["GET"])
 def verify(request):
-    """Verify if the user is authenticated."""
+    """Verify if the user is authenticated and create the user if they don't exist."""
     try:
-        user = authenticate_request(request)
-        if not user:
+        claims = authenticate_request(request)
+        if not claims:
             logger.error("Authentication failed in verify view")
-            return Response({"authenticated": False, "user": None}, status=200)
+            return Response({"authenticated": False, "user": None}, status=401)
+
+        user = get_or_create_user(claims, create=True)
+        if not user:
+            logger.error("Failed to create user in verify view")
+            return Response({"authenticated": False, "user": None, "error": "Failed to create user"}, status=500)
+
         return Response({"authenticated": True, "user": user.id}, status=200)
+
     except Exception as e:
         logger.error(f"Error in verify view: {e}")
+        return Response({"authenticated": False, "user": None, "error": str(e)}, status=500)
+
+
+@api_view(["POST"])
+def update_user_profile(request):
+    """Update user's profile information."""
+    try:
+        claims = authenticate_request(request)
+        if not claims:
+            logger.error("Authentication failed in update_user_profile view")
+            return Response({"error": "Authentication required"}, status=401)
+
+        user = get_or_create_user(claims, create=False)
+        if not user:
+            logger.error("User not found in update_user_profile view")
+            return Response({"error": "User not found"}, status=404)
+
+        dietary_restrictions = request.data.get("dietary_restrictions")
+        allergens = request.data.get("allergens")
+        daily_calorie_target = request.data.get("daily_calorie_target")
+        daily_protein_target = request.data.get("daily_protein_target")
+        dining_halls = request.data.get("dining_halls")
+
+        updated_fields = {}
+        if dietary_restrictions is not None and len(dietary_restrictions) > 0:
+            user.dietary_restrictions = dietary_restrictions
+            updated_fields["dietary_restrictions"] = dietary_restrictions
+
+        if allergens is not None and len(allergens) > 0:
+            user.allergens = allergens
+            updated_fields["allergens"] = allergens
+
+        if daily_calorie_target is not None and daily_calorie_target > 0:
+            user.daily_calorie_target = daily_calorie_target
+            updated_fields["daily_calorie_target"] = daily_calorie_target
+
+        if daily_protein_target is not None and daily_protein_target > 0:
+            user.daily_protein_target = daily_protein_target
+            updated_fields["daily_protein_target"] = daily_protein_target
+
+        if dining_halls is not None and len(dining_halls) > 0:
+            user.dining_halls = dining_halls
+            updated_fields["dining_halls"] = dining_halls
+
+        user.save()
+        logger.info(f"Updated profile for user {user.username}: {list(updated_fields.keys())}")
+
+        return Response({"message": "Profile updated successfully", "updated_fields": updated_fields}, status=200)
+
+    except Exception as e:
+        logger.error(f"Error in update_user_profile view: {e}")
         return Response({"error": str(e)}, status=500)

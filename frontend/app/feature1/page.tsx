@@ -30,6 +30,7 @@ import DiningLocations from '@/examples/locations';
 import getDiningLocationsServerSide from '@/examples/locationsServerSide';
 import { useGetMenu } from '@/hooks/use-endpoints';
 import DiningHallCard from '@/components/DiningHallCard';
+import { useUserProfile } from '@/hooks/use-user-profile';
 
 type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
@@ -383,17 +384,34 @@ export default function Index() {
   ];
 
   // what actually drives filtering
-  const [appliedHalls, setAppliedHalls] = useState<string[]>(initialHalls);
-  const [appliedDietary, setAppliedDietary] = useState<string[]>([...DIETARY]);
-  const [appliedAllergens, setAppliedAllergens] = useState<string[]>([...ALLERGENS]);
+  const [appliedHalls, setAppliedHalls] = useState<string[]>([]);
+  const [appliedDietary, setAppliedDietary] = useState<string[]>([]);
+  const [appliedAllergens, setAppliedAllergens] = useState<string[]>([]);
   const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories');
 
   // temporary UI selections
-  const [tempHalls, setTempHalls] = useState<string[]>(initialHalls);
-  const [tempDietary, setTempDietary] = useState<string[]>([...DIETARY]);
-  const [tempAllergens, setTempAllergens] = useState<string[]>([...ALLERGENS]);
+  const [tempHalls, setTempHalls] = useState<string[]>([]);
+  const [tempDietary, setTempDietary] = useState<string[]>([]);
+  const [tempAllergens, setTempAllergens] = useState<string[]>([]);
 
-  const [filterOpen, setFilterOpen] = useState(false);
+  const { dietaryRestrictions, allergens, diningHalls } = useUserProfile();
+
+  useEffect(() => {
+    if (dietaryRestrictions.length > 0) {
+      setAppliedDietary(dietaryRestrictions);
+      setTempDietary(dietaryRestrictions);
+    }
+    if (allergens.length > 0) {
+      setAppliedAllergens(allergens);
+      setTempAllergens(allergens);
+    }
+    if (diningHalls.length > 0) {
+      setAppliedHalls(diningHalls);
+      setTempHalls(diningHalls);
+    }
+  }, [dietaryRestrictions, allergens, diningHalls]);
+
+  const [filterOpen, setFilterOpen] = useState(true);
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
 
   const toggle = (
@@ -567,6 +585,20 @@ export default function Index() {
           setAppliedHalls(tempHalls);
           setAppliedDietary(tempDietary);
           setAppliedAllergens(tempAllergens);
+
+          fetch('/api/user/update', {
+            method: 'POST',
+            body: JSON.stringify({
+              dietary_restrictions: tempDietary,
+              allergens: tempAllergens,
+              dining_halls: tempHalls,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log(data);
+            })
+            .catch((error) => console.error('Error updating dietary restrictions:', error));
         }}
       />
 
