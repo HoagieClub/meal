@@ -384,15 +384,15 @@ export default function Index() {
   ];
 
   // what actually drives filtering
-  const [appliedHalls, setAppliedHalls] = useState<string[]>([]);
-  const [appliedDietary, setAppliedDietary] = useState<string[]>([]);
-  const [appliedAllergens, setAppliedAllergens] = useState<string[]>([]);
+  const [appliedHalls, setAppliedHalls] = useState<string[]>(initialHalls);
+  const [appliedDietary, setAppliedDietary] = useState<string[]>([...DIETARY]);
+  const [appliedAllergens, setAppliedAllergens] = useState<string[]>([...ALLERGENS]);
   const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories');
 
   // temporary UI selections
-  const [tempHalls, setTempHalls] = useState<string[]>([]);
-  const [tempDietary, setTempDietary] = useState<string[]>([]);
-  const [tempAllergens, setTempAllergens] = useState<string[]>([]);
+  const [tempHalls, setTempHalls] = useState<string[]>([...initialHalls]);
+  const [tempDietary, setTempDietary] = useState<string[]>([...DIETARY]);
+  const [tempAllergens, setTempAllergens] = useState<string[]>([...ALLERGENS]);
 
   const { dietaryRestrictions, allergens, diningHalls } = useUserProfile();
 
