@@ -34,12 +34,24 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 
 type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
-interface RawVenue {
+// Interface for what the API now provides
+interface RawApiMenuItem {
+  id: number; // This is the api_id
   name: string;
-  menu: { menus?: Array<{ name: string; description: string; link: string }> };
+  description: string;
+  link: string;
+  calories: number;
+  protein: number;
 }
 
+interface RawVenue {
+  name: string;
+  menu: { menus?: RawApiMenuItem[] };
+}
+
+// Interface for what the UI components use
 interface UIMenuItem {
+  id: number; // Pass the id through
   name: string;
   description: string;
   link: string;
@@ -147,6 +159,7 @@ const SkeletonFilterSidebar: React.FC<{ theme: Theme }> = ({ theme }) => (
     <SkeletonBlock width='100%' height={36} theme={theme} borderRadius={8} />
     <Pane>
       <SkeletonBlock width='60%' height={20} theme={theme} marginBottom={majorScale(2)} />
+
       <Pane display='flex' flexDirection='column' gap={majorScale(1)}>
         <SkeletonBlock width='100%' height={16} theme={theme} />
         <SkeletonBlock width='100%' height={16} theme={theme} />
@@ -154,8 +167,10 @@ const SkeletonFilterSidebar: React.FC<{ theme: Theme }> = ({ theme }) => (
         <SkeletonBlock width='100%' height={16} theme={theme} />
       </Pane>
     </Pane>
+
     <Pane>
       <SkeletonBlock width='50%' height={20} theme={theme} marginBottom={majorScale(2)} />
+
       <Pane display='flex' flexDirection='column' gap={majorScale(1)}>
         <SkeletonBlock width='100%' height={16} theme={theme} />
         <SkeletonBlock width='100%' height={16} theme={theme} />
@@ -184,11 +199,13 @@ const SkeletonDiningHallCard: React.FC<{ theme: Theme }> = ({ theme }) => (
       <SkeletonBlock width={24} height={24} borderRadius={999} theme={theme} />
       <SkeletonBlock width={24} height={24} borderRadius={999} theme={theme} />
     </Pane>
+
     <Pane>
       <SkeletonBlock width='50%' height={18} theme={theme} marginBottom={majorScale(1)} />
       <SkeletonBlock width='90%' height={14} theme={theme} marginBottom={minorScale(1)} />
       <SkeletonBlock width='80%' height={14} theme={theme} marginBottom={minorScale(1)} />
     </Pane>
+
     <Pane>
       <SkeletonBlock width='60%' height={18} theme={theme} marginBottom={majorScale(1)} />
       <SkeletonBlock width='85%' height={14} theme={theme} marginBottom={minorScale(1)} />
@@ -222,28 +239,27 @@ const LoadingSkeleton: React.FC<{ theme: Theme }> = ({ theme }) => (
   <>
     <style>
       {`
-        @keyframes pulse {
-          0%, 100% {
-            background-color: ${theme.colors.gray300};
-          }
-          50% {
-            background-color: ${theme.colors.gray400};
-          }
-        }
-        .pulse {
-          animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-      `}
+    @keyframes pulse {
+     0%, 100% {
+      background-color: ${theme.colors.gray300};
+     }
+     50% {
+      background-color: ${theme.colors.gray400};
+     }
+    }
+    .pulse {
+     animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+   `}
     </style>
+
     <Pane
       display='flex'
       className='sm:h-[calc(100vh)] sm:flex-row flex-col'
       background={theme.colors.green300} // Use a base theme color for loading
     >
       {/* 1. Skeleton Filter Sidebar */}
-      <SkeletonFilterSidebar theme={theme} />
-
-      {/* 2. Skeleton Main View */}
+      <SkeletonFilterSidebar theme={theme} /> {/* 2. Skeleton Main View */}
       <Pane flex={1} className='overflow-x-hidden no-scrollbar px-4'>
         {/* Skeleton Header */}
         <Pane
@@ -257,23 +273,20 @@ const LoadingSkeleton: React.FC<{ theme: Theme }> = ({ theme }) => (
             <SkeletonBlock width='70%' height={36} theme={theme} marginBottom={minorScale(1)} />
             <SkeletonBlock width='50%' height={20} theme={theme} />
           </Pane>
-
           {/* Skeleton Date + arrows */}
           <Pane display='flex' gap={minorScale(2)} className='flex-col flex justify-center my-4'>
             <Pane display='flex' alignItems='center' gap={minorScale(2)}>
               <SkeletonBlock width={28} height={28} borderRadius={999} theme={theme} />
               <SkeletonBlock width={224} height={28} theme={theme} />
+
               <SkeletonBlock width={28} height={28} borderRadius={999} theme={theme} />
             </Pane>
-
             {/* Skeleton Meal tabs */}
             <SkeletonBlock width='100%' height={30} borderRadius={999} theme={theme} />
           </Pane>
-
           {/* Spacer to match original layout's right header pane */}
           <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240} />
         </Pane>
-
         {/* Skeleton Grid of cards */}
         <Pane
           display='grid'
@@ -290,7 +303,6 @@ const LoadingSkeleton: React.FC<{ theme: Theme }> = ({ theme }) => (
             ))}
         </Pane>
       </Pane>
-
       {/* 3. Skeleton Allergen Sidebar */}
       <SkeletonAllergenSidebar theme={theme} />
       <Pane
@@ -325,9 +337,8 @@ export default function Index() {
     Breakfast: theme.colors.green100,
     Lunch: theme.colors.green200,
     Dinner: theme.colors.green400,
-  };
+  }; // ─── Date + Meal ─────────────────────────────────────────────────────────
 
-  // ─── Date + Meal ─────────────────────────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -337,7 +348,15 @@ export default function Index() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showNutrition, setShowNutrition] = useState(true);
   const FRONTEND_URL = process.env.HOAGIE_URL;
-  const PAGE_BG = backgroundByMeal[meal];
+  const PAGE_BG = backgroundByMeal[meal]; // NEW: Weekend logic
+
+  const dayOfWeek = selectedDate.getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
+  // NEW: Get available meals based on day
+
+  const availableMeals: MealType[] = isWeekend
+    ? ['Lunch', 'Dinner']
+    : ['Breakfast', 'Lunch', 'Dinner'];
 
   const prevDay = () =>
     setSelectedDate((d) => {
@@ -357,9 +376,8 @@ export default function Index() {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}-${meal}`;
-  }
+  } // ─── Filters ─────────────────────────────────────────────────────────────
 
-  // ─── Filters ─────────────────────────────────────────────────────────────
   const initialHalls = [
     'Forbes College',
     'Mathey College',
@@ -381,15 +399,13 @@ export default function Index() {
     'Crustacean',
     'Alcohol',
     'Gluten',
-  ];
+  ]; // what actually drives filtering
 
-  // what actually drives filtering
   const [appliedHalls, setAppliedHalls] = useState<string[]>(initialHalls);
   const [appliedDietary, setAppliedDietary] = useState<string[]>([...DIETARY]);
   const [appliedAllergens, setAppliedAllergens] = useState<string[]>([...ALLERGENS]);
-  const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories');
+  const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories'); // temporary UI selections
 
-  // temporary UI selections
   const [tempHalls, setTempHalls] = useState<string[]>([...initialHalls]);
   const [tempDietary, setTempDietary] = useState<string[]>([...DIETARY]);
   const [tempAllergens, setTempAllergens] = useState<string[]>([...ALLERGENS]);
@@ -418,18 +434,24 @@ export default function Index() {
     val: string,
     arr: string[],
     setter: React.Dispatch<React.SetStateAction<string[]>>
-  ) => setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
+  ) => setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]); // reset only the temp selections
 
-  // reset only the temp selections
   const resetTemp = () => {
     setTempHalls([...halls]);
     setTempDietary([...DIETARY]);
     setTempAllergens([...ALLERGENS]);
-  };
+  }; // ─── Load & Transform Data ───────────────────────────────────────────────
 
-  // ─── Load & Transform Data ───────────────────────────────────────────────
   const [loading, setLoading] = useState(true); // Set initial loading to true
-  const [venues, setVenues] = useState<UIVenue[]>([]);
+  const [venues, setVenues] = useState<UIVenue[]>([]); // NEW: Effect to adjust meal state when date changes to weekend
+
+  useEffect(() => {
+    // If it's a weekend and 'Breakfast' is somehow selected,
+    // default to 'Lunch' (which will display as Brunch).
+    if (isWeekend && meal === 'Breakfast') {
+      setMeal('Lunch');
+    }
+  }, [selectedDate, meal, isWeekend]);
 
   useEffect(() => {
     setLoading(true);
@@ -440,27 +462,41 @@ export default function Index() {
     })
       .then((r) => r.json())
       .then((data: { locations: { location: RawVenue[] } }) => {
-        console.log(data);
+        // No more promises, just a simple map
         const ui = data.locations.location.map((raw) => {
+          // 'items' now contains all data from the API
           const items = (raw.menu.menus || []).map((x) => ({
+            id: x.id,
+            name: x.name,
+            description: x.description,
+            link: x.link,
+            calories: x.calories,
+            protein: x.protein,
+          })); // The UIMenuItem for categorization only needs id, name, description, link
+
+          const uiItems: UIMenuItem[] = items.map((x) => ({
+            id: x.id,
             name: x.name,
             description: x.description,
             link: x.link,
           }));
-          console.log(items);
+
           return {
             name: raw.name,
-            items: categorize(items),
-            allergens: extractAllergens(items),
+            items: categorize(uiItems), // Pass the UIMenuItem[]
+            allergens: extractAllergens(uiItems), // Pass the UIMenuItem[]
+            // Build the records directly from the full 'items' list
+
             calories: Object.fromEntries(
-              items.map((i) => [i.name, 100 + Math.floor(Math.random() * 200)])
+              items.map((i) => [i.name, i.calories || 0]) // Use data from API
             ),
             protein: Object.fromEntries(
-              items.map((i) => [i.name, 5 + Math.floor(Math.random() * 15)])
+              items.map((i) => [i.name, i.protein || 0]) // Use data from API
             ),
           } as UIVenue;
         });
-        setVenues(ui);
+
+        setVenues(ui); // Set the result directly
       })
       .catch(() => setVenues([]))
       .finally(() => setLoading(false));
@@ -474,41 +510,30 @@ export default function Index() {
         const classifiedVenues = data.map((venue: { name: string }) => ({
           name: venue.name,
           category: classifyVenue(venue.name),
-        }));
-        // Note: This setVenues call might conflict with the one in the other useEffect.
-        // You might want to merge this logic or ensure it doesn't overwrite menu data.
-        // For now, I'll assume the menu-based fetch is the primary one.
-        // setVenues(classifiedVenues); // Commenting out to avoid race condition
-        console.log(classifiedVenues);
+        })); // console.log(classifiedVenues);
       })
       .catch((error) => console.error('Error fetching venues:', error));
-  }, []);
+  }, []); // ─── Prepare Display ─────────────────────────────────────────────────────
 
-  // ─── Prepare Display ─────────────────────────────────────────────────────
   const displayData = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    const term = searchTerm.trim().toLowerCase(); // Have they narrowed by diet or allergen?
 
-    // Have they narrowed by diet or allergen?
     const isDietFilterActive = appliedDietary.length < DIETARY.length;
-    const isAllergenFilterActive = appliedAllergens.length < ALLERGENS.length;
+    const isAllergenFilterActive = appliedAllergens.length < ALLERGENS.length; // Only apply text‐search if there actually is a non‐empty term
 
-    // Only apply text‐search if there actually is a non‐empty term
-    const isSearchActive = term !== '';
+    const isSearchActive = term !== ''; // If _no_ dietary/allergen/search filters, return every applied hall, unfiltered:
 
-    // If _no_ dietary/allergen/search filters, return every applied hall, unfiltered:
     if (!isDietFilterActive && !isAllergenFilterActive && !isSearchActive) {
       return appliedHalls
         .map((h) => venues.find((v) => v.name === h))
         .filter((v): v is UIVenue => !!v);
-    }
+    } // Otherwise, filter each hall’s dishes
 
-    // Otherwise, filter each hall’s dishes
     return appliedHalls
       .map((hallName) => {
         const venue = venues.find((v) => v.name === hallName);
-        if (!venue) return null;
+        if (!venue) return null; // New items object where we'll push matching dishes
 
-        // New items object where we'll push matching dishes
         const items: UIVenue['items'] = {
           'Main Entrée': [],
           'Vegetarian + Vegan Entrée': [],
@@ -518,29 +543,25 @@ export default function Index() {
 
         for (const cat of Object.keys(venue.items) as (keyof typeof venue.items)[]) {
           items[cat] = venue.items[cat].filter((dish) => {
-            const text = (dish.name + ' ' + dish.description).toLowerCase();
+            const text = (dish.name + ' ' + dish.description).toLowerCase(); // 1) dietary filter
 
-            // 1) dietary filter
             if (isDietFilterActive) {
               if (!appliedDietary.includes('Vegetarian') && text.includes('vegetarian')) {
                 return false;
               }
               if (!appliedDietary.includes('Vegan') && text.includes('vegan')) {
                 return false;
-              }
-              // Note: Halal/Kosher logic would need to be added if descriptions contain it
-            }
+              } // Note: Halal/Kosher logic would need to be added if descriptions contain it
+            } // 2) allergen filter
 
-            // 2) allergen filter
             if (isAllergenFilterActive) {
               for (const a of ALLERGENS) {
                 if (!appliedAllergens.includes(a) && text.includes(a.toLowerCase())) {
                   return false;
                 }
               }
-            }
+            } // 3) text search filter
 
-            // 3) text search filter
             if (isSearchActive && !text.includes(term)) {
               return false;
             }
@@ -554,11 +575,23 @@ export default function Index() {
         return { ...venue, items } as UIVenue;
       })
       .filter((v): v is UIVenue => v !== null);
-  }, [venues, appliedHalls, appliedDietary, appliedAllergens, searchTerm, DIETARY, ALLERGENS]);
+  }, [venues, appliedHalls, appliedDietary, appliedAllergens, searchTerm, DIETARY, ALLERGENS]); // const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // NEW: Helper for meal labels
 
-  // const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const getMealLabel = (m: MealType) => {
+    if (isWeekend && m === 'Lunch') {
+      return 'Brunch';
+    }
+    return m;
+  }; // NEW: Create a dynamic lookup for *display* ranges
 
-  // UPDATED LOADING STATE
+  const getDisplayMealRange = (m: MealType) => {
+    if (isWeekend && m === 'Lunch') {
+      return '11:00 AM – 2:00 PM'; // User's requested time
+    }
+    return MEAL_RANGES[m];
+  }; // UPDATED LOADING STATE
+
   if (loading) {
     return <LoadingSkeleton theme={theme} />;
   }
@@ -566,6 +599,7 @@ export default function Index() {
   return (
     <Pane display='flex' className='sm:h-[calc(100vh)] sm:flex-row flex-col' background={PAGE_BG}>
       {/* ─── FILTER SIDEBAR ───────────────────────────────────────────── */}
+
       <FilterSidebar
         initialHalls={initialHalls}
         tempHalls={tempHalls}
@@ -601,7 +635,6 @@ export default function Index() {
             .catch((error) => console.error('Error updating dietary restrictions:', error));
         }}
       />
-
       {/* ─── MAIN VIEW ──────────────────────────────────────────────────────── */}
       <Pane flex={1} className='overflow-x-hidden no-scrollbar px-4'>
         {/* Header */}
@@ -614,13 +647,15 @@ export default function Index() {
         >
           <Pane width={240}>
             <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
-              {meal.toUpperCase()}
+              {/* UPDATED: Use getMealLabel */}
+              {getMealLabel(meal).toUpperCase()}
             </Heading>
+
             <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
-              {MEAL_RANGES[meal]}
+              {/* UPDATED: Use getDisplayMealRange */}
+              {getDisplayMealRange(meal)}
             </Text>
           </Pane>
-
           {/* Date + arrows */}
           <Pane display='flex' gap={minorScale(2)} className='flex-col flex justify-center my-4'>
             <Pane display='flex' alignItems='center' gap={minorScale(2)}>
@@ -657,17 +692,16 @@ export default function Index() {
                 <ChevronRightIcon size={20} />
               </Button>
             </Pane>
-
             {/* ── Meal tabs ────────────────────────────── */}
             <Pane
-              display='flex'
-              // width={240}
+              display='flex' // width={240}
               border={`1px solid ${theme.colors.green700}`}
               borderRadius={999}
               background={theme.colors.green25}
               overflow='hidden'
             >
-              {(['Breakfast', 'Lunch', 'Dinner'] as MealType[]).map((m) => (
+              {/* UPDATED: Use availableMeals array */}
+              {availableMeals.map((m) => (
                 <Pane
                   key={m}
                   flex={1}
@@ -680,21 +714,20 @@ export default function Index() {
                   fontWeight={300}
                   onClick={() => setMeal(m)}
                 >
-                  {m}
+                  {/* UPDATED: Use getMealLabel */}
+                  {getMealLabel(m)}
                 </Pane>
               ))}
             </Pane>
           </Pane>
-
           {/* Meal tabs + nutrition */}
           <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240}>
-            {/* This pane seems to be a spacer in the original layout, 
-                but I've adjusted the skeleton to match the 240 width.
-                The original layout had commented-out code here.
-                I'll leave this spacer pane to maintain the 3-column header alignment. */}
+            {/* This pane seems to be a spacer in the original layout,
+        but I've adjusted the skeleton to match the 240 width.
+        The original layout had commented-out code here.
+        I'll leave this spacer pane to maintain the 3-column header alignment. */}
           </Pane>
         </Pane>
-
         {/* Grid of cards */}
         {displayData.length === 0 ? (
           <Pane
@@ -731,10 +764,8 @@ export default function Index() {
           </Pane>
         )}
       </Pane>
-
       {/* ─── RIGHT SIDEBAR (desktop only) ─────────────────────────────────── */}
-      <Pane
-        // display={['none', 'flex']} // This was commented out in original
+      <Pane // display={['none', 'flex']} // This was commented out in original
         flexDirection='column'
         width={200}
         padding={majorScale(3)}
@@ -744,6 +775,7 @@ export default function Index() {
         <Heading size={600} color={theme.colors.green900}>
           Allergens
         </Heading>
+
         <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
           {ALLERGENS.map((a) => (
             <Pane key={a} display='flex' alignItems='center'>
@@ -760,6 +792,7 @@ export default function Index() {
               >
                 <Text size={200}>{ALLERGEN_EMOJI[a.toLowerCase()]}</Text>
               </Pane>
+
               <Text size={400} color={theme.colors.green900}>
                 {a}
               </Text>
@@ -768,6 +801,7 @@ export default function Index() {
         </Pane>
       </Pane>
       {/* Modal */}
+
       <HallMenuModal
         isShown={!!modalHall}
         onClose={() => setModalHall(null)}

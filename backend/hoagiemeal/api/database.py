@@ -451,7 +451,9 @@ def get_mapped_menu_item_nutrient_data(
             return None
 
     serving_size_str = link_data.get("Serving Size", "")
-    serving_size_unit_match = re.search(r"([0-9.]+)\s*([a-zA-Z/]+)", serving_size_str)
+    
+    serving_size_unit_match = re.search(r"([\d\./]+)\s*(.*)", serving_size_str)
+    
     serving_size = None
     serving_unit = None
     if serving_size_unit_match:
@@ -503,7 +505,6 @@ def get_mapped_menu_item_nutrient_data(
         "create_kwargs": create_kwargs,
         "kwargs": lookup_kwargs | create_kwargs,
     }
-
 
 def insert_dining_venue_data(category_ids: Optional[List[int]] = None) -> None:
     """Inserts dining venue data from the API into the database.

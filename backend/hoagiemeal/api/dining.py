@@ -24,11 +24,15 @@ This software is provided "as-is", without warranty of any kind.
 
 import json
 import os
-
+import re
 import datetime
 from random import sample
+from decimal import Decimal, InvalidOperation
+
 import msgspec.json as msj
 import pytz
+import requests
+from bs4 import BeautifulSoup
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -40,13 +44,16 @@ from django.db import models, transaction, IntegrityError
 from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.student_app import StudentApp
 from hoagiemeal.api.schemas import Schemas
-from hoagiemeal.models.menu import MenuItem, MenuRating, Menu
+from hoagiemeal.models.menu import MenuItem, MenuRating, Menu, MenuItemNutrient
 from hoagiemeal.models.dining import DiningVenue
 from hoagiemeal.serializers import (
     MenuRatingSerializer,
     MenuRatingCreateSerializer,
     MenuItemWithRatingsSerializer,
+    FullMenuItemSerializer
 )
+# Import the helper function from your utils
+from hoagiemeal.api.database import get_mapped_menu_item_nutrient_data
 
 
 USE_SAMPLE_MENUS = False  # Toggle this to False later when the API is fixed
@@ -157,6 +164,130 @@ class DiningAPI(StudentApp):
             logger.error(f"Error fetching menu from raw API for {location_id}/{menu_id}: {e}")
             return {}  # Return an empty dict on failure
 
+    def _scrape_nutrition_data(self, url: str) -> dict:
+        """
+        Scrapes a nutrition URL page for detailed item information.
+        This version is more flexible to handle variations in HTML.
+        """
+        try:
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+            html = response.text
+            doc = BeautifulSoup(html, 'html.parser')
+        except Exception as e:
+            logger.warning(f"Failed to scrape nutrition from {url}: {e}")
+            return {}
+
+        # This structure maps to what get_mapped_menu_item_nutrient_data expects
+        data = {
+            "Serving Size": "",
+            "Calories": None,
+            "Calories from Fat": None,
+            "Fat": {},
+            "Carbohydrates": {},
+            "Protein": {},
+            "Vitamins": {},
+            "Cholesterol": {},
+            "Sodium": {},
+            "Ingredients": [],
+            "Allergens": [],
+        }
+
+        # Serving Size & Calories (#facts2)
+        # Get all text from #facts2
+        facts2_texts = [el.get_text(strip=True) for el in doc.select('#facts2')]
+        
+        for text in facts2_texts:
+            # Use original case for splitting
+            if 'Serving Size' in text:
+                try:
+                    data['Serving Size'] = text.split('Serving Size')[1].strip()
+                except IndexError:
+                    pass # Handle empty "Serving Size" text
+            
+            # Mimic JS logic: `if (text.includes('Calories') && !text.includes('from Fat'))`
+            if 'Calories' in text and 'from Fat' not in text:
+                try:
+                    # Use regex to find the number, as replace is less reliable
+                    cal_match = re.search(r'Calories\s*([\d\.]+)', text, re.IGNORECASE)
+                    if cal_match:
+                        data['Calories'] = int(float(cal_match.group(1)))
+                except (ValueError, TypeError):
+                    pass
+            elif 'Calories from Fat' in text:
+                 try:
+                    cal_fat_match = re.search(r'Calories from Fat\s*([\d\.]+)', text, re.IGNORECASE)
+                    if cal_fat_match:
+                        data['Calories from Fat'] = int(float(cal_fat_match.group(1)))
+                 except (ValueError, TypeError):
+                    pass
+
+        # Main Nutrients (#facts4)
+        for el in doc.select('#facts4'):
+            text = el.get_text(separator=' ').replace('\u00a0', ' ').strip()
+            # Use the regex from the JS example
+            match = re.match(r'^(.*?)\s+([\d\.]+[a-zA-Z]*)$', text)
+            if not match:
+                continue
+            
+            key, val = match.groups()
+            key_lower = key.strip().lower()
+            
+            # Get just the numeric part of the value
+            amount_match = re.match(r'([\d\.]+)', val)
+            amount = amount_match.group(1) if amount_match else '0'
+
+            # Flexible matching using 'in'
+            if 'total fat' in key_lower or ('tot.' in key_lower and 'fat' in key_lower):
+                data['Fat']['Total Fat'] = {'Amount': amount}
+            elif 'sat' in key_lower and 'fat' in key_lower:
+                data['Fat']['Saturated Fat'] = {'Amount': amount}
+            elif 'trans' in key_lower and 'fat' in key_lower:
+                data['Fat']['Trans Fat'] = {'Amount': amount}
+            elif 'cholesterol' in key_lower:
+                data['Cholesterol'] = {'Amount': amount}
+            elif 'sodium' in key_lower:
+                data['Sodium'] = {'Amount': amount}
+            elif 'tot' in key_lower and 'carb' in key_lower:
+                data['Carbohydrates']['Total Carbohydrates'] = {'Amount': amount}
+            elif 'fiber' in key_lower:
+                data['Carbohydrates']['Dietary Fiber'] = {'Amount': amount}
+            elif 'sugar' in key_lower:
+                data['Carbohydrates']['Sugar'] = {'Amount': amount}
+            elif 'protein' in key_lower:
+                data['Protein'] = {'Amount': amount}
+        
+        # Micronutrients (li)
+        for li in doc.select('li'):
+            # Mimic JS logic: `li.innerText.trim().split('\n')`
+            lines = [s.strip() for s in li.get_text(separator='\n').strip().split('\n') if s.strip()]
+            if len(lines) == 2:
+                key, value = lines[0].strip(), lines[1].strip().replace('%', '')
+                key_lower = key.lower()
+                
+                # Flexible matching
+                if 'vitamin d' in key_lower:
+                    data['Vitamins']['Vitamin D'] = {'Amount': value}
+                elif 'potassium' in key_lower:
+                    data['Vitamins']['Potassium'] = {'Amount': value}
+                elif 'calcium' in key_lower:
+                    data['Vitamins']['Calcium'] = {'Amount': value}
+                elif 'iron' in key_lower:
+                    data['Vitamins']['Iron'] = {'Amount': value}
+        
+        # Ingredients & Allergens
+        ingredients_el = doc.select_one('.labelingredientsvalue')
+        if ingredients_el:
+            # Split by comma and strip whitespace
+            data['Ingredients'] = [i.strip() for i in ingredients_el.get_text(strip=True).split(',') if i.strip()]
+        
+        allergens_el = doc.select_one('.labelallergensvalue')
+        if allergens_el:
+            data['Allergens'] = [a.strip() for a in allergens_el.get_text(strip=True).split(',') if a.strip()]
+
+        return data
+
+
     def get_menu(self, location_id: str, menu_id: str) -> dict:
         """Fetch the menu for a specific dining location.
         ...
@@ -184,22 +315,42 @@ class DiningAPI(StudentApp):
         try:
             venue = DiningVenue.objects.get(database_id=location_id)
             # Use prefetch_related for the M2M field
-            cached_menu = Menu.objects.prefetch_related('menu_items').filter(
+            # Use select_related for the OneToOne nutrient_info
+            cached_menu = Menu.objects.prefetch_related(
+                models.Prefetch(
+                    'menu_items',
+                    queryset=MenuItem.objects.select_related('nutrient_info')
+                )
+            ).filter(
                 dining_venue=venue, date=menu_date, meal=meal_code
             ).first()
 
             if cached_menu:
                 logger.info(f"✅ CACHE HIT for menu_id: {menu_id} at location_id: {location_id}")
                 menu_items = cached_menu.menu_items.all() # Get items from prefetched M2M data
-                serialized_items = [
-                    {
+                
+                serialized_items = []
+                for item in menu_items:
+                    item_data = {
                         "id": item.api_id, # Use api_id as the 'id' to match API response
                         "name": item.name,
                         "description": item.description,
                         "link": item.link,
+                        "calories": 0,
+                        "protein": 0,
                     }
-                    for item in menu_items
-                ]
+                    
+                    # Check if nutrient_info exists and add data
+                    # hasattr is safer for OneToOne reverse accessors
+                    if hasattr(item, 'nutrient_info') and item.nutrient_info:
+                        if item.nutrient_info.calories:
+                            item_data["calories"] = item.nutrient_info.calories
+                        if item.nutrient_info.protein:
+                            # Convert Decimal to float for JSON
+                            item_data["protein"] = float(item.nutrient_info.protein) 
+                    
+                    serialized_items.append(item_data)
+
                 # Return empty list if no items, matching API structure
                 return {"menus": serialized_items}
 
@@ -252,9 +403,6 @@ class DiningAPI(StudentApp):
                                 'name': item_data.get('name'),
                                 'description': item_data.get('description'),
                                 'link': item_data.get('link'),
-                                # Note: Full allergens/ingredients are not in this
-                                # simple API response. They would be populated by
-                                # a separate, more detailed ingestion script.
                             }
                         )
                         
@@ -262,6 +410,48 @@ class DiningAPI(StudentApp):
                             items_created_count += 1
                         
                         menu_items_for_this_menu.append(menu_item)
+
+                        # --- NUTRITION SCRAPING LOGIC ---
+                        # Scrape if the item is new OR if it has no nutrient info
+                        try:
+                            has_nutrient_info = MenuItemNutrient.objects.filter(menu_item=menu_item).exists()
+                            if item_created or not has_nutrient_info:
+                                link = item_data.get('link')
+                                if link:
+                                    logger.info(f"Scraping nutrition for new/updated item: {menu_item.name} (ID: {api_id_int})")
+                                    # Scrape the data from the item's link
+                                    nutrition_data = self._scrape_nutrition_data(link)
+
+                                    if nutrition_data:
+                                        # Map the scraped data to the Nutrient model format
+                                        mapped_nutrient_data = get_mapped_menu_item_nutrient_data(
+                                            menu_item_id=menu_item.id,
+                                            link_data=nutrition_data
+                                        )
+
+                                        # Save the nutrient data
+                                        MenuItemNutrient.objects.update_or_create(
+                                            menu_item=menu_item,
+                                            defaults=mapped_nutrient_data["create_kwargs"]
+                                        )
+
+                                        # Also, update the main MenuItem with allergens/ingredients if found
+                                        updated_menu_item = False
+                                        if 'Allergens' in nutrition_data and nutrition_data['Allergens']:
+                                            menu_item.allergens = nutrition_data['Allergens']
+                                            updated_menu_item = True
+                                        if 'Ingredients' in nutrition_data and nutrition_data['Ingredients']:
+                                            menu_item.ingredients = nutrition_data['Ingredients']
+                                            updated_menu_item = True
+                                        
+                                        if updated_menu_item:
+                                            menu_item.save(update_fields=['allergens', 'ingredients'])
+                                    else:
+                                        logger.warning(f"No nutrition data returned from scrape for {link}")
+                        except Exception as e:
+                            logger.error(f"Error scraping/saving nutrition for {menu_item.name} (ID: {api_id_int}): {e}")
+                        # --- END NEW LOGIC ---
+
 
                 # Atomically set the M2M relationship
                 # This clears all existing items for this menu and adds all items
@@ -286,7 +476,14 @@ class DiningAPI(StudentApp):
             # Do not block the response to the user if caching fails
 
         # Ensure we return the API data structure even if caching failed or API was empty
-        return api_menu_data if api_menu_data else {"menus": []}
+        # ** NOTE: The API data does NOT have the nutrition info we just scraped.
+
+        try:
+            # Re-fetch the data we just saved, this time with nutrition info
+            return self.get_menu(location_id, menu_id)
+        except Exception:
+            # Fallback to just returning what the API gave us
+            return api_menu_data if api_menu_data else {"menus": []}
 
     def get_locations_with_menus(self, menu_id: str, category_ids=None) -> dict:
         if category_ids is None:
@@ -302,7 +499,7 @@ class DiningAPI(StudentApp):
         for loc in locs:
             dbid = loc.get("dbid")
             try:
-                # This call now benefits from the caching logic
+                # This call now benefits from the caching and nutrition logic
                 menu = self.get_menu(location_id=dbid, menu_id=menu_id)
             except Exception as e:
                 logger.error(f"Error fetching menu for dbid={dbid}, menu_id={menu_id}: {e}")
@@ -373,16 +570,34 @@ def get_dining_menu(request):
                 return Response(sample_menu_data[menu_id])
             else:
                 return Response(
-                    {"error": f"No sample data found for menu_id: {menu_id}"}, status=404
+                    {"error": f"No sample data found for menu_id: {menu_id}"}, status=44
                 )
 
-        # Live API call (which now includes caching logic)
+        # Live API call (which now includes caching, scraping, and serialization logic)
         menu = dining_api.get_menu(location_id, menu_id)
         return Response(menu)
 
     except Exception as e:
         logger.error(f"Error in get_dining_menu view: {e}")
         return Response({"error": str(e)}, status=500)
+
+@api_view(["GET"])
+def get_menu_item_details(request, menu_item_api_id):
+    """
+    Get all details for a menu item, including nutrition,
+    by its external API ID.
+    """
+    try:
+        # Look up the item by its api_id, which is what the frontend receives
+        menu_item = MenuItem.objects.select_related('nutrient_info').get(api_id=menu_item_api_id)
+    except MenuItem.DoesNotExist:
+        return Response({"error": "Menu item not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error fetching menu item details for api_id {menu_item_api_id}: {e}")
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    serializer = FullMenuItemSerializer(menu_item, context={"request": request})
+    return Response(serializer.data)
 
 
 @api_view(["GET"])
