@@ -372,6 +372,88 @@ class DiningAPI(StudentApp):
         try:
             # This 'venue' variable is from the 'try' block above
             # If we're here, 'venue' exists.
+
+            items_in_api = api_menu_data.get("menus", []) if api_menu_data else []
+            
+            # 4a. Handle empty menu from API
+            if not items_in_api:
+                with transaction.atomic():
+                    new_menu, created = Menu.objects.get_or_create(
+                        dining_venue=venue,
+                        date=menu_date,
+                        meal=meal_code,
+                    )
+                    # Ensure M2M is empty
+                    new_menu.menu_items.set([])
+                    if created:
+                        logger.info(f"💾 CACHE SAVED empty menu for menu_id: {menu_id} at location_id: {location_id}")
+                    else:
+                         logger.info(f"Menu {menu_id} at location_id: {location_id} updated to be empty.")
+                return api_menu_data # Return the empty API response
+
+            # 4b. Prepare all API item data
+            api_id_to_data_map = {}
+            all_api_ids_in_menu = set()
+            for item_data in items_in_api:
+                try:
+                    # Use .get('id') which returns None if key missing
+                    api_id_str = item_data.get('id')
+                    if not api_id_str:
+                        logger.warning(f"Missing api_id for item '{item_data.get('name')}' in menu {menu_id}. Skipping.")
+                        continue
+                    
+                    api_id_int = int(api_id_str)
+                    api_id_to_data_map[api_id_int] = item_data
+                    all_api_ids_in_menu.add(api_id_int)
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid api_id '{item_data.get('id')}' for menu {menu_id}. Skipping item.")
+                    continue
+            
+            # 4c. Find which canonical items already exist in DB
+            existing_items = MenuItem.objects.filter(api_id__in=all_api_ids_in_menu)
+            existing_api_ids = set(existing_items.values_list('api_id', flat=True))
+
+            # 4d. Prepare list of *new* canonical items to be created
+            items_to_create = []
+            for api_id in all_api_ids_in_menu:
+                if api_id not in existing_api_ids:
+                    item_data = api_id_to_data_map[api_id]
+                    items_to_create.append(
+                        MenuItem(
+                            api_id=api_id,
+                            name=item_data.get('name'),
+                            description=item_data.get('description'),
+                            link=item_data.get('link'),
+                        )
+                    )
+
+            # 4e. Bulk-create new canonical items.
+            # This is the race-condition-safe step.
+            # It's *outside* the main transaction.
+            items_created_count = 0
+            if items_to_create:
+                try:
+                    # ignore_conflicts=True relies on the unique=True constraint
+                    # on MenuItem.api_id in your database.
+                    created_item_objects = MenuItem.objects.bulk_create(
+                        items_to_create,
+                        ignore_conflicts=True
+                    )
+                    # Note: len(created_item_objects) might be 0 if all items
+                    # were created by a concurrent process.
+                    items_created_count = len(created_item_objects)
+                    logger.info(f"Bulk-created {items_created_count} new canonical menu items.")
+                except IntegrityError as e:
+                    # This might happen if ignore_conflicts is not supported (e.g., old DB)
+                    # or a different constraint fails.
+                    logger.warning(f"IntegrityError during bulk_create (race condition?): {e}")
+
+            # 4f. Get the full list of ALL canonical items for this menu
+            # (both the ones that existed and the ones we just created)
+            all_menu_items_for_this_menu = MenuItem.objects.filter(api_id__in=all_api_ids_in_menu)
+            all_menu_items_map = {item.api_id: item for item in all_menu_items_for_this_menu}
+            
+            # 4g. Now, start the main transaction to link menu and scrape nutrition
             with transaction.atomic():
                 # Get or create the Menu record.
                 new_menu, created = Menu.objects.get_or_create(
@@ -380,96 +462,64 @@ class DiningAPI(StudentApp):
                     meal=meal_code,
                 )
 
-                items_in_api = api_menu_data.get("menus", []) if api_menu_data else []
-                menu_items_for_this_menu = []
-                items_created_count = 0
-
-                if items_in_api:
-                    for item_data in items_in_api:
-                        api_id = item_data.get('id')
-                        try:
-                            api_id_int = int(api_id) if api_id else None
-                        except (ValueError, TypeError):
-                            logger.warning(f"Invalid api_id '{api_id}' for menu {menu_id}. Skipping item.")
-                            continue
-                        
-                        if not api_id_int:
-                            continue
-
-                        # Get or create the CANONICAL menu item
-                        menu_item, item_created = MenuItem.objects.get_or_create(
-                            api_id=api_id_int,
-                            defaults={
-                                'name': item_data.get('name'),
-                                'description': item_data.get('description'),
-                                'link': item_data.get('link'),
-                            }
-                        )
-                        
-                        if item_created:
-                            items_created_count += 1
-                        
-                        menu_items_for_this_menu.append(menu_item)
-
-                        # --- NUTRITION SCRAPING LOGIC ---
-                        # Scrape if the item is new OR if it has no nutrient info
-                        try:
-                            has_nutrient_info = MenuItemNutrient.objects.filter(menu_item=menu_item).exists()
-                            if item_created or not has_nutrient_info:
-                                link = item_data.get('link')
-                                if link:
-                                    logger.info(f"Scraping nutrition for new/updated item: {menu_item.name} (ID: {api_id_int})")
-                                    # Scrape the data from the item's link
-                                    nutrition_data = self._scrape_nutrition_data(link)
-
-                                    if nutrition_data:
-                                        # Map the scraped data to the Nutrient model format
-                                        mapped_nutrient_data = get_mapped_menu_item_nutrient_data(
-                                            menu_item_id=menu_item.id,
-                                            link_data=nutrition_data
-                                        )
-
-                                        # Save the nutrient data
-                                        MenuItemNutrient.objects.update_or_create(
-                                            menu_item=menu_item,
-                                            defaults=mapped_nutrient_data["create_kwargs"]
-                                        )
-
-                                        # Also, update the main MenuItem with allergens/ingredients if found
-                                        updated_menu_item = False
-                                        if 'Allergens' in nutrition_data and nutrition_data['Allergens']:
-                                            menu_item.allergens = nutrition_data['Allergens']
-                                            updated_menu_item = True
-                                        if 'Ingredients' in nutrition_data and nutrition_data['Ingredients']:
-                                            menu_item.ingredients = nutrition_data['Ingredients']
-                                            updated_menu_item = True
-                                        
-                                        if updated_menu_item:
-                                            menu_item.save(update_fields=['allergens', 'ingredients'])
-                                    else:
-                                        logger.warning(f"No nutrition data returned from scrape for {link}")
-                        except Exception as e:
-                            logger.error(f"Error scraping/saving nutrition for {menu_item.name} (ID: {api_id_int}): {e}")
-                        # --- END NEW LOGIC ---
-
-
                 # Atomically set the M2M relationship
-                # This clears all existing items for this menu and adds all items
-                # from the list. This correctly handles menus that become empty.
-                new_menu.menu_items.set(menu_items_for_this_menu)
+                new_menu.menu_items.set(all_menu_items_for_this_menu)
 
-                if items_in_api:
-                    logger.info(f"💾 CACHE SAVED: Synced {len(menu_items_for_this_menu)} items (created {items_created_count} new canonical items) for menu_id: {menu_id} at location_id: {location_id}")
-                elif created: # Menu was created, but no items were in API
-                    logger.info(f"💾 CACHE SAVED empty menu for menu_id: {menu_id} at location_id: {location_id}")
-                else: # Menu existed, and API returned no items
-                    logger.info(f"Menu {menu_id} at location_id: {location_id} updated to be empty.")
+                # --- NUTRITION SCRAPING LOGIC ---
+                # Loop through the items we just fetched
+                for menu_item in all_menu_items_for_this_menu:
+                    try:
+                        # Scrape if the item is new OR if it has no nutrient info
+                        has_nutrient_info = MenuItemNutrient.objects.filter(menu_item=menu_item).exists()
+                        # We know it's new if it wasn't in our original 'existing_api_ids' set
+                        is_newly_created_item = menu_item.api_id not in existing_api_ids
+
+                        if is_newly_created_item or not has_nutrient_info:
+                            # Get the original API data for the link
+                            item_data = api_id_to_data_map[menu_item.api_id]
+                            link = item_data.get('link')
+                            
+                            if link:
+                                logger.info(f"Scraping nutrition for new/updated item: {menu_item.name} (ID: {menu_item.api_id})")
+                                # Scrape the data from the item's link
+                                nutrition_data = self._scrape_nutrition_data(link)
+
+                                if nutrition_data:
+                                    # Map the scraped data to the Nutrient model format
+                                    mapped_nutrient_data = get_mapped_menu_item_nutrient_data(
+                                        menu_item_id=menu_item.id,
+                                        link_data=nutrition_data
+                                    )
+
+                                    # Save the nutrient data
+                                    MenuItemNutrient.objects.update_or_create(
+                                        menu_item=menu_item,
+                                        defaults=mapped_nutrient_data["create_kwargs"]
+                                    )
+
+                                    # Also, update the main MenuItem with allergens/ingredients if found
+                                    updated_menu_item = False
+                                    if 'Allergens' in nutrition_data and nutrition_data['Allergens']:
+                                        menu_item.allergens = nutrition_data['Allergens']
+                                        updated_menu_item = True
+                                    if 'Ingredients' in nutrition_data and nutrition_data['Ingredients']:
+                                        menu_item.ingredients = nutrition_data['Ingredients']
+                                        updated_menu_item = True
+                                    
+                                    if updated_menu_item:
+                                        menu_item.save(update_fields=['allergens', 'ingredients'])
+                                else:
+                                    logger.warning(f"No nutrition data returned from scrape for {link}")
+                    except Exception as e:
+                        logger.error(f"Error scraping/saving nutrition for {menu_item.name} (ID: {menu_item.api_id}): {e}")
+
+                logger.info(f"💾 CACHE SAVED: Synced {len(all_menu_items_for_this_menu)} items (created {items_created_count} new canonical items) for menu_id: {menu_id} at location_id: {location_id}")
 
         except DiningVenue.DoesNotExist:
             # This case was handled before the API call, but good to have
             logger.warning(f"Could not cache menu for location_id {location_id} because the venue is not in the database.")
         except IntegrityError as e:
-            # Catch specific integrity errors
+            # Catch specific integrity errors from the main transaction
             logger.error(f"Failed to cache menu items for menu_id {menu_id} due to DB constraint: {e}")
         except Exception as e:
             logger.error(f"Failed to cache menu for menu_id {menu_id}: {e}")
@@ -480,6 +530,7 @@ class DiningAPI(StudentApp):
 
         try:
             # Re-fetch the data we just saved, this time with nutrition info
+            # This call will now be a CACHE HIT
             return self.get_menu(location_id, menu_id)
         except Exception:
             # Fallback to just returning what the API gave us
@@ -696,7 +747,7 @@ def manage_rating(request, rating_id):
     if rating.user != request.user:
         return Response(
             {"error": "You do not have permission to perform this action"},
-            status=status.HTTP_403_FORBIDDEN,
+            status=status.HTTP_4D3_FORBIDDEN,
         )
 
     if request.method == "GET":

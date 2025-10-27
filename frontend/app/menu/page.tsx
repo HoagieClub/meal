@@ -68,6 +68,33 @@ interface UIVenue {
   protein: Record<string, number>;
 }
 
+// ─── Debounce Hook ────────────────────────────────────────────────────────
+/**
+ * A hook to debounce a value.
+ * @param value The value to debounce
+ * @param delay The delay in milliseconds
+ * @returns The debounced value
+ */
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    // Set up a timer to update the debounced value after the delay
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    // Clean up the timer if the value or delay changes, or if the component unmounts
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]); // Only re-run the effect if value or delay changes
+
+  return debouncedValue;
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────
+
 const MEAL_RANGES: Record<MealType, string> = {
   Breakfast: '7:30 AM – 10:30 AM',
   Lunch: '11:30 AM – 2:00 PM',
@@ -320,11 +347,8 @@ export default function Index() {
   const [filterOpen, setFilterOpen] = useState(true);
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
 
-  const toggle = <T,>(
-    val: T,
-    arr: T[],
-    setter: React.Dispatch<React.SetStateAction<T[]>>
-  ) => setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
+  const toggle = <T,>(val: T, arr: T[], setter: React.Dispatch<React.SetStateAction<T[]>>) =>
+    setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
 
   const toggleQuickAllergen = (allergen: string) => {
     toggle(allergen, appliedAllergens, setAppliedAllergens);
@@ -395,12 +419,17 @@ export default function Index() {
   };
 
   // ─── Data Fetching for Menus ────────────────────────────────────────────
+  // Create debounced versions of the date and meal
+  const debouncedDate = useDebounce(selectedDate, 1000); // 1 second delay
+  const debouncedMeal = useDebounce(meal, 1000); // 1 second delay
+
   useEffect(() => {
     // Only run this fetch if the user's profile has been loaded
     if (!profileLoaded) return;
 
     setLoading(true);
-    const menuId = formatMenuId(selectedDate, meal);
+    // ** Use the debounced values to format the menu ID **
+    const menuId = formatMenuId(debouncedDate, debouncedMeal);
 
     fetch(`http://localhost:8000/api/dining/locations/with-menus/?menu_id=${menuId}`, {
       credentials: 'include',
@@ -442,7 +471,7 @@ export default function Index() {
         setVenues([]);
       })
       .finally(() => setLoading(false));
-  }, [selectedDate, meal, profileLoaded]); // *** Add profileLoaded dependency
+  }, [debouncedDate, debouncedMeal, profileLoaded]); // ** Depend on the debounced values **
 
   // ─── Filtering Logic ────────────────────────────────────────────────────
 
