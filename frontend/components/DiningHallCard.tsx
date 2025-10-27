@@ -22,6 +22,7 @@ import matheyBanner from '../public/images/banners/rockybanner.png';
 import yehBanner from '../public/images/banners/yehbanner.png';
 import cjlBanner from '../public/images/banners/cjl-banner.png';
 import gradBanner from '../public/images/banners/gradbanner.png';
+import { StaticImageData } from 'next/image';
 
 interface UIMenuItem {
   name: string;
@@ -45,7 +46,7 @@ interface DiningHallCardProps {
   onPinToggle: () => void; // [GEMINI] Added prop
 }
 
-const hallImages: Record<string, string> = {
+const hallImages: Record<string, StaticImageData> = {
   'Rockefeller College': rockyBanner,
   'Forbes College': forbesBanner,
   'Mathey College': matheyBanner,

@@ -39,7 +39,7 @@ from rest_framework.response import Response
 from django.views.decorators.cache import cache_page
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.db import models, transaction, IntegrityError
+from django.db import models
 
 from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.student_app import StudentApp

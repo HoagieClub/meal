@@ -31,6 +31,7 @@ import HallMenuModal from '@/components/HallMenuModal';
 // import getDiningLocationsServerSide from '@/examples/locationsServerSide';
 // import { useGetMenu } from '@/hooks/use-endpoints';
 import DiningHallCard from '@/components/DiningHallCard';
+import { AllergenKey, DietKey } from '@/types/dining';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
 
@@ -270,8 +271,8 @@ export default function Index() {
     'Graduate College',
   ];
   const [halls] = useState<string[]>(initialHalls);
-  const DIETARY = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
-  const ALLERGENS = [
+  const DIETARY: DietKey[] = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
+  const ALLERGENS: AllergenKey[] = [
     'Peanut',
     'Tree nut',
     'Egg',
@@ -288,9 +289,10 @@ export default function Index() {
   const [appliedAllergens, setAppliedAllergens] = useState<string[]>([...ALLERGENS]);
   const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories');
 
-  const [tempHalls, setTempHalls] = useState<string[]>([...initialHalls]);
-  const [tempDietary, setTempDietary] = useState<string[]>([...DIETARY]);
-  const [tempAllergens, setTempAllergens] = useState<string[]>([...ALLERGENS]);
+  // temporary UI selections
+  const [tempHalls, setTempHalls] = useState<string[]>(...initialHalls);
+  const [tempDietary, setTempDietary] = useState<DietKey[]>([...DIETARY]);
+  const [tempAllergens, setTempAllergens] = useState<AllergenKey[]>([...ALLERGENS]);
 
   // *** NEW STATE ***
   // This flag tracks if the user's profile settings have been processed
@@ -318,10 +320,10 @@ export default function Index() {
   const [filterOpen, setFilterOpen] = useState(true);
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
 
-  const toggle = (
-    val: string,
-    arr: string[],
-    setter: React.Dispatch<React.SetStateAction<string[]>>
+  const toggle = <T,>(
+    val: T,
+    arr: T[],
+    setter: React.Dispatch<React.SetStateAction<T[]>>
   ) => setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
 
   const toggleQuickAllergen = (allergen: string) => {

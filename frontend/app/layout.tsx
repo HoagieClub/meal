@@ -44,7 +44,7 @@ export const metadata = {
  * @param children - The child components to render within the layout.
  * @returns JSX Element representing the content area.
  */
-async function Content({ children }: { children: ReactNode }): Promise<JSX.Element> {
+async function Content({ children }: { children: ReactNode }): Promise<React.JSX.Element> {
   const session = await getSession();
   const user = session?.user;
 
@@ -73,7 +73,7 @@ async function Content({ children }: { children: ReactNode }): Promise<JSX.Eleme
  * @param children - The child components to render within the layout.
  * @returns JSX Element representing the root HTML structure.
  */
-export default function RootLayout({ children }: { children: ReactNode }): JSX.Element {
+export default function RootLayout({ children }: { children: ReactNode }): React.JSX.Element {
   return (
     <html lang='en' className={`bg-hoagiemeal-dark-green ${poppins.className}`}>
       <head>
