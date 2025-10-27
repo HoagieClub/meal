@@ -5,7 +5,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pane, Heading, Text, Spinner, majorScale, minorScale } from 'evergreen-ui';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const diningHalls = [

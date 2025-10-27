@@ -43,8 +43,6 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
       onCloseComplete={onClose}
       hasFooter={false}
       width='80vw'
-      backgroundColor={theme.colors.green200}
-      borderRadius={15}
     >
       <Pane display='flex' flexDirection='column' paddingBottom={majorScale(5)} gap={minorScale(3)}>
         <Separator height='1.5px' marginTop={0} />

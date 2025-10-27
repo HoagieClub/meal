@@ -5,7 +5,7 @@ import React from 'react';
 // --- Helper Components & Data ---
 
 // Icon for social media links
-const SocialIcon = ({ href, children }) => (
+const SocialIcon = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <a
     href={href}
     target='_blank'
