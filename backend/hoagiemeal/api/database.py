@@ -323,12 +323,12 @@ def highest_rated_menu_items(
     qs = MenuItem.objects.all()
     ratings_filter_kwargs = {}
     if after:
-        ratings_filter_kwargs["menurating_set__created_at__gte"] = after
+        ratings_filter_kwargs["ratings__created_at__gte"] = after
     if before:
-        ratings_filter_kwargs["menurating_set__created_at__lte"] = before
+        ratings_filter_kwargs["ratings__created_at__lte"] = before
 
     qs = qs.filter(**ratings_filter_kwargs)
-    qs = qs.annotate(avg_rating=Avg("menurating_set__rating"))
+    qs = qs.annotate(avg_rating=Avg("ratings__rating"))
     qs = qs.exclude(avg_rating__isnull=True)
 
     if highest_first:
@@ -383,7 +383,7 @@ def get_mapped_dining_venue_data(api_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def get_mapped_menu_item_data(api_data: Dict[str, Any], link_data: Dict[str, Any], menu_id: int):
+def get_mapped_menu_item_data(api_data: Dict[str, Any], link_data: Dict[str, Any]):
     """Maps raw API menu item data to a format for the MenuItem model.
 
     This function handles parsing nested data, extracting allergens from the
@@ -392,7 +392,6 @@ def get_mapped_menu_item_data(api_data: Dict[str, Any], link_data: Dict[str, Any
     Args:
         api_data (Dict[str, Any]): The raw menu item data from the API.
         link_data (Dict[str, Any]): The linked nutritional data for the item.
-        menu_id (int): The ID of the parent Menu object.
 
     Returns:
         Dict[str, Any]: A dictionary containing lookup and creation arguments.
@@ -417,7 +416,6 @@ def get_mapped_menu_item_data(api_data: Dict[str, Any], link_data: Dict[str, Any
         "allergens": allergens,
         "ingredients": ingredients,
         "calories": link_data.get("Calories"),
-        "menu_id": menu_id,
     }
 
     return {

@@ -10,7 +10,8 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, subject to the following conditions:
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
 This software is provided "as-is", without warranty of any kind.
 """
@@ -41,6 +42,9 @@ class Menu(models.Model):
     date = models.DateField(default=timezone.now, db_index=True)
     meal = models.CharField(max_length=2, choices=MealType.choices, db_index=True)
     last_fetched = models.DateTimeField(auto_now=True, help_text=_("Last time menu was updated from API"))
+    
+    # ManyToManyField to link to canonical menu items
+    menu_items = models.ManyToManyField("MenuItem", related_name="menus")
 
     class Meta:
         """Meta class for the Menu model."""
@@ -62,12 +66,11 @@ class Menu(models.Model):
 
 
 class MenuItem(models.Model):
-    """Represent a dish served in dining halls.
+    """Represent a canonical dish served in dining halls.
 
     Attributes:
         id (int): Primary key.
-        api_id (int): Original menu item ID from the external API.
-        menu (Menu): The menu this item belongs to.
+        api_id (int): Unique original menu item ID from the external API.
         name (str): Name of the menu item.
         description (str): Description of the dish.
         link (str): URL linking to more details about the dish.
@@ -79,8 +82,9 @@ class MenuItem(models.Model):
     """
 
     id = models.BigAutoField(primary_key=True)
+    # api_id is now the unique identifier from the API for a canonical item
     api_id = models.PositiveIntegerField(unique=True, help_text=_("Original menu item ID from the API"))
-    menu = models.ForeignKey(Menu, on_delete=models.CASCADE, related_name="menu_items")
+    # The 'menu' ForeignKey is removed
     name = models.CharField(max_length=255, db_index=True)
     description = models.TextField(blank=True)
     link = models.URLField(max_length=500, blank=True)
@@ -93,11 +97,12 @@ class MenuItem(models.Model):
         """Meta class for the MenuItem model."""
 
         db_table = "menu_items"
+        # unique_together is removed as 'menu' field is gone
         indexes = [
             models.Index(fields=["name"]),
             models.Index(fields=["api_id"]),
         ]
-
+        
     def __str__(self):
         """Return the string representation of the MenuItem instance.
 
@@ -232,7 +237,7 @@ class MenuRating(models.Model):
 
     Attributes:
         user (CustomUser): The user who provided the rating.
-        menu_item (MenuItem): The menu item being rated.
+        menu_item (MenuItem): The (canonical) menu item being rated.
         rating (float): User's rating of the menu item (1.0-5.0).
         comment (str): Optional user comment about the menu item.
         created_at (datetime): When the rating was created.
