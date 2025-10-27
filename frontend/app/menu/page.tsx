@@ -290,7 +290,7 @@ export default function Index() {
   const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories');
 
   // temporary UI selections
-  const [tempHalls, setTempHalls] = useState<string[]>(...initialHalls);
+  const [tempHalls, setTempHalls] = useState<string[]>([...initialHalls]);
   const [tempDietary, setTempDietary] = useState<DietKey[]>([...DIETARY]);
   const [tempAllergens, setTempAllergens] = useState<AllergenKey[]>([...ALLERGENS]);
 
