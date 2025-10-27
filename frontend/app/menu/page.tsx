@@ -24,19 +24,21 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   Theme,
+  SearchIcon,
 } from 'evergreen-ui';
 import HallMenuModal from '@/components/HallMenuModal';
-import DiningLocations from '@/examples/locations';
-import getDiningLocationsServerSide from '@/examples/locationsServerSide';
-import { useGetMenu } from '@/hooks/use-endpoints';
+// import DiningLocations from '@/examples/locations';
+// import getDiningLocationsServerSide from '@/examples/locationsServerSide';
+// import { useGetMenu } from '@/hooks/use-endpoints';
 import DiningHallCard from '@/components/DiningHallCard';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import useLocalStorage from '@/hooks/useLocalStorage';
 
 type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
-// Interface for what the API now provides
+// Interface for what the API provides
 interface RawApiMenuItem {
-  id: number; // This is the api_id
+  id: number;
   name: string;
   description: string;
   link: string;
@@ -51,7 +53,7 @@ interface RawVenue {
 
 // Interface for what the UI components use
 interface UIMenuItem {
-  id: number; // Pass the id through
+  id: number;
   name: string;
   description: string;
   link: string;
@@ -120,7 +122,6 @@ function extractAllergens(items: UIMenuItem[]) {
 }
 
 // ─── Skeleton Loading Components ──────────────────────────────────────────
-
 /**
  * A reusable skeleton block with a pulsing animation.
  */
@@ -133,51 +134,11 @@ const SkeletonBlock: React.FC<{
   <Pane
     width={width}
     height={height}
-    background={theme.colors.green300}
+    background={theme.colors.gray300}
     borderRadius={4}
-    className='pulse'
+    className='animate-pulse'
     {...props}
   />
-);
-
-/**
- * Skeleton placeholder for the FilterSidebar.
- */
-const SkeletonFilterSidebar: React.FC<{ theme: Theme }> = ({ theme }) => (
-  <Pane
-    width={240} // Assumed width for the sidebar
-    padding={majorScale(3)}
-    margin={majorScale(3)}
-    background='white'
-    borderRight={`1px solid ${theme.colors.green400}`}
-    display='flex'
-    flexDirection='column'
-    gap={majorScale(4)}
-    height='min-content' // Full height minus margins
-    borderRadius={12}
-  >
-    <SkeletonBlock width='100%' height={36} theme={theme} borderRadius={8} />
-    <Pane>
-      <SkeletonBlock width='60%' height={20} theme={theme} marginBottom={majorScale(2)} />
-
-      <Pane display='flex' flexDirection='column' gap={majorScale(1)}>
-        <SkeletonBlock width='100%' height={16} theme={theme} />
-        <SkeletonBlock width='100%' height={16} theme={theme} />
-        <SkeletonBlock width='100%' height={16} theme={theme} />
-        <SkeletonBlock width='100%' height={16} theme={theme} />
-      </Pane>
-    </Pane>
-
-    <Pane>
-      <SkeletonBlock width='50%' height={20} theme={theme} marginBottom={majorScale(2)} />
-
-      <Pane display='flex' flexDirection='column' gap={majorScale(1)}>
-        <SkeletonBlock width='100%' height={16} theme={theme} />
-        <SkeletonBlock width='100%' height={16} theme={theme} />
-        <SkeletonBlock width='100%' height={16} theme={theme} />
-      </Pane>
-    </Pane>
-  </Pane>
 );
 
 /**
@@ -213,119 +174,21 @@ const SkeletonDiningHallCard: React.FC<{ theme: Theme }> = ({ theme }) => (
   </Pane>
 );
 
-/**
- * Skeleton placeholder for the right AllergenSidebar.
- */
-const SkeletonAllergenSidebar: React.FC<{ theme: Theme }> = ({ theme }) => (
-  <Pane flexDirection='column' width={200} padding={majorScale(3)} overflowY='auto'>
-    <SkeletonBlock width='60%' height={24} theme={theme} marginBottom={majorScale(2)} />
-    <Pane display='flex' flexDirection='column' gap={majorScale(2)}>
-      {Array(8)
-        .fill(0)
-        .map((_, i) => (
-          <Pane key={i} display='flex' alignItems='center' gap={minorScale(1)}>
-            <SkeletonBlock width={28} height={28} borderRadius={14} theme={theme} />
-            <SkeletonBlock width='100px' height={16} theme={theme} />
-          </Pane>
-        ))}
-    </Pane>
-  </Pane>
-);
+// ─── Defaults & Constants for LocalStorage ────────────────────────────────
 
-/**
- * The main loading skeleton component that mimics the entire page layout.
- */
-const LoadingSkeleton: React.FC<{ theme: Theme }> = ({ theme }) => (
-  <>
-    <style>
-      {`
-    @keyframes pulse {
-     0%, 100% {
-      background-color: ${theme.colors.gray300};
-     }
-     50% {
-      background-color: ${theme.colors.gray400};
-     }
-    }
-    .pulse {
-     animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-   `}
-    </style>
+const getDefaultDate = () => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
+};
 
-    <Pane
-      display='flex'
-      className='sm:h-[calc(100vh)] sm:flex-row flex-col'
-      background={theme.colors.green300} // Use a base theme color for loading
-    >
-      {/* 1. Skeleton Filter Sidebar */}
-      <SkeletonFilterSidebar theme={theme} /> {/* 2. Skeleton Main View */}
-      <Pane flex={1} className='overflow-x-hidden no-scrollbar px-4'>
-        {/* Skeleton Header */}
-        <Pane
-          display='flex'
-          alignItems='center'
-          justifyContent='space-between'
-          marginY={majorScale(3)}
-          className='flex-col sm:flex-row text-left'
-        >
-          <Pane width={240}>
-            <SkeletonBlock width='70%' height={36} theme={theme} marginBottom={minorScale(1)} />
-            <SkeletonBlock width='50%' height={20} theme={theme} />
-          </Pane>
-          {/* Skeleton Date + arrows */}
-          <Pane display='flex' gap={minorScale(2)} className='flex-col flex justify-center my-4'>
-            <Pane display='flex' alignItems='center' gap={minorScale(2)}>
-              <SkeletonBlock width={28} height={28} borderRadius={999} theme={theme} />
-              <SkeletonBlock width={224} height={28} theme={theme} />
-
-              <SkeletonBlock width={28} height={28} borderRadius={999} theme={theme} />
-            </Pane>
-            {/* Skeleton Meal tabs */}
-            <SkeletonBlock width='100%' height={30} borderRadius={999} theme={theme} />
-          </Pane>
-          {/* Spacer to match original layout's right header pane */}
-          <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240} />
-        </Pane>
-        {/* Skeleton Grid of cards */}
-        <Pane
-          display='grid'
-          overflowY='auto'
-          paddingBottom={majorScale(6)}
-          gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
-          gap={majorScale(1)}
-          className='h-full no-scrollbar'
-        >
-          {Array(6)
-            .fill(0)
-            .map((_, i) => (
-              <SkeletonDiningHallCard key={i} theme={theme} />
-            ))}
-        </Pane>
-      </Pane>
-      {/* 3. Skeleton Allergen Sidebar */}
-      <SkeletonAllergenSidebar theme={theme} />
-      <Pane
-        position='absolute'
-        top={0}
-        left={0}
-        right={0}
-        bottom={0}
-        display='flex'
-        alignItems='center'
-        justifyContent='center'
-        flexDirection='column'
-        background='rgba(241, 248, 233, 0.6)' // green100 at 60% opacity
-        zIndex={10}
-      >
-        <Spinner />
-        <Text color={theme.colors.green700} style={{ fontWeight: 600, marginTop: majorScale(2) }}>
-          Fetching menus...
-        </Text>
-      </Pane>
-    </Pane>
-  </>
-);
+const defaultMeal: MealType = 'Breakfast';
+const defaultDate = getDefaultDate();
+// 2 hours in milliseconds
+const PREF_EXPIRY_MS = 2 * 60 * 60 * 1000;
+const PREFS_KEY = 'diningPrefs';
+const FILTER_PREFS_KEY = 'diningFilterPrefs';
+const PINNED_HALLS_KEY = 'diningPinnedHalls';
 
 // ─── Main Page Component ──────────────────────────────────────────────────
 
@@ -337,22 +200,41 @@ export default function Index() {
     Breakfast: theme.colors.green100,
     Lunch: theme.colors.green200,
     Dinner: theme.colors.green400,
-  }; // ─── Date + Meal ─────────────────────────────────────────────────────────
+  };
 
-  const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    return now;
-  });
-  const [meal, setMeal] = useState<MealType>('Breakfast');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showNutrition, setShowNutrition] = useState(true);
+  // ─── Date + Meal ─────────────────────────────────────────────────────────
+  // Use the hook to store date (as string) and meal in one object
+  const [prefs, setPrefs] = useLocalStorage(
+    PREFS_KEY,
+    { date: defaultDate.toISOString(), meal: defaultMeal },
+    PREF_EXPIRY_MS
+  );
+
+  // Derive Date object and meal from the stored preferences
+  const selectedDate = useMemo(() => new Date(prefs.date), [prefs.date]);
+  const meal = prefs.meal;
+
+  // Create setters that update the object in localStorage
+  const setSelectedDate = (value: Date | ((val: Date) => Date)) => {
+    const newDate = value instanceof Function ? value(selectedDate) : value;
+    setPrefs((prev) => ({ ...prev, date: newDate.toISOString() }));
+  };
+
+  const setMeal = (value: MealType | ((val: MealType) => MealType)) => {
+    const newMeal = value instanceof Function ? value(meal) : value;
+    setPrefs((prev) => ({ ...prev, meal: newMeal }));
+  };
+
+  // ─── Filters (Not from DB) ──────────────────────────────────────────────
+  // Use the hook for searchTerm and showNutrition
+  const [searchTerm, setSearchTerm] = useLocalStorage('diningSearchTerm', '');
+  const [showNutrition, setShowNutrition] = useLocalStorage('diningShowNutrition', true);
+
   const FRONTEND_URL = process.env.HOAGIE_URL;
-  const PAGE_BG = backgroundByMeal[meal]; // NEW: Weekend logic
+  const PAGE_BG = backgroundByMeal[meal];
 
   const dayOfWeek = selectedDate.getDay();
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
-  // NEW: Get available meals based on day
 
   const availableMeals: MealType[] = isWeekend
     ? ['Lunch', 'Dinner']
@@ -376,7 +258,7 @@ export default function Index() {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}-${meal}`;
-  } // ─── Filters ─────────────────────────────────────────────────────────────
+  } // ─── Filters (From DB) ────────────────────────────────────────────────
 
   const initialHalls = [
     'Forbes College',
@@ -399,16 +281,20 @@ export default function Index() {
     'Crustacean',
     'Alcohol',
     'Gluten',
-  ]; // what actually drives filtering
+  ];
 
   const [appliedHalls, setAppliedHalls] = useState<string[]>(initialHalls);
   const [appliedDietary, setAppliedDietary] = useState<string[]>([...DIETARY]);
   const [appliedAllergens, setAppliedAllergens] = useState<string[]>([...ALLERGENS]);
-  const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories'); // temporary UI selections
+  const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories');
 
   const [tempHalls, setTempHalls] = useState<string[]>([...initialHalls]);
   const [tempDietary, setTempDietary] = useState<string[]>([...DIETARY]);
   const [tempAllergens, setTempAllergens] = useState<string[]>([...ALLERGENS]);
+
+  // *** NEW STATE ***
+  // This flag tracks if the user's profile settings have been processed
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   const { dietaryRestrictions, allergens, diningHalls } = useUserProfile();
 
@@ -425,6 +311,8 @@ export default function Index() {
       setAppliedHalls(diningHalls);
       setTempHalls(diningHalls);
     }
+    // Mark the profile as loaded so the menu fetch can proceed
+    setProfileLoaded(true);
   }, [dietaryRestrictions, allergens, diningHalls]);
 
   const [filterOpen, setFilterOpen] = useState(true);
@@ -434,37 +322,95 @@ export default function Index() {
     val: string,
     arr: string[],
     setter: React.Dispatch<React.SetStateAction<string[]>>
-  ) => setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]); // reset only the temp selections
+  ) => setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
+
+  const toggleQuickAllergen = (allergen: string) => {
+    toggle(allergen, appliedAllergens, setAppliedAllergens);
+    toggle(allergen, tempAllergens, setTempAllergens);
+  };
 
   const resetTemp = () => {
     setTempHalls([...halls]);
     setTempDietary([...DIETARY]);
     setTempAllergens([...ALLERGENS]);
-  }; // ─── Load & Transform Data ───────────────────────────────────────────────
+  };
 
-  const [loading, setLoading] = useState(true); // Set initial loading to true
-  const [venues, setVenues] = useState<UIVenue[]>([]); // NEW: Effect to adjust meal state when date changes to weekend
+  // ─── Load & Transform Data ───────────────────────────────────────────────
+  const [loading, setLoading] = useState(true);
+  const [venues, setVenues] = useState<UIVenue[]>([]);
 
   useEffect(() => {
-    // If it's a weekend and 'Breakfast' is somehow selected,
-    // default to 'Lunch' (which will display as Brunch).
     if (isWeekend && meal === 'Breakfast') {
       setMeal('Lunch');
     }
-  }, [selectedDate, meal, isWeekend]);
+  }, [isWeekend, meal]); // Dependency simplified
 
   useEffect(() => {
+    // Fetch dining locations
+    fetch('http://localhost:8000/api/dining/locations')
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        const classifiedVenues = data.map((venue: { name: string }) => ({
+          name: venue.name,
+          category: classifyVenue(venue.name),
+        }));
+      })
+      .catch((error) => console.error('Error fetching BASE venues (/dining/locations):', error));
+  }, []);
+
+  // ─── Pinned Halls (using useLocalStorage) ───────────────────────────────
+  // Store pinned halls as a string array in localStorage
+  const [pinnedArray, setPinnedArray] = useLocalStorage<string[]>(PINNED_HALLS_KEY, []);
+
+  // Derive the Set from the array for efficient lookups
+  const pinnedHalls = useMemo(() => new Set(pinnedArray), [pinnedArray]);
+
+  // Create a setter that matches the React.Dispatch type
+  const setPinnedHalls: React.Dispatch<React.SetStateAction<Set<string>>> = (value) => {
+    setPinnedArray((prevArray) => {
+      const prevSet = new Set(prevArray);
+      const newSet = value instanceof Function ? value(prevSet) : value;
+      return Array.from(newSet); // Store the new array
+    });
+  };
+
+  // This function works as-is with the new setPinnedHalls wrapper
+  const togglePin = (hallName: string) => {
+    setPinnedHalls((prevPins) => {
+      const newPins = new Set(prevPins); // Create a new set to ensure state update
+      if (newPins.has(hallName)) {
+        newPins.delete(hallName);
+      } else {
+        newPins.add(hallName);
+      }
+      return newPins;
+    });
+  };
+
+  // ─── Data Fetching for Menus ────────────────────────────────────────────
+  useEffect(() => {
+    // Only run this fetch if the user's profile has been loaded
+    if (!profileLoaded) return;
+
     setLoading(true);
     const menuId = formatMenuId(selectedDate, meal);
 
     fetch(`http://localhost:8000/api/dining/locations/with-menus/?menu_id=${menuId}`, {
       credentials: 'include',
     })
-      .then((r) => r.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error fetching menu! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then((data: { locations: { location: RawVenue[] } }) => {
-        // No more promises, just a simple map
         const ui = data.locations.location.map((raw) => {
-          // 'items' now contains all data from the API
           const items = (raw.menu.menus || []).map((x) => ({
             id: x.id,
             name: x.name,
@@ -472,67 +418,57 @@ export default function Index() {
             link: x.link,
             calories: x.calories,
             protein: x.protein,
-          })); // The UIMenuItem for categorization only needs id, name, description, link
-
+          }));
           const uiItems: UIMenuItem[] = items.map((x) => ({
             id: x.id,
             name: x.name,
             description: x.description,
             link: x.link,
           }));
-
           return {
             name: raw.name,
-            items: categorize(uiItems), // Pass the UIMenuItem[]
-            allergens: extractAllergens(uiItems), // Pass the UIMenuItem[]
-            // Build the records directly from the full 'items' list
-
-            calories: Object.fromEntries(
-              items.map((i) => [i.name, i.calories || 0]) // Use data from API
-            ),
-            protein: Object.fromEntries(
-              items.map((i) => [i.name, i.protein || 0]) // Use data from API
-            ),
+            items: categorize(uiItems),
+            allergens: extractAllergens(uiItems),
+            calories: Object.fromEntries(items.map((i) => [i.name, i.calories || 0])),
+            protein: Object.fromEntries(items.map((i) => [i.name, i.protein || 0])),
           } as UIVenue;
         });
-
-        setVenues(ui); // Set the result directly
+        setVenues(ui);
       })
-      .catch(() => setVenues([]))
+      .catch((error) => {
+        console.error(`Error fetching menu data for ${menuId}:`, error);
+        setVenues([]);
+      })
       .finally(() => setLoading(false));
-  }, [selectedDate, meal]);
+  }, [selectedDate, meal, profileLoaded]); // *** Add profileLoaded dependency
 
-  useEffect(() => {
-    // Fetch dining locations
-    fetch('/dining/locations')
-      .then((response) => response.json())
-      .then((data) => {
-        const classifiedVenues = data.map((venue: { name: string }) => ({
-          name: venue.name,
-          category: classifyVenue(venue.name),
-        })); // console.log(classifiedVenues);
-      })
-      .catch((error) => console.error('Error fetching venues:', error));
-  }, []); // ─── Prepare Display ─────────────────────────────────────────────────────
+  // ─── Filtering Logic ────────────────────────────────────────────────────
 
   const displayData = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase(); // Have they narrowed by diet or allergen?
-
+    const term = searchTerm.trim().toLowerCase();
     const isDietFilterActive = appliedDietary.length < DIETARY.length;
-    const isAllergenFilterActive = appliedAllergens.length < ALLERGENS.length; // Only apply text‐search if there actually is a non‐empty term
+    const isAllergenFilterActive = appliedAllergens.length < ALLERGENS.length;
+    const isSearchActive = term !== '';
 
-    const isSearchActive = term !== ''; // If _no_ dietary/allergen/search filters, return every applied hall, unfiltered:
+    const sortFn = (a: UIVenue, b: UIVenue) => {
+      const aIsPinned = pinnedHalls.has(a.name);
+      const bIsPinned = pinnedHalls.has(b.name);
+      if (aIsPinned && !bIsPinned) return -1;
+      if (!aIsPinned && bIsPinned) return 1;
+      return 0;
+    };
 
     if (!isDietFilterActive && !isAllergenFilterActive && !isSearchActive) {
       return appliedHalls
         .map((h) => venues.find((v) => v.name === h))
-        .filter((v): v is UIVenue => !!v);
-    } // Otherwise, filter each hall’s dishes
+        .filter((v): v is UIVenue => !!v)
+        .sort(sortFn);
+    }
 
     return appliedHalls
       .map((hallName) => {
         const venue = venues.find((v) => v.name === hallName);
-        if (!venue) return null; // New items object where we'll push matching dishes
+        if (!venue) return null;
 
         const items: UIVenue['items'] = {
           'Main Entrée': [],
@@ -543,7 +479,7 @@ export default function Index() {
 
         for (const cat of Object.keys(venue.items) as (keyof typeof venue.items)[]) {
           items[cat] = venue.items[cat].filter((dish) => {
-            const text = (dish.name + ' ' + dish.description).toLowerCase(); // 1) dietary filter
+            const text = (dish.name + ' ' + dish.description).toLowerCase();
 
             if (isDietFilterActive) {
               if (!appliedDietary.includes('Vegetarian') && text.includes('vegetarian')) {
@@ -551,8 +487,8 @@ export default function Index() {
               }
               if (!appliedDietary.includes('Vegan') && text.includes('vegan')) {
                 return false;
-              } // Note: Halal/Kosher logic would need to be added if descriptions contain it
-            } // 2) allergen filter
+              }
+            }
 
             if (isAllergenFilterActive) {
               for (const a of ALLERGENS) {
@@ -560,7 +496,7 @@ export default function Index() {
                   return false;
                 }
               }
-            } // 3) text search filter
+            }
 
             if (isSearchActive && !text.includes(term)) {
               return false;
@@ -574,30 +510,41 @@ export default function Index() {
         if (!hasAny) return null;
         return { ...venue, items } as UIVenue;
       })
-      .filter((v): v is UIVenue => v !== null);
-  }, [venues, appliedHalls, appliedDietary, appliedAllergens, searchTerm, DIETARY, ALLERGENS]); // const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  // NEW: Helper for meal labels
+      .filter((v): v is UIVenue => v !== null)
+      .sort(sortFn);
+  }, [
+    venues,
+    appliedHalls,
+    appliedDietary,
+    appliedAllergens,
+    searchTerm,
+    DIETARY,
+    ALLERGENS,
+    pinnedHalls, // Now a dependency
+  ]);
 
   const getMealLabel = (m: MealType) => {
     if (isWeekend && m === 'Lunch') {
       return 'Brunch';
     }
     return m;
-  }; // NEW: Create a dynamic lookup for *display* ranges
+  };
 
   const getDisplayMealRange = (m: MealType) => {
     if (isWeekend && m === 'Lunch') {
-      return '11:00 AM – 2:00 PM'; // User's requested time
+      return '11:00 AM – 2:00 PM';
     }
     return MEAL_RANGES[m];
-  }; // UPDATED LOADING STATE
+  };
 
-  if (loading) {
-    return <LoadingSkeleton theme={theme} />;
-  }
+  // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <Pane display='flex' className='sm:h-[calc(100vh)] sm:flex-row flex-col' background={PAGE_BG}>
+    <Pane
+      display='flex'
+      className='sm:flex-row overflow-hidden min-h-screen flex-col'
+      background={PAGE_BG}
+    >
       {/* ─── FILTER SIDEBAR ───────────────────────────────────────────── */}
 
       <FilterSidebar
@@ -636,23 +583,21 @@ export default function Index() {
         }}
       />
       {/* ─── MAIN VIEW ──────────────────────────────────────────────────────── */}
-      <Pane flex={1} className='overflow-x-hidden no-scrollbar px-4'>
+      <Pane flex={1} className='overflow-x-hidden h-full no-scrollbar px-4'>
         {/* Header */}
         <Pane
           display='flex'
           alignItems='center'
           justifyContent='space-between'
           marginY={majorScale(3)}
-          className='flex-col sm:flex-row text-left'
+          className='flex-col sm:flex-row text-center sm:text-left'
         >
           <Pane width={240}>
             <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
-              {/* UPDATED: Use getMealLabel */}
               {getMealLabel(meal).toUpperCase()}
             </Heading>
 
             <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
-              {/* UPDATED: Use getDisplayMealRange */}
               {getDisplayMealRange(meal)}
             </Text>
           </Pane>
@@ -674,7 +619,7 @@ export default function Index() {
                 className='text-2xl text-center w-[14rem] truncate'
                 color={theme.colors.green700}
               >
-                {selectedDate.toLocaleDateString('en-US', {
+                {selectedDate.toLocaleString('en-US', {
                   weekday: 'long',
                   month: 'numeric',
                   day: 'numeric',
@@ -694,13 +639,12 @@ export default function Index() {
             </Pane>
             {/* ── Meal tabs ────────────────────────────── */}
             <Pane
-              display='flex' // width={240}
+              display='flex'
               border={`1px solid ${theme.colors.green700}`}
               borderRadius={999}
               background={theme.colors.green25}
               overflow='hidden'
             >
-              {/* UPDATED: Use availableMeals array */}
               {availableMeals.map((m) => (
                 <Pane
                   key={m}
@@ -714,22 +658,33 @@ export default function Index() {
                   fontWeight={300}
                   onClick={() => setMeal(m)}
                 >
-                  {/* UPDATED: Use getMealLabel */}
                   {getMealLabel(m)}
                 </Pane>
               ))}
             </Pane>
           </Pane>
-          {/* Meal tabs + nutrition */}
           <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240}>
-            {/* This pane seems to be a spacer in the original layout,
-        but I've adjusted the skeleton to match the 240 width.
-        The original layout had commented-out code here.
-        I'll leave this spacer pane to maintain the 3-column header alignment. */}
+            {/* This pane is a spacer to maintain the 3-column header alignment. */}
           </Pane>
         </Pane>
+
         {/* Grid of cards */}
-        {displayData.length === 0 ? (
+        {loading ? (
+          <Pane
+            display='grid'
+            overflowY='auto'
+            paddingBottom={majorScale(6)}
+            gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
+            gap={majorScale(1)}
+            className='h-full no-scrollbar'
+          >
+            {Array(6)
+              .fill(0)
+              .map((_, i) => (
+                <SkeletonDiningHallCard key={i} theme={theme} />
+              ))}
+          </Pane>
+        ) : displayData.length === 0 ? (
           <Pane
             display='flex'
             alignItems='center'
@@ -737,9 +692,19 @@ export default function Index() {
             paddingY={majorScale(8)}
             flexDirection='column'
             width='100%'
+            background={theme.colors.gray100}
+            borderRadius={12}
+            border={`2px dashed ${theme.colors.green400}`}
+            marginTop={majorScale(2)}
+            className='h-full'
           >
-            <Text size={500} color='muted' fontStyle='italic'>
-              Nothing found. Try adjusting your filters or search.
+            <SearchIcon color={theme.colors.gray600} size={32} marginBottom={majorScale(2)} />
+
+            <Heading size={500} color={theme.colors.gray800} marginBottom={minorScale(1)}>
+              No Dishes Found
+            </Heading>
+            <Text size={400} color='muted' textAlign='center'>
+              Try adjusting your search terms or filters.
             </Text>
           </Pane>
         ) : (
@@ -759,13 +724,16 @@ export default function Index() {
                 ALLERGEN_EMOJI={ALLERGEN_EMOJI}
                 theme={theme}
                 showNutrition={showNutrition}
+                isPinned={pinnedHalls.has(hall.name)}
+                onPinToggle={() => togglePin(hall.name)}
               />
             ))}
           </Pane>
         )}
       </Pane>
       {/* ─── RIGHT SIDEBAR (desktop only) ─────────────────────────────────── */}
-      <Pane // display={['none', 'flex']} // This was commented out in original
+      <Pane
+        className='hidden sm:flex'
         flexDirection='column'
         width={200}
         padding={majorScale(3)}
@@ -777,29 +745,40 @@ export default function Index() {
         </Heading>
 
         <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
-          {ALLERGENS.map((a) => (
-            <Pane key={a} display='flex' alignItems='center'>
+          {ALLERGENS.map((a) => {
+            const isSelected = appliedAllergens.includes(a);
+            return (
               <Pane
-                width={28}
-                height={28}
-                display='inline-flex'
+                key={a}
+                display='flex'
                 alignItems='center'
-                justifyContent='center'
-                borderRadius={14}
-                background={theme.colors.green300}
-                border={`1px solid ${theme.colors.green700}`}
-                marginRight={minorScale(1)}
+                cursor='pointer'
+                onClick={() => toggleQuickAllergen(a)}
+                opacity={isSelected ? 1.0 : 0.6}
+                title={isSelected ? `Filtering out ${a}` : `Click to filter out ${a}`}
               >
-                <Text size={200}>{ALLERGEN_EMOJI[a.toLowerCase()]}</Text>
-              </Pane>
+                <Pane
+                  width={28}
+                  height={28}
+                  display='inline-flex'
+                  alignItems='center'
+                  justifyContent='center'
+                  borderRadius={14}
+                  background={isSelected ? theme.colors.green300 : theme.colors.gray300}
+                  marginRight={minorScale(1)}
+                >
+                  <Text size={200}>{ALLERGEN_EMOJI[a.toLowerCase()]}</Text>
+                </Pane>
 
-              <Text size={400} color={theme.colors.green900}>
-                {a}
-              </Text>
-            </Pane>
-          ))}
+                <Text size={400} color={theme.colors.green900} fontWeight={isSelected ? 600 : 400}>
+                  {a}
+                </Text>
+              </Pane>
+            );
+          })}
         </Pane>
       </Pane>
+
       {/* Modal */}
 
       <HallMenuModal

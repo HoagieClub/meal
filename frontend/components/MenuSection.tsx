@@ -78,7 +78,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
                 borderBottom={`0.9px solid ${theme.colors.green300}`}
               >
                 <Pane display='flex' flexDirection='column' marginY={majorScale(1)}>
-                  <Link href={`/feature4?url=${encodeURIComponent(item.link)}`}>
+                  <Link href={`/nutrition?url=${encodeURIComponent(item.link)}`}>
                     <Text color='green700' fontWeight={500}>
                       {item.name}
                     </Text>

@@ -49,10 +49,10 @@ async function Content({ children }: { children: ReactNode }): Promise<JSX.Eleme
   const user = session?.user;
 
   const tabs = [
-    { title: 'Menu', href: '/feature1' },
-    { title: 'Goals', href: '/feature2' },
-    { title: 'About Us', href: '/feature3' },
-    { title: 'Profile', href: '/feature5' },
+    { title: 'Menu', href: '/menu' },
+    { title: 'Goals', href: '/goals' },
+    { title: 'About', href: '/about' },
+    // { title: 'Profile', href: '/profile' },
   ];
 
   return (

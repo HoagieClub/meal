@@ -149,7 +149,7 @@ const NutritionLabelPage: React.FC = () => {
         className='sm:grid-cols-3 relative mx-auto max-w-5xl'
       >
         <Link
-          href='/feature1'
+          href='/menu'
           position='absolute'
           top={majorScale(2)}
           left={majorScale(4)}

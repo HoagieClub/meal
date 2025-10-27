@@ -59,20 +59,30 @@ import { toast } from 'sonner';
 // This custom hook is like useState, but it automatically saves the data to the browser's localStorage.
 // Super handy for remembering user preferences!
 function useLocalStorage<T>(key: string, initialValue: T) {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    // We can't use localStorage on the server, so we check if `window` is defined first.
+  //  1. Always initialize state with initialValue.
+  // This ensures the server render and the first client render (hydration) match.
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
+
+  //  2. Use useEffect to read from localStorage *after* mount (client-side only).
+  useEffect(() => {
+    // This effect runs only on the client, after the component has mounted.
     if (typeof window === 'undefined') {
-      return initialValue;
+      return;
     }
     try {
+      // Try to get the stored item
       const item = window.localStorage.getItem(key);
-      // If we find something in localStorage, we use that. Otherwise, we use the initial value.
-      return item ? JSON.parse(item) : initialValue;
+      // Parse it or fall back to initialValue
+      const value = item ? JSON.parse(item) : initialValue;
+      setStoredValue(value);
     } catch (error) {
+      // If parsing fails, fall back to initial value
       console.error(error);
-      return initialValue;
+      setStoredValue(initialValue);
     }
-  });
+    // We only want this to run once on mount when the key changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]); // Only re-run if the key changes
 
   // --- UPDATED setValue ---
   // We wrap this in useCallback to ensure the function identity is stable across renders.
@@ -622,8 +632,7 @@ const DayPlanCard = ({
   );
 };
 
-// --- NEW SAVED PLANS COMPONENT ---
-
+// --- SAVED PLANS COMPONENT ---
 const SavedPlansManager = ({
   savedPlans,
   setSavedPlans,
@@ -741,7 +750,7 @@ const SkeletonBlock: React.FC<{
     height={height}
     background={theme.colors.green100} // Use theme color
     borderRadius={4}
-    className='pulse'
+    className='animate-pulse'
     {...props}
   />
 );
@@ -846,8 +855,6 @@ const SkeletonDayPlanCard: React.FC<{ theme: Theme }> = ({ theme }) => (
 );
 
 // --- DIET PLANNER COMPONENT ---
-// And here's the star of the show: the main DietPlanner component that ties everything together!
-
 export default function DietPlanner() {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width: 800px)');
@@ -870,11 +877,10 @@ export default function DietPlanner() {
     preferredHall: 'Any Available Hall',
   };
 
-  const [settings, setSettings] = useState<PlanSettings>(defaultSettings);
-  // useLocalStorage<PlanSettings>(
-  //   'dietPlannerSettings',
-  //   defaultSettings
-  // );
+  const [settings, setSettings] = useLocalStorage<PlanSettings>(
+    'dietPlannerSettings',
+    defaultSettings
+  );
 
   // We also remember the last generated plan.
   const [storedPlan, setStoredPlan] = useLocalStorage<WeeklyPlan | null>('dietPlannerPlan', null);
@@ -1354,15 +1360,81 @@ export default function DietPlanner() {
   const PlanPanel = (
     <Pane>
       <Pane
+        marginBottom={majorScale(4)}
         display='flex'
-        justifyContent='space-between'
+        justifyContent={isMobile ? 'center' : 'space-between'}
         alignItems='center'
+        flexWrap='wrap'
+        gap={majorScale(1)}
+      >
+        <Pane>
+          <Heading
+            is='h1'
+            size={isMobile ? 800 : 900}
+            fontWeight={900}
+            color='#047857'
+            textAlign={isMobile ? 'center' : 'left'}
+          >
+            DIET PLANNER
+          </Heading>
+          <Paragraph
+            color='#475569'
+            marginTop={minorScale(1)}
+            size={isMobile ? 400 : 500}
+            textAlign={isMobile ? 'center' : 'left'}
+          >
+            Your personalized weekly meal plan, intelligently generated.
+          </Paragraph>
+        </Pane>
+        <SavedPlansManager
+          savedPlans={savedPlans}
+          setSavedPlans={setSavedPlans}
+          setCurrentDate={setCurrentDate}
+          setStoredPlan={setStoredPlan}
+        />
+      </Pane>
+      <Card
+        background='white'
+        borderRadius={12}
+        padding={majorScale(3)}
         marginBottom={majorScale(3)}
+        boxShadow='0px 4px 12px rgba(0, 0, 0, 0.05)'
+        className='flex'
       >
         <Pane display='flex' alignItems='center' gap={minorScale(2)}>
-          <Heading size={700} display='flex' alignItems='center' color='#1E293B'>
-            <CalendarIcon marginRight={minorScale(2)} /> Your Weekly Plan
+          <Heading
+            size={700}
+            display='flex'
+            alignItems='center'
+            color='#1E293B'
+            className='sm:flex hidden'
+          >
+            <CalendarIcon marginRight={minorScale(2)} />
+            Plan for{' '}
+            {currentDateObj.toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+            })}
+            —
+            {new Date(currentDateObj.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString(
+              'en-US',
+              {
+                month: 'long',
+                day: 'numeric',
+              }
+            )}
           </Heading>
+          <Heading
+            size={isMobile ? 600 : 700}
+            display='flex'
+            alignItems='center'
+            color='#1E293B'
+            className='sm:hidden flex'
+          >
+            <CalendarIcon marginRight={minorScale(2)} />
+            Your Plan
+          </Heading>
+
           {/* --- NEW SAVE BUTTON --- */}
           {generatedPlan && !loading && (
             <IconButton
@@ -1374,7 +1446,7 @@ export default function DietPlanner() {
             />
           )}
         </Pane>
-        <Pane>
+        <Pane className='ml-auto'>
           <IconButton
             icon={ChevronLeftIcon}
             onClick={() => navigateWeek('prev')}
@@ -1387,7 +1459,7 @@ export default function DietPlanner() {
             disabled={loading}
           />
         </Pane>
-      </Pane>
+      </Card>
       {/* --- NEW LOADING SKELETON --- */}
       {loading ? (
         <Pane>
@@ -1460,66 +1532,13 @@ export default function DietPlanner() {
       minHeight='100vh'
       background={theme.colors.green100}
     >
-      {/* --- NEW PULSE ANIMATION --- */}
-      <style>
-        {`
-          @keyframes pulse {
-            0%, 100% {
-              background-color: ${theme.colors.green100};
-            }
-            50% {
-              background-color: ${theme.colors.green200};
-            }
-          }
-          .pulse {
-            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-          }
-        `}
-      </style>
-      <Pane maxWidth={1400} marginX='auto' className='max-w-7xl'>
-        {/* --- UPDATED HEADER --- */}
-        <Pane
-          marginBottom={majorScale(4)}
-          display='flex'
-          justifyContent='space-between'
-          alignItems='center'
-          flexWrap='wrap'
-          gap={majorScale(1)}
-        >
-          <Pane>
-            <Heading
-              is='h1'
-              size={isMobile ? 800 : 900}
-              fontWeight={900}
-              color='#047857'
-              textAlign={isMobile ? 'center' : 'left'}
-            >
-              DIET PLANNER
-            </Heading>
-            <Paragraph
-              color='#475569'
-              marginTop={minorScale(1)}
-              size={500}
-              textAlign={isMobile ? 'center' : 'left'}
-            >
-              Your personalized weekly meal plan, intelligently generated.
-            </Paragraph>
-          </Pane>
-          {/* --- NEW SAVED PLANS MANAGER --- */}
-          <SavedPlansManager
-            savedPlans={savedPlans}
-            setSavedPlans={setSavedPlans}
-            setCurrentDate={setCurrentDate}
-            setStoredPlan={setStoredPlan}
-          />
-        </Pane>
-
+      <Pane>
         {/* Here's our responsive layout magic! */}
         {isMobile ? (
           // On mobile, we use a simple flex column to stack the panels.
           <Pane display='flex' flexDirection='column' gap={majorScale(4)}>
-            {SettingsPanel}
             {PlanPanel}
+            {SettingsPanel}
           </Pane>
         ) : (
           // On desktop, we use a grid for the classic sidebar layout.
