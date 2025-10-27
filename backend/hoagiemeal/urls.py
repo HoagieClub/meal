@@ -16,7 +16,7 @@ from hoagiemeal.api.dining import (
     get_dining_locations_with_menus
 )
 from hoagiemeal.api.places import get_open_places
-from hoagiemeal.api.user import me
+from hoagiemeal.api.user import me, update_user_profile, verify
 
 
 urlpatterns = [
@@ -33,5 +33,7 @@ urlpatterns = [
     path("api/ratings/<int:rating_id>/", manage_rating, name="manage-rating"),
     path("api/user/ratings/", get_user_ratings, name="user-ratings"),
     path("api/menu-items/top-rated/", get_top_rated_menu_items, name="top-rated-menu-items"),
-    path("api/auth/me/", me, name="auth-me"),
+    path("api/user/me/", me, name="auth-me"),
+    path("api/auth/verify/", verify, name="auth-verify"),
+    path("api/user/update/", update_user_profile, name="update-user-profile"),
 ]
