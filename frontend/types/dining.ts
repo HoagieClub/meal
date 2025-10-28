@@ -70,17 +70,19 @@ export interface MenuItem {
 export interface DiningLocationsResponse {
   data: DiningLocation[];
   message: string;
-  status?: number;  // Optional since it's not always present in responses
+  status?: number; // Optional since it's not always present in responses
 }
 
 export type DietKey = 'Vegetarian' | 'Vegan' | 'Halal' | 'Kosher';
 export type AllergenKey =
   | 'Peanut'
-  | 'Tree nut'
+  | 'Coconut'
   | 'Egg'
   | 'Milk'
   | 'Wheat'
   | 'Soybeans'
   | 'Crustacean'
   | 'Alcohol'
-  | 'Gluten';
+  | 'Gluten'
+  | 'Fish'
+  | 'Sesame';

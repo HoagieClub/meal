@@ -77,7 +77,7 @@ class DiningAPI(StudentApp):
 
         Args:
             category_id (str): The category ID to fetch. Defaults to "2".
-                                Use "2" for residential colleges, "3" for cafes/specialty venues.
+                                 Use "2" for residential colleges, "3" for cafes/specialty venues.
             fmt (str): The format of the response. Defaults to "xml".
 
         Returns:
@@ -193,6 +193,11 @@ class DiningAPI(StudentApp):
             "Allergens": [],
         }
 
+        KNOWN_ALLERGENS_TO_EXTRACT = {
+            'peanut', 'tree nut', 'egg', 'milk', 'wheat', 'soybeans',
+            'crustacean', 'alcohol', 'gluten', 'coconut', 'fish', 'sesame'
+        }
+
         # Serving Size & Calories (#facts2)
         # Get all text from #facts2
         facts2_texts = [el.get_text(strip=True) for el in doc.select('#facts2')]
@@ -276,14 +281,28 @@ class DiningAPI(StudentApp):
                     data['Vitamins']['Iron'] = {'Amount': value}
         
         # Ingredients & Allergens
+        # Ingredients
         ingredients_el = doc.select_one('.labelingredientsvalue')
         if ingredients_el:
             # Split by comma and strip whitespace
             data['Ingredients'] = [i.strip() for i in ingredients_el.get_text(strip=True).split(',') if i.strip()]
-        
         allergens_el = doc.select_one('.labelallergensvalue')
         if allergens_el:
-            data['Allergens'] = [a.strip() for a in allergens_el.get_text(strip=True).split(',') if a.strip()]
+            # Get the entire text blob and lowercase it
+            # e.g., "ingredients include coconut, milk, ingredient include alcohol"
+            raw_allergen_text = allergens_el.get_text(strip=True).lower()
+            logger.info(f"Raw allergen text scraped: {raw_allergen_text}")
+            found_allergens = set()
+            
+            # If the text isn't empty or just "n/a", "none"
+            if raw_allergen_text and "n/a" not in raw_allergen_text and "none" not in raw_allergen_text:
+                # Check if any of our known allergens are mentioned
+                for known_allergen in KNOWN_ALLERGENS_TO_EXTRACT:
+                    if known_allergen in raw_allergen_text:
+                        found_allergens.add(known_allergen.capitalize())
+
+            # Save the clean list
+            data['Allergens'] = list(found_allergens)
 
         return data
 
@@ -338,6 +357,8 @@ class DiningAPI(StudentApp):
                         "link": item.link,
                         "calories": 0,
                         "protein": 0,
+                        "allergens": item.allergens or [],
+                        "ingredients": item.ingredients or [],
                     }
                     
                     # Check if nutrient_info exists and add data
@@ -348,6 +369,7 @@ class DiningAPI(StudentApp):
                         if item.nutrient_info.protein:
                             # Convert Decimal to float for JSON
                             item_data["protein"] = float(item.nutrient_info.protein) 
+                       
                     
                     serialized_items.append(item_data)
 
@@ -747,7 +769,7 @@ def manage_rating(request, rating_id):
     if rating.user != request.user:
         return Response(
             {"error": "You do not have permission to perform this action"},
-            status=status.HTTP_4D3_FORBIDDEN,
+            status=status.HTTP_403_FORBIDDEN,
         )
 
     if request.method == "GET":
@@ -761,7 +783,7 @@ def manage_rating(request, rating_id):
             updated_rating = serializer.save()
             return Response(MenuRatingSerializer(updated_rating).data)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_4D3_FORBIDDEN)
 
     elif request.method == "DELETE":
         rating.delete()

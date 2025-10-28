@@ -64,11 +64,10 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
   ALLERGEN_EMOJI,
   theme,
   showNutrition,
-  isPinned, // [GEMINI] Destructure prop
-  onPinToggle, // [GEMINI] Destructure prop
+  isPinned,
+  onPinToggle,
 }) => {
   const imageSrc = hallImages[hall.name];
-  console.log(imageSrc);
   return (
     <Pane
       key={hall.name}

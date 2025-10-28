@@ -11,10 +11,10 @@ import {
   minorScale,
   ChevronLeftIcon,
   useTheme,
-  // Tag,
 } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
 import { useSearchParams } from 'next/navigation';
+import { classifyDish } from '@/utils/dietary';
 
 interface NutritionData {
   title: string;
@@ -26,42 +26,7 @@ interface NutritionData {
   micros: Record<string, string>;
 }
 
-// Keyword lists for dietary classification
-const MEAT_KEYWORDS = [
-  'chicken',
-  'beef',
-  'pork',
-  'lamb',
-  'bacon',
-  'ham',
-  'turkey',
-  'duck',
-  'fish',
-  'shrimp',
-  'crab',
-  'lobster',
-  'gelatin',
-];
-const DAIRY_KEYWORDS = ['milk', 'cheese', 'butter', 'cream', 'yogurt', 'egg', 'honey'];
-const ALCOHOL_KEYWORDS = ['wine', 'beer', 'whiskey', 'alcohol'];
-
-// Classify dietary tags based on keywords
-function classifyDietary(text: string): string[] {
-  const t = text.toLowerCase();
-  const hasMeat = MEAT_KEYWORDS.some((w) => t.includes(w));
-  const hasDairy = DAIRY_KEYWORDS.some((w) => t.includes(w));
-  const hasAlcohol = ALCOHOL_KEYWORDS.some((w) => t.includes(w));
-
-  const tags: string[] = [];
-  if (!hasMeat) tags.push('Vegetarian');
-  if (!hasMeat && !hasDairy) tags.push('Vegan');
-  if (!t.includes('pork') && !hasAlcohol) tags.push('Halal');
-  if (!t.includes('pork') && !['shrimp', 'crab', 'lobster'].some((w) => t.includes(w))) {
-    tags.push('Kosher');
-  }
-
-  return tags;
-}
+// --- REMOVED OLD KEYWORD LISTS AND classifyDietary FUNCTION ---
 
 const getColorForDV = (value: number) => {
   if (value >= 20) return 'red';
@@ -137,8 +102,15 @@ const NutritionLabelPage: React.FC = () => {
     );
   }
 
-  // Compute dietary tags
-  const dietaryTags = classifyDietary(`${data.ingredients} ${data.allergens}`);
+  // ** UPDATED: Use the advanced classifyDish function **
+  // We pass the raw strings as single-element arrays.
+  // The 'classifyDish' function's 'getTokens' helper will correctly split them.
+  const dietaryTags = classifyDish({
+    name: data.title,
+    description: '', // This page doesn't have a separate description
+    ingredients: [data.ingredients],
+    allergens: [data.allergens],
+  });
 
   return (
     <Pane backgroundColor={theme.colors.green100} minHeight='100vh' padding={majorScale(4)}>
@@ -231,9 +203,15 @@ const NutritionLabelPage: React.FC = () => {
               Dietary Tags:
             </Text>
             <Pane display='flex' className='flex-col' gap={minorScale(1)} marginTop={minorScale(1)}>
-              {dietaryTags.map((tag) => (
-                <Text fontWeight={300}>{tag}</Text>
-              ))}
+              {dietaryTags.length > 0 ? (
+                dietaryTags.map((tag) => (
+                  <Text key={tag} fontWeight={300}>
+                    {tag}
+                  </Text>
+                ))
+              ) : (
+                <Text fontWeight={300}>—</Text>
+              )}
             </Pane>
           </Pane>
         </Pane>

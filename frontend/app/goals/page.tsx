@@ -199,13 +199,19 @@ const DAILY_VALUES: Omit<Nutrients, 'calories' | 'protein' | 'fat' | 'carbohydra
 };
 
 const DINING_HALLS: Record<string, number> = {
-  'Any Available Hall': 5,
-  'Frist Campus Center': 1,
-  RoMa: 2,
-  'Whitman College': 3,
-  'Forbes College': 4,
+  'Any Available Hall': -1,
+  'Mathey College': 4,
+  'Rockefeller College': 3,
+  'Forbes College': 5,
   'Butler College': 6,
+  'Center for Jewish Life': 7,
+  'Graduate College': 8,
+  'Yeh College': 1088,
 };
+
+const HALL_NAME_BY_ID: Record<number, string> = Object.fromEntries(
+  Object.entries(DINING_HALLS).map(([name, id]) => [id, name])
+);
 
 const DIET_PRESETS: Record<string, Omit<PlanSettings, 'preset' | 'allergens' | 'preferredHall'>> = {
   custom: { calories: 2200, protein: 40, fat: 70, carbohydrates: 280 },
@@ -216,13 +222,16 @@ const DIET_PRESETS: Record<string, Omit<PlanSettings, 'preset' | 'allergens' | '
 
 const ALLERGENS_LIST = [
   'Peanut',
-  'Tree Nut',
+  'Coconut',
   'Egg',
   'Milk',
   'Wheat',
   'Soybeans',
   'Crustacean',
   'Gluten',
+  'Alcohol',
+  'Fish',
+  'Sesame',
 ];
 
 const DEFAULT_NUTRIENTS: Nutrients = {
@@ -602,7 +611,7 @@ const DayPlanCard = ({
                       {item.name}
                     </Link>
                     <Text display='block' size={300} color='#64748B' marginTop={minorScale(1)}>
-                      at {item.location}
+                      at {HALL_NAME_BY_ID[item?.location] || 'Unknown Hall'}{' '}
                     </Text>
                     <Pane
                       display='flex'
@@ -737,8 +746,6 @@ const SavedPlansManager = ({
   );
 };
 
-// --- NEW SKELETON LOADING COMPONENTS ---
-
 const SkeletonBlock: React.FC<{
   width: string | number;
   height: string | number;
@@ -748,7 +755,7 @@ const SkeletonBlock: React.FC<{
   <Pane
     width={width}
     height={height}
-    background={theme.colors.green100} // Use theme color
+    background={theme.colors.gray200}
     borderRadius={4}
     className='animate-pulse'
     {...props}
@@ -966,7 +973,7 @@ export default function DietPlanner() {
         if (item.link) {
           preliminaryItems.push({
             name: item.name,
-            location: item.name,
+            location: locationId.toString(),
             description: item.description,
             link: item.link,
           });
@@ -1461,7 +1468,6 @@ export default function DietPlanner() {
           />
         </Pane>
       </Card>
-      {/* --- NEW LOADING SKELETON --- */}
       {loading ? (
         <Pane>
           <SkeletonWeeklySummary theme={theme} />

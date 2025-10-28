@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react'; // Import useRef
 import { request } from '@/lib/http';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import AuthButton from '@/lib/hoagie-ui/AuthButton';
@@ -34,6 +34,7 @@ import DiningHallCard from '@/components/DiningHallCard';
 import { AllergenKey, DietKey } from '@/types/dining';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import { classifyDish } from '@/utils/dietary';
 
 type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
@@ -45,6 +46,8 @@ interface RawApiMenuItem {
   link: string;
   calories: number;
   protein: number;
+  allergens: string[];
+  ingredients: string[];
 }
 
 interface RawVenue {
@@ -58,6 +61,8 @@ interface UIMenuItem {
   name: string;
   description: string;
   link: string;
+  allergens: string[];
+  ingredients: string[];
 }
 
 interface UIVenue {
@@ -68,30 +73,7 @@ interface UIVenue {
   protein: Record<string, number>;
 }
 
-// ─── Debounce Hook ────────────────────────────────────────────────────────
-/**
- * A hook to debounce a value.
- * @param value The value to debounce
- * @param delay The delay in milliseconds
- * @returns The debounced value
- */
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    // Set up a timer to update the debounced value after the delay
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    // Clean up the timer if the value or delay changes, or if the component unmounts
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]); // Only re-run the effect if value or delay changes
-
-  return debouncedValue;
-}
+// ** REMOVED useDebounce HOOK **
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
@@ -103,7 +85,7 @@ const MEAL_RANGES: Record<MealType, string> = {
 
 const ALLERGEN_EMOJI: Record<string, string> = {
   peanut: '🥜',
-  'tree nut': '🌰',
+  coconut: '🌰',
   egg: '🥚',
   milk: '🥛',
   wheat: '🌾',
@@ -111,6 +93,8 @@ const ALLERGEN_EMOJI: Record<string, string> = {
   crustacean: '🦞',
   alcohol: '🍺',
   gluten: '🍞',
+  fish: '🐟',
+  sesame: '🍔',
 };
 
 function categorize(items: UIMenuItem[]) {
@@ -123,17 +107,37 @@ function categorize(items: UIMenuItem[]) {
     const nm = i.name.toLowerCase();
     const ds = i.description.toLowerCase();
     if (nm.includes('soup')) out.Soups.push(i);
-    else if (ds.includes('vegan') || nm.includes('tofu') || nm.includes('vegetable'))
+    // Include items explicitly marked with dietary labels in the description
+    else if (
+      ds.includes('vegan') ||
+      ds.includes('(vg)') ||
+      ds.includes('vegetarian') ||
+      ds.includes('(v)') ||
+      nm.includes('tofu') ||
+      nm.includes('vegetable')
+    )
       out['Vegetarian + Vegan Entrée'].push(i);
     else out['Main Entrée'].push(i);
   });
   return out;
 }
 
-function extractAllergens(items: UIMenuItem[]) {
+/**
+ * Extracts allergens from the structured UIMenuItem.allergens array.
+ * This is more reliable than parsing text.
+ */
+function extractAllergens(items: UIMenuItem[]): Set<string> {
   const set = new Set<string>();
+  items.forEach((item) => {
+    item.allergens.forEach((allergen) => {
+      // Normalize to lowercase to match ALLERGEN_EMOJI keys
+      set.add(allergen.toLowerCase());
+    });
+  });
+
+  // ** Fallback: Check text as well for safety, in case backend data is sparse **
   items.forEach((i) => {
-    const ds = i.description.toLowerCase();
+    const ds = (i.description + ' ' + i.name).toLowerCase();
     [
       'peanut',
       'tree nut',
@@ -144,6 +148,9 @@ function extractAllergens(items: UIMenuItem[]) {
       'crustacean',
       'alcohol',
       'gluten',
+      'coconut',
+      'fish',
+      'sesame',
     ].forEach((all) => ds.includes(all) && set.add(all));
   });
   return set;
@@ -212,10 +219,9 @@ const getDefaultDate = () => {
 
 const defaultMeal: MealType = 'Breakfast';
 const defaultDate = getDefaultDate();
-// 2 hours in milliseconds
 const PREF_EXPIRY_MS = 2 * 60 * 60 * 1000;
 const PREFS_KEY = 'diningPrefs';
-const FILTER_PREFS_KEY = 'diningFilterPrefs';
+const FILTER_PREFS_KEY = 'diningFilterPrefs'; // ** ADDED KEY **
 const PINNED_HALLS_KEY = 'diningPinnedHalls';
 
 // ─── Main Page Component ──────────────────────────────────────────────────
@@ -229,6 +235,10 @@ export default function Index() {
     Lunch: theme.colors.green200,
     Dinner: theme.colors.green400,
   };
+
+  // ─── Load & Transform Data ───────────────────────────────────────────────
+  const [loading, setLoading] = useState(true);
+  const [venues, setVenues] = useState<UIVenue[]>([]);
 
   // ─── Date + Meal ─────────────────────────────────────────────────────────
   // Use the hook to store date (as string) and meal in one object
@@ -244,11 +254,13 @@ export default function Index() {
 
   // Create setters that update the object in localStorage
   const setSelectedDate = (value: Date | ((val: Date) => Date)) => {
+    setLoading(true); // <-- **Set loading immediately**
     const newDate = value instanceof Function ? value(selectedDate) : value;
     setPrefs((prev) => ({ ...prev, date: newDate.toISOString() }));
   };
 
   const setMeal = (value: MealType | ((val: MealType) => MealType)) => {
+    setLoading(true); // <-- **Set loading immediately**
     const newMeal = value instanceof Function ? value(meal) : value;
     setPrefs((prev) => ({ ...prev, meal: newMeal }));
   };
@@ -294,14 +306,14 @@ export default function Index() {
     'Rockefeller College',
     'Whitman & Butler Colleges',
     'Yeh College & New College West',
-    'Center for Jewish Life',
+    '"Center for Jewish Life-Fri & Sat Dinner Hours based on sundown & service times"',
     'Graduate College',
   ];
   const [halls] = useState<string[]>(initialHalls);
   const DIETARY: DietKey[] = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
   const ALLERGENS: AllergenKey[] = [
     'Peanut',
-    'Tree nut',
+    'Coconut',
     'Egg',
     'Milk',
     'Wheat',
@@ -309,61 +321,105 @@ export default function Index() {
     'Crustacean',
     'Alcohol',
     'Gluten',
+    'Fish',
+    'Sesame',
   ];
 
-  const [appliedHalls, setAppliedHalls] = useState<string[]>(initialHalls);
-  const [appliedDietary, setAppliedDietary] = useState<string[]>([...DIETARY]);
-  const [appliedAllergens, setAppliedAllergens] = useState<string[]>([...ALLERGENS]);
+  // ** Store applied filters in localStorage **
+  const [appliedFilterPrefs, setAppliedFilterPrefs] = useLocalStorage(FILTER_PREFS_KEY, {
+    halls: initialHalls,
+    dietary: [] as DietKey[],
+    allergens: [] as AllergenKey[],
+  });
+
+  // ** Derive applied state from localStorage object **
+  const {
+    halls: appliedHalls,
+    dietary: appliedDietary,
+    allergens: appliedAllergens,
+  } = appliedFilterPrefs;
+
+  // ** Create setters that update the localStorage object **
+  const setAppliedHalls = (value: React.SetStateAction<string[]>) => {
+    setAppliedFilterPrefs((prev) => ({
+      ...prev,
+      halls: value instanceof Function ? value(prev.halls) : value,
+    }));
+  };
+  const setAppliedDietary = (value: React.SetStateAction<DietKey[]>) => {
+    setAppliedFilterPrefs((prev) => ({
+      ...prev,
+      dietary: value instanceof Function ? value(prev.dietary) : value,
+    }));
+  };
+  const setAppliedAllergens = (value: React.SetStateAction<AllergenKey[]>) => {
+    setAppliedFilterPrefs((prev) => ({
+      ...prev,
+      allergens: value instanceof Function ? value(prev.allergens) : value,
+    }));
+  };
+
   const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories');
 
-  // temporary UI selections
-  const [tempHalls, setTempHalls] = useState<string[]>([...initialHalls]);
-  const [tempDietary, setTempDietary] = useState<DietKey[]>([...DIETARY]);
-  const [tempAllergens, setTempAllergens] = useState<AllergenKey[]>([...ALLERGENS]);
+  // ** temporary UI selections now initialize from applied (localStorage) state **
+  const [tempHalls, setTempHalls] = useState<string[]>([...appliedHalls]);
+  const [tempDietary, setTempDietary] = useState<DietKey[]>([...appliedDietary]);
+  const [tempAllergens, setTempAllergens] = useState<AllergenKey[]>([...appliedAllergens]);
 
-  // *** NEW STATE ***
+  // ** This effect syncs the temp state if the applied state changes
+  // (e.g., from a quick toggle or profile load) **
+  useEffect(() => {
+    setTempHalls(appliedHalls);
+    setTempDietary(appliedDietary);
+    setTempAllergens(appliedAllergens);
+  }, [appliedHalls, appliedDietary, appliedAllergens]);
+
   // This flag tracks if the user's profile settings have been processed
   const [profileLoaded, setProfileLoaded] = useState(false);
 
   const { dietaryRestrictions, allergens, diningHalls } = useUserProfile();
 
+  // ** This effect now updates the localStorage state (appliedFilterPrefs) **
   useEffect(() => {
-    if (dietaryRestrictions.length > 0) {
-      setAppliedDietary(dietaryRestrictions);
-      setTempDietary(dietaryRestrictions);
-    }
-    if (allergens.length > 0) {
-      setAppliedAllergens(allergens);
-      setTempAllergens(allergens);
-    }
-    if (diningHalls.length > 0) {
-      setAppliedHalls(diningHalls);
-      setTempHalls(diningHalls);
+    // Only run this if the profile data is available and has content
+    if (
+      (dietaryRestrictions && dietaryRestrictions.length > 0) ||
+      (allergens && allergens.length > 0) ||
+      (diningHalls && diningHalls.length > 0)
+    ) {
+      console.log('Profile loaded, syncing filters from DB...');
+      setAppliedFilterPrefs((prev) => ({
+        halls: diningHalls && diningHalls.length > 0 ? diningHalls : prev.halls,
+        dietary:
+          dietaryRestrictions && dietaryRestrictions.length > 0
+            ? dietaryRestrictions
+            : prev.dietary,
+        allergens: allergens && allergens.length > 0 ? allergens : prev.allergens,
+      }));
     }
     // Mark the profile as loaded so the menu fetch can proceed
     setProfileLoaded(true);
-  }, [dietaryRestrictions, allergens, diningHalls]);
+  }, [dietaryRestrictions, allergens, diningHalls, setAppliedFilterPrefs]);
 
   const [filterOpen, setFilterOpen] = useState(true);
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
 
-  const toggle = <T,>(val: T, arr: T[], setter: React.Dispatch<React.SetStateAction<T[]>>) =>
-    setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val]);
+  const toggle = <T,>(val: T, arr: T[], setter: (value: React.SetStateAction<T[]>) => void) =>
+    setter((prevArr) =>
+      prevArr.includes(val) ? prevArr.filter((x) => x !== val) : [...prevArr, val]
+    );
 
+  // ** This now updates the localStorage state directly **
   const toggleQuickAllergen = (allergen: string) => {
     toggle(allergen, appliedAllergens, setAppliedAllergens);
-    toggle(allergen, tempAllergens, setTempAllergens);
   };
 
   const resetTemp = () => {
-    setTempHalls([...halls]);
-    setTempDietary([...DIETARY]);
-    setTempAllergens([...ALLERGENS]);
+    setTempHalls([...initialHalls]);
+    // ** Reset dietary and allergen filters to empty **
+    setTempDietary([]);
+    setTempAllergens([]);
   };
-
-  // ─── Load & Transform Data ───────────────────────────────────────────────
-  const [loading, setLoading] = useState(true);
-  const [venues, setVenues] = useState<UIVenue[]>([]);
 
   useEffect(() => {
     if (isWeekend && meal === 'Breakfast') {
@@ -419,17 +475,15 @@ export default function Index() {
   };
 
   // ─── Data Fetching for Menus ────────────────────────────────────────────
-  // Create debounced versions of the date and meal
-  const debouncedDate = useDebounce(selectedDate, 1000); // 1 second delay
-  const debouncedMeal = useDebounce(meal, 1000); // 1 second delay
 
   useEffect(() => {
     // Only run this fetch if the user's profile has been loaded
     if (!profileLoaded) return;
 
-    setLoading(true);
-    // ** Use the debounced values to format the menu ID **
-    const menuId = formatMenuId(debouncedDate, debouncedMeal);
+    let isCurrent = true;
+
+    // ** Use selectedDate and meal directly **
+    const menuId = formatMenuId(selectedDate, meal);
 
     fetch(`http://localhost:8000/api/dining/locations/with-menus/?menu_id=${menuId}`, {
       credentials: 'include',
@@ -441,44 +495,63 @@ export default function Index() {
         return response.json();
       })
       .then((data: { locations: { location: RawVenue[] } }) => {
-        const ui = data.locations.location.map((raw) => {
-          const items = (raw.menu.menus || []).map((x) => ({
-            id: x.id,
-            name: x.name,
-            description: x.description,
-            link: x.link,
-            calories: x.calories,
-            protein: x.protein,
-          }));
-          const uiItems: UIMenuItem[] = items.map((x) => ({
-            id: x.id,
-            name: x.name,
-            description: x.description,
-            link: x.link,
-          }));
-          return {
-            name: raw.name,
-            items: categorize(uiItems),
-            allergens: extractAllergens(uiItems),
-            calories: Object.fromEntries(items.map((i) => [i.name, i.calories || 0])),
-            protein: Object.fromEntries(items.map((i) => [i.name, i.protein || 0])),
-          } as UIVenue;
-        });
-        setVenues(ui);
+        console.log(data);
+        if (isCurrent) {
+          const ui = data.locations.location.map((raw) => {
+            const items = (raw.menu.menus || []).map((x) => ({
+              id: x.id,
+              name: x.name,
+              description: x.description,
+              link: x.link,
+              calories: x.calories,
+              protein: x.protein,
+              allergens: x.allergens || [],
+              ingredients: x.ingredients || [],
+            }));
+            const uiItems: UIMenuItem[] = items.map((x) => ({
+              id: x.id,
+              name: x.name,
+              description: x.description,
+              link: x.link,
+              allergens: x.allergens,
+              ingredients: x.ingredients,
+            }));
+            return {
+              name: raw.name,
+              items: categorize(uiItems),
+              allergens: extractAllergens(uiItems),
+              calories: Object.fromEntries(items.map((i) => [i.name, i.calories || 0])),
+              protein: Object.fromEntries(items.map((i) => [i.name, i.protein || 0])),
+            } as UIVenue;
+          });
+          setVenues(ui);
+        }
       })
       .catch((error) => {
-        console.error(`Error fetching menu data for ${menuId}:`, error);
-        setVenues([]);
+        if (isCurrent) {
+          console.error(`Error fetching menu data for ${menuId}:`, error);
+          setVenues([]);
+        }
       })
-      .finally(() => setLoading(false));
-  }, [debouncedDate, debouncedMeal, profileLoaded]); // ** Depend on the debounced values **
+      .finally(() => {
+        if (isCurrent) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+    // ** Depend on selectedDate and meal directly **
+  }, [selectedDate, meal, profileLoaded]);
 
   // ─── Filtering Logic ────────────────────────────────────────────────────
 
   const displayData = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const isDietFilterActive = appliedDietary.length < DIETARY.length;
-    const isAllergenFilterActive = appliedAllergens.length < ALLERGENS.length;
+    // ** A filter is active if one or more options are selected **
+    const isDietFilterActive = appliedDietary.length > 0;
+    const isAllergenFilterActive = appliedAllergens.length > 0;
     const isSearchActive = term !== '';
 
     const sortFn = (a: UIVenue, b: UIVenue) => {
@@ -489,6 +562,7 @@ export default function Index() {
       return 0;
     };
 
+    // If no filters are active, return the base data directly
     if (!isDietFilterActive && !isAllergenFilterActive && !isSearchActive) {
       return appliedHalls
         .map((h) => venues.find((v) => v.name === h))
@@ -496,6 +570,7 @@ export default function Index() {
         .sort(sortFn);
     }
 
+    // Otherwise, apply filters
     return appliedHalls
       .map((hallName) => {
         const venue = venues.find((v) => v.name === hallName);
@@ -506,53 +581,62 @@ export default function Index() {
           'Vegetarian + Vegan Entrée': [],
           Soups: [],
         };
-        let hasAny = false;
+        let hasAnyItemsAfterFilter = false; // Track if any items remain after filtering this venue
 
         for (const cat of Object.keys(venue.items) as (keyof typeof venue.items)[]) {
           items[cat] = venue.items[cat].filter((dish) => {
-            const text = (dish.name + ' ' + dish.description).toLowerCase();
+            const dishText = (dish.name + ' ' + dish.description).toLowerCase();
 
+            // ** 1. Get all dietary tags for this dish using the new function **
+            const dishTags = classifyDish(dish); // e.g., ['Vegan', 'Vegetarian', 'Halal']
+
+            // --- DIETARY FILTER (Opt-In: Show items that MATCH selected) ---
             if (isDietFilterActive) {
-              if (!appliedDietary.includes('Vegetarian') && text.includes('vegetarian')) {
-                return false;
-              }
-              if (!appliedDietary.includes('Vegan') && text.includes('vegan')) {
+              // Check if *any* of the dish's tags are in the user's selected filter list
+              // e.g., dishTags = ['Vegan', 'Vegetarian'], appliedDietary = ['Vegan']
+              const matchesADiet = dishTags.some((tag) => appliedDietary.includes(tag));
+
+              // If it doesn't match *any* of the selected diets, filter it out
+              if (!matchesADiet) {
                 return false;
               }
             }
 
+            // --- ALLERGEN FILTER (Opt-In Avoidance: Hide items that MATCH selected allergens) ---
             if (isAllergenFilterActive) {
-              for (const a of ALLERGENS) {
-                if (!appliedAllergens.includes(a) && text.includes(a.toLowerCase())) {
-                  return false;
-                }
+              // Use the structured dish.allergens array for reliable filtering
+              // We must compare case-insensitively.
+              const dishAllergensLower = dish.allergens.map((a) => a.toLowerCase());
+              const containsAvoidedAllergen = appliedAllergens.some((avoidedAllergen) =>
+                dishAllergensLower.includes(avoidedAllergen.toLowerCase())
+              );
+
+              // If it *does* contain an allergen the user wants to avoid, filter it out
+              if (containsAvoidedAllergen) {
+                return false;
               }
             }
 
-            if (isSearchActive && !text.includes(term)) {
+            // --- SEARCH FILTER ---
+            if (isSearchActive && !dishText.includes(term)) {
               return false;
             }
 
-            hasAny = true;
-            return true;
+            // If we reach here, the item passes all active filters
+            hasAnyItemsAfterFilter = true; // Mark that this venue has at least one item
+            return true; // Keep the item
           });
         }
 
-        if (!hasAny) return null;
+        // If, after filtering all categories, this venue has no items left, exclude the venue
+        if (!hasAnyItemsAfterFilter) return null;
+
+        // Otherwise, return the venue with its filtered items
         return { ...venue, items } as UIVenue;
       })
-      .filter((v): v is UIVenue => v !== null)
+      .filter((v): v is UIVenue => v !== null) // Remove venues that became null
       .sort(sortFn);
-  }, [
-    venues,
-    appliedHalls,
-    appliedDietary,
-    appliedAllergens,
-    searchTerm,
-    DIETARY,
-    ALLERGENS,
-    pinnedHalls, // Now a dependency
-  ]);
+  }, [venues, appliedHalls, appliedDietary, appliedAllergens, searchTerm, pinnedHalls]);
 
   const getMealLabel = (m: MealType) => {
     if (isWeekend && m === 'Lunch') {
@@ -586,6 +670,7 @@ export default function Index() {
         tempDietary={tempDietary}
         toggleDietary={(d) => toggle(d, tempDietary, setTempDietary)}
         ALLERGENS={ALLERGENS}
+        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
         tempAllergens={tempAllergens}
         toggleAllergen={(a) => toggle(a, tempAllergens, setTempAllergens)}
         searchTerm={searchTerm}
@@ -593,24 +678,26 @@ export default function Index() {
         showNutrition={showNutrition}
         setShowNutrition={setShowNutrition}
         onReset={resetTemp}
+        // ** onApply now updates the localStorage state **
         onApply={() => {
           setAppliedHalls(tempHalls);
           setAppliedDietary(tempDietary);
           setAppliedAllergens(tempAllergens);
 
+          // This fetch call remains to save prefs to DB for logged-in users
           fetch('/api/user/update', {
             method: 'POST',
             body: JSON.stringify({
               dietary_restrictions: tempDietary,
-              allergens: tempAllergens,
+              allergens: tempAllergens, // Send the list of allergens to avoid
               dining_halls: tempHalls,
             }),
           })
             .then((response) => response.json())
             .then((data) => {
-              console.log(data);
+              console.log('Preferences saved to DB:', data);
             })
-            .catch((error) => console.error('Error updating dietary restrictions:', error));
+            .catch((error) => console.error('Error updating user preferences:', error));
         }}
       />
       {/* ─── MAIN VIEW ──────────────────────────────────────────────────────── */}
@@ -700,6 +787,7 @@ export default function Index() {
         </Pane>
 
         {/* Grid of cards */}
+        {/* ** FIXED: Check for loading only ** */}
         {loading ? (
           <Pane
             display='grid'
@@ -772,7 +860,7 @@ export default function Index() {
         zIndex={2}
       >
         <Heading size={600} color={theme.colors.green900}>
-          Allergens
+          Allergens to Avoid
         </Heading>
 
         <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
@@ -786,7 +874,11 @@ export default function Index() {
                 cursor='pointer'
                 onClick={() => toggleQuickAllergen(a)}
                 opacity={isSelected ? 1.0 : 0.6}
-                title={isSelected ? `Filtering out ${a}` : `Click to filter out ${a}`}
+                title={
+                  isSelected
+                    ? `Hiding items containing ${a}`
+                    : `Click to hide items containing ${a}`
+                }
               >
                 <Pane
                   width={28}
@@ -795,7 +887,13 @@ export default function Index() {
                   alignItems='center'
                   justifyContent='center'
                   borderRadius={14}
-                  background={isSelected ? theme.colors.green300 : theme.colors.gray300}
+                  // ** Changed background to red when selected to indicate avoidance **
+                  background={isSelected ? theme.colors.red100 : theme.colors.gray100}
+                  border={
+                    isSelected
+                      ? `1px solid ${theme.colors.red500}`
+                      : `1px solid ${theme.colors.gray400}`
+                  }
                   marginRight={minorScale(1)}
                 >
                   <Text size={200}>{ALLERGEN_EMOJI[a.toLowerCase()]}</Text>

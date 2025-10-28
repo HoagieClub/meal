@@ -16,7 +16,7 @@ import {
   Theme,
 } from 'evergreen-ui';
 
-// ——— Your six PNG icons ————————————————————————
+// ——— PNG icons ————————————————————————
 import cjlIcon from '../public/images/icons/cjl.png';
 import defaultIcon from '../public/images/icons/default.png';
 import forbesIcon from '../public/images/icons/forbes.png';
@@ -70,25 +70,13 @@ const DIET_STYLE_MAP = (theme: Theme): Record<DietKey, any> => ({
   },
 });
 
-// ——— Allergen emojis + styles —————————————————————
-const ALLERGEN_EMOJI: Record<AllergenKey, string> = {
-  Peanut: '🥜',
-  'Tree nut': '🌰',
-  Egg: '🥚',
-  Milk: '🥛',
-  Wheat: '🌾',
-  Soybeans: '🌱',
-  Crustacean: '🦞',
-  Alcohol: '🍺',
-  Gluten: '🍞',
-};
 const ALLERGEN_STYLE_MAP = (theme: any): Record<AllergenKey, any> => ({
   Peanut: {
     bg: theme.colors.yellow100,
     border: theme.colors.yellow700,
     color: theme.colors.yellow900,
   },
-  'Tree nut': {
+  Coconut: {
     bg: theme.colors.orange100,
     border: theme.colors.orange700,
     color: theme.colors.orange900,
@@ -120,6 +108,12 @@ const ALLERGEN_STYLE_MAP = (theme: any): Record<AllergenKey, any> => ({
     border: theme.colors.orange700,
     color: theme.colors.orange900,
   },
+  Fish: { bg: theme.colors.blue100, border: theme.colors.blue700, color: theme.colors.blue900 },
+  Sesame: {
+    bg: theme.colors.orange100,
+    border: theme.colors.orange700,
+    color: theme.colors.orange900,
+  },
 });
 
 interface FilterSidebarProps {
@@ -132,6 +126,8 @@ interface FilterSidebarProps {
   toggleDietary: (d: DietKey) => void;
 
   ALLERGENS: AllergenKey[];
+  ALLERGEN_EMOJI: Record<string, string>;
+
   tempAllergens: AllergenKey[];
   toggleAllergen: (a: AllergenKey) => void;
 
@@ -153,6 +149,7 @@ export default function FilterSidebar({
   tempDietary,
   toggleDietary,
   ALLERGENS,
+  ALLERGEN_EMOJI,
   tempAllergens,
   toggleAllergen,
   searchTerm,
@@ -331,15 +328,15 @@ export default function FilterSidebar({
                         width={18}
                         height={18}
                         borderRadius={3}
-                        background={st.bg}
-                        border={`1px solid ${st.border}`}
+                        background={st?.bg}
+                        border={`1px solid ${st?.border}`}
                         display='flex'
                         alignItems='center'
                         justifyContent='center'
                         marginX={minorScale(1)}
                         className='p-1'
                       >
-                        <Text className='text-xs' color={st.color} fontWeight={600}>
+                        <Text className='text-xs' color={st?.color} fontWeight={600}>
                           {DIET_LABEL_MAP[d]}
                         </Text>
                       </Pane>
@@ -366,7 +363,7 @@ export default function FilterSidebar({
               </Text>
               <Pane display='flex' flexDirection='column'>
                 {ALLERGENS.map((a) => {
-                  const st = allergenStyles[a];
+                  const st = allergenStyles[a as AllergenKey];
                   return (
                     <Pane key={a} display='flex' alignItems='center' marginBottom={minorScale(1)}>
                       <Checkbox
@@ -377,15 +374,15 @@ export default function FilterSidebar({
                         width={18}
                         height={18}
                         borderRadius={999}
-                        background={st.bg}
-                        border={`1px solid ${st.border}`}
+                        background={st?.bg}
+                        border={`1px solid ${st?.border}`}
                         display='flex'
                         alignItems='center'
                         justifyContent='center'
                         marginX={minorScale(1)}
                       >
-                        <Text className='text-xs' color={st.color}>
-                          {ALLERGEN_EMOJI[a]}
+                        <Text className='text-xs' color={st?.color}>
+                          {ALLERGEN_EMOJI[a.toLowerCase()]}
                         </Text>
                       </Pane>
                       <Text size={300} color={theme.colors.gray900}>
@@ -398,7 +395,6 @@ export default function FilterSidebar({
             </Pane>
           )}
         </Pane>
-        {/* ▶️ Apply */}
         <Pane className='m-4'>
           <Button
             appearance='primary'
