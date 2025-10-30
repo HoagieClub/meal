@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 
 // --- Helper Components & Data ---
 
@@ -93,6 +92,22 @@ const teamMembers = [
       linkedin: 'https://www.linkedin.com/in/john-wu-76b62829a/',
     },
   },
+  {
+    name: 'Zashaan Shaik',
+    role: 'Developer',
+    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=ZS',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/zashaan-shaik/',
+    }
+  },
+  {
+    name: 'Mathias Nguyen-Van-Duong',
+    role: 'Product Manager',
+    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=MN',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/mathiasnvd',
+    },
+   }
 ];
 
 /**
