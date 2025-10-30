@@ -1,11 +1,10 @@
 'use client';
 
-import React from 'react';
 
 // --- Helper Components & Data ---
 
 // Icon for social media links
-const SocialIcon = ({ href, children }) => (
+const SocialIcon = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <a
     href={href}
     target='_blank'
@@ -83,8 +82,48 @@ const teamMembers = [
     imgSrc: 'https://i.imgur.com/53PYPL3.jpeg',
     socials: {
       linkedin: 'https://www.linkedin.com/in/andrew-y-xia/',
+    }
+  },
+  {
+    name: 'Malachi Noel',
+    role: 'Developer',
+    imgSrc: 'https://i.imgur.com/MPwu9Nc.jpeg',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/malachi-noel/',
+    }
+  },
+    {
+    name: 'Angela Cai',
+    role: 'Developer',
+    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=AC',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/angcai/',
+    }
+  },
+  {
+    name: 'John Wu',
+    role: 'Developer',
+    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=JW',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/john-wu-76b62829a/',
     },
   },
+  {
+    name: 'Zashaan Shaik',
+    role: 'Developer',
+    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=ZS',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/zashaan-shaik/',
+    }
+  },
+  {
+    name: 'Mathias Nguyen-Van-Duong',
+    role: 'Product Manager',
+    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=MN',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/mathiasnvd',
+    },
+   }
 ];
 
 /**
