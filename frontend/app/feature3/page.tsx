@@ -77,6 +77,14 @@ const teamLeads = [
 const teamMembers = [
   // Add your name, role, and image here!
   {
+    name: 'Andrew Xia',
+    role: 'Developer',
+    imgSrc: 'https://i.imgur.com/53PYPL3.jpeg',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/andrew-y-xia/',
+    }
+  },
+  {
     name: 'Malachi Noel',
     role: 'Developer',
     imgSrc: 'https://i.imgur.com/MPwu9Nc.jpeg',
