@@ -72,7 +72,7 @@ async function getDiningLocations() {
       });
     });
 
-    console.log('Available payment methods:', [...allPaymentMethods]);
+    //console.log('Available payment methods:', [...allPaymentMethods]);
 
   } catch (error) {
     // Type guard to narrow down error type

@@ -16,7 +16,8 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, subject to the following conditions:
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
 This software is provided "as-is", without warranty of any kind.
 """
@@ -34,12 +35,13 @@ from rest_framework.response import Response
 from django.views.decorators.cache import cache_page
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.db import models
+from django.db import models, transaction, IntegrityError
 
 from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.student_app import StudentApp
 from hoagiemeal.api.schemas import Schemas
-from hoagiemeal.models.menu import MenuItem, MenuRating
+from hoagiemeal.models.menu import MenuItem, MenuRating, Menu
+from hoagiemeal.models.dining import DiningVenue
 from hoagiemeal.serializers import (
     MenuRatingSerializer,
     MenuRatingCreateSerializer,
@@ -68,7 +70,7 @@ class DiningAPI(StudentApp):
 
         Args:
             category_id (str): The category ID to fetch. Defaults to "2".
-                               Use "2" for residential colleges, "3" for cafes/specialty venues.
+                                Use "2" for residential colleges, "3" for cafes/specialty venues.
             fmt (str): The format of the response. Defaults to "xml".
 
         Returns:
@@ -144,25 +146,147 @@ class DiningAPI(StudentApp):
         response = self._make_request(self.DINING_EVENTS, params=params, fmt="ical")
         return self._parse_ical(response)
 
+    def _fetch_and_decode_menu_from_api(self, location_id: str, menu_id: str) -> dict:
+        """Helper to abstract the raw API call for menus."""
+        params = {"locationID": location_id, "menuID": menu_id}
+        try:
+            response = self._make_request(self.DINING_MENU, params=params)
+            logger.info(msg=f"Menu API response for {location_id}/{menu_id}: {response}")
+            return msj.decode(response)
+        except Exception as e:
+            logger.error(f"Error fetching menu from raw API for {location_id}/{menu_id}: {e}")
+            return {}  # Return an empty dict on failure
+
     def get_menu(self, location_id: str, menu_id: str) -> dict:
         """Fetch the menu for a specific dining location.
-
-        NOTE: The API expects the parameters to be in camelCase.
-
-        Args:
-            location_id (str): The ID of the dining location.
-            menu_id (str): The ID of the dining menu.
-
-        Returns:
-            dict: A JSON object containing the menu details.
-
+        ...
         """
-        logger.info(f"Fetching dining menu for location_id: {location_id}, menu_id: {menu_id}.")
-        params = {"locationID": location_id, "menuID": menu_id}
-        response = self._make_request(self.DINING_MENU, params=params)
-        logger.info(msg=f"Menu response: {response}")
-        response = msj.decode(response)
-        return response
+        logger.info(f"Getting dining menu for location_id: {location_id}, menu_id: {menu_id}.")
+
+        MEAL_TYPE_MAP = {
+            'Breakfast': 'BR',
+            'Lunch': 'LU',
+            'Dinner': 'DI'
+        }
+
+        # 1. Parse menu_id to get date and meal type
+        try:
+            date_str, meal_type = menu_id.rsplit('-', 1)
+            menu_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+            meal_code = MEAL_TYPE_MAP.get(meal_type)
+            if not meal_code:
+                raise ValueError("Invalid meal type in menu_id")
+        except ValueError:
+            logger.error(f"Invalid menu_id format for '{menu_id}'. Falling back to API call.")
+            return self._fetch_and_decode_menu_from_api(location_id, menu_id)
+
+        # 2. Check database for a cached menu
+        try:
+            venue = DiningVenue.objects.get(database_id=location_id)
+            # Use prefetch_related for the M2M field
+            cached_menu = Menu.objects.prefetch_related('menu_items').filter(
+                dining_venue=venue, date=menu_date, meal=meal_code
+            ).first()
+
+            if cached_menu:
+                logger.info(f"✅ CACHE HIT for menu_id: {menu_id} at location_id: {location_id}")
+                menu_items = cached_menu.menu_items.all() # Get items from prefetched M2M data
+                serialized_items = [
+                    {
+                        "id": item.api_id, # Use api_id as the 'id' to match API response
+                        "name": item.name,
+                        "description": item.description,
+                        "link": item.link,
+                    }
+                    for item in menu_items
+                ]
+                # Return empty list if no items, matching API structure
+                return {"menus": serialized_items}
+
+        except DiningVenue.DoesNotExist:
+            logger.warning(f"DiningVenue with database_id {location_id} not found in DB. Cannot check cache or save menu.")
+            # If the venue isn't in our DB, we can't cache, just return API result.
+            return self._fetch_and_decode_menu_from_api(location_id, menu_id)
+        except Exception as e:
+            logger.error(f"Database lookup error for menu_id {menu_id}: {e}. Falling back to API.")
+
+        # --- Cache Miss Logic ---
+        logger.info(f"🚫 CACHE MISS for menu_id: {menu_id}, location_id: {location_id}. Fetching from API.")
+        
+        # 3. Fetch from the external API
+        api_menu_data = self._fetch_and_decode_menu_from_api(location_id, menu_id)
+
+        # 4. Save the result (even if empty) to the database to cache it
+        #    Only attempt to cache if the venue exists in our database.
+        try:
+            # This 'venue' variable is from the 'try' block above
+            # If we're here, 'venue' exists.
+            with transaction.atomic():
+                # Get or create the Menu record.
+                new_menu, created = Menu.objects.get_or_create(
+                    dining_venue=venue,
+                    date=menu_date,
+                    meal=meal_code,
+                )
+
+                items_in_api = api_menu_data.get("menus", []) if api_menu_data else []
+                menu_items_for_this_menu = []
+                items_created_count = 0
+
+                if items_in_api:
+                    for item_data in items_in_api:
+                        api_id = item_data.get('id')
+                        try:
+                            api_id_int = int(api_id) if api_id else None
+                        except (ValueError, TypeError):
+                            logger.warning(f"Invalid api_id '{api_id}' for menu {menu_id}. Skipping item.")
+                            continue
+                        
+                        if not api_id_int:
+                            continue
+
+                        # Get or create the CANONICAL menu item
+                        menu_item, item_created = MenuItem.objects.get_or_create(
+                            api_id=api_id_int,
+                            defaults={
+                                'name': item_data.get('name'),
+                                'description': item_data.get('description'),
+                                'link': item_data.get('link'),
+                                # Note: Full allergens/ingredients are not in this
+                                # simple API response. They would be populated by
+                                # a separate, more detailed ingestion script.
+                            }
+                        )
+                        
+                        if item_created:
+                            items_created_count += 1
+                        
+                        menu_items_for_this_menu.append(menu_item)
+
+                # Atomically set the M2M relationship
+                # This clears all existing items for this menu and adds all items
+                # from the list. This correctly handles menus that become empty.
+                new_menu.menu_items.set(menu_items_for_this_menu)
+
+                if items_in_api:
+                    logger.info(f"💾 CACHE SAVED: Synced {len(menu_items_for_this_menu)} items (created {items_created_count} new canonical items) for menu_id: {menu_id} at location_id: {location_id}")
+                elif created: # Menu was created, but no items were in API
+                    logger.info(f"💾 CACHE SAVED empty menu for menu_id: {menu_id} at location_id: {location_id}")
+                else: # Menu existed, and API returned no items
+                    logger.info(f"Menu {menu_id} at location_id: {location_id} updated to be empty.")
+
+        except DiningVenue.DoesNotExist:
+            # This case was handled before the API call, but good to have
+            logger.warning(f"Could not cache menu for location_id {location_id} because the venue is not in the database.")
+        except IntegrityError as e:
+            # Catch specific integrity errors
+            logger.error(f"Failed to cache menu items for menu_id {menu_id} due to DB constraint: {e}")
+        except Exception as e:
+            logger.error(f"Failed to cache menu for menu_id {menu_id}: {e}")
+            # Do not block the response to the user if caching fails
+
+        # Ensure we return the API data structure even if caching failed or API was empty
+        return api_menu_data if api_menu_data else {"menus": []}
 
     def get_locations_with_menus(self, menu_id: str, category_ids=None) -> dict:
         if category_ids is None:
@@ -178,6 +302,7 @@ class DiningAPI(StudentApp):
         for loc in locs:
             dbid = loc.get("dbid")
             try:
+                # This call now benefits from the caching logic
                 menu = self.get_menu(location_id=dbid, menu_id=menu_id)
             except Exception as e:
                 logger.error(f"Error fetching menu for dbid={dbid}, menu_id={menu_id}: {e}")
@@ -226,7 +351,6 @@ def get_dining_events(request):
 
 
 @api_view(["GET"])
-@cache_page(60 * 5)
 def get_dining_menu(request):
     """Django view function to get dining menu."""
     try:
@@ -252,7 +376,7 @@ def get_dining_menu(request):
                     {"error": f"No sample data found for menu_id: {menu_id}"}, status=404
                 )
 
-        # Live API fallback
+        # Live API call (which now includes caching logic)
         menu = dining_api.get_menu(location_id, menu_id)
         return Response(menu)
 

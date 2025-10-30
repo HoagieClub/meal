@@ -13,6 +13,7 @@ import {
   minorScale,
   useTheme,
   Button,
+  Theme,
 } from 'evergreen-ui';
 
 // ——— Your six PNG icons ————————————————————————
@@ -23,6 +24,7 @@ import gradIcon from '../public/images/icons/grad.png';
 import whitmanIcon from '../public/images/icons/whitman.png';
 import yehIcon from '../public/images/icons/yeh.png';
 import rockyIcon from '../public/images/icons/rocky.png';
+import { AllergenKey, DietKey } from '@/types/dining';
 
 // ——— Map hall names → PNG src —————————————————————
 const HALL_ICON_MAP: Record<string, string> = {
@@ -47,13 +49,13 @@ const HALL_EMOJI_STYLE = (theme: any) => ({
 });
 
 // ——— Dietary labels + styles —————————————————————
-const DIET_LABEL_MAP: Record<string, string> = {
+const DIET_LABEL_MAP: Record<DietKey, string> = {
   Vegetarian: 'V',
   Vegan: 'VG',
   Halal: 'H',
   Kosher: 'K',
 };
-const DIET_STYLE_MAP = (theme: any) => ({
+const DIET_STYLE_MAP = (theme: Theme): Record<DietKey, any> => ({
   Vegetarian: {
     bg: theme.colors.green100,
     border: theme.colors.green700,
@@ -69,51 +71,51 @@ const DIET_STYLE_MAP = (theme: any) => ({
 });
 
 // ——— Allergen emojis + styles —————————————————————
-const ALLERGEN_EMOJI: Record<string, string> = {
-  peanut: '🥜',
-  'tree nut': '🌰',
-  egg: '🥚',
-  milk: '🥛',
-  wheat: '🌾',
-  soybeans: '🌱',
-  crustacean: '🦞',
-  alcohol: '🍺',
-  gluten: '🍞',
+const ALLERGEN_EMOJI: Record<AllergenKey, string> = {
+  Peanut: '🥜',
+  'Tree nut': '🌰',
+  Egg: '🥚',
+  Milk: '🥛',
+  Wheat: '🌾',
+  Soybeans: '🌱',
+  Crustacean: '🦞',
+  Alcohol: '🍺',
+  Gluten: '🍞',
 };
-const ALLERGEN_STYLE_MAP = (theme: any) => ({
-  peanut: {
+const ALLERGEN_STYLE_MAP = (theme: any): Record<AllergenKey, any> => ({
+  Peanut: {
     bg: theme.colors.yellow100,
     border: theme.colors.yellow700,
     color: theme.colors.yellow900,
   },
-  'tree nut': {
+  'Tree nut': {
     bg: theme.colors.orange100,
     border: theme.colors.orange700,
     color: theme.colors.orange900,
   },
-  egg: {
+  Egg: {
     bg: theme.colors.yellow100,
     border: theme.colors.yellow700,
     color: theme.colors.yellow900,
   },
-  milk: { bg: theme.colors.blue100, border: theme.colors.blue700, color: theme.colors.blue900 },
-  wheat: {
+  Milk: { bg: theme.colors.blue100, border: theme.colors.blue700, color: theme.colors.blue900 },
+  Wheat: {
     bg: theme.colors.yellow100,
     border: theme.colors.yellow700,
     color: theme.colors.yellow900,
   },
-  soybeans: {
+  Soybeans: {
     bg: theme.colors.green100,
     border: theme.colors.green700,
     color: theme.colors.green900,
   },
-  crustacean: { bg: theme.colors.red100, border: theme.colors.red700, color: theme.colors.red900 },
-  alcohol: {
+  Crustacean: { bg: theme.colors.red100, border: theme.colors.red700, color: theme.colors.red900 },
+  Alcohol: {
     bg: theme.colors.purple100,
     border: theme.colors.purple700,
     color: theme.colors.purple900,
   },
-  gluten: {
+  Gluten: {
     bg: theme.colors.orange100,
     border: theme.colors.orange700,
     color: theme.colors.orange900,
@@ -125,13 +127,13 @@ interface FilterSidebarProps {
   tempHalls: string[];
   toggleHall: (h: string) => void;
 
-  DIETARY: string[];
-  tempDietary: string[];
-  toggleDietary: (d: string) => void;
+  DIETARY: DietKey[];
+  tempDietary: DietKey[];
+  toggleDietary: (d: DietKey) => void;
 
-  ALLERGENS: string[];
-  tempAllergens: string[];
-  toggleAllergen: (a: string) => void;
+  ALLERGENS: AllergenKey[];
+  tempAllergens: AllergenKey[];
+  toggleAllergen: (a: AllergenKey) => void;
 
   searchTerm: string;
   setSearchTerm: (s: string) => void;
@@ -275,11 +277,7 @@ export default function FilterSidebar({
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
                 {initialHalls.map((h) => (
                   <Pane key={h} display='flex' alignItems='center' marginBottom={'2px'}>
-                    <Checkbox
-                      checked={tempHalls.includes(h)}
-                      onChange={() => toggleHall(h)}
-                      size='small'
-                    />
+                    <Checkbox checked={tempHalls.includes(h)} onChange={() => toggleHall(h)} />
                     <Pane marginX={minorScale(1)}>
                       {HALL_ICON_MAP[h] ? (
                         <img src={HALL_ICON_MAP[h]} alt={h} width={18} height={18} />
@@ -328,7 +326,6 @@ export default function FilterSidebar({
                       <Checkbox
                         checked={tempDietary.includes(d)}
                         onChange={() => toggleDietary(d)}
-                        size='small'
                       />
                       <Pane
                         width={18}
@@ -369,14 +366,12 @@ export default function FilterSidebar({
               </Text>
               <Pane display='flex' flexDirection='column'>
                 {ALLERGENS.map((a) => {
-                  const key = a.toLowerCase();
-                  const st = allergenStyles[key];
+                  const st = allergenStyles[a];
                   return (
                     <Pane key={a} display='flex' alignItems='center' marginBottom={minorScale(1)}>
                       <Checkbox
                         checked={tempAllergens.includes(a)}
                         onChange={() => toggleAllergen(a)}
-                        size='small'
                       />
                       <Pane
                         width={18}
@@ -390,7 +385,7 @@ export default function FilterSidebar({
                         marginX={minorScale(1)}
                       >
                         <Text className='text-xs' color={st.color}>
-                          {ALLERGEN_EMOJI[key]}
+                          {ALLERGEN_EMOJI[a]}
                         </Text>
                       </Pane>
                       <Text size={300} color={theme.colors.gray900}>
