@@ -85,6 +85,14 @@ const teamMembers = [
       linkedin: 'https://www.linkedin.com/in/angcai/',
     },
   },
+  {
+    name: "Abu Ahmed",
+    role: "Developer",
+    imgSrc: "https://placehold.co/100x100/d1fae5/059669?text=AA",
+    socials: {
+      linkedin: "https://www.linkedin.com/in/abuahmed0821/",
+    },
+  }
 ];
 
 /**
