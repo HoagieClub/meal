@@ -49,7 +49,7 @@ import {
   FloppyDiskIcon,
   BookmarkIcon,
   TrashIcon,
-  Theme,
+  DefaultTheme,
 } from 'evergreen-ui';
 import { toast } from 'sonner';
 
@@ -622,7 +622,7 @@ const DayPlanCard = ({
                         {item.name}
                       </Link>
                       <Text display='block' size={300} color='#64748B' marginTop={minorScale(1)}>
-                        at {HALL_NAME_BY_ID[item?.location] || 'Unknown Hall'}{' '}
+                        at {HALL_NAME_BY_ID[Number(item.location)] || 'Unknown Hall'}{' '}
                       </Text>
                       <Pane
                         display='flex'
@@ -669,8 +669,6 @@ const SavedPlansManager = ({
   setCurrentDate: (value: string) => void;
   setStoredPlan: (value: WeeklyPlan | null) => void;
 }) => {
-  const theme = useTheme();
-
   const loadPlan = (dateString: string, plan: WeeklyPlan) => {
     setCurrentDate(dateString);
     setStoredPlan(plan);
@@ -765,7 +763,7 @@ const SavedPlansManager = ({
 const SkeletonBlock: React.FC<{
   width: string | number;
   height: string | number;
-  theme: Theme;
+  theme: DefaultTheme;
   [key: string]: any;
 }> = ({ width, height, theme, ...props }) => (
   <Pane
@@ -778,7 +776,7 @@ const SkeletonBlock: React.FC<{
   />
 );
 
-const SkeletonNutrientProgressBar: React.FC<{ theme: Theme }> = ({ theme }) => (
+const SkeletonNutrientProgressBar: React.FC<{ theme: DefaultTheme }> = ({ theme }) => (
   <Pane>
     <Pane
       display='flex'
@@ -793,7 +791,7 @@ const SkeletonNutrientProgressBar: React.FC<{ theme: Theme }> = ({ theme }) => (
   </Pane>
 );
 
-const SkeletonWeeklySummary: React.FC<{ theme: Theme }> = ({ theme }) => (
+const SkeletonWeeklySummary: React.FC<{ theme: DefaultTheme }> = ({ theme }) => (
   <Card
     background='white'
     borderRadius={12}
@@ -815,7 +813,7 @@ const SkeletonWeeklySummary: React.FC<{ theme: Theme }> = ({ theme }) => (
   </Card>
 );
 
-const SkeletonDayPlanCard: React.FC<{ theme: Theme }> = ({ theme }) => (
+const SkeletonDayPlanCard: React.FC<{ theme: DefaultTheme }> = ({ theme }) => (
   <Card
     background='white'
     borderRadius={12}

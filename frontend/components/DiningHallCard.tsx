@@ -23,6 +23,7 @@ import yehBanner from '../public/images/banners/yehbanner.png';
 import cjlBanner from '../public/images/banners/cjl-banner.png';
 import gradBanner from '../public/images/banners/gradbanner.png';
 import { StaticImageData } from 'next/image';
+import { UIVenue } from '@/types/dining';
 
 interface UIMenuItem {
   name: string;
@@ -31,14 +32,8 @@ interface UIMenuItem {
 }
 
 interface DiningHallCardProps {
-  hall: {
-    name: string;
-    items: Record<'Main Entrée' | 'Vegetarian + Vegan Entrée' | 'Soups', UIMenuItem[]>;
-    allergens: Set<string>;
-    calories: Record<string, number>;
-    protein: Record<string, number>;
-  };
-  setModalHall: (hall: DiningHallCardProps['hall']) => void;
+  hall: UIVenue;
+  setModalHall: (hall: UIVenue) => void;
   ALLERGEN_EMOJI: Record<string, string>;
   theme: any;
   showNutrition: boolean;

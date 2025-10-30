@@ -1,37 +1,27 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useRef } from 'react'; // Import useRef
-import { request } from '@/lib/http';
 import { useUser } from '@auth0/nextjs-auth0/client';
-import AuthButton from '@/lib/hoagie-ui/AuthButton';
-import { classifyVenue, Venue } from '@/utils/places';
-import type { VenueType, PlaceStatus } from '@/types/places';
-import Link from 'next/link';
 import FilterSidebar from '../../components/FilterSidebar';
 import {
   Pane,
   Heading,
   Text,
-  Checkbox,
   Button,
-  Switch,
   majorScale,
   minorScale,
   useTheme,
-  Spinner,
   ChevronLeftIcon,
   ChevronRightIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  Theme,
   SearchIcon,
+  DefaultTheme,
 } from 'evergreen-ui';
 import HallMenuModal from '@/components/HallMenuModal';
 // import DiningLocations from '@/examples/locations';
 // import getDiningLocationsServerSide from '@/examples/locationsServerSide';
 // import { useGetMenu } from '@/hooks/use-endpoints';
 import DiningHallCard from '@/components/DiningHallCard';
-import { AllergenKey, DietKey } from '@/types/dining';
+import { AllergenKey, DietKey, UIMenuItem, UIVenue } from '@/types/dining';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { classifyDish } from '@/utils/dietary';
@@ -53,24 +43,6 @@ interface RawApiMenuItem {
 interface RawVenue {
   name: string;
   menu: { menus?: RawApiMenuItem[] };
-}
-
-// Interface for what the UI components use
-interface UIMenuItem {
-  id: number;
-  name: string;
-  description: string;
-  link: string;
-  allergens: string[];
-  ingredients: string[];
-}
-
-interface UIVenue {
-  name: string;
-  items: Record<'Main Entrée' | 'Vegetarian + Vegan Entrée' | 'Soups', UIMenuItem[]>;
-  allergens: Set<string>;
-  calories: Record<string, number>;
-  protein: Record<string, number>;
 }
 
 // ** REMOVED useDebounce HOOK **
@@ -163,7 +135,7 @@ function extractAllergens(items: UIMenuItem[]): Set<string> {
 const SkeletonBlock: React.FC<{
   width: string | number;
   height: string | number;
-  theme: Theme;
+  theme: DefaultTheme;
   [key: string]: any;
 }> = ({ width, height, theme, ...props }) => (
   <Pane
@@ -179,7 +151,7 @@ const SkeletonBlock: React.FC<{
 /**
  * Skeleton placeholder for a single DiningHallCard.
  */
-const SkeletonDiningHallCard: React.FC<{ theme: Theme }> = ({ theme }) => (
+const SkeletonDiningHallCard: React.FC<{ theme: DefaultTheme }> = ({ theme }) => (
   <Pane
     background='white'
     borderRadius={12}
@@ -410,7 +382,7 @@ export default function Index() {
     );
 
   // ** This now updates the localStorage state directly **
-  const toggleQuickAllergen = (allergen: string) => {
+  const toggleQuickAllergen = (allergen: AllergenKey) => {
     toggle(allergen, appliedAllergens, setAppliedAllergens);
   };
 

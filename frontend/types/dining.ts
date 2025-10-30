@@ -86,3 +86,22 @@ export type AllergenKey =
   | 'Gluten'
   | 'Fish'
   | 'Sesame';
+
+
+// Interface for what the UI components use
+export interface UIMenuItem {
+  id: number;
+  name: string;
+  description: string;
+  link: string;
+  allergens: string[];
+  ingredients: string[];
+}
+
+export interface UIVenue {
+  name: string;
+  items: Record<'Main Entrée' | 'Vegetarian + Vegan Entrée' | 'Soups', UIMenuItem[]>;
+  allergens: Set<string>;
+  calories: Record<string, number>;
+  protein: Record<string, number>;
+}

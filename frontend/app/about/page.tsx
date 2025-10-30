@@ -40,7 +40,7 @@ function useMediaQuery(query: string): boolean {
 
 // --- SVG Icon Components ---
 // We will pass these directly to Evergreen's IconButton `icon` prop.
-const LinkedinIcon = (props) => (
+const LinkedinIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
     width='20'
@@ -59,7 +59,7 @@ const LinkedinIcon = (props) => (
   </svg>
 );
 
-const TwitterIcon = (props) => (
+const TwitterIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
     width='20'
@@ -76,7 +76,7 @@ const TwitterIcon = (props) => (
   </svg>
 );
 
-const GithubIcon = (props) => (
+const GithubIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
     width='20'
@@ -93,7 +93,7 @@ const GithubIcon = (props) => (
   </svg>
 );
 
-const WebsiteIcon = (props) => (
+const WebsiteIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
     width='20'
@@ -113,7 +113,7 @@ const WebsiteIcon = (props) => (
 );
 
 // --- Social Icon Helper ---
-const SocialIconButton = ({ href, label, icon, background }) => (
+const SocialIconButton = ({ href, label, icon, background }: { href: string; label: string; icon: React.ElementType; background?: string }) => (
   <IconButton
     is='a'
     href={href}
@@ -126,8 +126,21 @@ const SocialIconButton = ({ href, label, icon, background }) => (
   />
 );
 
+interface TeamMember {
+  name: string;
+  role: string;
+  bio?: string;
+  imgSrc: string;
+  socials: {
+    linkedin?: string;
+    github?: string;
+    website?: string;
+    twitter?: string;
+  };
+}
+
 // --- Team Data (Unchanged) ---
-const teamLeads = [
+const teamLeads: TeamMember[] = [
   {
     name: 'Kevin Liu',
     role: 'Team Lead & Full-Stack Developer',
@@ -153,7 +166,7 @@ const teamLeads = [
   },
 ];
 
-const teamMembers = [
+const teamMembers: TeamMember[] = [
   {
     name: 'Malachi Noel',
     role: 'Contributor',
@@ -462,7 +475,7 @@ export default function App() {
                       href={member.socials.twitter}
                       label={`${member.name}'s Twitter`}
                       icon={TwitterIcon}
-                      background={theme.colors.gray1s00}
+                      background={theme.colors.gray100}
                     />
                   )}
                 </Pane>
