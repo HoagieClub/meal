@@ -133,7 +133,7 @@ const teamLeads = [
     role: 'Team Lead & Full-Stack Developer',
     bio: 'Kevin leads the development team with a passion for building scalable, user-centric web applications and a focus on performance.',
     imgSrc:
-      'https://media.licdn.com/dms/image/v2/D4E03AQHg-qMcpe8Y5A/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1716047912115?e=1761782400&v=beta&t=agaXimH6QORdejq_ekzfFk4kpx7OjFN-hCPd_zqlUHM',
+      'https://media.licdn.com/dms/image/v2/D4E03AQHg-qMcpe8Y5A/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1716047912115?e=1763596800&v=beta&t=9jwc8YiQZjmtEuWDhbN2rTNH3SACxbskTESJgbftDWI',
     socials: {
       linkedin: 'https://www.linkedin.com/in/kevin-liu-princeton/',
       github: 'https://github.com/kevin-liu-01',
@@ -145,7 +145,7 @@ const teamLeads = [
     role: 'Team Lead & Backend Specialist',
     bio: 'Abu is a seasoned software engineer specializing in backend development and cloud infrastructure, ensuring our systems are robust and reliable.',
     imgSrc:
-      'https://media.licdn.com/dms/image/v2/D4E03AQGq-NtaaCd-0w/profile-displayphoto-crop_800_800/B4EZlkdNZbIkAI-/0/1758327003647?e=1761782400&v=beta&t=sx5HjnS2C9TSbPml4jkE6UmMhdccwUcYMb056yawx0A',
+      'https://media.licdn.com/dms/image/v2/D4E03AQGq-NtaaCd-0w/profile-displayphoto-scale_100_100/B4EZlkdNZbIkAc-/0/1758327003738?e=1763596800&v=beta&t=yVnsxkAgdCFHKRFCV-q6OI4_ECn_-6IOX9V4IOwCXuw',
     socials: {
       linkedin: 'https://www.linkedin.com/in/abuahmed0821/',
       github: 'https://github.com/abuahmed0821',

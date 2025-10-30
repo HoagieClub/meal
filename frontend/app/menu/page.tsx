@@ -305,8 +305,8 @@ export default function Index() {
     'Mathey College',
     'Rockefeller College',
     'Whitman & Butler Colleges',
-    'Yeh College & New College West',
-    '"Center for Jewish Life-Fri & Sat Dinner Hours based on sundown & service times"',
+    'Yeh College & NCW',
+    'Center for Jewish Life',
     'Graduate College',
   ];
   const [halls] = useState<string[]>(initialHalls);
@@ -427,23 +427,24 @@ export default function Index() {
     }
   }, [isWeekend, meal]); // Dependency simplified
 
-  useEffect(() => {
-    // Fetch dining locations
-    fetch('http://localhost:8000/api/dining/locations')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        const classifiedVenues = data.map((venue: { name: string }) => ({
-          name: venue.name,
-          category: classifyVenue(venue.name),
-        }));
-      })
-      .catch((error) => console.error('Error fetching BASE venues (/dining/locations):', error));
-  }, []);
+  // useEffect(() => {
+  //   // Fetch dining locations
+  //   fetch('http://localhost:8000/api/dining/locations')
+  //     .then((response) => {
+  //       if (!response.ok) {
+  //         throw new Error(`HTTP error! status: ${response.status}`);
+  //       }
+  //       return response.json();
+  //     })
+  //     .then((data) => {
+  //       const classifiedVenues = data.map((venue: { name: string }) => ({
+  //         name: venue.name,
+  //         category: classifyVenue(venue.name),
+  //       }));
+  //       // console.log('classifiedVenues:', classifiedVenues);
+  //     })
+  //     .catch((error) => console.error('Error fetching BASE venues (/dining/locations):', error));
+  // }, []);
 
   // ─── Pinned Halls (using useLocalStorage) ───────────────────────────────
   // Store pinned halls as a string array in localStorage
@@ -495,7 +496,7 @@ export default function Index() {
         return response.json();
       })
       .then((data: { locations: { location: RawVenue[] } }) => {
-        console.log(data);
+        // console.log(data);
         if (isCurrent) {
           const ui = data.locations.location.map((raw) => {
             const items = (raw.menu.menus || []).map((x) => ({
@@ -524,6 +525,19 @@ export default function Index() {
               protein: Object.fromEntries(items.map((i) => [i.name, i.protein || 0])),
             } as UIVenue;
           });
+          // truncate Center for Jewish Life name for easier display
+          ui.forEach((venue) => {
+            if (venue.name.startsWith('Center for Jewish Life')) {
+              venue.name = 'Center for Jewish Life';
+            }
+          });
+          ui.forEach((venue) => {
+            if (venue.name.startsWith('Yeh College & N')) {
+              venue.name = 'Yeh College & NCW';
+            }
+          });
+          console.log(`Fetched menu data for ${menuId}:`, data);
+
           setVenues(ui);
         }
       })
@@ -661,7 +675,6 @@ export default function Index() {
       background={PAGE_BG}
     >
       {/* ─── FILTER SIDEBAR ───────────────────────────────────────────── */}
-
       <FilterSidebar
         initialHalls={initialHalls}
         tempHalls={tempHalls}
@@ -887,7 +900,6 @@ export default function Index() {
                   alignItems='center'
                   justifyContent='center'
                   borderRadius={14}
-                  // ** Changed background to red when selected to indicate avoidance **
                   background={isSelected ? theme.colors.red100 : theme.colors.gray100}
                   border={
                     isSelected

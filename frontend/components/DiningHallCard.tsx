@@ -51,7 +51,7 @@ const hallImages: Record<string, StaticImageData> = {
   'Forbes College': forbesBanner,
   'Mathey College': matheyBanner,
   'Whitman & Butler Colleges': whitmanBanner,
-  'Yeh College & New College West': yehBanner,
+  'Yeh College & NCW': yehBanner,
   'Center for Jewish Life': cjlBanner,
   'Graduate College': gradBanner,
 };

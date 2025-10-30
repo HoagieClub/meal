@@ -32,7 +32,7 @@ const HALL_ICON_MAP: Record<string, string> = {
   'Forbes College': forbesIcon.src,
   'Graduate College': gradIcon.src,
   'Whitman & Butler Colleges': whitmanIcon.src,
-  'Yeh College & New College West': yehIcon.src,
+  'Yeh College & NCW': yehIcon.src,
   'Rockefeller College': rockyIcon.src,
   'Mathey College': defaultIcon.src,
   'Frist Grill': defaultIcon.src,

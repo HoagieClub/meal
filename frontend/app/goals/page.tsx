@@ -46,7 +46,6 @@ import {
   RocketIcon,
   MoreIcon,
   useTheme,
-  // --- NEW ICONS ---
   FloppyDiskIcon,
   BookmarkIcon,
   TrashIcon,
@@ -200,13 +199,12 @@ const DAILY_VALUES: Omit<Nutrients, 'calories' | 'protein' | 'fat' | 'carbohydra
 
 const DINING_HALLS: Record<string, number> = {
   'Any Available Hall': -1,
-  'Mathey College': 4,
-  'Rockefeller College': 3,
+  'Mathey & Rockefeller College': 3,
   'Forbes College': 5,
-  'Butler College': 6,
+  'Whitman & Butler College': 6,
   'Center for Jewish Life': 7,
   'Graduate College': 8,
-  'Yeh College': 1088,
+  'Yeh & NCW College': 1088,
 };
 
 const HALL_NAME_BY_ID: Record<number, string> = Object.fromEntries(
@@ -510,7 +508,15 @@ const DayPlanCard = ({
   settings: PlanSettings;
   onRegenerate: () => void;
 }) => {
-  const MEALS_ORDER: MealType[] = ['Breakfast', 'Lunch', 'Dinner'];
+  // --- UPDATED: Logic to handle weekends ---
+  const date = useMemo(() => new Date(day.date), [day.date]);
+  const dayOfWeek = date.getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
+
+  // Set the order of meals to display
+  const MEALS_ORDER: MealType[] = isWeekend
+    ? ['Lunch', 'Dinner'] // On weekends, only show Lunch (as Brunch) and Dinner
+    : ['Breakfast', 'Lunch', 'Dinner']; // On weekdays, show all three
 
   return (
     <Card
@@ -584,58 +590,68 @@ const DayPlanCard = ({
         gridTemplateColumns='repeat(auto-fit, minmax(250px, 1fr))'
         gap={majorScale(2)}
       >
-        {MEALS_ORDER.map((mealType) => (
-          <Pane
-            key={mealType}
-            border='1px solid #E2E8F0'
-            borderRadius={8}
-            padding={majorScale(2)}
-            display='flex'
-            flexDirection='column'
-          >
-            <Heading size={500} marginBottom={majorScale(2)} color='#334155'>
-              {mealType}
-            </Heading>
-            {day.meals[mealType]?.length > 0 ? (
-              <Pane display='flex' flexDirection='column' gap={majorScale(2)}>
-                {day.meals[mealType].map((item, index) => (
-                  <Pane key={`${item.name}-${index}`}>
-                    <Link
-                      href={`/feature4?url=${item.link}`}
-                      target='_blank'
-                      rel='noopener noreferrer'
-                      size={400}
-                      color='neutral'
-                      fontWeight={600}
-                    >
-                      {item.name}
-                    </Link>
-                    <Text display='block' size={300} color='#64748B' marginTop={minorScale(1)}>
-                      at {HALL_NAME_BY_ID[item?.location] || 'Unknown Hall'}{' '}
-                    </Text>
-                    <Pane
-                      display='flex'
-                      gap={minorScale(1)}
-                      marginTop={majorScale(1)}
-                      flexWrap='wrap'
-                      alignItems='center'
-                    >
-                      <Badge color='neutral'>{`${Math.round(item.nutrition.calories)} cal`}</Badge>
-                      <Badge color='teal'>{`${Math.round(item.nutrition.protein)}g P`}</Badge>
-                      <Badge color='orange'>{`${Math.round(item.nutrition.fat)}g F`}</Badge>
-                      <Badge color='red'>{`${Math.round(item.nutrition.carbohydrates)}g C`}</Badge>
-                      <MicronutrientPopover nutrition={item.nutrition} />
+        {/* --- UPDATED: This map now uses the dynamic MEALS_ORDER --- */}
+        {MEALS_ORDER.map((mealType) => {
+          // On weekends, if the mealType is 'Lunch', display 'Brunch'
+          const mealTitle = isWeekend && mealType === 'Lunch' ? 'Brunch' : mealType;
+
+          return (
+            <Pane
+              key={mealType}
+              border='1px solid #E2E8F0'
+              borderRadius={8}
+              padding={majorScale(2)}
+              display='flex'
+              flexDirection='column'
+            >
+              <Heading size={500} marginBottom={majorScale(2)} color='#334155'>
+                {mealTitle} {/* <-- Use the dynamic mealTitle */}
+              </Heading>
+              {day.meals[mealType]?.length > 0 ? (
+                <Pane display='flex' flexDirection='column' gap={majorScale(2)}>
+                  {day.meals[mealType].map((item, index) => (
+                    <Pane key={`${item.name}-${index}`}>
+                      <Link
+                        href={`/feature4?url=${item.link}`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        size={400}
+                        color='neutral'
+                        fontWeight={600}
+                      >
+                        {item.name}
+                      </Link>
+                      <Text display='block' size={300} color='#64748B' marginTop={minorScale(1)}>
+                        at {HALL_NAME_BY_ID[item?.location] || 'Unknown Hall'}{' '}
+                      </Text>
+                      <Pane
+                        display='flex'
+                        gap={minorScale(1)}
+                        marginTop={majorScale(1)}
+                        flexWrap='wrap'
+                        alignItems='center'
+                      >
+                        <Badge color='neutral'>{`${Math.round(
+                          item.nutrition.calories
+                        )} cal`}</Badge>
+                        <Badge color='teal'>{`${Math.round(item.nutrition.protein)}g P`}</Badge>
+                        <Badge color='orange'>{`${Math.round(item.nutrition.fat)}g F`}</Badge>
+                        <Badge color='red'>{`${Math.round(
+                          item.nutrition.carbohydrates
+                        )}g C`}</Badge>
+                        <MicronutrientPopover nutrition={item.nutrition} />
+                      </Pane>
                     </Pane>
-                  </Pane>
-                ))}
-              </Pane>
-            ) : (
-              <Text color='#64748B' className='h-full w-full flex items-center justify-center'>
-                No suitable meal found.
-              </Text>
-            )}
-          </Pane>
-        ))}
+                  ))}
+                </Pane>
+              ) : (
+                <Text color='#64748B' className='h-full w-full flex items-center justify-center'>
+                  No suitable meal found.
+                </Text>
+              )}
+            </Pane>
+          );
+        })}
       </Pane>
     </Card>
   );
@@ -952,7 +968,7 @@ export default function DietPlanner() {
     handleSettingsChange('allergens', newAllergens);
   };
 
-  // Time to fetch the menu data from our API for a specific date, meal, and location.
+  // --- UPDATED: This function now handles the '-1' (Any) locationId ---
   const fetchMenuFor = async (
     date: Date,
     meal: MealType,
@@ -962,32 +978,70 @@ export default function DietPlanner() {
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
     const menuId = `${yyyy}-${mm}-${dd}-${meal}`;
+
     try {
-      const response = await fetch(
-        `http://localhost:8000/api/dining/menu/?location_id=${locationId}&menu_id=${menuId}`
-      );
-      if (!response.ok) return [];
-      const data = await response.json();
-      const preliminaryItems: Omit<FoodItem, 'nutrition'>[] = [];
-      data.menus.forEach((item: any) => {
-        if (item.link) {
-          preliminaryItems.push({
-            name: item.name,
-            location: locationId.toString(),
-            description: item.description,
-            link: item.link,
+      // 1. Get all *real* hall IDs (excluding -1)
+      const allHallIds = Object.values(DINING_HALLS).filter((id) => id !== -1);
+
+      // 2. Decide which location IDs we need to fetch
+      const locationIdsToFetch: number[] = [];
+      if (locationId === -1) {
+        // 'Any Available Hall' was selected, so use all real IDs
+        locationIdsToFetch.push(...allHallIds);
+      } else {
+        // A specific hall was selected
+        locationIdsToFetch.push(locationId);
+      }
+
+      // 3. Create an array of fetch promises, one for each hall
+      const fetchPromises = locationIdsToFetch.map(async (locId) => {
+        try {
+          const response = await fetch(
+            `http://localhost:8000/api/dining/menu/?location_id=${locId}&menu_id=${menuId}`
+          );
+          if (!response.ok) return []; // Return empty for this hall on error
+          const data = await response.json();
+
+          // Process this *single* hall's menu items
+          const preliminaryItems: Omit<FoodItem, 'nutrition'>[] = [];
+          data.menus.forEach((item: any) => {
+            if (item.link) {
+              preliminaryItems.push({
+                name: item.name,
+                location: locId.toString(), // Store the ID, as before
+                description: item.description,
+                link: item.link,
+              });
+            }
           });
+          return preliminaryItems;
+        } catch (hallError) {
+          console.error(`Failed to fetch menu for ${menuId} at locId ${locId}:`, hallError);
+          return []; // Return empty array if a single hall fetch fails
         }
       });
-      if (preliminaryItems.length === 0) return [];
-      // Once we have the items, we need to fetch the nutrition for each one.
-      const nutritionPromises = preliminaryItems.map((item) => fetchAndParseNutrition(item.link));
+
+      // 4. Wait for all fetch promises to resolve
+      const resultsPerHall = await Promise.all(fetchPromises);
+
+      // 5. Flatten the array of arrays into one single array of all items
+      // e.g., [ [hall1_item1], [hall2_item1, hall2_item2] ] -> [ hall1_item1, hall2_item1, hall2_item2 ]
+      const allPreliminaryItems = resultsPerHall.flat();
+
+      if (allPreliminaryItems.length === 0) return [];
+
+      // 6. Once we have all items, fetch their nutrition data (existing logic)
+      const nutritionPromises = allPreliminaryItems.map((item) =>
+        fetchAndParseNutrition(item.link)
+      );
       const resolvedNutrients = await Promise.all(nutritionPromises);
-      return preliminaryItems
+
+      return allPreliminaryItems
         .map((item, index) => ({ ...item, nutrition: resolvedNutrients[index] }))
         .filter((item) => item.nutrition.calories > 0);
     } catch (error) {
-      console.error(`Failed to fetch menu for ${menuId}:`, error);
+      // This will catch errors in Promise.all or the .flat() call
+      console.error(`Failed to fetch and process menus for ${menuId}:`, error);
       return [];
     }
   };
@@ -1045,6 +1099,7 @@ export default function DietPlanner() {
   };
 
   // This function generates the full plan for a single day.
+  // NO CHANGES NEEDED HERE - it just passes the locationId to the new fetchMenuFor
   const generateDayPlan = async (date: Date): Promise<DailyPlan> => {
     const locationId = DINING_HALLS[settings.preferredHall];
     const [breakfastMenu, lunchMenu, dinnerMenu] = await Promise.all([
@@ -1271,10 +1326,8 @@ export default function DietPlanner() {
             marginTop={majorScale(3)}
             paddingTop={majorScale(3)}
           >
-            <Heading size={400} marginBottom={majorScale(2)}>
-              Avoid Allergens
-            </Heading>
-            <Pane display='grid' gridTemplateColumns='1fr 1fr' gap={majorScale(1)}>
+            <Heading size={400}>Avoid Allergens</Heading>
+            <Pane display='grid' className='grid-cols-2 gap-1'>
               {ALLERGENS_LIST.map((allergen) => (
                 <Checkbox
                   key={allergen}

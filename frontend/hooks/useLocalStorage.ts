@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * @overview A custom React hook to persist state in localStorage with expiration.
@@ -58,31 +58,35 @@ export default function useLocalStorage<T>(key: string, initialValue: T, expiryI
   }, []);
 
   // 3. The setter function.
-  const setValue = (value: T | ((val: T) => T)) => {
-    try {
-      // Use the functional update form of useState to get the latest state
-      setStoredValue((prevValue) => {
-        const valueToStore = value instanceof Function ? value(prevValue) : value;
+  // ** WRAPPED IN useCallback to stabilize its reference **
+  const setValue = useCallback(
+    (value: T | ((val: T) => T)) => {
+      try {
+        // Use the functional update form of useState to get the latest state
+        setStoredValue((prevValue) => {
+          const valueToStore = value instanceof Function ? value(prevValue) : value;
 
-        if (typeof window !== 'undefined') {
-          let itemToStore: any = valueToStore;
+          if (typeof window !== 'undefined') {
+            let itemToStore: any = valueToStore;
 
-          // If expiry is provided, wrap the value
-          if (expiryInMs) {
-            itemToStore = {
-              value: valueToStore,
-              expiry: Date.now() + expiryInMs,
-            };
+            // If expiry is provided, wrap the value
+            if (expiryInMs) {
+              itemToStore = {
+                value: valueToStore,
+                expiry: Date.now() + expiryInMs,
+              };
+            }
+            window.localStorage.setItem(key, JSON.stringify(itemToStore));
           }
-          window.localStorage.setItem(key, JSON.stringify(itemToStore));
-        }
 
-        return valueToStore;
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  };
+          return valueToStore;
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [key, expiryInMs] // Dependencies for useCallback
+  );
 
   return [storedValue, setValue] as const;
 }
