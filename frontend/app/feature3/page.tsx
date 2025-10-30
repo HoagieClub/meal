@@ -85,6 +85,14 @@ const teamMembers = [
       linkedin: 'https://www.linkedin.com/in/angcai/',
     },
   },
+  {
+    name: 'John Wu',
+    role: 'Developer',
+    imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=JW',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/john-wu-76b62829a/',
+    },
+  },
 ];
 
 /**
