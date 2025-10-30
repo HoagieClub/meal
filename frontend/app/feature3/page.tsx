@@ -77,12 +77,20 @@ const teamLeads = [
 const teamMembers = [
   // Add your name, role, and image here!
   {
+    name: 'Malachi Noel',
+    role: 'Developer',
+    imgSrc: 'https://i.imgur.com/MPwu9Nc.jpeg',
+    socials: {
+      linkedin: 'https://www.linkedin.com/in/malachi-noel/',
+    }
+  },
+    {
     name: 'Angela Cai',
     role: 'Developer',
     imgSrc: 'https://placehold.co/100x100/d1fae5/059669?text=AC',
     socials: {
       linkedin: 'https://www.linkedin.com/in/angcai/',
-    },
+    }
   },
   {
     name: 'Zashaan Shaik',
