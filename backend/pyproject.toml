@@ -70,6 +70,7 @@ dependencies = [
     "pytz>=2025.1",
     "pyjwt>=2.10.1",
     "cryptography>=46.0.3",
+    "gunicorn>=23.0.0",
 ]
 
 # ===============================

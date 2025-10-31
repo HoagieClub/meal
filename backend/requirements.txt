@@ -4,6 +4,8 @@ beautifulsoup4==4.12.3
     # via hoagiemeal (pyproject.toml)
 colorama==0.4.6
     # via hoagiemeal (pyproject.toml)
+cryptography==46.0.3
+    # via hoagiemeal (pyproject.toml)
 dj-database-url==2.3.0
     # via hoagiemeal (pyproject.toml)
 django==5.1.2
@@ -13,6 +15,8 @@ django-cors-headers==4.7.0
 django-heroku==0.3.1
     # via hoagiemeal (pyproject.toml)
 djangorestframework==3.15.2
+    # via hoagiemeal (pyproject.toml)
+gunicorn==23.0.0
     # via hoagiemeal (pyproject.toml)
 icalendar==6.0.1
     # via hoagiemeal (pyproject.toml)
@@ -25,6 +29,8 @@ openai==1.65.1
 orjson==3.10.15
     # via hoagiemeal (pyproject.toml)
 pgvector==0.3.6
+    # via hoagiemeal (pyproject.toml)
+pyjwt==2.10.1
     # via hoagiemeal (pyproject.toml)
 python-dotenv==1.0.1
     # via hoagiemeal (pyproject.toml)
