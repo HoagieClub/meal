@@ -14,37 +14,46 @@
 
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
-import type { MenuItem } from '@/types/dining';
 import { getCurrentMenuId } from '@/utils/dining';
 import toCamelCase from '@/utils/toCamelCase';
 
 const ROUTE = '/api/dining/menu/';
-const DEBUG = process.env.DEBUG === 'development';
+const DEBUG = process.env.NODE_ENV === 'development';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const locationId = searchParams.get('locationId');
+    const locationId = searchParams.get('location_id');
 
     if (!locationId) {
-      return NextResponse.json({ error: 'Missing locationId parameter' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing location_id parameter' }, { status: 400 });
     }
 
     // If no menuId provided, get the next relevant menu
-    const menuId = searchParams.get('menuId') || getCurrentMenuId();
-    const res = await request.get<MenuItem[]>()(ROUTE, {
-      arg: { location_id: locationId, menu_id: menuId },
-    });
+    const menuId = searchParams.get('menu_id') || getCurrentMenuId();
 
-    if (!res.data || res.data.length === 0) {
+    const res = await request.get<any>()(`${ROUTE}?location_id=${locationId}&menu_id=${menuId}`, {});
+
+    DEBUG && console.log('Backend response for menu:', menuId, 'location:', locationId, res);
+
+    // Handle both wrapped (res.data) and direct (res) response formats
+    const data = res.data || res;
+
+    if (!data || (Array.isArray(data) && data.length === 0)) {
       return NextResponse.json(
         { error: `No menu found for location ${locationId} at ${menuId}` },
         { status: 404 }
       );
     }
 
+    // If data has a 'menus' property, return it directly (for compatibility)
+    // Otherwise wrap in the standard format
+    if (data.menus) {
+      return NextResponse.json(data);
+    }
+
     return NextResponse.json({
-      data: toCamelCase(res.data),
+      data: toCamelCase(data),
       message: `Successfully fetched ${menuId} menu`,
       status: 200,
     });

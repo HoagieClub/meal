@@ -458,20 +458,19 @@ export default function Index() {
     // ** Use selectedDate and meal directly **
     const menuId = formatMenuId(selectedDate, meal);
 
-    fetch(`http://localhost:8000/api/dining/locations/with-menus/?menu_id=${menuId}`, {
-      credentials: 'include',
-    })
-      .then((response) => {
+    const fetchMenuData = async () => {
+      try {
+        const response = await fetch(`/api/dining/locations/with-menus?menu_id=${menuId}`);
+
         if (!response.ok) {
           throw new Error(`HTTP error fetching menu! status: ${response.status}`);
         }
-        return response.json();
-      })
-      .then((data: { locations: { location: RawVenue[] } }) => {
-        // console.log(data);
+
+        const data: { locations: { location: RawVenue[] } } = await response.json();
+
         if (isCurrent) {
-          const ui = data.locations.location.map((raw) => {
-            const items = (raw.menu.menus || []).map((x) => ({
+          const ui = data.locations.location.map((raw: RawVenue) => {
+            const items = (raw.menu.menus || []).map((x: RawApiMenuItem) => ({
               id: x.id,
               name: x.name,
               description: x.description,
@@ -481,7 +480,7 @@ export default function Index() {
               allergens: x.allergens || [],
               ingredients: x.ingredients || [],
             }));
-            const uiItems: UIMenuItem[] = items.map((x) => ({
+            const uiItems: UIMenuItem[] = items.map((x: typeof items[number]) => ({
               id: x.id,
               name: x.name,
               description: x.description,
@@ -493,17 +492,17 @@ export default function Index() {
               name: raw.name,
               items: categorize(uiItems),
               allergens: extractAllergens(uiItems),
-              calories: Object.fromEntries(items.map((i) => [i.name, i.calories || 0])),
-              protein: Object.fromEntries(items.map((i) => [i.name, i.protein || 0])),
+              calories: Object.fromEntries(items.map((i: typeof items[number]) => [i.name, i.calories || 0])),
+              protein: Object.fromEntries(items.map((i: typeof items[number]) => [i.name, i.protein || 0])),
             } as UIVenue;
           });
           // truncate Center for Jewish Life name for easier display
-          ui.forEach((venue) => {
+          ui.forEach((venue: UIVenue) => {
             if (venue.name.startsWith('Center for Jewish Life')) {
               venue.name = 'Center for Jewish Life';
             }
           });
-          ui.forEach((venue) => {
+          ui.forEach((venue: UIVenue) => {
             if (venue.name.startsWith('Yeh College & N')) {
               venue.name = 'Yeh College & NCW';
             }
@@ -512,18 +511,19 @@ export default function Index() {
 
           setVenues(ui);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         if (isCurrent) {
           console.error(`Error fetching menu data for ${menuId}:`, error);
           setVenues([]);
         }
-      })
-      .finally(() => {
+      } finally {
         if (isCurrent) {
           setLoading(false);
         }
-      });
+      }
+    };
+
+    fetchMenuData();
 
     return () => {
       isCurrent = false;

@@ -995,7 +995,7 @@ export default function DietPlanner() {
       const fetchPromises = locationIdsToFetch.map(async (locId) => {
         try {
           const response = await fetch(
-            `http://localhost:8000/api/dining/menu/?location_id=${locId}&menu_id=${menuId}`
+            `/api/dining/menu?location_id=${locId}&menu_id=${menuId}`
           );
           if (!response.ok) return []; // Return empty for this hall on error
           const data = await response.json();
