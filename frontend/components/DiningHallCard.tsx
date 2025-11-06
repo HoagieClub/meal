@@ -51,8 +51,6 @@ const hallImages: Record<string, StaticImageData> = {
   'Graduate College': gradBanner,
 };
 
-// [Gemini Note: Removed duplicated interface definitions that were here]
-
 const DiningHallCard: React.FC<DiningHallCardProps> = ({
   hall,
   setModalHall,
@@ -63,6 +61,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
   onPinToggle,
 }) => {
   const imageSrc = hallImages[hall.name];
+
   return (
     <Pane
       key={hall.name}

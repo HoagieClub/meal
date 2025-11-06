@@ -34,8 +34,15 @@ interface RawApiMenuItem {
   name: string;
   description: string;
   link: string;
-  calories: number;
-  protein: number;
+  // --- FIXED ---
+  // The API provides a nested 'nutrition' object
+  nutrition: {
+    calories: number;
+    protein: number;
+    fat: number;
+    carbohydrates: number;
+    // ... other nutrients
+  };
   allergens: string[];
   ingredients: string[];
 }
@@ -475,12 +482,14 @@ export default function Index() {
               name: x.name,
               description: x.description,
               link: x.link,
-              calories: x.calories,
-              protein: x.protein,
+              // --- FIXED ---
+              // Read from the nested nutrition object
+              calories: x.nutrition?.calories || 0,
+              protein: x.nutrition?.protein || 0,
               allergens: x.allergens || [],
               ingredients: x.ingredients || [],
             }));
-            const uiItems: UIMenuItem[] = items.map((x: typeof items[number]) => ({
+            const uiItems: UIMenuItem[] = items.map((x: (typeof items)[number]) => ({
               id: x.id,
               name: x.name,
               description: x.description,
@@ -492,8 +501,12 @@ export default function Index() {
               name: raw.name,
               items: categorize(uiItems),
               allergens: extractAllergens(uiItems),
-              calories: Object.fromEntries(items.map((i: typeof items[number]) => [i.name, i.calories || 0])),
-              protein: Object.fromEntries(items.map((i: typeof items[number]) => [i.name, i.protein || 0])),
+              calories: Object.fromEntries(
+                items.map((i: (typeof items)[number]) => [i.name, i.calories || 0])
+              ),
+              protein: Object.fromEntries(
+                items.map((i: (typeof items)[number]) => [i.name, i.protein || 0])
+              ),
             } as UIVenue;
           });
           // truncate Center for Jewish Life name for easier display

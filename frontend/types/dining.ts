@@ -87,7 +87,6 @@ export type AllergenKey =
   | 'Fish'
   | 'Sesame';
 
-
 // Interface for what the UI components use
 export interface UIMenuItem {
   id: number;
@@ -104,4 +103,5 @@ export interface UIVenue {
   allergens: Set<string>;
   calories: Record<string, number>;
   protein: Record<string, number>;
+  nutrition: Set<string>;
 }

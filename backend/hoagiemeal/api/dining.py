@@ -54,6 +54,8 @@ from hoagiemeal.serializers import (
 )
 # Import the helper function from your utils
 from hoagiemeal.api.database import get_mapped_menu_item_nutrient_data
+# Import the new Scraper class
+from hoagiemeal.utils.scraper import Scraper
 
 
 USE_SAMPLE_MENUS = False  # Toggle this to False later when the API is fixed
@@ -69,6 +71,7 @@ class DiningAPI(StudentApp):
         self.DINING_EVENTS = "/dining/events"
         self.DINING_MENU = "/dining/menu"
         self.schemas = Schemas()
+        self.scraper = Scraper()  # Instantiate the new scraper
 
     def get_locations(self, category_id: str = "2", fmt: str = "xml") -> dict:
         """Fetch a list of dining locations in XML format.
@@ -166,145 +169,80 @@ class DiningAPI(StudentApp):
 
     def _scrape_nutrition_data(self, url: str) -> dict:
         """
-        Scrapes a nutrition URL page for detailed item information.
-        This version is more flexible to handle variations in HTML.
+        Scrapes a nutrition URL page using the standalone Scraper class
+        and adapts its output to the format expected by get_mapped_menu_item_nutrient_data.
         """
         try:
-            response = requests.get(url, timeout=5)
-            response.raise_for_status()
-            html = response.text
-            doc = BeautifulSoup(html, 'html.parser')
-        except Exception as e:
-            logger.warning(f"Failed to scrape nutrition from {url}: {e}")
-            return {}
-
-        # This structure maps to what get_mapped_menu_item_nutrient_data expects
-        data = {
-            "Serving Size": "",
-            "Calories": None,
-            "Calories from Fat": None,
-            "Fat": {},
-            "Carbohydrates": {},
-            "Protein": {},
-            "Vitamins": {},
-            "Cholesterol": {},
-            "Sodium": {},
-            "Ingredients": [],
-            "Allergens": [],
-        }
-
-        KNOWN_ALLERGENS_TO_EXTRACT = {
-            'peanut', 'tree nut', 'egg', 'milk', 'wheat', 'soybeans',
-            'crustacean', 'alcohol', 'gluten', 'coconut', 'fish', 'sesame'
-        }
-
-        # Serving Size & Calories (#facts2)
-        # Get all text from #facts2
-        facts2_texts = [el.get_text(strip=True) for el in doc.select('#facts2')]
-        
-        for text in facts2_texts:
-            # Use original case for splitting
-            if 'Serving Size' in text:
-                try:
-                    data['Serving Size'] = text.split('Serving Size')[1].strip()
-                except IndexError:
-                    pass # Handle empty "Serving Size" text
+            soup = self.scraper.get_html(link=url)
+            if soup is None:
+                logger.warning(f"Failed to get_html for {url}")
+                return {}
             
-            # Mimic JS logic: `if (text.includes('Calories') && !text.includes('from Fat'))`
-            if 'Calories' in text and 'from Fat' not in text:
-                try:
-                    # Use regex to find the number, as replace is less reliable
-                    cal_match = re.search(r'Calories\s*([\d\.]+)', text, re.IGNORECASE)
-                    if cal_match:
-                        data['Calories'] = int(float(cal_match.group(1)))
-                except (ValueError, TypeError):
-                    pass
-            elif 'Calories from Fat' in text:
-                 try:
-                    cal_fat_match = re.search(r'Calories from Fat\s*([\d\.]+)', text, re.IGNORECASE)
-                    if cal_fat_match:
-                        data['Calories from Fat'] = int(float(cal_fat_match.group(1)))
-                 except (ValueError, TypeError):
-                    pass
+            # 1. Get the data from the user's new scraper
+            scraped_data = self.scraper.get_info(soup=soup)
 
-        # Main Nutrients (#facts4)
-        for el in doc.select('#facts4'):
-            text = el.get_text(separator=' ').replace('\u00a0', ' ').strip()
-            # Use the regex from the JS example
-            match = re.match(r'^(.*?)\s+([\d\.]+[a-zA-Z]*)$', text)
-            if not match:
-                continue
+            # 2. Adapt the new schema to the old schema expected by the database.
             
-            key, val = match.groups()
-            key_lower = key.strip().lower()
+            # Helper to get 'Amount' from nested dicts like "Fat"
+            def get_nested_amount(data_dict, parent_key, child_key):
+                return data_dict.get(parent_key, {}).get(child_key, {}).get("Amount", "")
             
-            # Get just the numeric part of the value
-            amount_match = re.match(r'([\d\.]+)', val)
-            amount = amount_match.group(1) if amount_match else '0'
+            # Helper to get 'Daily Value' (for vitamins)
+            def get_nested_dv(data_dict, parent_key, child_key):
+                return data_dict.get(parent_key, {}).get(child_key, {}).get("Daily Value", "")
+            
+            # Helper to get 'Amount' from flat dicts like "Cholesterol"
+            def get_flat_amount(data_dict, key):
+                return data_dict.get(key, {}).get("Amount", "")
 
-            # Flexible matching using 'in'
-            if 'total fat' in key_lower or ('tot.' in key_lower and 'fat' in key_lower):
-                data['Fat']['Total Fat'] = {'Amount': amount}
-            elif 'sat' in key_lower and 'fat' in key_lower:
-                data['Fat']['Saturated Fat'] = {'Amount': amount}
-            elif 'trans' in key_lower and 'fat' in key_lower:
-                data['Fat']['Trans Fat'] = {'Amount': amount}
-            elif 'cholesterol' in key_lower:
-                data['Cholesterol'] = {'Amount': amount}
-            elif 'sodium' in key_lower:
-                data['Sodium'] = {'Amount': amount}
-            elif 'tot' in key_lower and 'carb' in key_lower:
-                data['Carbohydrates']['Total Carbohydrates'] = {'Amount': amount}
-            elif 'fiber' in key_lower:
-                data['Carbohydrates']['Dietary Fiber'] = {'Amount': amount}
-            elif 'sugar' in key_lower:
-                data['Carbohydrates']['Sugar'] = {'Amount': amount}
-            elif 'protein' in key_lower:
-                data['Protein'] = {'Amount': amount}
-        
-        # Micronutrients (li)
-        for li in doc.select('li'):
-            # Mimic JS logic: `li.innerText.trim().split('\n')`
-            lines = [s.strip() for s in li.get_text(separator='\n').strip().split('\n') if s.strip()]
-            if len(lines) == 2:
-                key, value = lines[0].strip(), lines[1].strip().replace('%', '')
-                key_lower = key.lower()
+            # Try to parse calories, handling empty strings
+            try:
+                calories = int(float(scraped_data.get("Calories") or 0))
+            except (ValueError, TypeError):
+                calories = None
+            
+            try:
+                calories_from_fat = int(float(scraped_data.get("Calories from Fat") or 0))
+            except (ValueError, TypeError):
+                calories_from_fat = None
+
+            # Build the adapted schema
+            adapted_data = {
+                "Serving Size": scraped_data.get("Serving Size", ""),
+                "Calories": calories,
+                "Calories from Fat": calories_from_fat,
+                "Ingredients": scraped_data.get("Ingredients", []),
+                "Allergens": scraped_data.get("Allergens", []),
                 
-                # Flexible matching
-                if 'vitamin d' in key_lower:
-                    data['Vitamins']['Vitamin D'] = {'Amount': value}
-                elif 'potassium' in key_lower:
-                    data['Vitamins']['Potassium'] = {'Amount': value}
-                elif 'calcium' in key_lower:
-                    data['Vitamins']['Calcium'] = {'Amount': value}
-                elif 'iron' in key_lower:
-                    data['Vitamins']['Iron'] = {'Amount': value}
-        
-        # Ingredients & Allergens
-        # Ingredients
-        ingredients_el = doc.select_one('.labelingredientsvalue')
-        if ingredients_el:
-            # Split by comma and strip whitespace
-            data['Ingredients'] = [i.strip() for i in ingredients_el.get_text(strip=True).split(',') if i.strip()]
-        allergens_el = doc.select_one('.labelallergensvalue')
-        if allergens_el:
-            # Get the entire text blob and lowercase it
-            # e.g., "ingredients include coconut, milk, ingredient include alcohol"
-            raw_allergen_text = allergens_el.get_text(strip=True).lower()
-            logger.info(f"Raw allergen text scraped: {raw_allergen_text}")
-            found_allergens = set()
+                "Fat": {
+                    "Total Fat": {"Amount": get_nested_amount(scraped_data, "Fat", "Total Fat")},
+                    "Saturated Fat": {"Amount": get_nested_amount(scraped_data, "Fat", "Saturated Fat")},
+                    "Trans Fat": {"Amount": get_nested_amount(scraped_data, "Fat", "Trans Fat")},
+                },
+                "Cholesterol": {"Amount": get_flat_amount(scraped_data, "Cholesterol")},
+                "Sodium": {"Amount": get_flat_amount(scraped_data, "Sodium")},
+                "Carbohydrates": {
+                    "Total Carbohydrates": {"Amount": get_nested_amount(scraped_data, "Carbohydrates", "Total Carbohydrates")},
+                    "Dietary Fiber": {"Amount": get_nested_amount(scraped_data, "Carbohydrates", "Dietary Fiber")},
+                    "Sugar": {"Amount": get_nested_amount(scraped_data, "Carbohydrates", "Sugar")},
+                },
+                "Protein": {"Amount": get_flat_amount(scraped_data, "Protein")},
+                
+                "Vitamins": {
+                    # The DB mapper expects 'Amount', but the old scraper (and new one)
+                    # puts the Daily Value % string here. This preserves that behavior.
+                    "Vitamin D": {"Amount": get_nested_dv(scraped_data, "Vitamins", "Vitamin D").replace('%', '')},
+                    "Potassium": {"Amount": get_nested_dv(scraped_data, "Vitamins", "Potassium").replace('%', '')},
+                    "Calcium": {"Amount": get_nested_dv(scraped_data, "Vitamins", "Calcium").replace('%', '')},
+                    "Iron": {"Amount": get_nested_dv(scraped_data, "Vitamins", "Iron").replace('%', '')},
+                }
+            }
             
-            # If the text isn't empty or just "n/a", "none"
-            if raw_allergen_text and "n/a" not in raw_allergen_text and "none" not in raw_allergen_text:
-                # Check if any of our known allergens are mentioned
-                for known_allergen in KNOWN_ALLERGENS_TO_EXTRACT:
-                    if known_allergen in raw_allergen_text:
-                        found_allergens.add(known_allergen.capitalize())
+            return adapted_data
 
-            # Save the clean list
-            data['Allergens'] = list(found_allergens)
-
-        return data
+        except Exception as e:
+            logger.error(f"Error adapting scraped data from {url}: {e}")
+            return {}
 
 
     def get_menu(self, location_id: str, menu_id: str) -> dict:
@@ -350,27 +288,76 @@ class DiningAPI(StudentApp):
                 
                 serialized_items = []
                 for item in menu_items:
+
+                    # This is the default structure the client expects, matching DEFAULT_NUTRIENTS
+                    nutrition_payload = {
+                        'calories': 0,
+                        'protein': 0,
+                        'fat': 0,
+                        'carbohydrates': 0,
+                        'fiber': 0,
+                        'sugar': 0,
+                        'sodium': 0,
+                        'cholesterol': 0,
+                        'calcium': 0,
+                        'iron': 0,
+                        'potassium': 0,
+                        'vitaminD': 0,
+                        'vitaminA': 0,
+                        'vitaminC': 0,
+                        'magnesium': 0,
+                        'zinc': 0,
+                    }
+
+                    # Check if nutrient_info exists and populate the payload
+                    # We must assume the model's field names based on the scraper and common sense.
+                    # e.g., scraper finds 'Total Fat', model is likely 'total_fat', client wants 'fat'.
+                    if hasattr(item, 'nutrient_info') and item.nutrient_info:
+                        ni = item.nutrient_info
+                        
+                        # Helper to safely convert Decimal/None to float/0
+                        def to_float(val):
+                            if val is None:
+                                return 0.0
+                            try:
+                                return float(val)
+                            except (TypeError, ValueError):
+                                return 0.0
+
+                        # Map database fields (assumed) to client fields
+                        # This mapping is based on your client-side Nutrients interface
+                        nutrition_payload.update({
+                            'calories': to_float(getattr(ni, 'calories', 0)),
+                            'protein': to_float(getattr(ni, 'protein', 0)),
+                            'fat': to_float(getattr(ni, 'total_fat', 0)), # Assumed: 'Total Fat' -> total_fat
+                            'carbohydrates': to_float(getattr(ni, 'total_carbohydrates', 0)), # Assumed: 'Tot. Carb' -> total_carbohydrates
+                            'fiber': to_float(getattr(ni, 'dietary_fiber', 0)), # Assumed: 'Dietary Fiber' -> dietary_fiber
+                            'sugar': to_float(getattr(ni, 'sugar', 0)), # Assumed: 'Sugars' -> sugar
+                            'sodium': to_float(getattr(ni, 'sodium', 0)), # Assumed: 'Sodium' -> sodium
+                            'cholesterol': to_float(getattr(ni, 'cholesterol', 0)), # Assumed: 'Cholesterol' -> cholesterol
+                            'calcium': to_float(getattr(ni, 'calcium', 0)), # Assumed: 'Calcium' -> calcium
+                            'iron': to_float(getattr(ni, 'iron', 0)), # Assumed: 'Iron' -> iron
+                            'potassium': to_float(getattr(ni, 'potassium', 0)), # Assumed: 'Potassium' -> potassium
+                            'vitaminD': to_float(getattr(ni, 'vitamin_d', 0)), # Assumed: 'Vitamin D' -> vitamin_d
+                            
+                            # These fields are in the client interface but not explicitly scraped.
+                            # We use getattr to safely access them, defaulting to 0.
+                            'vitaminA': to_float(getattr(ni, 'vitamin_a', 0)),
+                            'vitaminC': to_float(getattr(ni, 'vitamin_c', 0)),
+                            'magnesium': to_float(getattr(ni, 'magnesium', 0)),
+                            'zinc': to_float(getattr(ni, 'zinc', 0)),
+                        })
+
                     item_data = {
                         "id": item.api_id, # Use api_id as the 'id' to match API response
                         "name": item.name,
                         "description": item.description,
                         "link": item.link,
-                        "calories": 0,
-                        "protein": 0,
                         "allergens": item.allergens or [],
                         "ingredients": item.ingredients or [],
+                        "nutrition": nutrition_payload # Nest the full nutrition object
                     }
-                    
-                    # Check if nutrient_info exists and add data
-                    # hasattr is safer for OneToOne reverse accessors
-                    if hasattr(item, 'nutrient_info') and item.nutrient_info:
-                        if item.nutrient_info.calories:
-                            item_data["calories"] = item.nutrient_info.calories
-                        if item.nutrient_info.protein:
-                            # Convert Decimal to float for JSON
-                            item_data["protein"] = float(item.nutrient_info.protein) 
-                       
-                    
+                                        
                     serialized_items.append(item_data)
 
                 # Return empty list if no items, matching API structure
@@ -552,7 +539,7 @@ class DiningAPI(StudentApp):
 
         try:
             # Re-fetch the data we just saved, this time with nutrition info
-            # This call will now be a CACHE HIT
+            # This call will now be a CACHE HIT and use our new serialization logic
             return self.get_menu(location_id, menu_id)
         except Exception:
             # Fallback to just returning what the API gave us
@@ -653,6 +640,69 @@ def get_dining_menu(request):
     except Exception as e:
         logger.error(f"Error in get_dining_menu view: {e}")
         return Response({"error": str(e)}, status=500)
+
+@api_view(["GET"])
+def scrape_nutrition_url(request):
+    """
+    Scrapes a nutrition URL and returns the data in the
+    format expected by the NutritionLabelPage component.
+    """
+    url = request.GET.get("url")
+    if not url:
+        return Response({"error": "url parameter is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # 1. Fetch the HTML (server-side, no CORS)
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        html = response.text
+        doc = BeautifulSoup(html, 'html.parser')
+        
+        # 2. Parse the data (mimicking your original client-side logic)
+        title = doc.select_one('h2').get_text(strip=True) if doc.select_one('h2') else 'Item'
+        
+        serving_size = ''
+        calories = ''
+        for el in doc.select('#facts2'):
+            text = el.get_text(strip=True)
+            if 'Serving Size' in text:
+                serving_size = text.split('Serving Size')[1].strip()
+            if 'Calories' in text and 'from Fat' not in text:
+                calories = text.replace('Calories', '').strip()
+
+        nutrition = {}
+        for el in doc.select('#facts4'):
+            text = el.get_text(separator=' ').replace('\u00a0', ' ').strip()
+            # Use the regex from your JS
+            match = re.match(r'^(.*?)\s+([\d\.]+[a-zA-Z]*)$', text)
+            if match:
+                key, val = match.groups()
+                nutrition[key.strip()] = val.strip()
+
+        micros = {}
+        for li in doc.select('li'):
+            lines = [s.strip() for s in li.get_text(separator='\n').strip().split('\n') if s.strip()]
+            if len(lines) == 2:
+                micros[lines[0].strip()] = lines[1].strip()
+        
+        ingredients = doc.select_one('.labelingredientsvalue').get_text(strip=True) if doc.select_one('.labelingredientsvalue') else '—'
+        allergens = doc.select_one('.labelallergensvalue').get_text(strip=True) if doc.select_one('.labelallergensvalue') else '—'
+
+        # 3. Build the response JSON to match the client's NutritionData interface
+        data = {
+            "title": title,
+            "servingSize": serving_size,
+            "calories": calories,
+            "ingredients": ingredients,
+            "allergens": allergens,
+            "nutrition": nutrition,
+            "micros": micros
+        }
+        return Response(data)
+
+    except Exception as e:
+        logger.error(f"Error scraping nutrition URL {url}: {e}")
+        return Response({"error": f"Failed to scrape URL: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["GET"])
 def get_menu_item_details(request, menu_item_api_id):
@@ -769,7 +819,7 @@ def manage_rating(request, rating_id):
     if rating.user != request.user:
         return Response(
             {"error": "You do not have permission to perform this action"},
-            status=status.HTTP_403_FORBIDDEN,
+            status=status.HTTP_4OS_FORBIDDEN,
         )
 
     if request.method == "GET":
@@ -783,7 +833,7 @@ def manage_rating(request, rating_id):
             updated_rating = serializer.save()
             return Response(MenuRatingSerializer(updated_rating).data)
 
-        return Response(serializer.errors, status=status.HTTP_4D3_FORBIDDEN)
+        return Response(serializer.errors, status=status.HTTP_403_FORBIDDEN)
 
     elif request.method == "DELETE":
         rating.delete()

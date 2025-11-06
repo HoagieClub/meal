@@ -252,64 +252,9 @@ const DEFAULT_NUTRIENTS: Nutrients = {
 };
 
 // --- NUTRITION SCRAPER ---
-// This is some nifty, but complex, logic to scrape nutrition data from a dining hall URL.
-
-const parseNutrientValue = (value: string | null | undefined): number => {
-  if (!value) return 0;
-  return parseFloat(value) || 0;
-};
-
-// Maps the messy labels from the website to our clean, predictable nutrient keys.
-const NUTRITION_KEY_MAP: Record<string, keyof Nutrients> = {
-  'total fat': 'fat',
-  'tot. carb.': 'carbohydrates',
-  'dietary fiber': 'fiber',
-  sugars: 'sugar',
-  protein: 'protein',
-  cholesterol: 'cholesterol',
-  sodium: 'sodium',
-  calcium: 'calcium',
-  iron: 'iron',
-  potassium: 'potassium',
-  'vitamin d': 'vitaminD',
-  'vitamin a': 'vitaminA',
-  'vitamin c': 'vitaminC',
-  magnesium: 'magnesium',
-  zinc: 'zinc',
-};
-
-async function fetchAndParseNutrition(url: string): Promise<Nutrients> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      return { ...DEFAULT_NUTRIENTS };
-    }
-    const html = await response.text();
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const nutrients: Nutrients = { ...DEFAULT_NUTRIENTS };
-    doc.querySelectorAll('#facts2').forEach((el) => {
-      const text = el.textContent || '';
-      if (text.includes('Calories') && !text.includes('from Fat')) {
-        nutrients.calories = parseNutrientValue(text.replace('Calories', '').trim());
-      }
-    });
-    doc.querySelectorAll('#facts4').forEach((el) => {
-      const text = el.textContent?.replace(/\u00a0/g, ' ').trim() || '';
-      const match = text.match(/^(.+?)\s([\d\.]+[a-zA-Z]*)$/);
-      if (match) {
-        const key = match[1].trim().toLowerCase();
-        const nutrientKey = NUTRITION_KEY_MAP[key];
-        if (nutrientKey) {
-          nutrients[nutrientKey] = parseNutrientValue(match[2].trim());
-        }
-      }
-    });
-    return nutrients;
-  } catch (error) {
-    console.error(`Error parsing nutrition for ${url}:`, error);
-    return { ...DEFAULT_NUTRIENTS };
-  }
-}
+// All client-side scraping functions (fetchAndParseNutrition,
+// parseNutrientValue, NUTRITION_KEY_MAP) have been removed.
+// This logic is now handled by the server via the /api/dining/menu endpoint.
 
 // --- UI COMPONENTS ---
 // These are the reusable building blocks for our UI, like progress bars and popovers.
@@ -966,7 +911,7 @@ export default function DietPlanner() {
     handleSettingsChange('allergens', newAllergens);
   };
 
-  // --- UPDATED: This function now handles the '-1' (Any) locationId ---
+  // --- UPDATED: This function now fetches items with nutrition data from the backend ---
   const fetchMenuFor = async (
     date: Date,
     meal: MealType,
@@ -994,25 +939,25 @@ export default function DietPlanner() {
       // 3. Create an array of fetch promises, one for each hall
       const fetchPromises = locationIdsToFetch.map(async (locId) => {
         try {
-          const response = await fetch(
-            `/api/dining/menu?location_id=${locId}&menu_id=${menuId}`
-          );
+          const response = await fetch(`/api/dining/menu?location_id=${locId}&menu_id=${menuId}`);
           if (!response.ok) return []; // Return empty for this hall on error
-          const data = await response.json();
+          const data = await response.json(); // data is { menus: [ {..., nutrition: {...} } ] }
 
           // Process this *single* hall's menu items
-          const preliminaryItems: Omit<FoodItem, 'nutrition'>[] = [];
+          const foodItems: FoodItem[] = []; // Type is now FoodItem
           data.menus.forEach((item: any) => {
-            if (item.link) {
-              preliminaryItems.push({
+            // The server response includes the 'nutrition' object directly.
+            if (item.link && item.nutrition) {
+              foodItems.push({
                 name: item.name,
                 location: locId.toString(), // Store the ID, as before
                 description: item.description,
                 link: item.link,
+                nutrition: item.nutrition, // <-- Get nutrition from the API response
               });
             }
           });
-          return preliminaryItems;
+          return foodItems;
         } catch (hallError) {
           console.error(`Failed to fetch menu for ${menuId} at locId ${locId}:`, hallError);
           return []; // Return empty array if a single hall fetch fails
@@ -1023,20 +968,12 @@ export default function DietPlanner() {
       const resultsPerHall = await Promise.all(fetchPromises);
 
       // 5. Flatten the array of arrays into one single array of all items
-      // e.g., [ [hall1_item1], [hall2_item1, hall2_item2] ] -> [ hall1_item1, hall2_item1, hall2_item2 ]
-      const allPreliminaryItems = resultsPerHall.flat();
+      const allFoodItems = resultsPerHall.flat();
 
-      if (allPreliminaryItems.length === 0) return [];
+      if (allFoodItems.length === 0) return [];
 
-      // 6. Once we have all items, fetch their nutrition data (existing logic)
-      const nutritionPromises = allPreliminaryItems.map((item) =>
-        fetchAndParseNutrition(item.link)
-      );
-      const resolvedNutrients = await Promise.all(nutritionPromises);
-
-      return allPreliminaryItems
-        .map((item, index) => ({ ...item, nutrition: resolvedNutrients[index] }))
-        .filter((item) => item.nutrition.calories > 0);
+      // 6. The scraping step is GONE. We just filter the items we received.
+      return allFoodItems.filter((item) => item.nutrition.calories > 0);
     } catch (error) {
       // This will catch errors in Promise.all or the .flat() call
       console.error(`Failed to fetch and process menus for ${menuId}:`, error);
