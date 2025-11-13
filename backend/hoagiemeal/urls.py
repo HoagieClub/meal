@@ -9,12 +9,13 @@ from hoagiemeal.api.dining import (
     get_dining_menu,
     get_menu_item_with_ratings,
     get_menu_item_ratings,
+    get_menu_item_details,  # NEW IMPORT
     create_menu_item_rating,
     manage_rating,
     get_user_ratings,
     get_top_rated_menu_items,
     get_dining_locations_with_menus,
-    scrape_nutrition_url  # <-- 1. IMPORT THE NEW VIEW
+    scrape_nutrition_url
 )
 from hoagiemeal.api.places import get_open_places
 from hoagiemeal.api.user import me, update_user_profile, verify
@@ -27,10 +28,14 @@ urlpatterns = [
     path("api/dining/events/", get_dining_events, name="dining-events"),
     path("api/dining/menu/", get_dining_menu, name="dining-menu"),
     
-    # --- 2. ADD THE NEW URL PATH ---
+    # Scrape nutrition URL endpoint
     path("api/dining/scrape-url/", scrape_nutrition_url, name="scrape-nutrition-url"),
+    
+    # NEW ENDPOINT: Get full menu item details by API ID
+    path("api/menu-items/details/<int:menu_item_api_id>/", get_menu_item_details, name="menu-item-details"),
 
     path("api/dining/places/open/", get_open_places, name="dining-places-open"),
+    
     # Menu ratings API endpoints
     path("api/menu-items/<int:menu_item_id>/", get_menu_item_with_ratings, name="menu-item-with-ratings"),
     path("api/menu-items/<int:menu_item_id>/ratings/", get_menu_item_ratings, name="menu-item-ratings"),
@@ -38,6 +43,8 @@ urlpatterns = [
     path("api/ratings/<int:rating_id>/", manage_rating, name="manage-rating"),
     path("api/user/ratings/", get_user_ratings, name="user-ratings"),
     path("api/menu-items/top-rated/", get_top_rated_menu_items, name="top-rated-menu-items"),
+    
+    # User endpoints
     path("api/user/me/", me, name="auth-me"),
     path("api/auth/verify/", verify, name="auth-verify"),
     path("api/user/update/", update_user_profile, name="update-user-profile"),

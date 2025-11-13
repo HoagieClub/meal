@@ -5,8 +5,11 @@ import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui
 
 interface UIMenuItem {
   name: string;
+  id: string;
   description: string;
   link: string;
+  allergens?: string[];
+  ingredients?: string[];
 }
 
 interface MenuSectionProps {
@@ -16,8 +19,8 @@ interface MenuSectionProps {
   calories: Record<string, number>;
   protein: Record<string, number>;
   ALLERGEN_EMOJI: Record<string, string>;
-  showNutrition?: boolean; // Make optional
-  limitItems?: boolean; // Show only the first item if true
+  showNutrition?: boolean;
+  limitItems?: boolean;
 }
 
 const MenuSection: React.FC<MenuSectionProps> = ({
@@ -69,7 +72,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
       ) : (
         <Pane marginTop={minorScale(1)}>
           {displayItems.map((item) => (
-            <React.Fragment key={item.name}>
+            <React.Fragment key={item.id}>
               <Pane
                 display='grid'
                 gridTemplateColumns={showNutrition ? '2fr 1fr 1fr' : '1fr'}
@@ -78,18 +81,25 @@ const MenuSection: React.FC<MenuSectionProps> = ({
                 borderBottom={`0.9px solid ${theme.colors.green300}`}
               >
                 <Pane display='flex' flexDirection='column' marginY={majorScale(1)}>
-                  <Link href={`/nutrition?url=${encodeURIComponent(item.link)}`}>
+                  <Link href={`/nutrition?id=${item.id}`}>
                     <Text color='green700' fontWeight={500}>
                       {item.name}
                     </Text>
                   </Link>
                   <Pane display='flex' gap={minorScale(1)} marginTop={minorScale(1)}>
                     {(() => {
-                      const matched = Array.from(allergens).filter((a) =>
-                        item.description.toLowerCase().includes(a.toLowerCase())
-                      );
+                      // Use the structured allergens from the API if available
+                      const itemAllergens = item.allergens || [];
 
-                      return matched.length > 0 ? (
+                      // Fallback to parsing description if allergens not provided
+                      const matched =
+                        itemAllergens.length > 0
+                          ? itemAllergens
+                          : Array.from(allergens).filter((a) =>
+                              item.description.toLowerCase().includes(a.toLowerCase())
+                            );
+                      console.log(matched);
+                      return matched.length > 0 && matched[0] != '' ? (
                         matched.map((a) => (
                           <Pane
                             key={a}

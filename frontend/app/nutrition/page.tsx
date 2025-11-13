@@ -11,22 +11,48 @@ import {
   minorScale,
   ChevronLeftIcon,
   useTheme,
+  Badge,
 } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
 import { useSearchParams } from 'next/navigation';
-import { classifyDish } from '@/utils/dietary';
 
-interface NutritionData {
-  title: string;
+interface NutrientInfo {
   servingSize: string;
-  calories: string;
-  ingredients: string;
-  allergens: string;
-  nutrition: Record<string, string>;
-  micros: Record<string, string>;
+  servingUnit: string;
+  calories: number;
+  caloriesFromFat: number;
+  totalFat: number;
+  saturatedFat: number;
+  transFat: number;
+  cholesterol: number;
+  sodium: number;
+  totalCarbohydrates: number;
+  dietaryFiber: number;
+  sugars: number;
+  protein: number;
+  vitaminD: string; // API returns string "0.00"
+  potassium: string; // API returns string "1.00"
+  calcium: string; // API returns string "16.00"
+  iron: string; // API returns string "40.00"
 }
 
-// --- REMOVED OLD KEYWORD LISTS AND classifyDietary FUNCTION ---
+interface MenuItemDetails {
+  id: number;
+  apiId: number;
+  name: string;
+  description: string;
+  link: string;
+  allergens: string[];
+  ingredients: string[];
+  isVegetarian: boolean;
+  isVegan: boolean;
+  isHalal: boolean;
+  isKosher: boolean;
+  dietaryFlags: string[];
+  nutrientInfo: NutrientInfo;
+  averageRating: number | null;
+  ratingCount: number;
+}
 
 const getColorForDV = (value: number) => {
   if (value >= 20) return 'red';
@@ -35,66 +61,44 @@ const getColorForDV = (value: number) => {
 };
 
 const NutritionLabelPage: React.FC = () => {
-  const [data, setData] = useState<NutritionData | null>(null);
+  const [data, setData] = useState<MenuItemDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
   const searchParams = useSearchParams();
-  const url = searchParams.get('url') ?? '';
+
+  // Get the menu item API ID from the URL (instead of scraping URL)
+  const menuItemApiId = searchParams.get('id');
 
   useEffect(() => {
+    if (!menuItemApiId) {
+      setError('No menu item ID provided');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    fetch(url)
-      .then((r) => r.text())
-      .then((html) => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+    setError(null);
 
-        const title = doc.querySelector('h2')?.textContent?.trim() || 'Item';
-        const facts2 = Array.from(doc.querySelectorAll('#facts2'));
-        let servingSize = '';
-        let calories = '';
-        facts2.forEach((el) => {
-          const text = el.textContent || '';
-          if (text.includes('Serving Size')) {
-            servingSize = text.split('Serving Size')[1].trim();
-          }
-          if (text.includes('Calories') && !text.includes('from Fat')) {
-            calories = text.replace('Calories', '').trim();
-          }
-        });
-
-        const nutrition: Record<string, string> = {};
-        const facts4 = Array.from(doc.querySelectorAll('#facts4'));
-        facts4.forEach((el) => {
-          const text = el.textContent?.replace(/\u00a0/g, ' ').trim() || '';
-          const match = text.match(/^(.+?)\s([\d\.]+[a-zA-Z]*)$/);
-          if (match) {
-            const key = match[1].trim();
-            const val = match[2].trim();
-            nutrition[key] = val;
-          }
-        });
-
-        const micros: Record<string, string> = {};
-        doc.querySelectorAll('li').forEach((li) => {
-          const lines = li.innerText.trim().split('\n');
-          if (lines.length === 2) {
-            const nutrient = lines[0].trim();
-            const value = lines[1].trim();
-            micros[nutrient] = value;
-          }
-        });
-
-        const ingredients = doc.querySelector('.labelingredientsvalue')?.textContent?.trim() || '—';
-        const allergens = doc.querySelector('.labelallergensvalue')?.textContent?.trim() || '—';
-
-        setData({ title, servingSize, calories, nutrition, micros, ingredients, allergens });
+    // Fetch from backend API instead of scraping
+    fetch(`/api/menu-items/details/${menuItemApiId}`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+        return r.json();
       })
-      .catch(() => setData(null))
+      .then((itemData) => {
+        setData(itemData);
+        console.log('Fetched menu item data:', itemData);
+      })
+      .catch((err) => {
+        console.error('Error fetching menu item:', err);
+        setError(err.message || 'Failed to load menu item');
+        setData(null);
+      })
       .finally(() => setLoading(false));
-  }, [url]);
+  }, [menuItemApiId]);
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <Pane display='flex' alignItems='center' justifyContent='center' height='300'>
         <Spinner />
@@ -102,15 +106,28 @@ const NutritionLabelPage: React.FC = () => {
     );
   }
 
-  // ** UPDATED: Use the advanced classifyDish function **
-  // We pass the raw strings as single-element arrays.
-  // The 'classifyDish' function's 'getTokens' helper will correctly split them.
-  const dietaryTags = classifyDish({
-    name: data.title,
-    description: '', // This page doesn't have a separate description
-    ingredients: [data.ingredients],
-    allergens: [data.allergens],
-  });
+  if (error || !data) {
+    return (
+      <Pane padding={majorScale(4)}>
+        <Text color='red' size={500}>
+          {error || 'Failed to load menu item data'}
+        </Text>
+      </Pane>
+    );
+  }
+
+  // Extract dietary tags
+  const dietaryBadges: string[] = [];
+  if (data.isVegan) dietaryBadges.push('Vegan');
+  if (data.isVegetarian && !data.isVegan) dietaryBadges.push('Vegetarian');
+  if (data.isHalal) dietaryBadges.push('Halal');
+  if (data.isKosher) dietaryBadges.push('Kosher');
+
+  const nutrient = data.nutrientInfo;
+  const servingSizeDisplay =
+    nutrient?.servingSize && nutrient?.servingUnit
+      ? `${nutrient.servingSize} ${nutrient.servingUnit}`
+      : nutrient?.servingSize || '—';
 
   return (
     <Pane backgroundColor={theme.colors.green100} minHeight='100vh' padding={majorScale(4)}>
@@ -138,11 +155,16 @@ const NutritionLabelPage: React.FC = () => {
             <Text fontSize={50} fontWeight={800} color='green800' marginBottom={majorScale(4)}>
               NUTRITION
             </Text>
-            <Link href={url}>
+            <Link href={data.link} target='_blank'>
               <Text fontSize={20} fontWeight={800} color='green700'>
-                {data.title.toUpperCase()}
+                {data.name.toUpperCase()}
               </Text>
             </Link>
+            {data.description && (
+              <Text fontSize={14} color='gray700' marginTop={minorScale(2)}>
+                {data.description}
+              </Text>
+            )}
           </Pane>
 
           <Separator height='3px' />
@@ -154,7 +176,7 @@ const NutritionLabelPage: React.FC = () => {
               </Text>
               <Pane paddingTop={minorScale(1)}>
                 <Text fontSize={18} fontWeight={500}>
-                  {data.calories || '—'} Cal
+                  {nutrient?.calories || '—'} Cal
                 </Text>
               </Pane>
             </Pane>
@@ -164,7 +186,7 @@ const NutritionLabelPage: React.FC = () => {
               </Text>
               <Pane paddingTop={minorScale(1)}>
                 <Text fontSize={18} fontWeight={500}>
-                  {data.servingSize || '—'}
+                  {servingSizeDisplay}
                 </Text>
               </Pane>
             </Pane>
@@ -187,36 +209,52 @@ const NutritionLabelPage: React.FC = () => {
             <Text fontWeight={700} color='green700'>
               Ingredients:
             </Text>
-            <Text fontWeight={300}>{data.ingredients}</Text>
+            <Text fontWeight={300}>
+              {data.ingredients.length > 0 ? data.ingredients.join(', ') : '—'}
+            </Text>
           </Pane>
 
           <Pane marginTop={majorScale(1)} display='flex' flexDirection='column'>
             <Text fontWeight={700} color='green700'>
               Allergens:
             </Text>
-            <Text fontWeight={300}>{data.allergens}</Text>
+            <Text fontWeight={300}>
+              {data.allergens.length > 0 ? data.allergens.join(', ') : '—'}
+            </Text>
           </Pane>
 
           {/* Dietary Tags */}
           <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
             <Text fontWeight={700} color='green700'>
-              Dietary Tags:
+              Dietary Classifications:
             </Text>
-            <Pane display='flex' className='flex-col' gap={minorScale(1)} marginTop={minorScale(1)}>
-              {dietaryTags.length > 0 ? (
-                dietaryTags.map((tag) => (
-                  <Text key={tag} fontWeight={300}>
+            <Pane display='flex' flexWrap='wrap' gap={minorScale(2)} marginTop={minorScale(1)}>
+              {dietaryBadges.length > 0 ? (
+                dietaryBadges.map((tag) => (
+                  <Badge key={tag} color='green'>
                     {tag}
-                  </Text>
+                  </Badge>
                 ))
               ) : (
                 <Text fontWeight={300}>—</Text>
               )}
             </Pane>
           </Pane>
+
+          {/* Ratings */}
+          {data?.averageRating !== null && (
+            <Pane marginTop={majorScale(2)}>
+              <Text fontWeight={700} color='green700'>
+                Rating:
+              </Text>
+              <Text fontWeight={300}>
+                {data.averageRating?.toFixed(1)} / 5.0 ({data.ratingCount} reviews)
+              </Text>
+            </Pane>
+          )}
         </Pane>
 
-        {/* Right columns: Macronutrients & Micronutrients */}
+        {/* Right columns: Macronutrients */}
         <Pane className='col-span-2'>
           <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' fontWeight={600}>
             <Text fontWeight={500} fontSize={15} color='green800'>
@@ -232,36 +270,125 @@ const NutritionLabelPage: React.FC = () => {
             display='grid'
             rowGap={minorScale(2)}
           >
-            {Object.entries(data.nutrition).map(([key, val]) => {
-              const amountNum = parseFloat(val);
-              let dv = 0;
-              if (key.toLowerCase().includes('fat')) dv = Math.round((amountNum / 78) * 100);
-              else if (key.toLowerCase().includes('sodium'))
-                dv = Math.round((amountNum / 2300) * 100);
-              else if (key.toLowerCase().includes('cholesterol'))
-                dv = Math.round((amountNum / 300) * 100);
-              else if (key.toLowerCase().includes('carb')) dv = Math.round((amountNum / 275) * 100);
-              else if (key.toLowerCase().includes('fiber')) dv = Math.round((amountNum / 28) * 100);
-              else if (key.toLowerCase().includes('protein'))
-                dv = Math.round((amountNum / 50) * 100);
+            {nutrient && (
+              <>
+                {/* Total Fat */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Total Fat</Text>
+                  <Text textAlign='right'>{nutrient.totalFat || '—'}g</Text>
+                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
+                    <Text
+                      textAlign='right'
+                      color={getColorForDV(Math.round((nutrient.totalFat / 78) * 100))}
+                      fontWeight={600}
+                    >
+                      {Math.round((nutrient.totalFat / 78) * 100)}%
+                    </Text>
+                  </Tooltip>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
 
-              const color = getColorForDV(dv);
-              return (
-                <React.Fragment key={key}>
-                  <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
-                    <Text fontWeight={500}>{key}</Text>
-                    <Text textAlign='right'>{val}</Text>
-                    <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
-                      <Text textAlign='right' color={color} fontWeight={600}>{`${dv}%`}</Text>
-                    </Tooltip>
-                  </Pane>
-                  <Separator height='1px' marginTop={0} />
-                </React.Fragment>
-              );
-            })}
+                {/* Saturated Fat */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Saturated Fat</Text>
+                  <Text textAlign='right'>{nutrient.saturatedFat || '—'}g</Text>
+                  <Text textAlign='right'>—</Text>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
+
+                {/* Cholesterol */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Cholesterol</Text>
+                  <Text textAlign='right'>{nutrient.cholesterol || '—'}mg</Text>
+                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
+                    <Text
+                      textAlign='right'
+                      color={getColorForDV(Math.round((nutrient.cholesterol / 300) * 100))}
+                      fontWeight={600}
+                    >
+                      {Math.round((nutrient.cholesterol / 300) * 100)}%
+                    </Text>
+                  </Tooltip>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
+
+                {/* Sodium */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Sodium</Text>
+                  <Text textAlign='right'>{nutrient.sodium || '—'}mg</Text>
+                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
+                    <Text
+                      textAlign='right'
+                      color={getColorForDV(Math.round((nutrient.sodium / 2300) * 100))}
+                      fontWeight={600}
+                    >
+                      {Math.round((nutrient.sodium / 2300) * 100)}%
+                    </Text>
+                  </Tooltip>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
+
+                {/* Total Carbohydrates */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Total Carbohydrates</Text>
+                  <Text textAlign='right'>{nutrient.totalCarbohydrates || '—'}g</Text>
+                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
+                    <Text
+                      textAlign='right'
+                      color={getColorForDV(Math.round((nutrient.totalCarbohydrates / 275) * 100))}
+                      fontWeight={600}
+                    >
+                      {Math.round((nutrient.totalCarbohydrates / 275) * 100)}%
+                    </Text>
+                  </Tooltip>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
+
+                {/* Dietary Fiber */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Dietary Fiber</Text>
+                  <Text textAlign='right'>{nutrient.dietaryFiber || '—'}g</Text>
+                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
+                    <Text
+                      textAlign='right'
+                      color={getColorForDV(Math.round((nutrient.dietaryFiber / 28) * 100))}
+                      fontWeight={600}
+                    >
+                      {Math.round((nutrient.dietaryFiber / 28) * 100)}%
+                    </Text>
+                  </Tooltip>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
+
+                {/* Sugars */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Sugars</Text>
+                  <Text textAlign='right'>{nutrient.sugars || '—'}g</Text>
+                  <Text textAlign='right'>—</Text>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
+
+                {/* Protein */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Protein</Text>
+                  <Text textAlign='right'>{nutrient.protein || '—'}g</Text>
+                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
+                    <Text
+                      textAlign='right'
+                      color={getColorForDV(Math.round((nutrient.protein / 50) * 100))}
+                      fontWeight={600}
+                    >
+                      {Math.round((nutrient.protein / 50) * 100)}%
+                    </Text>
+                  </Tooltip>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
+              </>
+            )}
           </Pane>
 
-          {Object.keys(data.micros).length > 0 && (
+          {/* Micronutrients */}
+          {nutrient && (
             <>
               <Pane
                 display='grid'
@@ -281,17 +408,41 @@ const NutritionLabelPage: React.FC = () => {
                 display='grid'
                 rowGap={minorScale(2)}
               >
-                {Object.entries(data.micros).map(([key, val]) => (
-                  <React.Fragment key={key}>
-                    <Pane display='grid' gridTemplateColumns='2fr 1fr' alignItems='center'>
-                      <Text fontWeight={500}>{key}</Text>
-                      <Text textAlign='right' color='green700' fontWeight={600}>
-                        {val}
-                      </Text>
-                    </Pane>
-                    <Separator height='1px' marginTop={0} />
-                  </React.Fragment>
-                ))}
+                {/* Vitamin D */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Vitamin D</Text>
+                  <Text textAlign='right' color='green700' fontWeight={600}>
+                    {nutrient.vitaminD || '—'}%
+                  </Text>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
+
+                {/* Calcium */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Calcium</Text>
+                  <Text textAlign='right' color='green700' fontWeight={600}>
+                    {nutrient.calcium || '—'}%
+                  </Text>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
+
+                {/* Iron */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Iron</Text>
+                  <Text textAlign='right' color='green700' fontWeight={600}>
+                    {nutrient.iron || '—'}%
+                  </Text>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
+
+                {/* Potassium */}
+                <Pane display='grid' gridTemplateColumns='2fr 1fr' alignItems='center'>
+                  <Text fontWeight={500}>Potassium</Text>
+                  <Text textAlign='right' color='green700' fontWeight={600}>
+                    {nutrient.potassium || '—'}%
+                  </Text>
+                </Pane>
+                <Separator height='1px' marginTop={0} />
               </Pane>
             </>
           )}

@@ -54,7 +54,6 @@ import {
 import { toast } from 'sonner';
 
 // --- HELPER HOOKS ---
-
 // This custom hook is like useState, but it automatically saves the data to the browser's localStorage.
 // Super handy for remembering user preferences!
 function useLocalStorage<T>(key: string, initialValue: T) {
@@ -83,7 +82,6 @@ function useLocalStorage<T>(key: string, initialValue: T) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]); // Only re-run if the key changes
 
-  // --- UPDATED setValue ---
   // We wrap this in useCallback to ensure the function identity is stable across renders.
   // This prevents the useEffect hook in DietPlanner from re-running unnecessarily.
   const setValue = useCallback(
@@ -130,8 +128,6 @@ function useMediaQuery(query: string): boolean {
 }
 
 // --- DATA SHAPES ---
-// Here we define the "shapes" of our data, like what a "Meal" or "Nutrients" object looks like.
-
 type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
 interface Nutrients {
@@ -154,6 +150,7 @@ interface Nutrients {
 }
 
 interface FoodItem {
+  apiId: number;
   name: string;
   location: string;
   description: string;
@@ -162,7 +159,7 @@ interface FoodItem {
 }
 
 interface DailyPlan {
-  date: Date | string; // We allow string here for when we first load it from localStorage
+  date: Date | string;
   meals: { Breakfast: FoodItem[]; Lunch: FoodItem[]; Dinner: FoodItem[] };
   totals: Nutrients;
 }
@@ -180,8 +177,6 @@ interface PlanSettings {
 }
 
 // --- APP CONSTANTS ---
-// These are the constants we use throughout the app. Think of them as our app's configuration.
-
 const DAILY_VALUES: Omit<Nutrients, 'calories' | 'protein' | 'fat' | 'carbohydrates'> = {
   fiber: 28,
   sugar: 50,
@@ -251,11 +246,6 @@ const DEFAULT_NUTRIENTS: Nutrients = {
   zinc: 0,
 };
 
-// --- NUTRITION SCRAPER ---
-// All client-side scraping functions (fetchAndParseNutrition,
-// parseNutrientValue, NUTRITION_KEY_MAP) have been removed.
-// This logic is now handled by the server via the /api/dining/menu endpoint.
-
 // --- UI COMPONENTS ---
 // These are the reusable building blocks for our UI, like progress bars and popovers.
 
@@ -281,11 +271,11 @@ const NutrientProgressBar = ({
 
   let fillColor: string;
   if (isOver) {
-    fillColor = theme.colors.blue500; // A little over might be fine, so we use blue.
+    fillColor = theme.colors.blue500;
   } else if (isUnder) {
-    fillColor = theme.colors.orange500; // Yellow is a friendly "hey, you're under" nudge.
+    fillColor = theme.colors.orange500;
   } else {
-    fillColor = theme.colors.green500; // Green means you're right on track!
+    fillColor = theme.colors.green500;
   }
 
   return (
@@ -453,7 +443,6 @@ const DayPlanCard = ({
   settings: PlanSettings;
   onRegenerate: () => void;
 }) => {
-  // --- UPDATED: Logic to handle weekends ---
   const date = useMemo(() => new Date(day.date), [day.date]);
   const dayOfWeek = date.getDay();
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
@@ -535,7 +524,6 @@ const DayPlanCard = ({
         gridTemplateColumns='repeat(auto-fit, minmax(250px, 1fr))'
         gap={majorScale(2)}
       >
-        {/* --- UPDATED: This map now uses the dynamic MEALS_ORDER --- */}
         {MEALS_ORDER.map((mealType) => {
           // On weekends, if the mealType is 'Lunch', display 'Brunch'
           const mealTitle = isWeekend && mealType === 'Lunch' ? 'Brunch' : mealType;
@@ -557,7 +545,8 @@ const DayPlanCard = ({
                   {day.meals[mealType].map((item, index) => (
                     <Pane key={`${item.name}-${index}`}>
                       <Link
-                        href={`/feature4?url=${item.link}`}
+                        // Use the apiId to link to the nutrition page
+                        href={`/nutrition?id=${item.apiId}`}
                         target='_blank'
                         rel='noopener noreferrer'
                         size={400}
@@ -851,7 +840,7 @@ export default function DietPlanner() {
   // We also remember the last generated plan.
   const [storedPlan, setStoredPlan] = useLocalStorage<WeeklyPlan | null>('dietPlannerPlan', null);
 
-  // --- NEW ---: State for multiple saved plans
+  // State for multiple saved plans
   const [savedPlans, setSavedPlans] = useLocalStorage<Record<string, WeeklyPlan>>(
     'dietPlannerSavedPlans',
     {}
@@ -882,7 +871,7 @@ export default function DietPlanner() {
 
   const currentDateObj = useMemo(() => new Date(currentDate), [currentDate]);
 
-  // --- NEW ---: Automatically load a saved plan if one exists for the current week
+  // Automatically load a saved plan if one exists for the current week
   useEffect(() => {
     if (savedPlans[currentDate]) {
       setStoredPlan(savedPlans[currentDate]);
@@ -911,7 +900,6 @@ export default function DietPlanner() {
     handleSettingsChange('allergens', newAllergens);
   };
 
-  // --- UPDATED: This function now fetches items with nutrition data from the backend ---
   const fetchMenuFor = async (
     date: Date,
     meal: MealType,
@@ -941,19 +929,20 @@ export default function DietPlanner() {
         try {
           const response = await fetch(`/api/dining/menu?location_id=${locId}&menu_id=${menuId}`);
           if (!response.ok) return []; // Return empty for this hall on error
-          const data = await response.json(); // data is { menus: [ {..., nutrition: {...} } ] }
+          const data = await response.json(); // data is { menus: [ { id: 'apiId', ..., nutrition: {...} } ] }
 
           // Process this *single* hall's menu items
           const foodItems: FoodItem[] = []; // Type is now FoodItem
           data.menus.forEach((item: any) => {
             // The server response includes the 'nutrition' object directly.
-            if (item.link && item.nutrition) {
+            if (item.id && item.link && item.nutrition) {
               foodItems.push({
+                apiId: item.id,
                 name: item.name,
-                location: locId.toString(), // Store the ID, as before
+                location: locId.toString(),
                 description: item.description,
                 link: item.link,
-                nutrition: item.nutrition, // <-- Get nutrition from the API response
+                nutrition: item.nutrition,
               });
             }
           });
@@ -1034,7 +1023,6 @@ export default function DietPlanner() {
   };
 
   // This function generates the full plan for a single day.
-  // NO CHANGES NEEDED HERE - it just passes the locationId to the new fetchMenuFor
   const generateDayPlan = async (date: Date): Promise<DailyPlan> => {
     const locationId = DINING_HALLS[settings.preferredHall];
     const [breakfastMenu, lunchMenu, dinnerMenu] = await Promise.all([
@@ -1155,7 +1143,7 @@ export default function DietPlanner() {
     }
   };
 
-  // --- UPDATED ---: Lets the user jump between weeks without auto-generating.
+  // Lets the user jump between weeks without auto-generating.
   const navigateWeek = (direction: 'prev' | 'next') => {
     setCurrentDate((dateString) => {
       const newDate = new Date(dateString);
@@ -1165,7 +1153,7 @@ export default function DietPlanner() {
     // The useEffect hook will automatically handle loading the new plan or setting it to null
   };
 
-  // --- NEW ---: Saves the currently displayed plan to the saved plans list
+  // Saves the currently displayed plan to the saved plans list
   const handleSavePlan = () => {
     if (!storedPlan) {
       toast.error('No plan to save. Please generate a plan first.');
@@ -1431,7 +1419,7 @@ export default function DietPlanner() {
             Your Plan
           </Heading>
 
-          {/* --- NEW SAVE BUTTON --- */}
+          {/* --- SAVE BUTTON --- */}
           {generatedPlan && !loading && (
             <IconButton
               icon={FloppyDiskIcon}

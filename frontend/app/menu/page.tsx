@@ -65,7 +65,7 @@ const MEAL_RANGES: Record<MealType, string> = {
 const ALLERGEN_EMOJI: Record<string, string> = {
   peanut: '🥜',
   coconut: '🌰',
-  egg: '🥚',
+  eggs: '🥚',
   milk: '🥛',
   wheat: '🌾',
   soybeans: '🌱',
@@ -120,7 +120,7 @@ function extractAllergens(items: UIMenuItem[]): Set<string> {
     [
       'peanut',
       'tree nut',
-      'egg',
+      'eggs',
       'milk',
       'wheat',
       'soybeans',
@@ -293,7 +293,7 @@ export default function Index() {
   const ALLERGENS: AllergenKey[] = [
     'Peanut',
     'Coconut',
-    'Egg',
+    'Eggs',
     'Milk',
     'Wheat',
     'Soybeans',

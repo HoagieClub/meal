@@ -10,7 +10,8 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, subject to the following conditions:
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
 This software is provided "as-is", without warranty of any kind.
 """
@@ -163,104 +164,131 @@ class Scraper:
         """
 
         def extract_field(text: str) -> str:
+            """Finds the first numerical digit and returns the rest of the string."""
             for i, c in enumerate(text):
                 if c.isdigit():
                     return text[i:].strip()
             return ""
 
+        def safe_get_text(elements_list: list, index: int, extractor=extract_field) -> str:
+            """Safely get text from a list of elements at a specific index."""
+            try:
+                if index < len(elements_list):
+                    return extractor(elements_list[index].get_text())
+            except Exception as e:
+                logger.warning(f"Failed to safely extract text at index {index}: {e}")
+            return ""
+
+        response = deepcopy(self.EMPTY_MENU_SCHEMA)
+        if not soup:
+            return response
+
         try:
-            response = deepcopy(self.EMPTY_MENU_SCHEMA)
-            ingredients_element = soup.find_all(class_=self.INGREDIENTS_CLASS)[0]
-            ingredients_parsed = ingredients_element.get_text().split(",")
-            ingredients_list = [item.strip().capitalize() for item in ingredients_parsed]
-            response["Ingredients"] = ingredients_list or []
+            # Ingredients
+            ingredients_elements = soup.find_all(class_=self.INGREDIENTS_CLASS)
+            if ingredients_elements:
+                ingredients_parsed = ingredients_elements[0].get_text().split(",")
+                ingredients_list = [item.strip().capitalize() for item in ingredients_parsed]
+                response["Ingredients"] = ingredients_list or []
 
-            allergens_element = soup.find_all(class_=self.ALLERGENS_CLASS)[0]
-            allergens_text = allergens_element.get_text().strip()
-            allergen_text_truncated = (
-                allergens_text[len("Ingredients include") :]
-                if allergens_text.startswith("Ingredients include")
-                else allergens_text
-            )
-            response["Allergens"] = [
-                allergen.strip().capitalize() for allergen in allergen_text_truncated.split(",")
-            ]
+            # Allergens
+            allergens_elements = soup.find_all(class_=self.ALLERGENS_CLASS)
+            if allergens_elements:
+                allergens_text = allergens_elements[0].get_text().strip()
+                allergen_text_truncated = (
+                    allergens_text[len("Ingredients include") :]
+                    if allergens_text.startswith("Ingredients include")
+                    else allergens_text
+                )
+                response["Allergens"] = [
+                    allergen.strip().capitalize() for allergen in allergen_text_truncated.split(",")
+                ]
 
-            response["Name"] = soup.find_all(self.NAME_QUERY)[0].get_text().strip()
+            # Name
+            name_elements = soup.find_all(self.NAME_QUERY)
+            if name_elements:
+                response["Name"] = name_elements[0].get_text().strip()
 
+            # Serving Size, Calories
             elements = soup.find_all(id=self.CALORIES_SIZE_ID)
-            response["Serving Size"] = extract_field(elements[0].text)
-            response["Calories"] = extract_field(elements[1].text)
-            response["Calories from Fat"] = extract_field(elements[2].text)
+            response["Serving Size"] = safe_get_text(elements, 0)
+            response["Calories"] = safe_get_text(elements, 1)
+            response["Calories from Fat"] = safe_get_text(elements, 2)
 
+            # --- Macronutrients ---
             nutrition_elements = soup.find_all(id=self.NUTRITION_ID)
 
-            response["Fat"]["Total Fat"]["Amount"] = extract_field(nutrition_elements[0].text)
-            response["Fat"]["Total Fat"]["Daily Value"] = extract_field(nutrition_elements[1].text)
+            # Fat
+            response["Fat"]["Total Fat"]["Amount"] = safe_get_text(nutrition_elements, 0)
+            response["Fat"]["Total Fat"]["Daily Value"] = safe_get_text(nutrition_elements, 1)
+            response["Fat"]["Saturated Fat"]["Amount"] = safe_get_text(nutrition_elements, 4)
+            response["Fat"]["Saturated Fat"]["Daily Value"] = safe_get_text(nutrition_elements, 5)
+            response["Fat"]["Trans Fat"]["Amount"] = safe_get_text(nutrition_elements, 8)
+            response["Fat"]["Trans Fat"]["Daily Value"] = safe_get_text(nutrition_elements, 9)
 
-            response["Carbohydrates"]["Total Carbohydrates"]["Amount"] = extract_field(
-                nutrition_elements[2].text
+            # Carbs
+            response["Carbohydrates"]["Total Carbohydrates"]["Amount"] = safe_get_text(
+                nutrition_elements, 2
             )
-            response["Carbohydrates"]["Total Carbohydrates"]["Daily Value"] = extract_field(
-                nutrition_elements[3].text
+            response["Carbohydrates"]["Total Carbohydrates"]["Daily Value"] = safe_get_text(
+                nutrition_elements, 3
             )
-
-            response["Fat"]["Saturated Fat"]["Amount"] = extract_field(nutrition_elements[4].text)
-            response["Fat"]["Saturated Fat"]["Daily Value"] = extract_field(
-                nutrition_elements[5].text
+            response["Carbohydrates"]["Dietary Fiber"]["Amount"] = safe_get_text(
+                nutrition_elements, 6
             )
-
-            response["Carbohydrates"]["Dietary Fiber"]["Amount"] = extract_field(
-                nutrition_elements[6].text
+            response["Carbohydrates"]["Dietary Fiber"]["Daily Value"] = safe_get_text(
+                nutrition_elements, 7
             )
-            response["Carbohydrates"]["Dietary Fiber"]["Daily Value"] = extract_field(
-                nutrition_elements[7].text
-            )
-
-            response["Fat"]["Trans Fat"]["Amount"] = extract_field(nutrition_elements[8].text)
-            response["Fat"]["Trans Fat"]["Daily Value"] = extract_field(nutrition_elements[9].text)
-
-            response["Carbohydrates"]["Sugar"]["Amount"] = extract_field(
-                nutrition_elements[10].text
-            )
-            response["Carbohydrates"]["Sugar"]["Daily Value"] = extract_field(
-                nutrition_elements[11].text
+            response["Carbohydrates"]["Sugar"]["Amount"] = safe_get_text(nutrition_elements, 10)
+            response["Carbohydrates"]["Sugar"]["Daily Value"] = safe_get_text(
+                nutrition_elements, 11
             )
 
-            response["Cholesterol"]["Amount"] = extract_field(nutrition_elements[12].text)
-            response["Cholesterol"]["Daily Value"] = extract_field(nutrition_elements[13].text)
+            # Cholesterol
+            response["Cholesterol"]["Amount"] = safe_get_text(nutrition_elements, 12)
+            response["Cholesterol"]["Daily Value"] = safe_get_text(nutrition_elements, 13)
 
-            response["Protein"]["Amount"] = extract_field(nutrition_elements[14].text)
-            response["Protein"]["Daily Value"] = extract_field(nutrition_elements[15].text)
+            # Protein
+            response["Protein"]["Amount"] = safe_get_text(nutrition_elements, 14)
+            response["Protein"]["Daily Value"] = safe_get_text(nutrition_elements, 15)
 
-            response["Sodium"]["Amount"] = extract_field(nutrition_elements[16].text)
-            response["Sodium"]["Daily Value"] = extract_field(nutrition_elements[17].text)
+            # Sodium
+            response["Sodium"]["Amount"] = safe_get_text(nutrition_elements, 16)
+            response["Sodium"]["Daily Value"] = safe_get_text(nutrition_elements, 17)
 
+            # --- Micronutrients (Vitamins) ---
             vitamin_elements = soup.find_all("li")
-            response["Vitamins"]["Vitamin D"]["Daily Value"] = extract_field(
-                vitamin_elements[0].text
-            )
-            response["Vitamins"]["Potassium"]["Daily Value"] = extract_field(
-                vitamin_elements[1].text
-            )
-            response["Vitamins"]["Calcium"]["Daily Value"] = extract_field(vitamin_elements[2].text)
-            response["Vitamins"]["Iron"]["Daily Value"] = extract_field(vitamin_elements[3].text)
-
+            response["Vitamins"]["Vitamin D"]["Daily Value"] = safe_get_text(vitamin_elements, 0)
+            response["Vitamins"]["Potassium"]["Daily Value"] = safe_get_text(vitamin_elements, 1)
+            response["Vitamins"]["Calcium"]["Daily Value"] = safe_get_text(vitamin_elements, 2)
+            response["Vitamins"]["Iron"]["Daily Value"] = safe_get_text(vitamin_elements, 3)
+            # print(response)
             return response
         except Exception as e:
-            # logger.error(f"Exception occurred: {e}")
-            response = deepcopy(self.EMPTY_MENU_SCHEMA)
+            logger.error(f"Exception occurred during scraping: {e}", exc_info=True)
+            # Return whatever was scraped so far, or the empty schema
             return response
 
 
 def _test_scraper():
     """Test the dining hall menus scraper."""
-    link = "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=390047"
+    # This link is for "Choice of Toppings", which has full nutrition
+    link = "http://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=680005"
+    
+    # This link is for "Shanghai Pork Noodles", which also has full nutrition
+    # link = "http://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=601067"
+    
+    # This link is for an item that might be missing data (for testing robustness)
+    # link = "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=390047"
+    
     scraper = Scraper()
     soup = scraper.get_html(link=link)
     info = scraper.get_info(soup=soup)
-    pprint.pprint(info)
-
 
 if __name__ == "__main__":
+    # Configure a simple logger for testing if run directly
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
     _test_scraper()

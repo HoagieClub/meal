@@ -185,7 +185,6 @@ class MenuItemNutrientSerializer(serializers.ModelSerializer):
     """Serializer for the MenuItemNutrient model."""
     class Meta:
         model = MenuItemNutrient
-        # List all fields from the model
         fields = [
             "serving_size",
             "serving_unit",
@@ -206,8 +205,9 @@ class MenuItemNutrientSerializer(serializers.ModelSerializer):
             "iron",
         ]
 
+
 class FullMenuItemSerializer(serializers.ModelSerializer):
-    """Serializer for a MenuItem with all details including nutrients and ratings."""
+    """Serializer for a MenuItem with all details including nutrients, dietary info, and ratings."""
     
     # Use the nutrient serializer for the OneToOne relationship
     nutrient_info = MenuItemNutrientSerializer(read_only=True)
@@ -220,17 +220,24 @@ class FullMenuItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = MenuItem
         fields = [
-            "id",             # This is the primary key (e.g., 1, 2, 3)
-            "api_id",         # This is the ID from the external API (e.g., 501234)
+            "id",                  # Internal primary key
+            "api_id",             # External API ID (use this for lookups)
             "name",
             "description",
             "link",
             "allergens",
             "ingredients",
-            "nutrient_info",  # This is the nested nutrient object
+            "is_vegetarian",      # NEW
+            "is_vegan",           # NEW
+            "is_halal",           # NEW
+            "is_kosher",          # NEW
+            "dietary_flags",      # NEW - raw flags from source
+            "nutrient_info",      # Nested nutrient object with serving size
             "average_rating",
             "rating_count",
             "user_rating",
+            "created_at",
+            "updated_at",
         ]
 
     def get_average_rating(self, obj):

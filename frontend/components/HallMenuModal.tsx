@@ -9,6 +9,7 @@ interface UIMenuItem {
   name: string;
   description: string;
   link: string;
+  id: string;
 }
 
 interface HallMenuModalProps {
