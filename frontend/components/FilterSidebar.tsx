@@ -81,7 +81,7 @@ const ALLERGEN_STYLE_MAP = (theme: any): Record<AllergenKey, any> => ({
     border: theme.colors.orange700,
     color: theme.colors.orange900,
   },
-  Egg: {
+  Eggs: {
     bg: theme.colors.yellow100,
     border: theme.colors.yellow700,
     color: theme.colors.yellow900,
