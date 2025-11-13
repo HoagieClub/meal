@@ -179,6 +179,21 @@ class Scraper:
                 logger.warning(f"Failed to safely extract text at index {index}: {e}")
             return ""
 
+        def process_allergen(raw_allergen: str) -> str:
+            """Strips, maps, and capitalizes allergen strings."""
+            allergen = raw_allergen.strip()
+            
+            # Apply mappings (case-insensitive for robustness)
+            if allergen.lower() == "crustacean shellfish":
+                return "Crustacean"
+            if allergen.lower() == "ingredients include alcohol":
+                return "Alcohol"
+            if allergen.lower() == "ingredients include coconut":
+                return "Coconut"
+            
+            # Capitalize anything that didn't match a map
+            return allergen.capitalize()
+
         response = deepcopy(self.EMPTY_MENU_SCHEMA)
         if not soup:
             return response
@@ -200,9 +215,12 @@ class Scraper:
                     if allergens_text.startswith("Ingredients include")
                     else allergens_text
                 )
-                response["Allergens"] = [
-                    allergen.strip().capitalize() for allergen in allergen_text_truncated.split(",")
-                ]
+                
+                # Split, process/map, and filter out empty strings
+                raw_allergens = allergen_text_truncated.split(",")
+                print(raw_allergens)
+                processed_allergens = [process_allergen(a) for a in raw_allergens if a.strip()]
+                response["Allergens"] = processed_allergens
 
             # Name
             name_elements = soup.find_all(self.NAME_QUERY)

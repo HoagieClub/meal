@@ -34,14 +34,11 @@ interface RawApiMenuItem {
   name: string;
   description: string;
   link: string;
-  // --- FIXED ---
-  // The API provides a nested 'nutrition' object
   nutrition: {
     calories: number;
     protein: number;
     fat: number;
     carbohydrates: number;
-    // ... other nutrients
   };
   allergens: string[];
   ingredients: string[];
