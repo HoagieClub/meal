@@ -77,7 +77,7 @@ export type DietKey = 'Vegetarian' | 'Vegan' | 'Halal' | 'Kosher';
 export type AllergenKey =
   | 'Peanut'
   | 'Coconut'
-  | 'Egg'
+  | 'Eggs'
   | 'Milk'
   | 'Wheat'
   | 'Soybeans'

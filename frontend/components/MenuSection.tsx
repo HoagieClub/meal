@@ -2,15 +2,7 @@
 
 import React from 'react';
 import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
-
-interface UIMenuItem {
-  name: string;
-  id: string;
-  description: string;
-  link: string;
-  allergens?: string[];
-  ingredients?: string[];
-}
+import { UIMenuItem } from '@/types/dining';
 
 interface MenuSectionProps {
   label: string;
@@ -73,6 +65,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
         <Pane marginTop={minorScale(1)}>
           {displayItems.map((item) => (
             <React.Fragment key={item.id}>
+              {/* key={item.id} works fine with a number */}
               <Pane
                 display='grid'
                 gridTemplateColumns={showNutrition ? '2fr 1fr 1fr' : '1fr'}
@@ -82,6 +75,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
               >
                 <Pane display='flex' flexDirection='column' marginY={majorScale(1)}>
                   <Link href={`/nutrition?id=${item.id}`}>
+                    {/* href needs the 'id' which is a number */}
                     <Text color='green700' fontWeight={500}>
                       {item.name}
                     </Text>

@@ -4,27 +4,13 @@ import React from 'react';
 import { Dialog, Pane, useTheme, majorScale, minorScale } from 'evergreen-ui';
 import { Separator } from './ui/separator';
 import MenuSection from './MenuSection';
-
-interface UIMenuItem {
-  name: string;
-  description: string;
-  link: string;
-  id: string;
-}
+import { UIMenuItem, UIVenue } from '@/types/dining';
 
 interface HallMenuModalProps {
   isShown: boolean;
   onClose: () => void;
   hall: UIVenue | null;
   ALLERGEN_EMOJI: any;
-}
-
-interface UIVenue {
-  name: string;
-  items: Record<'Main Entrée' | 'Vegetarian + Vegan Entrée' | 'Soups', UIMenuItem[]>;
-  allergens: Set<string>;
-  calories: Record<string, number>;
-  protein: Record<string, number>;
 }
 
 const HallMenuModal: React.FC<HallMenuModalProps> = ({

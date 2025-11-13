@@ -23,22 +23,16 @@ import yehBanner from '../public/images/banners/yehbanner.png';
 import cjlBanner from '../public/images/banners/cjl-banner.png';
 import gradBanner from '../public/images/banners/gradbanner.png';
 import { StaticImageData } from 'next/image';
-import { UIVenue } from '@/types/dining';
-
-interface UIMenuItem {
-  name: string;
-  description: string;
-  link: string;
-}
+import { UIVenue } from '@/types/dining'; // <-- Correct import
 
 interface DiningHallCardProps {
-  hall: UIVenue;
+  hall: UIVenue; // <-- This is the correct global type
   setModalHall: (hall: UIVenue) => void;
   ALLERGEN_EMOJI: Record<string, string>;
   theme: any;
   showNutrition: boolean;
-  isPinned: boolean; // [GEMINI] Added prop
-  onPinToggle: () => void; // [GEMINI] Added prop
+  isPinned: boolean;
+  onPinToggle: () => void;
 }
 
 const hallImages: Record<string, StaticImageData> = {
@@ -69,21 +63,10 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
       borderRadius={15}
       boxShadow='0 2px 8px rgba(0,0,0,0.08)'
       padding={majorScale(3)}
-      // [Gemini Note: Added flex properties to make the card a flex column]
-      // This allows the 'mt-auto' on the button's container to push it
-      // to the bottom of the card, regardless of the content height.
-      // 'height="100%"' ensures the card stretches to fill its parent grid/flex cell.
       display='flex'
       flexDirection='column'
       height='100%'
     >
-      {/* <Pane display='flex' alignItems='center' marginBottom={minorScale(2)}>
-        <img src={imageSrc?.src} name={hall.name} />
-        <Heading size={600} color={theme.colors.green900}>
-          {hall.name}
-        </Heading>
-      </Pane> */}
-
       <Pane
         display='flex'
         alignItems='center'
@@ -125,29 +108,9 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         </Pane>
       </Pane>
 
-      {/* <Pane
-        display='grid'
-        gridTemplateColumns={showNutrition?'2fr 1fr 1fr':''}
-        borderBottom={`1px solid ${theme.colors.green300}`}
-        paddingBottom={minorScale(1)}
-      >
-        <Text size={300} fontWeight={500} />
-        {showNutrition&&
-        <>
-        <Text size={300} fontWeight={500} textAlign='right'>
-          Calories
-          <Text size={200} color='muted' display='block'>
-            (per serving)
-          </Text>
-        </Text>
-        <Text size={300} fontWeight={500} textAlign='right'>
-          Protein (g)
-        </Text></>}
-      </Pane> */}
-
       <MenuSection
         label='Main Entrée'
-        items={hall.items['Main Entrée']}
+        items={hall.items['Main Entrée']} // <-- This is UIMenuItem[] with id: number
         allergens={hall.allergens}
         calories={hall.calories}
         protein={hall.protein}
