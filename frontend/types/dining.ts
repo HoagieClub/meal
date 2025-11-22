@@ -15,7 +15,7 @@
 // TODO: Temporary icons for now
 export type MealIcon = '🍂' | '🥜' | '🥚' | '🥛' | '🌱' | '🥜';
 
-export type Meal = 'Breakfast' | 'Brunch' | 'Lunch' | 'Dinner';
+export type Meal = 'Breakfast' | 'Lunch' | 'Dinner';
 
 export interface DiningLocation {
   name: string;
@@ -104,4 +104,24 @@ export interface UIVenue {
   calories: Record<string, number>;
   protein: Record<string, number>;
   nutrition: Set<string>;
+}
+
+export interface RawApiMenuItem {
+  id: number;
+  name: string;
+  description: string;
+  link: string;
+  nutrition: {
+    calories: number;
+    protein: number;
+    fat: number;
+    carbohydrates: number;
+  };
+  allergens: string[];
+  ingredients: string[];
+}
+
+export interface RawVenue {
+  name: string;
+  menu: { menus?: RawApiMenuItem[] };
 }

@@ -17,13 +17,13 @@ import {
 } from 'evergreen-ui';
 
 // ——— PNG icons ————————————————————————
-import cjlIcon from '../public/images/icons/cjl.png';
-import defaultIcon from '../public/images/icons/default.png';
-import forbesIcon from '../public/images/icons/forbes.png';
-import gradIcon from '../public/images/icons/grad.png';
-import whitmanIcon from '../public/images/icons/whitman.png';
-import yehIcon from '../public/images/icons/yeh.png';
-import rockyIcon from '../public/images/icons/rocky.png';
+import cjlIcon from '@/public/images/icons/cjl.png';
+import defaultIcon from '@/public/images/icons/default.png';
+import forbesIcon from '@/public/images/icons/forbes.png';
+import gradIcon from '@/public/images/icons/grad.png';
+import whitmanIcon from '@/public/images/icons/whitman.png';
+import yehIcon from '@/public/images/icons/yeh.png';
+import rockyIcon from '@/public/images/icons/rocky.png';
 import { AllergenKey, DietKey } from '@/types/dining';
 
 // ——— Map hall names → PNG src —————————————————————

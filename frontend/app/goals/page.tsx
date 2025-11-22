@@ -15,7 +15,7 @@
 
 'use client';
 
-import { useState, useEffect, ChangeEvent, useMemo, useCallback } from 'react'; // IMPORT useCallback
+import { useState, useEffect, ChangeEvent, useMemo } from 'react'; // IMPORT useCallback
 import {
   Pane,
   Heading,
@@ -35,8 +35,6 @@ import {
   Tablist,
   Tab,
   IconButton,
-  Popover,
-  Position,
   ChevronLeftIcon,
   ChevronRightIcon,
   RefreshIcon,
@@ -44,337 +42,33 @@ import {
   CogIcon,
   CalendarIcon,
   RocketIcon,
-  MoreIcon,
   useTheme,
   FloppyDiskIcon,
-  BookmarkIcon,
-  TrashIcon,
-  DefaultTheme,
 } from 'evergreen-ui';
 import { toast } from 'sonner';
-
-// --- HELPER HOOKS ---
-// This custom hook is like useState, but it automatically saves the data to the browser's localStorage.
-// Super handy for remembering user preferences!
-function useLocalStorage<T>(key: string, initialValue: T) {
-  //  1. Always initialize state with initialValue.
-  // This ensures the server render and the first client render (hydration) match.
-  const [storedValue, setStoredValue] = useState<T>(initialValue);
-
-  //  2. Use useEffect to read from localStorage *after* mount (client-side only).
-  useEffect(() => {
-    // This effect runs only on the client, after the component has mounted.
-    if (typeof window === 'undefined') {
-      return;
-    }
-    try {
-      // Try to get the stored item
-      const item = window.localStorage.getItem(key);
-      // Parse it or fall back to initialValue
-      const value = item ? JSON.parse(item) : initialValue;
-      setStoredValue(value);
-    } catch (error) {
-      // If parsing fails, fall back to initial value
-      console.error(error);
-      setStoredValue(initialValue);
-    }
-    // We only want this to run once on mount when the key changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]); // Only re-run if the key changes
-
-  // We wrap this in useCallback to ensure the function identity is stable across renders.
-  // This prevents the useEffect hook in DietPlanner from re-running unnecessarily.
-  const setValue = useCallback(
-    (value: T | ((val: T) => T)) => {
-      try {
-        // Use the functional update form of setStoredValue to ensure we have the latest state
-        setStoredValue((prevValue) => {
-          const valueToStore = value instanceof Function ? value(prevValue) : value;
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem(key, JSON.stringify(valueToStore));
-          }
-          return valueToStore;
-        });
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [key]
-  ); // The key is stable, so this function is created only once.
-
-  return [storedValue, setValue] as const;
-}
-
-// A simple hook to check if the screen is mobile-sized.
-// This helps us make the layout responsive.
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const media = window.matchMedia(query);
-      if (media.matches !== matches) {
-        setMatches(media.matches);
-      }
-      const listener = () => setMatches(media.matches);
-      // Listen for changes in the screen size
-      media.addEventListener('change', listener);
-      // Clean up the listener when the component unmounts
-      return () => media.removeEventListener('change', listener);
-    }
-  }, [matches, query]);
-
-  return matches;
-}
-
-// --- DATA SHAPES ---
-type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
-
-interface Nutrients {
-  calories: number;
-  protein: number;
-  fat: number;
-  carbohydrates: number;
-  fiber: number;
-  sugar: number;
-  sodium: number;
-  cholesterol: number;
-  calcium: number;
-  iron: number;
-  potassium: number;
-  vitaminD: number;
-  vitaminA: number;
-  vitaminC: number;
-  magnesium: number;
-  zinc: number;
-}
-
-interface FoodItem {
-  apiId: number;
-  name: string;
-  location: string;
-  description: string;
-  link: string;
-  nutrition: Nutrients;
-}
-
-interface DailyPlan {
-  date: Date | string;
-  meals: { Breakfast: FoodItem[]; Lunch: FoodItem[]; Dinner: FoodItem[] };
-  totals: Nutrients;
-}
-
-type WeeklyPlan = DailyPlan[];
-
-interface PlanSettings {
-  preset: string;
-  calories: number;
-  protein: number;
-  fat: number;
-  carbohydrates: number;
-  allergens: string[];
-  preferredHall: string;
-}
-
-// --- APP CONSTANTS ---
-const DAILY_VALUES: Omit<Nutrients, 'calories' | 'protein' | 'fat' | 'carbohydrates'> = {
-  fiber: 28,
-  sugar: 50,
-  sodium: 2300,
-  cholesterol: 300,
-  calcium: 1300,
-  iron: 18,
-  potassium: 4700,
-  vitaminD: 20,
-  vitaminA: 900,
-  vitaminC: 90,
-  magnesium: 420,
-  zinc: 11,
-};
-
-const DINING_HALLS: Record<string, number> = {
-  'Any Available Hall': -1,
-  'Mathey & Rockefeller College': 3,
-  'Forbes College': 5,
-  'Whitman & Butler College': 6,
-  'Center for Jewish Life': 7,
-  'Graduate College': 8,
-  'Yeh & NCW College': 1088,
-};
-
-const HALL_NAME_BY_ID: Record<number, string> = Object.fromEntries(
-  Object.entries(DINING_HALLS).map(([name, id]) => [id, name])
-);
-
-const DIET_PRESETS: Record<string, Omit<PlanSettings, 'preset' | 'allergens' | 'preferredHall'>> = {
-  custom: { calories: 2200, protein: 40, fat: 70, carbohydrates: 280 },
-  balanced: { calories: 2000, protein: 30, fat: 65, carbohydrates: 250 },
-  'high-protein': { calories: 2500, protein: 40, fat: 80, carbohydrates: 280 },
-  'low-carb': { calories: 1800, protein: 20, fat: 100, carbohydrates: 100 },
-};
-
-const ALLERGENS_LIST = [
-  'Peanut',
-  'Coconut',
-  'Egg',
-  'Milk',
-  'Wheat',
-  'Soybeans',
-  'Crustacean',
-  'Gluten',
-  'Alcohol',
-  'Fish',
-  'Sesame',
-];
-
-const DEFAULT_NUTRIENTS: Nutrients = {
-  calories: 0,
-  protein: 0,
-  fat: 0,
-  carbohydrates: 0,
-  fiber: 0,
-  sugar: 0,
-  sodium: 0,
-  cholesterol: 0,
-  calcium: 0,
-  iron: 0,
-  potassium: 0,
-  vitaminD: 0,
-  vitaminA: 0,
-  vitaminC: 0,
-  magnesium: 0,
-  zinc: 0,
-};
+import NutrientProgressBar from '@/app/goals/components/NutrientProgressBar';
+import { Nutrients, PlanSettings, WeeklyPlan, DailyPlan, MealType, FoodItem } from '@/types/goals';
+import MicronutrientPopover from '@/app/goals/components/MicronutrientPopover';
+import { SkeletonWeeklySummary, SkeletonDayPlanCard } from '@/app/goals/components/Skeletons';
+import SavedPlansManager from '@/app/goals/components/SavedPlansManager';
+import useLocalStorage from '@/hooks/use-local-storage';
+import useMediaQuery from '@/hooks/use-media-query';
+import {
+  DEFAULT_NUTRIENTS,
+  DIET_PRESETS,
+  HALL_NAME_BY_ID,
+  DINING_HALLS,
+  ALLERGENS_LIST,
+} from './constants';
+import {
+  fetchMenuFor,
+  findBestMealCombination,
+  generateDayPlan,
+  handleGeneratePlan,
+} from './actions';
 
 // --- UI COMPONENTS ---
 // These are the reusable building blocks for our UI, like progress bars and popovers.
-
-const NutrientProgressBar = ({
-  label,
-  value,
-  target,
-  unit,
-}: {
-  label: string;
-  value: number;
-  target: number;
-  unit: string;
-}) => {
-  const theme = useTheme();
-  const p = target > 0 ? (value / target) * 100 : 0;
-  const fillPercent = Math.min(p, 100);
-  const overflowPercent = Math.max(0, p - 100);
-
-  // We set a color based on how close we are to the target.
-  const isUnder = p < 85;
-  const isOver = p > 115;
-
-  let fillColor: string;
-  if (isOver) {
-    fillColor = theme.colors.blue500;
-  } else if (isUnder) {
-    fillColor = theme.colors.orange500;
-  } else {
-    fillColor = theme.colors.green500;
-  }
-
-  return (
-    <Pane>
-      <Pane
-        display='flex'
-        justifyContent='space-between'
-        alignItems='center'
-        marginBottom={minorScale(1)}
-      >
-        <Text size={300} fontWeight={600} color='#334155'>
-          {label}
-        </Text>
-        <Text size={300} color='#64748b' fontWeight={500}>
-          {Math.round(value)} / {target} {unit}
-        </Text>
-      </Pane>
-      <Pane
-        position='relative'
-        height={6}
-        background={theme.colors.gray300}
-        borderRadius={8}
-        overflow='hidden'
-        className='shadow-inner'
-      >
-        <Pane
-          height='100%'
-          width={`${fillPercent}%`}
-          backgroundColor={fillColor}
-          borderRadius={8}
-          transition='width 0.5s ease-in-out'
-        />
-        {/* If you go way over, we show a red overflow bar. */}
-        {overflowPercent > 0 && (
-          <Pane
-            position='absolute'
-            left={`${fillPercent}%`}
-            top={0}
-            height='100%'
-            width={`${Math.min(overflowPercent, 100)}%`}
-            backgroundColor={theme.colors.red500}
-          />
-        )}
-      </Pane>
-    </Pane>
-  );
-};
-
-const MicronutrientPopover = ({ nutrition }: { nutrition: Nutrients }) => {
-  const MICRONUTRIENTS_MAP: { key: keyof Nutrients; name: string; unit: string }[] = [
-    { key: 'calcium', name: 'Calcium', unit: 'mg' },
-    { key: 'iron', name: 'Iron', unit: 'mg' },
-    { key: 'potassium', name: 'Potassium', unit: 'mg' },
-    { key: 'vitaminD', name: 'Vitamin D', unit: 'mcg' },
-    { key: 'vitaminA', name: 'Vitamin A', unit: 'mcg' },
-    { key: 'vitaminC', name: 'Vitamin C', unit: 'mg' },
-    { key: 'magnesium', name: 'Magnesium', unit: 'mg' },
-    { key: 'zinc', name: 'Zinc', unit: 'mg' },
-    { key: 'sodium', name: 'Sodium', unit: 'mg' },
-    { key: 'cholesterol', name: 'Cholesterol', unit: 'mg' },
-    { key: 'fiber', name: 'Fiber', unit: 'g' },
-    { key: 'sugar', name: 'Sugar', unit: 'g' },
-  ];
-
-  const availableMicros = MICRONUTRIENTS_MAP.filter(
-    (micro) => nutrition[micro.key] !== undefined && nutrition[micro.key] > 0
-  );
-
-  if (availableMicros.length === 0) {
-    return null; // If there's no data, we don't show anything.
-  }
-
-  return (
-    <Popover
-      position={Position.BOTTOM_RIGHT}
-      content={
-        <Pane
-          padding={majorScale(2)}
-          width={240}
-          display='flex'
-          flexDirection='column'
-          gap={minorScale(2)}
-        >
-          <Heading size={400}>Nutrition Details</Heading>
-          {availableMicros.map((micro) => (
-            <Pane key={micro.key} display='flex' justifyContent='space-between'>
-              <Text size={300}>{micro.name}</Text>
-              <Text size={300} color='muted'>
-                {Math.round(nutrition[micro.key])} {micro.unit}
-              </Text>
-            </Pane>
-          ))}
-        </Pane>
-      }
-    >
-      <IconButton icon={MoreIcon} appearance='minimal' height={24} title='View Micronutrients' />
-    </Popover>
-  );
-};
 
 const WeeklySummary = ({ plan, settings }: { plan: WeeklyPlan; settings: PlanSettings }) => {
   const summary = useMemo(() => {
@@ -591,224 +285,6 @@ const DayPlanCard = ({
   );
 };
 
-// --- SAVED PLANS COMPONENT ---
-const SavedPlansManager = ({
-  savedPlans,
-  setSavedPlans,
-  setCurrentDate,
-  setStoredPlan,
-}: {
-  savedPlans: Record<string, WeeklyPlan>;
-  setSavedPlans: (value: Record<string, WeeklyPlan>) => void;
-  setCurrentDate: (value: string) => void;
-  setStoredPlan: (value: WeeklyPlan | null) => void;
-}) => {
-  const loadPlan = (dateString: string, plan: WeeklyPlan) => {
-    setCurrentDate(dateString);
-    setStoredPlan(plan);
-    toast.success(
-      `Loaded plan for week of ${new Date(dateString).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-      })}`
-    );
-  };
-
-  const deletePlan = (dateString: string) => {
-    setSavedPlans(
-      Object.fromEntries(Object.entries(savedPlans).filter(([key]) => key !== dateString))
-    );
-    toast.success('Saved plan deleted.');
-  };
-
-  return (
-    <Popover
-      position={Position.BOTTOM_RIGHT}
-      content={({ close }) => (
-        <Pane
-          padding={majorScale(2)}
-          width={320}
-          display='flex'
-          flexDirection='column'
-          gap={minorScale(2)}
-        >
-          <Heading size={400} marginBottom={majorScale(1)}>
-            Saved Plans
-          </Heading>
-          <Pane
-            maxHeight={300}
-            overflowY='auto'
-            display='flex'
-            flexDirection='column'
-            gap={minorScale(2)}
-          >
-            {Object.keys(savedPlans).length === 0 ? (
-              <Text color='muted'>You have no saved plans.</Text>
-            ) : (
-              Object.entries(savedPlans).map(([dateString, plan]) => (
-                <Pane
-                  key={dateString}
-                  display='flex'
-                  justifyContent='space-between'
-                  alignItems='center'
-                  gap={minorScale(2)}
-                >
-                  <Button
-                    flex={1}
-                    justifyContent='flex-start'
-                    onClick={() => {
-                      loadPlan(dateString, plan);
-                      close();
-                    }}
-                    gap={minorScale(3)}
-                  >
-                    <CalendarIcon />
-                    Week of{' '}
-                    {new Date(dateString).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </Button>
-                  <IconButton
-                    icon={TrashIcon}
-                    intent='danger'
-                    appearance='minimal'
-                    onClick={() => deletePlan(dateString)}
-                  />
-                </Pane>
-              ))
-            )}
-          </Pane>
-        </Pane>
-      )}
-    >
-      <IconButton
-        icon={BookmarkIcon}
-        appearance='minimal'
-        height={32}
-        title='View Saved Plans'
-        background={'white'}
-      />
-    </Popover>
-  );
-};
-
-const SkeletonBlock: React.FC<{
-  width: string | number;
-  height: string | number;
-  theme: DefaultTheme;
-  [key: string]: any;
-}> = ({ width, height, theme, ...props }) => (
-  <Pane
-    width={width}
-    height={height}
-    background={theme.colors.gray200}
-    borderRadius={4}
-    className='animate-pulse'
-    {...props}
-  />
-);
-
-const SkeletonNutrientProgressBar: React.FC<{ theme: DefaultTheme }> = ({ theme }) => (
-  <Pane>
-    <Pane
-      display='flex'
-      justifyContent='space-between'
-      alignItems='center'
-      marginBottom={minorScale(1)}
-    >
-      <SkeletonBlock width='40%' height={16} theme={theme} />
-      <SkeletonBlock width='30%' height={16} theme={theme} />
-    </Pane>
-    <SkeletonBlock width='100%' height={6} theme={theme} borderRadius={8} />
-  </Pane>
-);
-
-const SkeletonWeeklySummary: React.FC<{ theme: DefaultTheme }> = ({ theme }) => (
-  <Card
-    background='white'
-    borderRadius={12}
-    padding={majorScale(3)}
-    marginBottom={majorScale(3)}
-    boxShadow='0px 4px 12px rgba(0, 0, 0, 0.05)'
-  >
-    <SkeletonBlock width='30%' height={24} theme={theme} marginBottom={majorScale(2)} />
-    <Pane
-      display='grid'
-      gridTemplateColumns='repeat(auto-fit, minmax(200px, 1fr))'
-      gap={majorScale(2)}
-    >
-      <SkeletonNutrientProgressBar theme={theme} />
-      <SkeletonNutrientProgressBar theme={theme} />
-      <SkeletonNutrientProgressBar theme={theme} />
-      <SkeletonNutrientProgressBar theme={theme} />
-    </Pane>
-  </Card>
-);
-
-const SkeletonDayPlanCard: React.FC<{ theme: DefaultTheme }> = ({ theme }) => (
-  <Card
-    background='white'
-    borderRadius={12}
-    padding={majorScale(3)}
-    boxShadow='0px 4px 12px rgba(0, 0, 0, 0.05)'
-  >
-    <Pane
-      display='flex'
-      justifyContent='space-between'
-      alignItems='center'
-      marginBottom={majorScale(2)}
-    >
-      <SkeletonBlock width='40%' height={28} theme={theme} />
-    </Pane>
-
-    <Card
-      background='#F8FAFC'
-      border='1px solid #E2E8F0'
-      padding={majorScale(2)}
-      marginBottom={majorScale(3)}
-      borderRadius={8}
-    >
-      <SkeletonBlock width='25%' height={20} theme={theme} marginBottom={majorScale(2)} />
-      <Pane
-        display='grid'
-        gridTemplateColumns='repeat(auto-fit, minmax(150px, 1fr))'
-        gap={majorScale(2)}
-      >
-        <SkeletonNutrientProgressBar theme={theme} />
-        <SkeletonNutrientProgressBar theme={theme} />
-        <SkeletonNutrientProgressBar theme={theme} />
-        <SkeletonNutrientProgressBar theme={theme} />
-      </Pane>
-    </Card>
-
-    <Pane
-      display='grid'
-      gridTemplateColumns='repeat(auto-fit, minmax(250px, 1fr))'
-      gap={majorScale(2)}
-    >
-      {Array.from({ length: 3 }).map((_, i) => (
-        <Pane
-          key={i}
-          border='1px solid #E2E8F0'
-          borderRadius={8}
-          padding={majorScale(2)}
-          display='flex'
-          flexDirection='column'
-          gap={majorScale(2)}
-        >
-          <SkeletonBlock width='30%' height={24} theme={theme} />
-          <SkeletonBlock width='80%' height={20} theme={theme} />
-          <SkeletonBlock width='60%' height={16} theme={theme} />
-          <SkeletonBlock width='90%' height={20} theme={theme} />
-          <SkeletonBlock width='50%' height={16} theme={theme} />
-        </Pane>
-      ))}
-    </Pane>
-  </Card>
-);
-
 // --- DIET PLANNER COMPONENT ---
 export default function DietPlanner() {
   const theme = useTheme();
@@ -832,19 +308,22 @@ export default function DietPlanner() {
     preferredHall: 'Any Available Hall',
   };
 
-  const [settings, setSettings] = useLocalStorage<PlanSettings>(
-    'dietPlannerSettings',
-    defaultSettings
-  );
+  const [settings, setSettings] = useLocalStorage<PlanSettings>({
+    key: 'dietPlannerSettings',
+    initialValue: defaultSettings,
+  });
 
   // We also remember the last generated plan.
-  const [storedPlan, setStoredPlan] = useLocalStorage<WeeklyPlan | null>('dietPlannerPlan', null);
+  const [storedPlan, setStoredPlan] = useLocalStorage<WeeklyPlan | null>({
+    key: 'dietPlannerPlan',
+    initialValue: null,
+  });
 
   // State for multiple saved plans
-  const [savedPlans, setSavedPlans] = useLocalStorage<Record<string, WeeklyPlan>>(
-    'dietPlannerSavedPlans',
-    {}
-  );
+  const [savedPlans, setSavedPlans] = useLocalStorage<Record<string, WeeklyPlan>>({
+    key: 'dietPlannerSavedPlans',
+    initialValue: {},
+  });
 
   // We'll make the default date the start of the current week to be helpful.
   const getStartOfWeek = () => {
@@ -857,7 +336,10 @@ export default function DietPlanner() {
   };
 
   // And we remember which week the user was looking at.
-  const [currentDate, setCurrentDate] = useLocalStorage('dietPlannerCurrentDate', getStartOfWeek());
+  const [currentDate, setCurrentDate] = useLocalStorage<string>({
+    key: 'dietPlannerCurrentDate',
+    initialValue: getStartOfWeek(),
+  });
 
   // When we load the plan from localStorage, the dates are just strings.
   // This brings them back to life as real Date objects that we can work with.
@@ -869,12 +351,12 @@ export default function DietPlanner() {
     }));
   }, [storedPlan]);
 
-  const currentDateObj = useMemo(() => new Date(currentDate), [currentDate]);
+  const currentDateObj = useMemo(() => new Date(currentDate as string), [currentDate]);
 
   // Automatically load a saved plan if one exists for the current week
   useEffect(() => {
-    if (savedPlans[currentDate]) {
-      setStoredPlan(savedPlans[currentDate]);
+    if (savedPlans[currentDate as string]) {
+      setStoredPlan(savedPlans[currentDate as string]);
     } else {
       setStoredPlan(null);
     }
@@ -900,220 +382,6 @@ export default function DietPlanner() {
     handleSettingsChange('allergens', newAllergens);
   };
 
-  const fetchMenuFor = async (
-    date: Date,
-    meal: MealType,
-    locationId: number
-  ): Promise<FoodItem[]> => {
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const menuId = `${yyyy}-${mm}-${dd}-${meal}`;
-
-    try {
-      // 1. Get all *real* hall IDs (excluding -1)
-      const allHallIds = Object.values(DINING_HALLS).filter((id) => id !== -1);
-
-      // 2. Decide which location IDs we need to fetch
-      const locationIdsToFetch: number[] = [];
-      if (locationId === -1) {
-        // 'Any Available Hall' was selected, so use all real IDs
-        locationIdsToFetch.push(...allHallIds);
-      } else {
-        // A specific hall was selected
-        locationIdsToFetch.push(locationId);
-      }
-
-      // 3. Create an array of fetch promises, one for each hall
-      const fetchPromises = locationIdsToFetch.map(async (locId) => {
-        try {
-          const response = await fetch(`/api/dining/menu?location_id=${locId}&menu_id=${menuId}`);
-          if (!response.ok) return []; // Return empty for this hall on error
-          const data = await response.json(); // data is { menus: [ { id: 'apiId', ..., nutrition: {...} } ] }
-
-          // Process this *single* hall's menu items
-          const foodItems: FoodItem[] = []; // Type is now FoodItem
-          data.menus.forEach((item: any) => {
-            // The server response includes the 'nutrition' object directly.
-            if (item.id && item.link && item.nutrition) {
-              foodItems.push({
-                apiId: item.id,
-                name: item.name,
-                location: locId.toString(),
-                description: item.description,
-                link: item.link,
-                nutrition: item.nutrition,
-              });
-            }
-          });
-          return foodItems;
-        } catch (hallError) {
-          console.error(`Failed to fetch menu for ${menuId} at locId ${locId}:`, hallError);
-          return []; // Return empty array if a single hall fetch fails
-        }
-      });
-
-      // 4. Wait for all fetch promises to resolve
-      const resultsPerHall = await Promise.all(fetchPromises);
-
-      // 5. Flatten the array of arrays into one single array of all items
-      const allFoodItems = resultsPerHall.flat();
-
-      if (allFoodItems.length === 0) return [];
-
-      // 6. The scraping step is GONE. We just filter the items we received.
-      return allFoodItems.filter((item) => item.nutrition.calories > 0);
-    } catch (error) {
-      // This will catch errors in Promise.all or the .flat() call
-      console.error(`Failed to fetch and process menus for ${menuId}:`, error);
-      return [];
-    }
-  };
-
-  // This is our secret sauce for picking the best combination of foods to meet the user's goals.
-  const findBestMealCombination = (
-    availableFoods: FoodItem[],
-    targetCalories: number,
-    targetProtein: number,
-    targetFat: number,
-    targetCarbohydrates: number,
-    maxItems = 3
-  ): FoodItem[] => {
-    if (availableFoods.length === 0) return [];
-    let mealCombination: FoodItem[] = [];
-    let currentTotals: Nutrients = { ...DEFAULT_NUTRIENTS };
-    let remainingFoods = [...availableFoods];
-    for (let i = 0; i < maxItems; i++) {
-      if (currentTotals.calories > targetCalories * 0.85 || remainingFoods.length === 0) break;
-      let bestFood: FoodItem | null = null;
-      let bestScore = Infinity;
-      let bestFoodIndex = -1;
-      // We loop through our available foods to find the one that gets us closest to our targets.
-      for (let j = 0; j < remainingFoods.length; j++) {
-        const food = remainingFoods[j];
-        const newCalories = currentTotals.calories + food.nutrition.calories;
-        const newProtein = currentTotals.protein + food.nutrition.protein;
-        const newFat = currentTotals.fat + food.nutrition.fat;
-        const newCarbs = currentTotals.carbohydrates + food.nutrition.carbohydrates;
-
-        if (newCalories > targetCalories * 1.25) continue; // Don't go too far over the target.
-        const calError = (newCalories - targetCalories) / (targetCalories || 1);
-        const proError = (newProtein - targetProtein) / (targetProtein || 1);
-        const fatError = (newFat - targetFat) / (targetFat || 1);
-        const carbError = (newCarbs - targetCarbohydrates) / (targetCarbohydrates || 1);
-        const score = calError ** 2 + proError ** 2 + fatError ** 2 + carbError ** 2;
-
-        if (score < bestScore) {
-          bestScore = score;
-          bestFood = food;
-          bestFoodIndex = j;
-        }
-      }
-      if (bestFood && bestFoodIndex > -1) {
-        mealCombination.push(bestFood);
-        Object.keys(bestFood.nutrition).forEach((key) => {
-          currentTotals[key as keyof Nutrients] += bestFood.nutrition[key as keyof Nutrients];
-        });
-        remainingFoods.splice(bestFoodIndex, 1);
-      } else {
-        break;
-      }
-    }
-    return mealCombination;
-  };
-
-  // This function generates the full plan for a single day.
-  const generateDayPlan = async (date: Date): Promise<DailyPlan> => {
-    const locationId = DINING_HALLS[settings.preferredHall];
-    const [breakfastMenu, lunchMenu, dinnerMenu] = await Promise.all([
-      fetchMenuFor(date, 'Breakfast', locationId),
-      fetchMenuFor(date, 'Lunch', locationId),
-      fetchMenuFor(date, 'Dinner', locationId),
-    ]);
-    const filterByAllergen = (items: FoodItem[]) =>
-      settings.allergens.length === 0
-        ? items
-        : items.filter(
-            (item) =>
-              !settings.allergens.some((allergen) =>
-                item.description.toLowerCase().includes(allergen.toLowerCase())
-              )
-          );
-    const dailyPlan: DailyPlan = {
-      date,
-      meals: {
-        Breakfast: findBestMealCombination(
-          filterByAllergen(breakfastMenu),
-          settings.calories * 0.25,
-          settings.protein * 0.25,
-          settings.fat * 0.25,
-          settings.carbohydrates * 0.25
-        ),
-        Lunch: findBestMealCombination(
-          filterByAllergen(lunchMenu),
-          settings.calories * 0.4,
-          settings.protein * 0.4,
-          settings.fat * 0.4,
-          settings.carbohydrates * 0.4
-        ),
-        Dinner: findBestMealCombination(
-          filterByAllergen(dinnerMenu),
-          settings.calories * 0.35,
-          settings.protein * 0.35,
-          settings.fat * 0.35,
-          settings.carbohydrates * 0.35
-        ),
-      },
-      totals: { ...DEFAULT_NUTRIENTS },
-    };
-    // Finally, we add up all the nutrients for the day.
-    const allMealItemsForDay = Object.values(dailyPlan.meals).flat();
-    dailyPlan.totals = allMealItemsForDay.reduce(
-      (acc, meal) => {
-        Object.keys(meal.nutrition).forEach((key) => {
-          acc[key as keyof Nutrients] += meal.nutrition[key as keyof Nutrients];
-        });
-        return acc;
-      },
-      { ...DEFAULT_NUTRIENTS }
-    );
-    return dailyPlan;
-  };
-
-  // This kicks off the whole process of generating a 7-day plan.
-  const handleGeneratePlan = async (startDate: Date) => {
-    if (
-      settings.calories <= 0 ||
-      settings.protein <= 0 ||
-      settings.fat <= 0 ||
-      settings.carbohydrates <= 0
-    ) {
-      setFormError('Nutritional values must be positive.');
-      return;
-    }
-    setFormError('');
-    setLoading(true);
-    setStoredPlan(null); // Clear old plan first
-    toast.loading('Crafting your weekly plan...');
-    try {
-      const weekDates = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date(startDate);
-        date.setDate(date.getDate() + i);
-        return date;
-      });
-      const newPlan = await Promise.all(weekDates.map((date) => generateDayPlan(date)));
-      setStoredPlan(newPlan);
-      toast.dismiss();
-      toast.success('Your weekly diet plan is ready!');
-    } catch (error) {
-      console.error(error);
-      toast.dismiss();
-      toast.error('Oh no! Something went wrong while generating the plan.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // If the user doesn't like a day's plan, they can regenerate just that day.
   const handleRegenerateDay = async (dayIndex: number) => {
     if (!generatedPlan) return;
@@ -1124,7 +392,7 @@ export default function DietPlanner() {
       })}...`
     );
     try {
-      const regeneratedDay = await generateDayPlan(dateToRegenerate);
+      const regeneratedDay = await generateDayPlan(dateToRegenerate, settings);
       setStoredPlan((plan) => {
         const updatedPlan = [...(plan || [])];
         updatedPlan[dayIndex] = regeneratedDay;
@@ -1194,7 +462,7 @@ export default function DietPlanner() {
         boxShadow='0px 10px 15px -3px rgba(0,0,0,0.07), 0px 4px 6px -2px rgba(0,0,0,0.05)'
         onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
-          handleGeneratePlan(currentDateObj);
+          handleGeneratePlan(currentDateObj, settings, setFormError, setLoading, setStoredPlan);
         }}
       >
         <Heading

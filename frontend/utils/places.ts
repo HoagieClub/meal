@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -32,12 +32,12 @@ export function classifyVenueType(name: string): VenueType {
   const trimmed = name.trim().toLowerCase();
 
   // Check if it matches any known residential name exactly
-  if (RESIDENTIAL_VENUES.some(resName => resName.toLowerCase() === trimmed)) {
+  if (RESIDENTIAL_VENUES.some((resName) => resName.toLowerCase() === trimmed)) {
     return 'residential';
   }
 
   // If "cafe", "gallery", etc. is found in the name, then classify it as a cafe
-  if (CAFE_FRAGMENTS.some(fragment => trimmed.includes(fragment.toLowerCase()))) {
+  if (CAFE_FRAGMENTS.some((fragment) => trimmed.includes(fragment.toLowerCase()))) {
     return 'cafe';
   }
 
@@ -78,6 +78,6 @@ export type Venue = {
 };
 
 export function classifyVenue(venueName: string): string {
-  if (venueName.includes("Dining Hall")) return "dining";
-  return "other";
+  if (venueName.includes('Dining Hall')) return 'dining';
+  return 'other';
 }

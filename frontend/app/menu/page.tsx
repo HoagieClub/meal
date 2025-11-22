@@ -1,55 +1,19 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useRef } from 'react'; // Import useRef
-import { useUser } from '@auth0/nextjs-auth0/client';
-import FilterSidebar from '../../components/FilterSidebar';
-import {
-  Pane,
-  Heading,
-  Text,
-  Button,
-  majorScale,
-  minorScale,
-  useTheme,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  SearchIcon,
-  DefaultTheme,
-} from 'evergreen-ui';
+import React, { useEffect, useState, useMemo } from 'react';
+import FilterSidebar from './components/FilterSidebar';
+import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon } from 'evergreen-ui';
 import HallMenuModal from '@/components/HallMenuModal';
-// import DiningLocations from '@/examples/locations';
-// import getDiningLocationsServerSide from '@/examples/locationsServerSide';
-// import { useGetMenu } from '@/hooks/use-endpoints';
 import DiningHallCard from '@/components/DiningHallCard';
 import { AllergenKey, DietKey, UIMenuItem, UIVenue } from '@/types/dining';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { classifyDish } from '@/utils/dietary';
-
-type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
-
-// Interface for what the API provides
-interface RawApiMenuItem {
-  id: number;
-  name: string;
-  description: string;
-  link: string;
-  nutrition: {
-    calories: number;
-    protein: number;
-    fat: number;
-    carbohydrates: number;
-  };
-  allergens: string[];
-  ingredients: string[];
-}
-
-interface RawVenue {
-  name: string;
-  menu: { menus?: RawApiMenuItem[] };
-}
-
-// ** REMOVED useDebounce HOOK **
+import SkeletonDiningHallCard from '@/app/menu/components/SkeletonDiningHallCard';
+import { categorize, extractAllergens } from '@/utils/dining';
+import { RawApiMenuItem, RawVenue, Meal as MealType } from '@/types/dining';
+import MenuPageHeader from '@/app/menu/components/MenuHeader';
+import AllergenSidebar from '@/app/menu/components/AllergenSidebar';
 
 // ─── Constants ────────────────────────────────────────────────────────────
 
@@ -73,118 +37,6 @@ const ALLERGEN_EMOJI: Record<string, string> = {
   sesame: '🍔',
 };
 
-function categorize(items: UIMenuItem[]) {
-  const out = {
-    'Main Entrée': [] as UIMenuItem[],
-    'Vegetarian + Vegan Entrée': [] as UIMenuItem[],
-    Soups: [] as UIMenuItem[],
-  };
-  items.forEach((i) => {
-    const nm = i.name.toLowerCase();
-    const ds = i.description.toLowerCase();
-    if (nm.includes('soup')) out.Soups.push(i);
-    // Include items explicitly marked with dietary labels in the description
-    else if (
-      ds.includes('vegan') ||
-      ds.includes('(vg)') ||
-      ds.includes('vegetarian') ||
-      ds.includes('(v)') ||
-      nm.includes('tofu') ||
-      nm.includes('vegetable')
-    )
-      out['Vegetarian + Vegan Entrée'].push(i);
-    else out['Main Entrée'].push(i);
-  });
-  return out;
-}
-
-/**
- * Extracts allergens from the structured UIMenuItem.allergens array.
- * This is more reliable than parsing text.
- */
-function extractAllergens(items: UIMenuItem[]): Set<string> {
-  const set = new Set<string>();
-  items.forEach((item) => {
-    item.allergens.forEach((allergen) => {
-      // Normalize to lowercase to match ALLERGEN_EMOJI keys
-      set.add(allergen.toLowerCase());
-    });
-  });
-
-  // ** Fallback: Check text as well for safety, in case backend data is sparse **
-  items.forEach((i) => {
-    const ds = (i.description + ' ' + i.name).toLowerCase();
-    [
-      'peanut',
-      'tree nut',
-      'eggs',
-      'milk',
-      'wheat',
-      'soybeans',
-      'crustacean',
-      'alcohol',
-      'gluten',
-      'coconut',
-      'fish',
-      'sesame',
-    ].forEach((all) => ds.includes(all) && set.add(all));
-  });
-  return set;
-}
-
-// ─── Skeleton Loading Components ──────────────────────────────────────────
-/**
- * A reusable skeleton block with a pulsing animation.
- */
-const SkeletonBlock: React.FC<{
-  width: string | number;
-  height: string | number;
-  theme: DefaultTheme;
-  [key: string]: any;
-}> = ({ width, height, theme, ...props }) => (
-  <Pane
-    width={width}
-    height={height}
-    background={theme.colors.gray300}
-    borderRadius={4}
-    className='animate-pulse'
-    {...props}
-  />
-);
-
-/**
- * Skeleton placeholder for a single DiningHallCard.
- */
-const SkeletonDiningHallCard: React.FC<{ theme: DefaultTheme }> = ({ theme }) => (
-  <Pane
-    background='white'
-    borderRadius={12}
-    padding={majorScale(2)}
-    border={`1px solid ${theme.colors.green300}`}
-    display='flex'
-    flexDirection='column'
-    gap={majorScale(2)}
-  >
-    <SkeletonBlock width='70%' height={24} theme={theme} />
-    <Pane display='flex' gap={minorScale(1)}>
-      <SkeletonBlock width={24} height={24} borderRadius={999} theme={theme} />
-      <SkeletonBlock width={24} height={24} borderRadius={999} theme={theme} />
-      <SkeletonBlock width={24} height={24} borderRadius={999} theme={theme} />
-    </Pane>
-
-    <Pane>
-      <SkeletonBlock width='50%' height={18} theme={theme} marginBottom={majorScale(1)} />
-      <SkeletonBlock width='90%' height={14} theme={theme} marginBottom={minorScale(1)} />
-      <SkeletonBlock width='80%' height={14} theme={theme} marginBottom={minorScale(1)} />
-    </Pane>
-
-    <Pane>
-      <SkeletonBlock width='60%' height={18} theme={theme} marginBottom={majorScale(1)} />
-      <SkeletonBlock width='85%' height={14} theme={theme} marginBottom={minorScale(1)} />
-    </Pane>
-  </Pane>
-);
-
 // ─── Defaults & Constants for LocalStorage ────────────────────────────────
 
 const getDefaultDate = () => {
@@ -204,7 +56,6 @@ const PINNED_HALLS_KEY = 'diningPinnedHalls';
 
 export default function Index() {
   const theme = useTheme();
-  const { user, error, isLoading } = useUser();
 
   const backgroundByMeal: Record<MealType, string> = {
     Breakfast: theme.colors.green100,
@@ -246,7 +97,6 @@ export default function Index() {
   const [searchTerm, setSearchTerm] = useLocalStorage('diningSearchTerm', '');
   const [showNutrition, setShowNutrition] = useLocalStorage('diningShowNutrition', true);
 
-  const FRONTEND_URL = process.env.HOAGIE_URL;
   const PAGE_BG = backgroundByMeal[meal];
 
   const dayOfWeek = selectedDate.getDay();
@@ -335,8 +185,6 @@ export default function Index() {
     }));
   };
 
-  const [nutritionKey, setNutritionKey] = useState<'calories' | 'protein'>('calories');
-
   // ** temporary UI selections now initialize from applied (localStorage) state **
   const [tempHalls, setTempHalls] = useState<string[]>([...appliedHalls]);
   const [tempDietary, setTempDietary] = useState<DietKey[]>([...appliedDietary]);
@@ -377,7 +225,6 @@ export default function Index() {
     setProfileLoaded(true);
   }, [dietaryRestrictions, allergens, diningHalls, setAppliedFilterPrefs]);
 
-  const [filterOpen, setFilterOpen] = useState(true);
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
 
   const toggle = <T,>(val: T, arr: T[], setter: (value: React.SetStateAction<T[]>) => void) =>
@@ -402,25 +249,6 @@ export default function Index() {
       setMeal('Lunch');
     }
   }, [isWeekend, meal]); // Dependency simplified
-
-  // useEffect(() => {
-  //   // Fetch dining locations
-  //   fetch('http://localhost:8000/api/dining/locations')
-  //     .then((response) => {
-  //       if (!response.ok) {
-  //         throw new Error(`HTTP error! status: ${response.status}`);
-  //       }
-  //       return response.json();
-  //     })
-  //     .then((data) => {
-  //       const classifiedVenues = data.map((venue: { name: string }) => ({
-  //         name: venue.name,
-  //         category: classifyVenue(venue.name),
-  //       }));
-  //       // console.log('classifiedVenues:', classifiedVenues);
-  //     })
-  //     .catch((error) => console.error('Error fetching BASE venues (/dining/locations):', error));
-  // }, []);
 
   // ─── Pinned Halls (using useLocalStorage) ───────────────────────────────
   // Store pinned halls as a string array in localStorage
@@ -695,94 +523,22 @@ export default function Index() {
             .catch((error) => console.error('Error updating user preferences:', error));
         }}
       />
+
       {/* ─── MAIN VIEW ──────────────────────────────────────────────────────── */}
+
       <Pane flex={1} className='overflow-x-hidden h-full no-scrollbar px-4'>
-        {/* Header */}
-        <Pane
-          display='flex'
-          alignItems='center'
-          justifyContent='space-between'
-          marginY={majorScale(3)}
-          className='flex-col sm:flex-row text-center sm:text-left'
-        >
-          <Pane width={240}>
-            <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
-              {getMealLabel(meal).toUpperCase()}
-            </Heading>
-
-            <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
-              {getDisplayMealRange(meal)}
-            </Text>
-          </Pane>
-          {/* Date + arrows */}
-          <Pane display='flex' gap={minorScale(2)} className='flex-col flex justify-center my-4'>
-            <Pane display='flex' alignItems='center' gap={minorScale(2)}>
-              <Button
-                background='white'
-                border={`1px solid ${theme.colors.green700}`}
-                borderRadius={999}
-                padding={minorScale(1)}
-                appearance='minimal'
-                onClick={prevDay}
-              >
-                <ChevronLeftIcon size={20} />
-              </Button>
-
-              <Text
-                className='text-2xl text-center w-[14rem] truncate'
-                color={theme.colors.green700}
-              >
-                {selectedDate.toLocaleString('en-US', {
-                  weekday: 'long',
-                  month: 'numeric',
-                  day: 'numeric',
-                })}
-              </Text>
-
-              <Button
-                background='white'
-                border={`1px solid ${theme.colors.green700}`}
-                borderRadius={999}
-                padding={minorScale(1)}
-                appearance='minimal'
-                onClick={nextDay}
-              >
-                <ChevronRightIcon size={20} />
-              </Button>
-            </Pane>
-            {/* ── Meal tabs ────────────────────────────── */}
-            <Pane
-              display='flex'
-              border={`1px solid ${theme.colors.green700}`}
-              borderRadius={999}
-              background={theme.colors.green25}
-              overflow='hidden'
-            >
-              {availableMeals.map((m) => (
-                <Pane
-                  key={m}
-                  flex={1}
-                  textAlign='center'
-                  paddingY={minorScale(1)}
-                  cursor='pointer'
-                  background={meal === m ? theme.colors.green700 : 'transparent'}
-                  color={meal === m ? 'white' : theme.colors.green800}
-                  className='text-xs px-4'
-                  fontWeight={300}
-                  onClick={() => setMeal(m)}
-                >
-                  {getMealLabel(m)}
-                </Pane>
-              ))}
-            </Pane>
-          </Pane>
-          <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240}>
-            {/* This pane is a spacer to maintain the 3-column header alignment. */}
-          </Pane>
-        </Pane>
+        <MenuPageHeader
+          meal={meal}
+          selectedDate={selectedDate}
+          prevDay={prevDay}
+          nextDay={nextDay}
+          getMealLabel={getMealLabel}
+          getDisplayMealRange={getDisplayMealRange}
+          availableMeals={availableMeals}
+          setMeal={setMeal}
+        />
 
         {/* Grid of cards */}
-        {/* ** FIXED: Check for loading only ** */}
         {loading ? (
           <Pane
             display='grid'
@@ -845,65 +601,13 @@ export default function Index() {
           </Pane>
         )}
       </Pane>
-      {/* ─── RIGHT SIDEBAR (desktop only) ─────────────────────────────────── */}
-      <Pane
-        className='hidden sm:flex'
-        flexDirection='column'
-        width={200}
-        padding={majorScale(3)}
-        overflowY='auto'
-        zIndex={2}
-      >
-        <Heading size={600} color={theme.colors.green900}>
-          Allergens to Avoid
-        </Heading>
-
-        <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
-          {ALLERGENS.map((a) => {
-            const isSelected = appliedAllergens.includes(a);
-            return (
-              <Pane
-                key={a}
-                display='flex'
-                alignItems='center'
-                cursor='pointer'
-                onClick={() => toggleQuickAllergen(a)}
-                opacity={isSelected ? 1.0 : 0.6}
-                title={
-                  isSelected
-                    ? `Hiding items containing ${a}`
-                    : `Click to hide items containing ${a}`
-                }
-              >
-                <Pane
-                  width={28}
-                  height={28}
-                  display='inline-flex'
-                  alignItems='center'
-                  justifyContent='center'
-                  borderRadius={14}
-                  background={isSelected ? theme.colors.red100 : theme.colors.gray100}
-                  border={
-                    isSelected
-                      ? `1px solid ${theme.colors.red500}`
-                      : `1px solid ${theme.colors.gray400}`
-                  }
-                  marginRight={minorScale(1)}
-                >
-                  <Text size={200}>{ALLERGEN_EMOJI[a.toLowerCase()]}</Text>
-                </Pane>
-
-                <Text size={400} color={theme.colors.green900} fontWeight={isSelected ? 600 : 400}>
-                  {a}
-                </Text>
-              </Pane>
-            );
-          })}
-        </Pane>
-      </Pane>
-
-      {/* Modal */}
-
+      <AllergenSidebar
+        allergens={ALLERGENS}
+        selected={appliedAllergens}
+        emoji={ALLERGEN_EMOJI}
+        onToggle={toggleQuickAllergen}
+        theme={theme}
+      />
       <HallMenuModal
         isShown={!!modalHall}
         onClose={() => setModalHall(null)}
