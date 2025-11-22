@@ -5,7 +5,6 @@ import {
   Pane,
   Link,
   Text,
-  Tooltip,
   Spinner,
   majorScale,
   minorScale,
@@ -15,50 +14,8 @@ import {
 } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
 import { useSearchParams } from 'next/navigation';
-
-interface NutrientInfo {
-  servingSize: string;
-  servingUnit: string;
-  calories: number;
-  caloriesFromFat: number;
-  totalFat: number;
-  saturatedFat: number;
-  transFat: number;
-  cholesterol: number;
-  sodium: number;
-  totalCarbohydrates: number;
-  dietaryFiber: number;
-  sugars: number;
-  protein: number;
-  vitaminD: string; // API returns string "0.00"
-  potassium: string; // API returns string "1.00"
-  calcium: string; // API returns string "16.00"
-  iron: string; // API returns string "40.00"
-}
-
-interface MenuItemDetails {
-  id: number;
-  apiId: number;
-  name: string;
-  description: string;
-  link: string;
-  allergens: string[];
-  ingredients: string[];
-  isVegetarian: boolean;
-  isVegan: boolean;
-  isHalal: boolean;
-  isKosher: boolean;
-  dietaryFlags: string[];
-  nutrientInfo: NutrientInfo;
-  averageRating: number | null;
-  ratingCount: number;
-}
-
-const getColorForDV = (value: number) => {
-  if (value >= 20) return 'red';
-  if (value >= 10) return 'orange';
-  return 'green';
-};
+import { MenuItemDetails } from '@/types/nutrition';
+import { MacronutrientRow, MicronutrientRow } from './components/NutrientRow';
 
 const NutritionLabelPage: React.FC = () => {
   const [data, setData] = useState<MenuItemDetails | null>(null);
@@ -205,42 +162,38 @@ const NutritionLabelPage: React.FC = () => {
 
           <Separator height='3px' marginTop={majorScale(0)} />
 
-          <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
-            <Text fontWeight={700} color='green700'>
-              Ingredients:
-            </Text>
-            <Text fontWeight={300}>
-              {data.ingredients.length > 0 ? data.ingredients.join(', ') : '—'}
-            </Text>
-          </Pane>
-
-          <Pane marginTop={majorScale(1)} display='flex' flexDirection='column'>
-            <Text fontWeight={700} color='green700'>
-              Allergens:
-            </Text>
-            <Text fontWeight={300}>
-              {data.allergens.length > 0 ? data.allergens.join(', ') : '—'}
-            </Text>
-          </Pane>
+          {data.ingredients.length > 0 && (
+            <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
+              <Text fontWeight={700} color='green700'>
+                Ingredients:
+              </Text>
+              <Text fontWeight={300}>{data.ingredients.join(', ')}</Text>
+            </Pane>
+          )}
+          {data.allergens.length > 0 && (
+            <Pane marginTop={majorScale(1)} display='flex' flexDirection='column'>
+              <Text fontWeight={700} color='green700'>
+                Allergens:
+              </Text>
+              <Text fontWeight={300}>{data.allergens.join(', ')}</Text>
+            </Pane>
+          )}
 
           {/* Dietary Tags */}
-          <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
-            <Text fontWeight={700} color='green700'>
-              Dietary Classifications:
-            </Text>
-            <Pane display='flex' flexWrap='wrap' gap={minorScale(2)} marginTop={minorScale(1)}>
-              {dietaryBadges.length > 0 ? (
-                dietaryBadges.map((tag) => (
+          {dietaryBadges.length > 0 && (
+            <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
+              <Text fontWeight={700} color='green700'>
+                Dietary Classifications:
+              </Text>
+              <Pane display='flex' flexWrap='wrap' gap={minorScale(2)} marginTop={minorScale(1)}>
+                {dietaryBadges.map((tag) => (
                   <Badge key={tag} color='green'>
                     {tag}
                   </Badge>
-                ))
-              ) : (
-                <Text fontWeight={300}>—</Text>
-              )}
+                ))}
+              </Pane>
             </Pane>
-          </Pane>
-
+          )}
           {/* Ratings */}
           {data?.averageRating !== null && (
             <Pane marginTop={majorScale(2)}>
@@ -272,122 +225,48 @@ const NutritionLabelPage: React.FC = () => {
           >
             {nutrient && (
               <>
-                {/* Total Fat */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Total Fat</Text>
-                  <Text textAlign='right'>{nutrient.totalFat || '—'}g</Text>
-                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
-                    <Text
-                      textAlign='right'
-                      color={getColorForDV(Math.round((nutrient.totalFat / 78) * 100))}
-                      fontWeight={600}
-                    >
-                      {Math.round((nutrient.totalFat / 78) * 100)}%
-                    </Text>
-                  </Tooltip>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
-
-                {/* Saturated Fat */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Saturated Fat</Text>
-                  <Text textAlign='right'>{nutrient.saturatedFat || '—'}g</Text>
-                  <Text textAlign='right'>—</Text>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
-
-                {/* Cholesterol */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Cholesterol</Text>
-                  <Text textAlign='right'>{nutrient.cholesterol || '—'}mg</Text>
-                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
-                    <Text
-                      textAlign='right'
-                      color={getColorForDV(Math.round((nutrient.cholesterol / 300) * 100))}
-                      fontWeight={600}
-                    >
-                      {Math.round((nutrient.cholesterol / 300) * 100)}%
-                    </Text>
-                  </Tooltip>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
-
-                {/* Sodium */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Sodium</Text>
-                  <Text textAlign='right'>{nutrient.sodium || '—'}mg</Text>
-                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
-                    <Text
-                      textAlign='right'
-                      color={getColorForDV(Math.round((nutrient.sodium / 2300) * 100))}
-                      fontWeight={600}
-                    >
-                      {Math.round((nutrient.sodium / 2300) * 100)}%
-                    </Text>
-                  </Tooltip>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
-
-                {/* Total Carbohydrates */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Total Carbohydrates</Text>
-                  <Text textAlign='right'>{nutrient.totalCarbohydrates || '—'}g</Text>
-                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
-                    <Text
-                      textAlign='right'
-                      color={getColorForDV(Math.round((nutrient.totalCarbohydrates / 275) * 100))}
-                      fontWeight={600}
-                    >
-                      {Math.round((nutrient.totalCarbohydrates / 275) * 100)}%
-                    </Text>
-                  </Tooltip>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
-
-                {/* Dietary Fiber */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Dietary Fiber</Text>
-                  <Text textAlign='right'>{nutrient.dietaryFiber || '—'}g</Text>
-                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
-                    <Text
-                      textAlign='right'
-                      color={getColorForDV(Math.round((nutrient.dietaryFiber / 28) * 100))}
-                      fontWeight={600}
-                    >
-                      {Math.round((nutrient.dietaryFiber / 28) * 100)}%
-                    </Text>
-                  </Tooltip>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
-
-                {/* Sugars */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Sugars</Text>
-                  <Text textAlign='right'>{nutrient.sugars || '—'}g</Text>
-                  <Text textAlign='right'>—</Text>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
-
-                {/* Protein */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Protein</Text>
-                  <Text textAlign='right'>{nutrient.protein || '—'}g</Text>
-                  <Tooltip content='Approximate % Daily Value based on 2,000-cal diet'>
-                    <Text
-                      textAlign='right'
-                      color={getColorForDV(Math.round((nutrient.protein / 50) * 100))}
-                      fontWeight={600}
-                    >
-                      {Math.round((nutrient.protein / 50) * 100)}%
-                    </Text>
-                  </Tooltip>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
+                <MacronutrientRow
+                  label='Total Fat'
+                  amount={nutrient.totalFat}
+                  unit='g'
+                  dvPercent={Math.round((nutrient.totalFat / 78) * 100)}
+                />
+                <MacronutrientRow label='Saturated Fat' amount={nutrient.saturatedFat} unit='g' />
+                <MacronutrientRow
+                  label='Cholesterol'
+                  amount={nutrient.cholesterol}
+                  unit='mg'
+                  dvPercent={Math.round((nutrient.cholesterol / 300) * 100)}
+                />
+                <MacronutrientRow
+                  label='Sodium'
+                  amount={nutrient.sodium}
+                  unit='mg'
+                  dvPercent={Math.round((nutrient.sodium / 2300) * 100)}
+                />
+                <MacronutrientRow
+                  label='Total Carbohydrates'
+                  amount={nutrient.totalCarbohydrates}
+                  unit='g'
+                  dvPercent={Math.round((nutrient.totalCarbohydrates / 275) * 100)}
+                />
+                <MacronutrientRow
+                  label='Dietary Fiber'
+                  amount={nutrient.dietaryFiber}
+                  unit='g'
+                  dvPercent={Math.round((nutrient.dietaryFiber / 28) * 100)}
+                />
+                <MacronutrientRow label='Sugars' amount={nutrient.sugars} unit='g' />
+                <MacronutrientRow
+                  label='Protein'
+                  amount={nutrient.protein}
+                  unit='g'
+                  dvPercent={Math.round((nutrient.protein / 50) * 100)}
+                />
               </>
             )}
           </Pane>
 
-          {/* Micronutrients */}
           {nutrient && (
             <>
               <Pane
@@ -408,41 +287,10 @@ const NutritionLabelPage: React.FC = () => {
                 display='grid'
                 rowGap={minorScale(2)}
               >
-                {/* Vitamin D */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Vitamin D</Text>
-                  <Text textAlign='right' color='green700' fontWeight={600}>
-                    {nutrient.vitaminD || '—'}%
-                  </Text>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
-
-                {/* Calcium */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Calcium</Text>
-                  <Text textAlign='right' color='green700' fontWeight={600}>
-                    {nutrient.calcium || '—'}%
-                  </Text>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
-
-                {/* Iron */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Iron</Text>
-                  <Text textAlign='right' color='green700' fontWeight={600}>
-                    {nutrient.iron || '—'}%
-                  </Text>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
-
-                {/* Potassium */}
-                <Pane display='grid' gridTemplateColumns='2fr 1fr' alignItems='center'>
-                  <Text fontWeight={500}>Potassium</Text>
-                  <Text textAlign='right' color='green700' fontWeight={600}>
-                    {nutrient.potassium || '—'}%
-                  </Text>
-                </Pane>
-                <Separator height='1px' marginTop={0} />
+                <MicronutrientRow label='Vitamin D' dv={nutrient.vitaminD} />
+                <MicronutrientRow label='Calcium' dv={nutrient.calcium} />
+                <MicronutrientRow label='Iron' dv={nutrient.iron} />
+                <MicronutrientRow label='Potassium' dv={nutrient.potassium} />
               </Pane>
             </>
           )}
