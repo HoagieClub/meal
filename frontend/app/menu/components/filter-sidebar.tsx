@@ -14,7 +14,7 @@ import {
   Button,
 } from 'evergreen-ui';
 
-import { AllergenKey, DietKey } from '@/types/dining';
+import { AllergenKey, DietKey } from '../types';
 import { ALLERGEN_STYLE_MAP, HALL_ICON_MAP, DIET_STYLE_MAP, DIET_LABEL_MAP } from '@/app/menu/data';
 
 interface FilterSidebarProps {

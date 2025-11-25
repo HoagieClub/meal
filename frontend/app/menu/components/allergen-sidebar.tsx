@@ -3,9 +3,6 @@
 import React from 'react';
 import { Pane, Heading, Text, majorScale, minorScale } from 'evergreen-ui';
 
-const SIDEBAR_WIDTH = 200;
-const ICON_SIZE = 28;
-
 interface AllergenSidebarProps {
   allergens: string[];
   selected: string[];
@@ -21,6 +18,9 @@ export default function AllergenSidebar({
   onToggle,
   theme,
 }: AllergenSidebarProps) {
+  const SIDEBAR_WIDTH = 200;
+  const ICON_SIZE = 28;
+
   return (
     <Pane
       className='hidden sm:flex'

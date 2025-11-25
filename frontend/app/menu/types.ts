@@ -70,6 +70,15 @@ interface RawVenue {
   menu: { menus?: RawApiMenuItem[] };
 }
 
+interface BuildDisplayDataProps {
+  venues: UIVenue[];
+  appliedHalls: string[];
+  appliedDietary: DietKey[];
+  appliedAllergens: AllergenKey[];
+  searchTerm: string;
+  pinnedHalls: Set<string>;
+}
+
 export type {
   MealIcon,
   Meal,
@@ -81,4 +90,5 @@ export type {
   UIVenue,
   RawApiMenuItem,
   RawVenue,
+  BuildDisplayDataProps,
 };

@@ -9,7 +9,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'evergreen-ui';
-import { Meal as MealType } from '@/types/dining';
+import { Meal as MealType } from '../types';
 
 interface MenuPageHeaderProps {
   meal: MealType;
@@ -84,7 +84,7 @@ export default function MenuPageHeader({
             <ChevronRightIcon size={20} />
           </Button>
         </Pane>
-        
+
         <Pane
           display='flex'
           border={`1px solid ${theme.colors.green700}`}
