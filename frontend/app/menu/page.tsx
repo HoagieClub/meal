@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import FilterSidebar from './components/FilterSidebar';
+import FilterSidebar from './components/filter-sidebar';
 import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon } from 'evergreen-ui';
 import HallMenuModal from '@/components/HallMenuModal';
 import DiningHallCard from '@/components/DiningHallCard';
@@ -12,8 +12,8 @@ import { classifyDish } from '@/utils/dietary';
 import SkeletonDiningHallCard from '@/app/menu/components/SkeletonDiningHallCard';
 import { categorize, extractAllergens } from '@/utils/dining';
 import { RawApiMenuItem, RawVenue, Meal as MealType } from '@/types/dining';
-import MenuPageHeader from '@/app/menu/components/MenuHeader';
-import AllergenSidebar from '@/app/menu/components/AllergenSidebar';
+import MenuPageHeader from '@/app/menu/components/menu-header';
+import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
 import {
   MEAL_RANGES,
   ALLERGEN_EMOJI,
@@ -25,7 +25,7 @@ import {
   PINNED_HALLS_KEY,
   initialSelectedHalls,
   ALLERGENS,
-} from '@/app/menu/constants';
+} from '@/app/menu/data';
 
 export default function Index() {
   const theme = useTheme();

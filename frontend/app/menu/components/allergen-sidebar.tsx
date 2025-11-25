@@ -1,7 +1,10 @@
 'use client';
 
-import { Pane, Heading, Text, majorScale, minorScale } from 'evergreen-ui';
 import React from 'react';
+import { Pane, Heading, Text, majorScale, minorScale } from 'evergreen-ui';
+
+const SIDEBAR_WIDTH = 200;
+const ICON_SIZE = 28;
 
 interface AllergenSidebarProps {
   allergens: string[];
@@ -22,7 +25,7 @@ export default function AllergenSidebar({
     <Pane
       className='hidden sm:flex'
       flexDirection='column'
-      width={200}
+      width={SIDEBAR_WIDTH}
       padding={majorScale(3)}
       overflowY='auto'
       zIndex={2}
@@ -30,43 +33,41 @@ export default function AllergenSidebar({
       <Heading size={600} color={theme.colors.green900}>
         Allergens to Avoid
       </Heading>
-
       <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
-        {allergens.map((a) => {
-          const isSelected = selected.includes(a);
+        {allergens.map((allergen) => {
+          const isSelected = selected.includes(allergen);
+          const allergenKey = allergen.toLowerCase();
+          const emojiForAllergen = emoji[allergenKey];
+          const backgroundColor = isSelected ? theme.colors.red100 : theme.colors.gray100;
 
           return (
             <Pane
-              key={a}
+              key={allergen}
               display='flex'
               alignItems='center'
               cursor='pointer'
               opacity={isSelected ? 1.0 : 0.6}
-              onClick={() => onToggle(a)}
+              onClick={() => onToggle(allergen)}
               title={
-                isSelected ? `Hiding items containing ${a}` : `Click to hide items containing ${a}`
+                isSelected
+                  ? `Hiding items containing ${allergen}`
+                  : `Click to hide items containing ${allergen}`
               }
             >
               <Pane
-                width={28}
-                height={28}
+                width={ICON_SIZE}
+                height={ICON_SIZE}
                 display='inline-flex'
                 alignItems='center'
                 justifyContent='center'
-                borderRadius={14}
-                background={isSelected ? theme.colors.red100 : theme.colors.gray100}
-                border={
-                  isSelected
-                    ? `1px solid ${theme.colors.red500}`
-                    : `1px solid ${theme.colors.gray400}`
-                }
+                borderRadius={ICON_SIZE / 2}
+                background={backgroundColor}
                 marginRight={minorScale(1)}
               >
-                <Text size={200}>{emoji[a.toLowerCase()]}</Text>
+                <Text size={200}>{emojiForAllergen}</Text>
               </Pane>
-
               <Text size={400} color={theme.colors.green900} fontWeight={isSelected ? 600 : 400}>
-                {a}
+                {allergen}
               </Text>
             </Pane>
           );

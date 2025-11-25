@@ -33,6 +33,12 @@ export default function MenuPageHeader({
   setMeal,
 }: MenuPageHeaderProps) {
   const theme = useTheme();
+  const formattedDate = selectedDate.toLocaleString('en-US', {
+    weekday: 'long',
+    month: 'numeric',
+    day: 'numeric',
+  });
+
   return (
     <Pane
       display='flex'
@@ -45,12 +51,10 @@ export default function MenuPageHeader({
         <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
           {getMealLabel(meal).toUpperCase()}
         </Heading>
-
         <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
           {getDisplayMealRange(meal)}
         </Text>
       </Pane>
-      {/* Date + arrows */}
       <Pane display='flex' gap={minorScale(2)} className='flex-col flex justify-center my-4'>
         <Pane display='flex' alignItems='center' gap={minorScale(2)}>
           <Button
@@ -63,15 +67,9 @@ export default function MenuPageHeader({
           >
             <ChevronLeftIcon size={20} />
           </Button>
-
           <Text className='text-2xl text-center w-[14rem] truncate' color={theme.colors.green700}>
-            {selectedDate.toLocaleString('en-US', {
-              weekday: 'long',
-              month: 'numeric',
-              day: 'numeric',
-            })}
+            {formattedDate}
           </Text>
-
           <Button
             background='white'
             border={`1px solid ${theme.colors.green700}`}
@@ -83,7 +81,6 @@ export default function MenuPageHeader({
             <ChevronRightIcon size={20} />
           </Button>
         </Pane>
-        {/* ── Meal tabs ────────────────────────────── */}
         <Pane
           display='flex'
           border={`1px solid ${theme.colors.green700}`}
@@ -91,27 +88,30 @@ export default function MenuPageHeader({
           background={theme.colors.green25}
           overflow='hidden'
         >
-          {availableMeals.map((m) => (
-            <Pane
-              key={m}
-              flex={1}
-              textAlign='center'
-              paddingY={minorScale(1)}
-              cursor='pointer'
-              background={meal === m ? theme.colors.green700 : 'transparent'}
-              color={meal === m ? 'white' : theme.colors.green800}
-              className='text-xs px-4'
-              fontWeight={300}
-              onClick={() => setMeal(m)}
-            >
-              {getMealLabel(m)}
-            </Pane>
-          ))}
+          {availableMeals.map((mealOption) => {
+            const isSelectedMeal = meal === mealOption;
+            const backgroundColor = isSelectedMeal ? theme.colors.green700 : 'transparent';
+            const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
+            return (
+              <Pane
+                key={mealOption}
+                flex={1}
+                textAlign='center'
+                paddingY={minorScale(1)}
+                cursor='pointer'
+                background={backgroundColor}
+                color={textColor}
+                className='text-xs px-4'
+                fontWeight={300}
+                onClick={() => setMeal(mealOption)}
+              >
+                {getMealLabel(mealOption)}
+              </Pane>
+            );
+          })}
         </Pane>
       </Pane>
-      <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240}>
-        {/* This pane is a spacer to maintain the 3-column header alignment. */}
-      </Pane>
+      <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240} />
     </Pane>
   );
 }
