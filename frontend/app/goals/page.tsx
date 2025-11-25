@@ -46,11 +46,11 @@ import {
   FloppyDiskIcon,
 } from 'evergreen-ui';
 import { toast } from 'sonner';
-import NutrientProgressBar from '@/app/goals/components/NutrientProgressBar';
+import NutrientProgressBar from '@/app/goals/components/nutrient-progress-bar';
 import { Nutrients, PlanSettings, WeeklyPlan, DailyPlan, MealType } from './types';
-import MicronutrientPopover from '@/app/goals/components/MicronutrientPopover';
-import { SkeletonWeeklySummary, SkeletonDayPlanCard } from '@/app/goals/components/Skeletons';
-import SavedPlansManager from '@/app/goals/components/SavedPlansManager';
+import MicronutrientPopover from '@/app/goals/components/micronutrient-popover';
+import { SkeletonWeeklySummary, SkeletonDayPlanCard } from '@/app/goals/components/skeletons';
+import SavedPlansManager from '@/app/goals/components/saved-plans-manager';
 import useLocalStorage from '@/hooks/use-local-storage';
 import useMediaQuery from '@/hooks/use-media-query';
 import {

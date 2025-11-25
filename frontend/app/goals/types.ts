@@ -46,4 +46,27 @@ interface PlanSettings {
   preferredHall: string;
 }
 
-export type { MealType, Nutrients, FoodItem, DailyPlan, WeeklyPlan, PlanSettings };
+interface SavedPlansManagerProps {
+  savedPlans: Record<string, WeeklyPlan>;
+  setSavedPlans: (value: Record<string, WeeklyPlan>) => void;
+  setCurrentDate: (value: string) => void;
+  setStoredPlan: (value: WeeklyPlan | null) => void;
+}
+
+interface NutrientProgressBarProps {
+  label: string;
+  value: number;
+  target: number;
+  unit: string;
+}
+
+export type {
+  MealType,
+  Nutrients,
+  FoodItem,
+  DailyPlan,
+  WeeklyPlan,
+  PlanSettings,
+  SavedPlansManagerProps,
+  NutrientProgressBarProps,
+};

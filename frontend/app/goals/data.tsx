@@ -69,6 +69,21 @@ const DEFAULT_NUTRIENTS: Nutrients = {
   zinc: 0,
 };
 
+const MICRONUTRIENTS_MAP: { key: keyof Nutrients; name: string; unit: string }[] = [
+  { key: 'calcium', name: 'Calcium', unit: 'mg' },
+  { key: 'iron', name: 'Iron', unit: 'mg' },
+  { key: 'potassium', name: 'Potassium', unit: 'mg' },
+  { key: 'vitaminD', name: 'Vitamin D', unit: 'mcg' },
+  { key: 'vitaminA', name: 'Vitamin A', unit: 'mcg' },
+  { key: 'vitaminC', name: 'Vitamin C', unit: 'mg' },
+  { key: 'magnesium', name: 'Magnesium', unit: 'mg' },
+  { key: 'zinc', name: 'Zinc', unit: 'mg' },
+  { key: 'sodium', name: 'Sodium', unit: 'mg' },
+  { key: 'cholesterol', name: 'Cholesterol', unit: 'mg' },
+  { key: 'fiber', name: 'Fiber', unit: 'g' },
+  { key: 'sugar', name: 'Sugar', unit: 'g' },
+];
+
 export {
   DAILY_VALUES,
   DINING_HALLS,
@@ -76,4 +91,5 @@ export {
   DIET_PRESETS,
   ALLERGENS_LIST,
   DEFAULT_NUTRIENTS,
+  MICRONUTRIENTS_MAP,
 };

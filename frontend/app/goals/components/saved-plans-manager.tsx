@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import { WeeklyPlan } from '@/types/goals';
+import { WeeklyPlan } from '../types';
 import {
   Popover,
   Position,
@@ -12,13 +12,7 @@ import {
   minorScale,
 } from 'evergreen-ui';
 import { CalendarIcon, TrashIcon, BookmarkIcon } from 'lucide-react';
-
-interface SavedPlansManagerProps {
-  savedPlans: Record<string, WeeklyPlan>;
-  setSavedPlans: (value: Record<string, WeeklyPlan>) => void;
-  setCurrentDate: (value: string) => void;
-  setStoredPlan: (value: WeeklyPlan | null) => void;
-}
+import { SavedPlansManagerProps } from '../types';
 
 export default function SavedPlansManager({
   savedPlans,
