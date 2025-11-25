@@ -2,18 +2,13 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon } from 'evergreen-ui';
-import DiningHallCard from '@/components/DiningHallCard';
-import HallMenuModal from '@/components/HallMenuModal';
+import DiningHallCard from '@/components/dining-hall-card';
+import HallMenuModal from '@/components/hall-menu-modal';
 import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
 import FilterSidebar from './components/filter-sidebar';
 import MenuPageHeader from '@/app/menu/components/menu-header';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
-import {
-  AllergenKey,
-  DietKey,
-  UIVenue,
-  Meal as MealType,
-} from './types';
+import { AllergenKey, DietKey, UIVenue, Meal as MealType } from './types';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import {
@@ -26,49 +21,34 @@ import {
 } from '@/app/menu/data';
 import { buildDisplayData, fetchMenuData } from './actions';
 
-const defaultMeal: MealType = 'Breakfast';
 const defaultDate = new Date(new Date().setHours(0, 0, 0, 0));
-const PREF_EXPIRY_MS = 2 * 60 * 60 * 1000;
-const PREFS_KEY = 'diningPrefs';
 const FILTER_PREFS_KEY = 'diningFilterPrefs';
 const PINNED_HALLS_KEY = 'diningPinnedHalls';
 
 export default function Index() {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
-  const [venues, setVenues] = useState<UIVenue[]>([]);
 
-  // ─── Date + Meal ─────────────────────────────────────────────────────────
-  // Use the hook to store date (as string) and meal in one object
-  const [prefs, setPrefs] = useLocalStorage(
-    PREFS_KEY,
-    { date: defaultDate.toISOString(), meal: defaultMeal },
-    PREF_EXPIRY_MS
-  );
+  const [menusByMeal, setMenusByMeal] = useState<{
+    Breakfast?: UIVenue[];
+    Lunch?: UIVenue[];
+    Dinner?: UIVenue[];
+  }>({});
+  const [menuCache, setMenuCache] = useLocalStorage<Record<string, any>>('menuCache', {});
 
-  // Derive Date object and meal from the stored preferences
-  const selectedDate = useMemo(() => new Date(prefs.date), [prefs.date]);
-  const meal = prefs.meal;
+  const [selectedDate, setSelectedDate] = useState(defaultDate);
+  const [meal, setMeal] = useState(() => {
+    const now = new Date();
+    const hour = now.getHours();
+    if (hour < 11) return 'Breakfast';
+    else if (hour < 17) return 'Lunch';
+    else return 'Dinner';
+  });
 
-  // Create setters that update the object in localStorage
-  const setSelectedDate = (value: Date | ((val: Date) => Date)) => {
-    setLoading(true); // <-- **Set loading immediately**
-    const newDate = value instanceof Function ? value(selectedDate) : value;
-    setPrefs((prev) => ({ ...prev, date: newDate.toISOString() }));
-  };
-
-  const setMeal = (value: MealType | ((val: MealType) => MealType)) => {
-    setLoading(true); // <-- **Set loading immediately**
-    const newMeal = value instanceof Function ? value(meal) : value;
-    setPrefs((prev) => ({ ...prev, meal: newMeal }));
-  };
-
-  // ─── Filters (Not from DB) ──────────────────────────────────────────────
-  // Use the hook for searchTerm and showNutrition
   const [searchTerm, setSearchTerm] = useLocalStorage('diningSearchTerm', '');
   const [showNutrition, setShowNutrition] = useLocalStorage('diningShowNutrition', true);
 
-  const PAGE_BG = backgroundByMeal(theme)[meal];
+  const PAGE_BG = backgroundByMeal(theme)[meal as MealType];
   const dayOfWeek = selectedDate.getDay();
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
   const availableMeals: MealType[] = isWeekend
@@ -81,6 +61,7 @@ export default function Index() {
       t.setDate(t.getDate() - 1);
       return t;
     });
+
   const nextDay = () =>
     setSelectedDate((d) => {
       const t = new Date(d);
@@ -88,12 +69,12 @@ export default function Index() {
       return t;
     });
 
-  function formatMenuId(date: Date, meal: MealType): string {
+  const formatMenuId = (date: Date, meal: MealType): string => {
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const dd = String(date.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}-${meal}`;
-  } // ─── Filters (From DB) ────────────────────────────────────────────────
+  };
 
   // ** Store applied filters in localStorage **
   const [appliedFilterPrefs, setAppliedFilterPrefs] = useLocalStorage(FILTER_PREFS_KEY, {
@@ -183,7 +164,6 @@ export default function Index() {
 
   const resetTemp = () => {
     setTempHalls([...initialSelectedHalls]);
-    // ** Reset dietary and allergen filters to empty **
     setTempDietary([]);
     setTempAllergens([]);
   };
@@ -226,25 +206,56 @@ export default function Index() {
   // ─── Data Fetching for Menus ────────────────────────────────────────────
 
   useEffect(() => {
+    if (!profileLoaded || !selectedDate) return;
+
     let isCurrent = true;
     const checkIsCurrent = () => isCurrent;
-    const menuId = formatMenuId(selectedDate, meal);
+    setLoading(true);
+    const dateKey = selectedDate.toISOString().split('T')[0];
 
-    fetchMenuData(menuId, checkIsCurrent)
-      .then((result: UIVenue[] | null) => {
-        if (result && checkIsCurrent()) {
-          setVenues(result);
-        }
-      })
-      .finally(() => {
-        if (checkIsCurrent()) setLoading(false);
+    async function fetchAllMeals() {
+      let baseMeals: MealType[] = isWeekend
+        ? ['Lunch', 'Dinner']
+        : ['Breakfast', 'Lunch', 'Dinner'];
+      const mealsToFetch = [meal, ...baseMeals.filter((m) => m !== meal)];
+
+      const ids = mealsToFetch.map((m) => formatMenuId(selectedDate, m as MealType));
+      const results = await Promise.all(ids.map((id) => fetchMenuData(id, checkIsCurrent)));
+      if (!checkIsCurrent()) return;
+
+      const combined: any = {};
+      results.forEach((res, i) => {
+        combined[mealsToFetch[i]] = res ?? [];
       });
+
+      const noData = Object.values(combined as Record<MealType, UIVenue[]>).every(
+        (items: UIVenue[]) => items.length === 0
+      );
+      if (!noData) {
+        setMenuCache((prev) => ({
+          ...prev,
+          [dateKey]: combined,
+        }));
+      }
+      setMenusByMeal(combined);
+      setLoading(false);
+    }
+
+    if (menuCache[dateKey]) {
+      console.log('Menu cache hit for date:', dateKey);
+      console.log(menuCache[dateKey]);
+      setMenusByMeal(menuCache[dateKey]);
+      setLoading(false);
+    } else {
+      fetchAllMeals();
+    }
 
     return () => {
       isCurrent = false;
     };
-  }, [selectedDate, meal, profileLoaded]);
+  }, [selectedDate, profileLoaded, isWeekend]);
 
+  const venues = menusByMeal[meal as MealType] ?? [];
   const displayData = useMemo(
     () =>
       buildDisplayData({
@@ -271,8 +282,6 @@ export default function Index() {
     }
     return MEAL_RANGES[m];
   };
-
-  // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
     <Pane
@@ -324,7 +333,7 @@ export default function Index() {
 
       <Pane flex={1} className='overflow-x-hidden h-full no-scrollbar px-4'>
         <MenuPageHeader
-          meal={meal}
+          meal={meal as MealType}
           selectedDate={selectedDate}
           prevDay={prevDay}
           nextDay={nextDay}

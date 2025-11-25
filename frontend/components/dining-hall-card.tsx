@@ -12,7 +12,7 @@ import {
   Avatar,
   PinIcon,
 } from 'evergreen-ui';
-import MenuSection from './MenuSection';
+import MenuSection from './menu-selection';
 
 // ——— Import all your banners + a default ———
 import rockyBanner from '../public/images/banners/rockybanner.png';

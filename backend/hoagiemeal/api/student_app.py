@@ -86,6 +86,11 @@ class StudentApp:
         url = f"{STUDENT_APP_BASE_URL}{endpoint}"
         try:
             response = requests.get(url, params=params, headers=headers)
+            if response.status_code == 401:
+                logger.info("Access token expired. Refreshing...")
+                self._refresh_token(grant_type="client_credentials")
+                headers["Authorization"] = f"Bearer {self.ACCESS_TOKEN}"
+                response = requests.get(url, params=params, headers=headers)
             response.raise_for_status()
             logger.debug(f"Request to {url} successful.")
             if fmt == "json":

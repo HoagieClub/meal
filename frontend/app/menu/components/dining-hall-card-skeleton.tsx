@@ -1,6 +1,6 @@
 import { Pane, majorScale, minorScale } from 'evergreen-ui';
 import { DefaultTheme } from 'evergreen-ui';
-import SkeletonBlock from '@/components/SkeletonBlock';
+import SkeletonBlock from '@/components/skeleton-block';
 
 export default function SkeletonDiningHallCard({ theme }: { theme: DefaultTheme }) {
   return (

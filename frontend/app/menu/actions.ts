@@ -12,7 +12,6 @@ const fetchMenuData = async (
     if (!response.ok) {
       throw new Error(`HTTP error fetching menu! status: ${response.status}`);
     }
-
     const data: { locations: { location: RawVenue[] } } = await response.json();
     if (!isCurrent()) return null;
 

@@ -92,7 +92,6 @@ const MenuSection: React.FC<MenuSectionProps> = ({
                           : Array.from(allergens).filter((a) =>
                               item.description.toLowerCase().includes(a.toLowerCase())
                             );
-                      console.log(matched);
                       return matched.length > 0 && matched[0] != '' ? (
                         matched.map((a) => (
                           <Pane

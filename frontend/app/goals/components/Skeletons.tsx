@@ -12,7 +12,7 @@
  */
 
 import { Pane, majorScale, minorScale, DefaultTheme } from 'evergreen-ui';
-import SkeletonBlock from '@/components/SkeletonBlock';
+import SkeletonBlock from '@/components/skeleton-block';
 import { Card } from 'evergreen-ui';
 
 export const SkeletonNutrientProgressBar: React.FC<{ theme: DefaultTheme }> = ({ theme }) => (

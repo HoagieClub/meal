@@ -3,7 +3,7 @@
 import React from 'react';
 import { Dialog, Pane, useTheme, majorScale, minorScale } from 'evergreen-ui';
 import { Separator } from './ui/separator';
-import MenuSection from './MenuSection';
+import MenuSection from './menu-selection';
 import { UIMenuItem, UIVenue } from '@/types/dining';
 
 interface HallMenuModalProps {
