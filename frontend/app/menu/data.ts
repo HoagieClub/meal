@@ -1,5 +1,4 @@
-import { AllergenKey, DietKey } from '@/types/dining';
-import { MealType } from '@/types/goals';
+import { AllergenKey, DietKey, Meal } from './types';
 import cjlIcon from '@/public/images/icons/cjl.png';
 import defaultIcon from '@/public/images/icons/default.png';
 import forbesIcon from '@/public/images/icons/forbes.png';
@@ -8,6 +7,13 @@ import whitmanIcon from '@/public/images/icons/whitman.png';
 import yehIcon from '@/public/images/icons/yeh.png';
 import rockyIcon from '@/public/images/icons/rocky.png';
 import { Theme } from 'evergreen-ui';
+import { Meal as MealType } from './types';
+
+const backgroundByMeal = (theme: Theme): Record<MealType, string> => ({
+  Breakfast: theme.colors.green100 as string,
+  Lunch: theme.colors.green200 as string,
+  Dinner: theme.colors.green400 as string,
+});
 
 const MEAL_RANGES: Record<MealType, string> = {
   Breakfast: '7:30 AM – 10:30 AM',
@@ -52,6 +58,8 @@ const ALLERGENS: AllergenKey[] = [
   'Fish',
   'Sesame',
 ];
+
+const DIETARY_TAGS: DietKey[] = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
 
 const ALLERGEN_STYLE_MAP = (theme: any): Record<AllergenKey, any> => ({
   Peanut: {
@@ -131,10 +139,12 @@ const DIET_LABEL_MAP: Record<DietKey, string> = {
 };
 
 export {
+  backgroundByMeal,
   MEAL_RANGES,
   ALLERGEN_EMOJI,
   initialSelectedHalls,
   ALLERGENS,
+  DIETARY_TAGS,
   ALLERGEN_STYLE_MAP,
   HALL_ICON_MAP,
   DIET_STYLE_MAP,

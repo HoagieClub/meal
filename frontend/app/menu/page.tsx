@@ -11,15 +11,19 @@ import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skele
 import {
   AllergenKey,
   DietKey,
-  UIMenuItem,
   UIVenue,
-  RawApiMenuItem,
-  RawVenue,
   Meal as MealType,
 } from './types';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import { MEAL_RANGES, ALLERGEN_EMOJI, initialSelectedHalls, ALLERGENS } from '@/app/menu/data';
+import {
+  MEAL_RANGES,
+  ALLERGEN_EMOJI,
+  initialSelectedHalls,
+  ALLERGENS,
+  backgroundByMeal,
+  DIETARY_TAGS,
+} from '@/app/menu/data';
 import { buildDisplayData, fetchMenuData } from './actions';
 
 const defaultMeal: MealType = 'Breakfast';
@@ -31,14 +35,6 @@ const PINNED_HALLS_KEY = 'diningPinnedHalls';
 
 export default function Index() {
   const theme = useTheme();
-
-  const backgroundByMeal: Record<MealType, string> = {
-    Breakfast: theme.colors.green100,
-    Lunch: theme.colors.green200,
-    Dinner: theme.colors.green400,
-  };
-
-  // ─── Load & Transform Data ───────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [venues, setVenues] = useState<UIVenue[]>([]);
 
@@ -72,11 +68,9 @@ export default function Index() {
   const [searchTerm, setSearchTerm] = useLocalStorage('diningSearchTerm', '');
   const [showNutrition, setShowNutrition] = useLocalStorage('diningShowNutrition', true);
 
-  const PAGE_BG = backgroundByMeal[meal];
-
+  const PAGE_BG = backgroundByMeal(theme)[meal];
   const dayOfWeek = selectedDate.getDay();
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
-
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
   const availableMeals: MealType[] = isWeekend
     ? ['Lunch', 'Dinner']
     : ['Breakfast', 'Lunch', 'Dinner'];
@@ -100,9 +94,6 @@ export default function Index() {
     const dd = String(date.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}-${meal}`;
   } // ─── Filters (From DB) ────────────────────────────────────────────────
-
-  const [halls] = useState<string[]>(initialSelectedHalls);
-  const DIETARY: DietKey[] = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
 
   // ** Store applied filters in localStorage **
   const [appliedFilterPrefs, setAppliedFilterPrefs] = useLocalStorage(FILTER_PREFS_KEY, {
@@ -294,7 +285,7 @@ export default function Index() {
         initialHalls={initialSelectedHalls}
         tempHalls={tempHalls}
         toggleHall={(h) => toggle(h, tempHalls, setTempHalls)}
-        DIETARY={DIETARY}
+        DIETARY={DIETARY_TAGS}
         tempDietary={tempDietary}
         toggleDietary={(d) => toggle(d, tempDietary, setTempDietary)}
         ALLERGENS={ALLERGENS}
