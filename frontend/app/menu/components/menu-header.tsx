@@ -55,6 +55,7 @@ export default function MenuPageHeader({
           {getDisplayMealRange(meal)}
         </Text>
       </Pane>
+
       <Pane display='flex' gap={minorScale(2)} className='flex-col flex justify-center my-4'>
         <Pane display='flex' alignItems='center' gap={minorScale(2)}>
           <Button
@@ -67,9 +68,11 @@ export default function MenuPageHeader({
           >
             <ChevronLeftIcon size={20} />
           </Button>
+
           <Text className='text-2xl text-center w-[14rem] truncate' color={theme.colors.green700}>
             {formattedDate}
           </Text>
+
           <Button
             background='white'
             border={`1px solid ${theme.colors.green700}`}
@@ -81,6 +84,7 @@ export default function MenuPageHeader({
             <ChevronRightIcon size={20} />
           </Button>
         </Pane>
+        
         <Pane
           display='flex'
           border={`1px solid ${theme.colors.green700}`}

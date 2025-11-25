@@ -1,6 +1,6 @@
 import { Pane, majorScale, minorScale } from 'evergreen-ui';
 import { DefaultTheme } from 'evergreen-ui';
-import SkeletonBlock from '../../../components/SkeletonBlock';
+import SkeletonBlock from '@/components/SkeletonBlock';
 
 export default function SkeletonDiningHallCard({ theme }: { theme: DefaultTheme }) {
   return (
@@ -19,13 +19,11 @@ export default function SkeletonDiningHallCard({ theme }: { theme: DefaultTheme 
         <SkeletonBlock width={24} height={24} borderRadius={999} theme={theme} />
         <SkeletonBlock width={24} height={24} borderRadius={999} theme={theme} />
       </Pane>
-
       <Pane>
         <SkeletonBlock width='50%' height={18} theme={theme} marginBottom={majorScale(1)} />
         <SkeletonBlock width='90%' height={14} theme={theme} marginBottom={minorScale(1)} />
         <SkeletonBlock width='80%' height={14} theme={theme} marginBottom={minorScale(1)} />
       </Pane>
-
       <Pane>
         <SkeletonBlock width='60%' height={18} theme={theme} marginBottom={majorScale(1)} />
         <SkeletonBlock width='85%' height={14} theme={theme} marginBottom={minorScale(1)} />

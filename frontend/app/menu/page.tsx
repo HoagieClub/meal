@@ -9,7 +9,7 @@ import { AllergenKey, DietKey, UIMenuItem, UIVenue } from '@/types/dining';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { classifyDish } from '@/utils/dietary';
-import SkeletonDiningHallCard from '@/app/menu/components/SkeletonDiningHallCard';
+import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
 import { categorize, extractAllergens } from '@/utils/dining';
 import { RawApiMenuItem, RawVenue, Meal as MealType } from '@/types/dining';
 import MenuPageHeader from '@/app/menu/components/menu-header';

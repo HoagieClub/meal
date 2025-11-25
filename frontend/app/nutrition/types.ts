@@ -1,4 +1,16 @@
-export interface NutrientInfo {
+interface MacronutrientRowProps {
+  label: string;
+  amount: number | string | null;
+  unit: string;
+  dvPercent: number | null;
+}
+
+interface MicronutrientRowProps {
+  label: string;
+  dvPercent?: string | null;
+}
+
+interface NutrientInfo {
   servingSize: string;
   servingUnit: string;
   calories: number;
@@ -12,13 +24,13 @@ export interface NutrientInfo {
   dietaryFiber: number;
   sugars: number;
   protein: number;
-  vitaminD: string; // API returns string "0.00"
-  potassium: string; // API returns string "1.00"
-  calcium: string; // API returns string "16.00"
-  iron: string; // API returns string "40.00"
+  vitaminD: string;
+  potassium: string;
+  calcium: string;
+  iron: string;
 }
 
-export interface MenuItemDetails {
+interface MenuItemDetails {
   id: number;
   apiId: number;
   name: string;
@@ -35,3 +47,5 @@ export interface MenuItemDetails {
   averageRating: number | null;
   ratingCount: number;
 }
+
+export type { MacronutrientRowProps, MicronutrientRowProps, NutrientInfo, MenuItemDetails };
