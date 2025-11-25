@@ -29,13 +29,6 @@ const ALLERGEN_EMOJI: Record<string, string> = {
   sesame: '🍔',
 };
 
-const defaultMeal: MealType = 'Breakfast';
-const defaultDate = new Date(new Date().setHours(0, 0, 0, 0));
-const PREF_EXPIRY_MS = 2 * 60 * 60 * 1000;
-const PREFS_KEY = 'diningPrefs';
-const FILTER_PREFS_KEY = 'diningFilterPrefs';
-const PINNED_HALLS_KEY = 'diningPinnedHalls';
-
 const initialSelectedHalls = [
   'Forbes College',
   'Mathey College',
@@ -140,12 +133,6 @@ const DIET_LABEL_MAP: Record<DietKey, string> = {
 export {
   MEAL_RANGES,
   ALLERGEN_EMOJI,
-  defaultMeal,
-  defaultDate,
-  PREF_EXPIRY_MS,
-  PREFS_KEY,
-  FILTER_PREFS_KEY,
-  PINNED_HALLS_KEY,
   initialSelectedHalls,
   ALLERGENS,
   ALLERGEN_STYLE_MAP,

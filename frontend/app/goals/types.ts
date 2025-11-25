@@ -1,6 +1,6 @@
-export type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
+type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
-export interface Nutrients {
+interface Nutrients {
   calories: number;
   protein: number;
   fat: number;
@@ -19,7 +19,7 @@ export interface Nutrients {
   zinc: number;
 }
 
-export interface FoodItem {
+interface FoodItem {
   apiId: number;
   name: string;
   location: string;
@@ -28,15 +28,15 @@ export interface FoodItem {
   nutrition: Nutrients;
 }
 
-export interface DailyPlan {
+interface DailyPlan {
   date: Date | string;
   meals: { Breakfast: FoodItem[]; Lunch: FoodItem[]; Dinner: FoodItem[] };
   totals: Nutrients;
 }
 
-export type WeeklyPlan = DailyPlan[];
+type WeeklyPlan = DailyPlan[];
 
-export interface PlanSettings {
+interface PlanSettings {
   preset: string;
   calories: number;
   protein: number;
@@ -45,3 +45,5 @@ export interface PlanSettings {
   allergens: string[];
   preferredHall: string;
 }
+
+export type { MealType, Nutrients, FoodItem, DailyPlan, WeeklyPlan, PlanSettings };

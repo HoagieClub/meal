@@ -47,7 +47,7 @@ import {
 } from 'evergreen-ui';
 import { toast } from 'sonner';
 import NutrientProgressBar from '@/app/goals/components/NutrientProgressBar';
-import { Nutrients, PlanSettings, WeeklyPlan, DailyPlan, MealType, FoodItem } from '@/types/goals';
+import { Nutrients, PlanSettings, WeeklyPlan, DailyPlan, MealType } from './types';
 import MicronutrientPopover from '@/app/goals/components/MicronutrientPopover';
 import { SkeletonWeeklySummary, SkeletonDayPlanCard } from '@/app/goals/components/Skeletons';
 import SavedPlansManager from '@/app/goals/components/SavedPlansManager';
@@ -59,13 +59,8 @@ import {
   HALL_NAME_BY_ID,
   DINING_HALLS,
   ALLERGENS_LIST,
-} from './constants';
-import {
-  fetchMenuFor,
-  findBestMealCombination,
-  generateDayPlan,
-  handleGeneratePlan,
-} from './actions';
+} from './data';
+import { generateDayPlan, handleGeneratePlan } from './actions';
 
 // --- UI COMPONENTS ---
 // These are the reusable building blocks for our UI, like progress bars and popovers.

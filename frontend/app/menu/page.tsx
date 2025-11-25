@@ -1,31 +1,34 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import FilterSidebar from './components/filter-sidebar';
 import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon } from 'evergreen-ui';
-import HallMenuModal from '@/components/HallMenuModal';
 import DiningHallCard from '@/components/DiningHallCard';
-import { AllergenKey, DietKey, UIMenuItem, UIVenue } from '@/types/dining';
+import HallMenuModal from '@/components/HallMenuModal';
+import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
+import FilterSidebar from './components/filter-sidebar';
+import MenuPageHeader from '@/app/menu/components/menu-header';
+import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
+import {
+  AllergenKey,
+  DietKey,
+  UIMenuItem,
+  UIVenue,
+  RawApiMenuItem,
+  RawVenue,
+  Meal as MealType,
+} from './types';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import { classifyDish } from '@/utils/dietary';
-import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
 import { categorize, extractAllergens } from '@/utils/dining';
-import { RawApiMenuItem, RawVenue, Meal as MealType } from '@/types/dining';
-import MenuPageHeader from '@/app/menu/components/menu-header';
-import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
-import {
-  MEAL_RANGES,
-  ALLERGEN_EMOJI,
-  defaultMeal,
-  defaultDate,
-  PREF_EXPIRY_MS,
-  PREFS_KEY,
-  FILTER_PREFS_KEY,
-  PINNED_HALLS_KEY,
-  initialSelectedHalls,
-  ALLERGENS,
-} from '@/app/menu/data';
+import { classifyDish } from '@/utils/dietary';
+import { MEAL_RANGES, ALLERGEN_EMOJI, initialSelectedHalls, ALLERGENS } from '@/app/menu/data';
+
+const defaultMeal: MealType = 'Breakfast';
+const defaultDate = new Date(new Date().setHours(0, 0, 0, 0));
+const PREF_EXPIRY_MS = 2 * 60 * 60 * 1000;
+const PREFS_KEY = 'diningPrefs';
+const FILTER_PREFS_KEY = 'diningFilterPrefs';
+const PINNED_HALLS_KEY = 'diningPinnedHalls';
 
 export default function Index() {
   const theme = useTheme();

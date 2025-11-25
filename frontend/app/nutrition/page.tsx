@@ -1,3 +1,5 @@
+// frontend/app/nutrition/page.tsx
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -25,6 +27,7 @@ const NutritionLabelPage: React.FC = () => {
   const searchParams = useSearchParams();
   const menuItemApiId = searchParams.get('id');
 
+  // fetch menu item details from backend
   const getMenuItemDetails = async () => {
     try {
       const response = await fetch(`/api/menu-items/details/${menuItemApiId}`);
@@ -41,6 +44,7 @@ const NutritionLabelPage: React.FC = () => {
     }
   };
 
+  // fetch menu item details when component mounts
   useEffect(() => {
     if (!menuItemApiId) {
       setError('No menu item ID provided');
@@ -52,12 +56,14 @@ const NutritionLabelPage: React.FC = () => {
     getMenuItemDetails();
   }, [menuItemApiId]);
 
+  // display loading spinner if data is still loading
   if (loading) {
     return (
       <Pane display='flex' alignItems='center' justifyContent='center' height='300'>
         <Spinner />
       </Pane>
     );
+  // display error message if data fails to load
   } else if (error || !data) {
     return (
       <Pane padding={majorScale(4)}>
@@ -68,12 +74,14 @@ const NutritionLabelPage: React.FC = () => {
     );
   }
 
+  // get dietary badges
   const dietaryBadges: string[] = [];
   if (data.isVegan) dietaryBadges.push('Vegan');
   if (data.isVegetarian && !data.isVegan) dietaryBadges.push('Vegetarian');
   if (data.isHalal) dietaryBadges.push('Halal');
   if (data.isKosher) dietaryBadges.push('Kosher');
 
+  // get nutrient information
   const nutrient = data.nutrientInfo;
   const servingSizeDisplay =
     nutrient?.servingSize && nutrient?.servingUnit
@@ -100,6 +108,7 @@ const NutritionLabelPage: React.FC = () => {
           <ChevronLeftIcon className='h-6 w-6' color='green600' />
         </Link>
 
+        {/* display nutrition label */}
         <Pane>
           <Pane display='flex' flexDirection='column'>
             <Text fontSize={50} fontWeight={800} color='green800' marginBottom={majorScale(4)}>

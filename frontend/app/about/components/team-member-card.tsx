@@ -1,19 +1,19 @@
-import { Card, Avatar, Heading, Text, Pane, majorScale, minorScale, useTheme } from 'evergreen-ui';
-import {
-  SocialIconButton,
-  LinkedinIcon,
-  GithubIcon,
-  WebsiteIcon,
-  TwitterIcon,
-} from '@/app/about/components/icons';
-import { TeamMember } from '@/types/team';
+/**
+ * @overview Team member card component for the About page.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
 
-const SOCIAL_ICONS = {
-  linkedin: { icon: LinkedinIcon, label: 'LinkedIn' },
-  github: { icon: GithubIcon, label: 'GitHub' },
-  website: { icon: WebsiteIcon, label: 'Website' },
-  twitter: { icon: TwitterIcon, label: 'Twitter' },
-};
+import { Card, Avatar, Heading, Text, Pane, majorScale, minorScale, useTheme } from 'evergreen-ui';
+import { SocialIconButton } from '@/app/about/components/icons';
+import { TeamMember } from '@/types/team';
+import { SOCIAL_ICONS } from '../data';
 
 export default function TeamMemberCard({ member }: { member: TeamMember }) {
   const theme = useTheme();
@@ -41,19 +41,18 @@ export default function TeamMemberCard({ member }: { member: TeamMember }) {
       <Text size={300} color='muted' display='block' marginBottom={majorScale(1)}>
         {member.role}
       </Text>
+
       <Pane display='flex' justifyContent='center' gap={minorScale(2)}>
         {Object.entries(member.socials).map(([key, url]) => {
           if (!url) return null;
-          const { icon, label } = SOCIAL_ICONS[key as keyof typeof SOCIAL_ICONS] || {
-            icon: null,
-            label: '',
-          };
+          const social = SOCIAL_ICONS[key as keyof typeof SOCIAL_ICONS];
+          if (!social) return null;
           return (
             <SocialIconButton
               key={key}
               href={url}
-              label={`${member.name}'s ${label}`}
-              icon={icon}
+              label={`${member.name}'s ${social.label}`}
+              icon={social.icon}
               background={theme.colors.gray100}
             />
           );

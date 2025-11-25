@@ -1,4 +1,4 @@
-import { Nutrients, PlanSettings } from '@/types/goals';
+import { Nutrients, PlanSettings } from './types';
 
 const DAILY_VALUES: Omit<Nutrients, 'calories' | 'protein' | 'fat' | 'carbohydrates'> = {
   fiber: 28,
