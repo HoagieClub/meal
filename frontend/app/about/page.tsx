@@ -13,7 +13,7 @@ import {
   Spinner,
 } from 'evergreen-ui';
 import useMediaQuery from '@/hooks/use-media-query';
-import { teamLeads, teamMembers } from './team';
+import { teamLeads, teamMembers } from './data';
 import TeamLeadCard from './components/TeamLeadCard';
 import TeamMemberCard from './components/TeamMemberCard';
 
