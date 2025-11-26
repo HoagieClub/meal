@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
-import { UIMenuItem } from '@/types/dining';
+import { UIMenuItem } from '@/app/menu/types';
 
 interface MenuSectionProps {
   label: string;

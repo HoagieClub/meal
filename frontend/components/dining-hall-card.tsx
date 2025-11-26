@@ -2,19 +2,15 @@
 import React from 'react';
 import {
   Pane,
-  Heading,
   Text,
   Button,
   ChevronDownIcon,
-  ChevronUpIcon,
   minorScale,
   majorScale,
-  Avatar,
   PinIcon,
 } from 'evergreen-ui';
 import MenuSection from './menu-selection';
 
-// ——— Import all your banners + a default ———
 import rockyBanner from '../public/images/banners/rockybanner.png';
 import forbesBanner from '../public/images/banners/forbesbanner.png';
 import whitmanBanner from '../public/images/banners/whitmanbanner.png';
@@ -23,10 +19,10 @@ import yehBanner from '../public/images/banners/yehbanner.png';
 import cjlBanner from '../public/images/banners/cjl-banner.png';
 import gradBanner from '../public/images/banners/gradbanner.png';
 import { StaticImageData } from 'next/image';
-import { UIVenue } from '@/types/dining'; // <-- Correct import
+import { UIVenue } from '@/app/menu/types';
 
 interface DiningHallCardProps {
-  hall: UIVenue; // <-- This is the correct global type
+  hall: UIVenue;
   setModalHall: (hall: UIVenue) => void;
   ALLERGEN_EMOJI: Record<string, string>;
   theme: any;

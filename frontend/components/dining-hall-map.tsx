@@ -1,10 +1,8 @@
-// Experimental map interface
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Pane, Heading, Text, Spinner, majorScale, minorScale } from 'evergreen-ui';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { Pane, Heading, Text, Spinner, majorScale } from 'evergreen-ui';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const diningHalls = [

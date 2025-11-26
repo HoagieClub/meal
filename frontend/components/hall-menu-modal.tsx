@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Dialog, Pane, useTheme, majorScale, minorScale } from 'evergreen-ui';
+import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
 import { Separator } from './ui/separator';
 import MenuSection from './menu-selection';
-import { UIMenuItem, UIVenue } from '@/types/dining';
+import { UIVenue } from '@/app/menu/types';
 
 interface HallMenuModalProps {
   isShown: boolean;
@@ -19,8 +19,6 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
   hall,
   ALLERGEN_EMOJI,
 }) => {
-  const theme = useTheme();
-
   if (!hall) return null;
 
   return (
