@@ -50,7 +50,7 @@ class StudentApp:
         """Initialize the StudentApp class."""
         self.CONSUMER_KEY = os.environ.get("CONSUMER_KEY")
         self.CONSUMER_SECRET = os.environ.get("CONSUMER_SECRET")
-        self.ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
+        self.ACCESS_TOKEN = None
         self.REFRESH_TOKEN_URL = REFRESH_TOKEN_URL
         self._refresh_token(grant_type="client_credentials")
 
