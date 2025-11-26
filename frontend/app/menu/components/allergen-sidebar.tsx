@@ -2,30 +2,27 @@
 
 import React from 'react';
 import { Pane, Heading, Text, majorScale, minorScale } from 'evergreen-ui';
+import { AllergenKey } from '../types';
+import { ALLERGENS, ALLERGEN_EMOJI } from '../data';
 
 interface AllergenSidebarProps {
-  allergens: string[];
   selected: string[];
-  emoji: Record<string, string>;
-  onToggle: any;
   theme: any;
+  setAppliedAllergens: any;
 }
 
 export default function AllergenSidebar({
-  allergens,
   selected,
-  emoji,
-  onToggle,
   theme,
+  setAppliedAllergens,
 }: AllergenSidebarProps) {
-  const SIDEBAR_WIDTH = 200;
   const ICON_SIZE = 28;
 
   return (
     <Pane
       className='hidden sm:flex'
       flexDirection='column'
-      width={SIDEBAR_WIDTH}
+      width={200}
       padding={majorScale(3)}
       overflowY='auto'
       zIndex={2}
@@ -34,10 +31,10 @@ export default function AllergenSidebar({
         Allergens to Avoid
       </Heading>
       <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
-        {allergens.map((allergen) => {
+        {ALLERGENS.map((allergen: AllergenKey) => {
           const isSelected = selected.includes(allergen);
           const allergenKey = allergen.toLowerCase();
-          const emojiForAllergen = emoji[allergenKey];
+          const emojiForAllergen = ALLERGEN_EMOJI[allergenKey];
           const backgroundColor = isSelected ? theme.colors.red100 : theme.colors.gray100;
 
           return (
@@ -47,7 +44,13 @@ export default function AllergenSidebar({
               alignItems='center'
               cursor='pointer'
               opacity={isSelected ? 1.0 : 0.6}
-              onClick={() => onToggle(allergen)}
+              onClick={() => {
+                setAppliedAllergens((prev: AllergenKey[]) =>
+                  prev.includes(allergen as AllergenKey)
+                    ? prev.filter((a: AllergenKey) => a !== allergen)
+                    : [...prev, allergen]
+                );
+              }}
               title={
                 isSelected
                   ? `Hiding items containing ${allergen}`

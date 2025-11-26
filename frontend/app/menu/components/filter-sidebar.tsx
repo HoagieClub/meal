@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Pane,
   Text,
@@ -15,54 +15,100 @@ import {
 } from 'evergreen-ui';
 
 import { AllergenKey, DietKey } from '../types';
-import { ALLERGEN_STYLE_MAP, HALL_ICON_MAP, DIET_STYLE_MAP, DIET_LABEL_MAP } from '@/app/menu/data';
-
-interface FilterSidebarProps {
-  initialHalls: string[];
-  tempHalls: string[];
-  toggleHall: (h: string) => void;
-  DIETARY: DietKey[];
-  tempDietary: DietKey[];
-  toggleDietary: (d: DietKey) => void;
-  ALLERGENS: AllergenKey[];
-  ALLERGEN_EMOJI: Record<string, string>;
-  tempAllergens: AllergenKey[];
-  toggleAllergen: (a: AllergenKey) => void;
-  searchTerm: string;
-  setSearchTerm: (s: string) => void;
-  showNutrition: boolean;
-  setShowNutrition: (f: boolean) => void;
-  onReset: () => void;
-  onApply: () => void;
-}
-
-export default function FilterSidebar({
-  initialHalls,
-  tempHalls,
-  toggleHall,
-  DIETARY,
-  tempDietary,
-  toggleDietary,
+import {
+  initialSelectedHalls,
+  DIETARY_TAGS,
   ALLERGENS,
   ALLERGEN_EMOJI,
-  tempAllergens,
-  toggleAllergen,
-  searchTerm,
-  setSearchTerm,
-  showNutrition,
-  setShowNutrition,
-  onReset,
-  onApply,
-}: FilterSidebarProps) {
+  HALL_ICON_MAP,
+  DIET_STYLE_MAP,
+  DIET_LABEL_MAP,
+  ALLERGEN_STYLE_MAP,
+} from '../data';
+
+interface FilterSidebarProps {
+  applied: {
+    halls: string[];
+    dietary: DietKey[];
+    allergens: AllergenKey[];
+    searchTerm: string;
+    showNutrition: boolean;
+  };
+  onApply: (updated: {
+    halls: string[];
+    dietary: DietKey[];
+    allergens: AllergenKey[];
+    searchTerm: string;
+    showNutrition: boolean;
+  }) => void;
+  profileLoaded: boolean;
+}
+
+export default function FilterSidebar({ applied, onApply, profileLoaded }: FilterSidebarProps) {
   const theme = useTheme();
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const [localHalls, setLocalHalls] = useState<string[]>(applied.halls);
+  const [localDietary, setLocalDietary] = useState<DietKey[]>(applied.dietary);
+  const [localSearchTerm, setLocalSearchTerm] = useState(applied.searchTerm);
+  const [localShowNutrition, setLocalShowNutrition] = useState(applied.showNutrition);
+  const [localAllergens, setLocalAllergens] = useState<AllergenKey[]>(applied.allergens);
+
   const dietStyles = DIET_STYLE_MAP(theme);
   const allergenStyles = ALLERGEN_STYLE_MAP(theme);
   const ICON_SIZE = 20;
 
+  useEffect(() => {
+    if (!profileLoaded) return;
+    setLocalHalls(applied.halls);
+    setLocalDietary(applied.dietary);
+    setLocalAllergens(applied.allergens);
+    setLocalSearchTerm(applied.searchTerm);
+    setLocalShowNutrition(applied.showNutrition);
+  }, [profileLoaded]);
+
+  const toggleHall = (hall: string) => {
+    setLocalHalls((prev) =>
+      prev.includes(hall) ? prev.filter((h) => h !== hall) : [...prev, hall]
+    );
+  };
+
+  const toggleDietary = (dietKey: DietKey) => {
+    setLocalDietary((prev) =>
+      prev.includes(dietKey) ? prev.filter((d) => d !== dietKey) : [...prev, dietKey]
+    );
+  };
+
+  const toggleAllergen = (allergen: AllergenKey) => {
+    setLocalAllergens((prev: AllergenKey[]) =>
+      prev.includes(allergen)
+        ? prev.filter((a: AllergenKey) => a !== allergen)
+        : [...prev, allergen]
+    );
+  };
+
+  const handleReset = () => {
+    setLocalHalls(initialSelectedHalls);
+    setLocalDietary([]);
+    setLocalAllergens([]);
+    setLocalSearchTerm('');
+    setLocalShowNutrition(true);
+  };
+
+  const handleApply = () => {
+    onApply({
+      halls: localHalls,
+      dietary: localDietary,
+      allergens: localAllergens,
+      searchTerm: localSearchTerm,
+      showNutrition: localShowNutrition,
+    });
+  };
+
   const renderDiningHallRow = (hall: string) => {
     const hallText = hall.replace(' College', '');
-    const checked = tempHalls.includes(hall);
+    const checked = localHalls.includes(hall);
+
     return (
       <Pane key={hall} display='flex' alignItems='center' marginBottom='2px'>
         <Checkbox checked={checked} onChange={() => toggleHall(hall)} />
@@ -78,7 +124,8 @@ export default function FilterSidebar({
 
   const renderDietaryRow = (dietKey: DietKey) => {
     const style = dietStyles[dietKey];
-    const checked = tempDietary.includes(dietKey);
+    const checked = localDietary.includes(dietKey);
+
     return (
       <Pane key={dietKey} display='flex' alignItems='center' marginBottom={minorScale(1)}>
         <Checkbox checked={checked} onChange={() => toggleDietary(dietKey)} />
@@ -106,8 +153,9 @@ export default function FilterSidebar({
 
   const renderAllergenRow = (allergen: AllergenKey) => {
     const style = allergenStyles[allergen];
-    const checked = tempAllergens.includes(allergen);
+    const checked = localAllergens.includes(allergen);
     const emoji = ALLERGEN_EMOJI[allergen.toLowerCase()];
+
     return (
       <Pane key={allergen} display='flex' alignItems='center' marginBottom={minorScale(1)}>
         <Checkbox checked={checked} onChange={() => toggleAllergen(allergen)} />
@@ -156,7 +204,7 @@ export default function FilterSidebar({
             display='flex'
             alignItems='center'
             cursor='pointer'
-            onClick={onReset}
+            onClick={handleReset}
             background={theme.colors.gray100}
             marginBottom={minorScale(2)}
           >
@@ -165,7 +213,9 @@ export default function FilterSidebar({
               Reset Filters
             </Text>
           </Pane>
+
           <Pane borderBottom={`1px solid ${theme.colors.gray200}`} marginBottom={minorScale(2)} />
+
           <Text
             size={300}
             fontWeight={600}
@@ -176,8 +226,8 @@ export default function FilterSidebar({
           </Text>
           <SearchInput
             placeholder='Type to filter...'
-            value={searchTerm}
-            onChange={(e: any) => setSearchTerm(e.target.value)}
+            value={localSearchTerm}
+            onChange={(e: any) => setLocalSearchTerm(e.target.value)}
           />
         </Pane>
 
@@ -191,7 +241,10 @@ export default function FilterSidebar({
             <Text size={300} fontWeight={600} color={theme.colors.gray800}>
               Show Nutrition
             </Text>
-            <Switch checked={showNutrition} onChange={() => setShowNutrition(!showNutrition)} />
+            <Switch
+              checked={localShowNutrition}
+              onChange={() => setLocalShowNutrition((prev) => !prev)}
+            />
           </Pane>
           <Pane borderBottom={`1px solid ${theme.colors.gray200}`} />
         </Pane>
@@ -202,7 +255,7 @@ export default function FilterSidebar({
             alignItems='center'
             justifyContent='space-between'
             cursor='pointer'
-            onClick={() => setFiltersOpen(!filtersOpen)}
+            onClick={() => setFiltersOpen((prev) => !prev)}
             marginBottom={filtersOpen ? minorScale(2) : 0}
           >
             <Text size={300} color={theme.colors.gray700}>
@@ -231,8 +284,9 @@ export default function FilterSidebar({
                 Dining Halls
               </Text>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                {initialHalls.map(renderDiningHallRow)}
+                {initialSelectedHalls.map(renderDiningHallRow)}
               </Pane>
+
               <Pane
                 borderBottom={`1px solid ${theme.colors.gray200}`}
                 marginBottom={minorScale(2)}
@@ -247,8 +301,9 @@ export default function FilterSidebar({
                 Dietary Tags
               </Text>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                {DIETARY.map(renderDietaryRow)}
+                {DIETARY_TAGS.map(renderDietaryRow)}
               </Pane>
+
               <Pane
                 borderBottom={`1px solid ${theme.colors.gray200}`}
                 marginBottom={minorScale(2)}
@@ -275,7 +330,7 @@ export default function FilterSidebar({
             intent='success'
             height={32}
             fontSize={300}
-            onClick={onApply}
+            onClick={handleApply}
             className='w-full'
           >
             Save

@@ -5,21 +5,14 @@ import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon } fro
 import DiningHallCard from '@/components/dining-hall-card';
 import HallMenuModal from '@/components/hall-menu-modal';
 import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
-import FilterSidebar from './components/filter-sidebar';
+import FilterSidebar from '@/app/menu/components/filter-sidebar';
 import MenuPageHeader from '@/app/menu/components/menu-header';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
 import { AllergenKey, DietKey, UIVenue, Meal as MealType } from './types';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import {
-  ALLERGEN_EMOJI,
-  initialSelectedHalls,
-  ALLERGENS,
-  backgroundByMeal,
-  DIETARY_TAGS,
-} from '@/app/menu/data';
+import { ALLERGEN_EMOJI, initialSelectedHalls, backgroundByMeal } from '@/app/menu/data';
 import { buildDisplayData, fetchMenuData } from './actions';
-import FilterSidebarNew from './components/filter-sidebar-new';
 
 const defaultDate = new Date(new Date().setHours(0, 0, 0, 0));
 const FILTER_PREFS_KEY = 'diningFilterPrefs';
@@ -76,21 +69,17 @@ export default function Index() {
     return `${yyyy}-${mm}-${dd}-${meal}`;
   };
 
-  // ** Store applied filters in localStorage **
   const [appliedFilterPrefs, setAppliedFilterPrefs] = useLocalStorage(FILTER_PREFS_KEY, {
     halls: initialSelectedHalls,
     dietary: [] as DietKey[],
     allergens: [] as AllergenKey[],
   });
-
-  // ** Derive applied state from localStorage object **
   const {
     halls: appliedHalls,
     dietary: appliedDietary,
     allergens: appliedAllergens,
   } = appliedFilterPrefs;
 
-  // ** Create setters that update the localStorage object **
   const setAppliedHalls = (value: React.SetStateAction<string[]>) => {
     setAppliedFilterPrefs((prev) => ({
       ...prev,
@@ -110,27 +99,13 @@ export default function Index() {
     }));
   };
 
-  // ** temporary UI selections now initialize from applied (localStorage) state **
-  const [tempHalls, setTempHalls] = useState<string[]>([...appliedHalls]);
-  const [tempDietary, setTempDietary] = useState<DietKey[]>([...appliedDietary]);
-  const [tempAllergens, setTempAllergens] = useState<AllergenKey[]>([...appliedAllergens]);
-
-  // ** This effect syncs the temp state if the applied state changes
-  // (e.g., from a quick toggle or profile load) **
-  useEffect(() => {
-    setTempHalls(appliedHalls);
-    setTempDietary(appliedDietary);
-    setTempAllergens(appliedAllergens);
-  }, [appliedHalls, appliedDietary, appliedAllergens]);
-
-  // This flag tracks if the user's profile settings have been processed
   const [profileLoaded, setProfileLoaded] = useState(false);
-
   const { dietaryRestrictions, allergens, diningHalls } = useUserProfile();
+  const profileReady =
+    dietaryRestrictions !== undefined && allergens !== undefined && diningHalls !== undefined;
 
-  // ** This effect now updates the localStorage state (appliedFilterPrefs) **
   useEffect(() => {
-    // Only run this if the profile data is available and has content
+    if (profileLoaded || !profileReady) return;
     if (
       (dietaryRestrictions && dietaryRestrictions.length > 0) ||
       (allergens && allergens.length > 0) ||
@@ -146,27 +121,10 @@ export default function Index() {
         allergens: allergens && allergens.length > 0 ? allergens : prev.allergens,
       }));
     }
-    // Mark the profile as loaded so the menu fetch can proceed
     setProfileLoaded(true);
   }, [dietaryRestrictions, allergens, diningHalls, setAppliedFilterPrefs]);
 
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
-
-  const toggle = <T,>(val: T, arr: T[], setter: (value: React.SetStateAction<T[]>) => void) =>
-    setter((prevArr) =>
-      prevArr.includes(val) ? prevArr.filter((x) => x !== val) : [...prevArr, val]
-    );
-
-  // ** This now updates the localStorage state directly **
-  const toggleQuickAllergen = (allergen: AllergenKey) => {
-    toggle(allergen, appliedAllergens, setAppliedAllergens);
-  };
-
-  const resetTemp = () => {
-    setTempHalls([...initialSelectedHalls]);
-    setTempDietary([]);
-    setTempAllergens([]);
-  };
 
   useEffect(() => {
     if (isWeekend && meal === 'Breakfast') {
@@ -207,7 +165,6 @@ export default function Index() {
 
   useEffect(() => {
     if (!profileLoaded || !selectedDate) return;
-
     let isCurrent = true;
     const checkIsCurrent = () => isCurrent;
     setLoading(true);
@@ -275,47 +232,8 @@ export default function Index() {
       className='sm:flex-row overflow-hidden min-h-screen flex-col'
       background={PAGE_BG}
     >
-      {/* ─── FILTER SIDEBAR ───────────────────────────────────────────── */}
-      {/* <FilterSidebar
-        initialHalls={initialSelectedHalls}
-        tempHalls={tempHalls}
-        toggleHall={(h) => toggle(h, tempHalls, setTempHalls)}
-        DIETARY={DIETARY_TAGS}
-        tempDietary={tempDietary}
-        toggleDietary={(d) => toggle(d, tempDietary, setTempDietary)}
-        ALLERGENS={ALLERGENS}
-        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-        tempAllergens={tempAllergens}
-        toggleAllergen={(a) => toggle(a, tempAllergens, setTempAllergens)}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        showNutrition={showNutrition}
-        setShowNutrition={setShowNutrition}
-        onReset={resetTemp}
-        // ** onApply now updates the localStorage state **
-        onApply={() => {
-          setAppliedHalls(tempHalls);
-          setAppliedDietary(tempDietary);
-          setAppliedAllergens(tempAllergens);
-
-          // This fetch call remains to save prefs to DB for logged-in users
-          fetch('/api/user/update', {
-            method: 'POST',
-            body: JSON.stringify({
-              dietary_restrictions: tempDietary,
-              allergens: tempAllergens, // Send the list of allergens to avoid
-              dining_halls: tempHalls,
-            }),
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              console.log('Preferences saved to DB:', data);
-            })
-            .catch((error) => console.error('Error updating user preferences:', error));
-        }}
-      /> */}
-
-      <FilterSidebarNew
+      <FilterSidebar
+        profileLoaded={profileLoaded}
         applied={{
           halls: appliedHalls,
           dietary: appliedDietary,
@@ -422,10 +340,8 @@ export default function Index() {
         )}
       </Pane>
       <AllergenSidebar
-        allergens={ALLERGENS}
         selected={appliedAllergens}
-        emoji={ALLERGEN_EMOJI}
-        onToggle={toggleQuickAllergen}
+        setAppliedAllergens={setAppliedAllergens}
         theme={theme}
       />
       <HallMenuModal
