@@ -12,7 +12,6 @@ import { AllergenKey, DietKey, UIVenue, Meal as MealType } from './types';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import {
-  MEAL_RANGES,
   ALLERGEN_EMOJI,
   initialSelectedHalls,
   ALLERGENS,
@@ -20,6 +19,7 @@ import {
   DIETARY_TAGS,
 } from '@/app/menu/data';
 import { buildDisplayData, fetchMenuData } from './actions';
+import FilterSidebarNew from './components/filter-sidebar-new';
 
 const defaultDate = new Date(new Date().setHours(0, 0, 0, 0));
 const FILTER_PREFS_KEY = 'diningFilterPrefs';
@@ -269,20 +269,6 @@ export default function Index() {
     [venues, appliedHalls, appliedDietary, appliedAllergens, searchTerm, pinnedHalls]
   );
 
-  const getMealLabel = (m: MealType) => {
-    if (isWeekend && m === 'Lunch') {
-      return 'Brunch';
-    }
-    return m;
-  };
-
-  const getDisplayMealRange = (m: MealType) => {
-    if (isWeekend && m === 'Lunch') {
-      return '11:00 AM – 2:00 PM';
-    }
-    return MEAL_RANGES[m];
-  };
-
   return (
     <Pane
       display='flex'
@@ -290,7 +276,7 @@ export default function Index() {
       background={PAGE_BG}
     >
       {/* ─── FILTER SIDEBAR ───────────────────────────────────────────── */}
-      <FilterSidebar
+      {/* <FilterSidebar
         initialHalls={initialSelectedHalls}
         tempHalls={tempHalls}
         toggleHall={(h) => toggle(h, tempHalls, setTempHalls)}
@@ -327,6 +313,37 @@ export default function Index() {
             })
             .catch((error) => console.error('Error updating user preferences:', error));
         }}
+      /> */}
+
+      <FilterSidebarNew
+        applied={{
+          halls: appliedHalls,
+          dietary: appliedDietary,
+          allergens: appliedAllergens,
+          searchTerm,
+          showNutrition,
+        }}
+        onApply={({ halls, dietary, allergens, searchTerm, showNutrition }) => {
+          setAppliedHalls(halls);
+          setAppliedDietary(dietary);
+          setAppliedAllergens(allergens);
+          setSearchTerm(searchTerm);
+          setShowNutrition(showNutrition);
+
+          fetch('/api/user/update', {
+            method: 'POST',
+            body: JSON.stringify({
+              dietary_restrictions: dietary,
+              allergens,
+              dining_halls: halls,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log('Preferences saved to DB:', data);
+            })
+            .catch((error) => console.error('Error updating user preferences:', error));
+        }}
       />
 
       {/* ─── MAIN VIEW ──────────────────────────────────────────────────────── */}
@@ -337,8 +354,6 @@ export default function Index() {
           selectedDate={selectedDate}
           prevDay={prevDay}
           nextDay={nextDay}
-          getMealLabel={getMealLabel}
-          getDisplayMealRange={getDisplayMealRange}
           availableMeals={availableMeals}
           setMeal={setMeal}
         />

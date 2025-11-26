@@ -10,14 +10,13 @@ import {
   ChevronRightIcon,
 } from 'evergreen-ui';
 import { Meal as MealType } from '../types';
+import { MEAL_RANGES } from '../data';
 
 interface MenuPageHeaderProps {
   meal: MealType;
   selectedDate: Date;
   prevDay: () => void;
   nextDay: () => void;
-  getMealLabel: (meal: MealType) => string;
-  getDisplayMealRange: (meal: MealType) => string;
   availableMeals: MealType[];
   setMeal: (meal: MealType) => void;
 }
@@ -27,8 +26,6 @@ export default function MenuPageHeader({
   selectedDate,
   prevDay,
   nextDay,
-  getMealLabel,
-  getDisplayMealRange,
   availableMeals,
   setMeal,
 }: MenuPageHeaderProps) {
@@ -38,6 +35,21 @@ export default function MenuPageHeader({
     month: 'numeric',
     day: 'numeric',
   });
+  const isWeekend = selectedDate.getDay() === 0 || selectedDate.getDay() === 6;
+
+  const getDisplayMealRange = (m: MealType) => {
+    if (isWeekend && m === 'Lunch') {
+      return '11:00 AM – 2:00 PM';
+    }
+    return MEAL_RANGES[m as MealType];
+  };
+
+  const getMealLabel = (m: MealType) => {
+    if (isWeekend && m === 'Lunch') {
+      return 'Brunch';
+    }
+    return m;
+  };
 
   return (
     <Pane
