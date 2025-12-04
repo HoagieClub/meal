@@ -5,15 +5,6 @@ Copyright © 2021-2025 Hoagie Club and affiliates.
 Licensed under the MIT License. You may obtain a copy of the License at:
 
     https://github.com/hoagieclub/meal/blob/main/LICENSE
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-This software is provided "as-is", without warranty of any kind.
 """
 
 from django.db import models
@@ -25,15 +16,10 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from hoagiemeal.models.dining import DiningVenue
 
 class Menu(models.Model):
-    """Represent a daily menu for a specific meal at a dining hall.
-
-    Attributes:
-        dining_hall (DiningVenue): Associated dining hall.
-    """
+    """Represent a daily menu for a specific meal at a dining hall."""
 
     class MealType(models.TextChoices):
         """Meal type choices for the Menu model."""
-
         BREAKFAST = "BR", _("Breakfast")
         LUNCH = "LU", _("Lunch")
         DINNER = "DI", _("Dinner")
@@ -43,12 +29,10 @@ class Menu(models.Model):
     meal = models.CharField(max_length=2, choices=MealType.choices, db_index=True)
     last_fetched = models.DateTimeField(auto_now=True, help_text=_("Last time menu was updated from API"))
     
-    # ManyToManyField to link to canonical menu items
     menu_items = models.ManyToManyField("MenuItem", related_name="menus")
 
     class Meta:
         """Meta class for the Menu model."""
-
         db_table = "menus"
         unique_together = ("dining_venue", "date", "meal")
         indexes = [
@@ -56,12 +40,7 @@ class Menu(models.Model):
         ]
 
     def __str__(self):
-        """Return the string representation of the Menu instance.
-
-        Returns:
-            str: A formatted string with the dining hall name, meal type, and date.
-
-        """
+        """Return the string representation of the Menu instance."""
         return f"{self.dining_venue.name} - {self.get_meal_display()} on {self.date}"
 
 
@@ -76,68 +55,57 @@ class MenuItem(models.Model):
         link (str): URL linking to more details about the dish.
         allergens (list of str): List of allergens present.
         ingredients (list of str): List of ingredients used.
+        is_vegetarian (bool): Whether the item is vegetarian.
+        is_vegan (bool): Whether the item is vegan.
+        is_halal (bool): Whether the item is halal.
+        is_kosher (bool): Whether the item is kosher.
+        dietary_flags (list of str): Raw dietary flags from the source (e.g., ["Vegetarian", "Halal"]).
         created_at (datetime): Timestamp when the record was created.
         updated_at (datetime): Timestamp when the record was last updated.
-
     """
 
     id = models.BigAutoField(primary_key=True)
-    # api_id is now the unique identifier from the API for a canonical item
     api_id = models.PositiveIntegerField(unique=True, help_text=_("Original menu item ID from the API"))
-    # The 'menu' ForeignKey is removed
     name = models.CharField(max_length=255, db_index=True)
     description = models.TextField(blank=True)
     link = models.URLField(max_length=500, blank=True)
     allergens = ArrayField(models.CharField(max_length=100), blank=True, default=list)
     ingredients = ArrayField(models.CharField(max_length=255), blank=True, default=list)
+    
+    # Dietary classification fields
+    is_vegetarian = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
+    is_vegan = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
+    is_halal = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
+    is_kosher = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
+    dietary_flags = ArrayField(
+        models.CharField(max_length=50), 
+        blank=True, 
+        default=list,
+        help_text=_("Raw dietary flags from source (e.g., icons on nutrition page)")
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Meta class for the MenuItem model."""
-
         db_table = "menu_items"
-        # unique_together is removed as 'menu' field is gone
         indexes = [
             models.Index(fields=["name"]),
             models.Index(fields=["api_id"]),
+            models.Index(fields=["is_vegetarian"]),
+            models.Index(fields=["is_vegan"]),
+            models.Index(fields=["is_halal"]),
+            models.Index(fields=["is_kosher"]),
         ]
         
     def __str__(self):
-        """Return the string representation of the MenuItem instance.
-
-        Returns:
-            str: The menu item name along with its API ID.
-
-        """
+        """Return the string representation of the MenuItem instance."""
         return f"{self.name} ({self.api_id})"
 
 
 class MenuItemNutrient(models.Model):
-    """Provide detailed nutritional information for a menu item.
-
-    Attributes:
-        menu_item (MenuItem): Associated menu item.
-        serving_size (str): Serving size description.
-        serving_unit (str): Unit for the serving size.
-        calories (int): Total calories per serving.
-        calories_from_fat (int): Calories derived from fat.
-        total_fat (float): Total fat content.
-        saturated_fat (float): Saturated fat content.
-        trans_fat (float): Trans fat content.
-        cholesterol (float): Cholesterol content.
-        sodium (float): Sodium content.
-        total_carbohydrates (float): Total carbohydrates content.
-        dietary_fiber (float): Dietary fiber content.
-        sugars (float): Sugar content.
-        protein (float): Protein content.
-        vitamin_d (float): Vitamin D content.
-        potassium (float): Potassium content.
-        calcium (float): Calcium content.
-        iron (float): Iron content.
-        updated_at (datetime): Timestamp when the nutrient information was last updated.
-
-    """
+    """Provide detailed nutritional information for a menu item."""
 
     menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="nutrient_info")
     serving_size = models.CharField(max_length=50, blank=True)
@@ -161,7 +129,6 @@ class MenuItemNutrient(models.Model):
 
     class Meta:
         """Meta class for the MenuItemNutrient model."""
-
         db_table = "menu_item_nutrients"
         indexes = [
             models.Index(fields=["calories"]),
@@ -169,12 +136,7 @@ class MenuItemNutrient(models.Model):
         ]
 
     def __str__(self):
-        """Return the string representation of the MenuItemNutrient instance.
-
-        Returns:
-            str: Nutritional details linked to the menu item.
-
-        """
+        """Return the string representation of the MenuItemNutrient instance."""
         return f"Nutrients for {self.menu_item.name}"
 
 

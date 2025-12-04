@@ -2,8 +2,8 @@
 
 from rest_framework import serializers
 from django.db import models
-from hoagiemeal.models.menu import MenuItem, MenuRating
-
+from hoagiemeal.models.user import CustomUser
+from hoagiemeal.models.menu import MenuItem, MenuRating, MenuItemNutrient
 
 class GeoLocationSerializer(serializers.Serializer):
     """Serializer for the GeoLocation model."""
@@ -165,6 +165,93 @@ class MenuItemWithRatingsSerializer(serializers.ModelSerializer):
         """Get the current user's rating for the menu item, if it exists."""
         user = self.context.get("request").user
         if user.is_authenticated:
+            try:
+                rating = obj.ratings.get(user=user)
+                return MenuRatingSerializer(rating).data
+            except MenuRating.DoesNotExist:
+                return None
+        return None
+    
+
+class UserSerializer(serializers.ModelSerializer):
+    """Serializer for the CustomUser model."""
+    class Meta:
+        """Meta class for the UserSerializer."""
+
+        model = CustomUser
+        fields = '__all__'
+
+class MenuItemNutrientSerializer(serializers.ModelSerializer):
+    """Serializer for the MenuItemNutrient model."""
+    class Meta:
+        model = MenuItemNutrient
+        fields = [
+            "serving_size",
+            "serving_unit",
+            "calories",
+            "calories_from_fat",
+            "total_fat",
+            "saturated_fat",
+            "trans_fat",
+            "cholesterol",
+            "sodium",
+            "total_carbohydrates",
+            "dietary_fiber",
+            "sugars",
+            "protein",
+            "vitamin_d",
+            "potassium",
+            "calcium",
+            "iron",
+        ]
+
+
+class FullMenuItemSerializer(serializers.ModelSerializer):
+    """Serializer for a MenuItem with all details including nutrients, dietary info, and ratings."""
+    
+    # Use the nutrient serializer for the OneToOne relationship
+    nutrient_info = MenuItemNutrientSerializer(read_only=True)
+    
+    # Re-use logic from MenuItemWithRatingsSerializer
+    average_rating = serializers.SerializerMethodField()
+    rating_count = serializers.SerializerMethodField()
+    user_rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MenuItem
+        fields = [
+            "id",                  # Internal primary key
+            "api_id",             # External API ID (use this for lookups)
+            "name",
+            "description",
+            "link",
+            "allergens",
+            "ingredients",
+            "is_vegetarian",      # NEW
+            "is_vegan",           # NEW
+            "is_halal",           # NEW
+            "is_kosher",          # NEW
+            "dietary_flags",      # NEW - raw flags from source
+            "nutrient_info",      # Nested nutrient object with serving size
+            "average_rating",
+            "rating_count",
+            "user_rating",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_average_rating(self, obj):
+        """Get the average rating for the menu item."""
+        return obj.ratings.aggregate(avg_rating=models.Avg("rating"))["avg_rating"]
+
+    def get_rating_count(self, obj):
+        """Get the number of ratings for the menu item."""
+        return obj.ratings.count()
+
+    def get_user_rating(self, obj):
+        """Get the current user's rating for the menu item, if it exists."""
+        user = self.context.get("request").user
+        if user and user.is_authenticated:
             try:
                 rating = obj.ratings.get(user=user)
                 return MenuRatingSerializer(rating).data

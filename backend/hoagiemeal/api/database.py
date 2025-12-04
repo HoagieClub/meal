@@ -11,7 +11,7 @@ Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
 
-    https://github.com/hoagieclub/meal/blob/main/LICENSE
+  https://github.com/hoagieclub/meal/blob/main/LICENSE
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,8 +37,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hoagiemeal.settings")
 django.setup()
 
 from hoagiemeal.models.dining import DiningVenue
-from hoagiemeal.models.menu import MenuItem, Menu, MenuItemNutrient, MenuRating
-from hoagiemeal.models.meal_plan import MealPlanType, UserMealPlan, SwipeTransactionIndividual
+from hoagiemeal.models.menu import MenuItem
 
 from django.db.models import QuerySet, Model, Avg
 from django.core.paginator import Paginator, Page
@@ -85,12 +84,12 @@ def filter_by_datetime(
     Filters are applied to the 'created_at' field.
 
     Args:
-        qs (QuerySet[T]): The QuerySet to filter.
-        after (Optional[datetime.datetime]): The start of the datetime range (inclusive).
-        before (Optional[datetime.datetime]): The end of the datetime range (inclusive).
+      qs (QuerySet[T]): The QuerySet to filter.
+      after (Optional[datetime.datetime]): The start of the datetime range (inclusive).
+      before (Optional[datetime.datetime]): The end of the datetime range (inclusive).
 
     Returns:
-        QuerySet[T]: The filtered QuerySet.
+      QuerySet[T]: The filtered QuerySet.
     """
     if after:
         qs = qs.filter(created_at__gte=after)
@@ -111,14 +110,14 @@ def filter_by_list(
     fields that store a list of values.
 
     Args:
-        qs (QuerySet[T]): The QuerySet to filter.
-        field (str): The name of the list field to filter on.
-        values (List): The list of values to search for.
-        mode (Literal["include", "exclude"]): Whether to include items
-            containing any of the values or exclude items with any of the values.
+      qs (QuerySet[T]): The QuerySet to filter.
+      field (str): The name of the list field to filter on.
+      values (List): The list of values to search for.
+      mode (Literal["include", "exclude"]): Whether to include items
+        containing any of the values or exclude items with any of the values.
 
     Returns:
-        QuerySet[T]: The filtered QuerySet.
+      QuerySet[T]: The filtered QuerySet.
     """
     if mode == "include":
         qs = qs.filter(**{f"{field}__contains": values})
@@ -136,167 +135,19 @@ def filter_by_quantity(
     """Filters a QuerySet based on a numeric field's quantity.
 
     Args:
-        field (str): The name of the numeric field to filter on.
-        quantity (float | int): The quantity value to filter against.
-        mode (Literal["exact", "greater", "less"]): The comparison mode.
-        qs (QuerySet[T]): The QuerySet to filter.
+      field (str): The name of the numeric field to filter on.
+      quantity (float | int): The quantity value to filter against.
+      mode (Literal["exact", "greater", "less"]): The comparison mode.
+      qs (QuerySet[T]): The QuerySet to filter.
 
     Returns:
-        QuerySet[T]: The filtered QuerySet.
+      QuerySet[T]: The filtered QuerySet.
     """
     lookup = {"exact": "exact", "greater": "gte", "less": "lte"}[mode]
     return qs.filter(**{f"{field}__{lookup}": quantity})
 
 
-#################### Creating, updating, deleting, etc. utility functions #########################
-
-
-def get_or_create(
-    model_class: Type[T], data_fields: Dict[str, Any], lookup_fields: List[str]
-) -> Tuple[Optional[T], bool, str]:
-    """Retrieves an existing instance or creates a new one.
-
-    This function first attempts to get an object matching the lookup fields.
-    If it does not exist, it creates a new object using all provided data.
-    It gracefully handles race conditions and other errors.
-
-    Args:
-        model_class (Type[T]): The Django Model class.
-        data_fields (Dict[str, Any]): A dictionary of all fields to be
-            used for creation.
-        lookup_fields (List[str]): A list of field names that uniquely
-            identify the object.
-
-    Returns:
-        Tuple[Optional[T], bool, str]: A tuple containing the instance,
-        a boolean indicating if it was created, and an error message string.
-    """
-    lookup_kwargs = {field: data_fields[field] for field in lookup_fields}
-
-    try:
-        existing_object = model_class.objects.get(**lookup_kwargs)
-        return existing_object, False, ""
-    except model_class.DoesNotExist:
-        pass
-    except Exception as e:
-        error_msg = f"An unexpected error occurred during lookup: {str(e)}"
-        return None, False, error_msg
-
-    try:
-        with transaction.atomic():
-            new_object = model_class.objects.create(**data_fields)
-            return new_object, True, ""
-    except IntegrityError:
-        error_msg = f"A {model_class.__name__} instance already exists."
-        return None, False, error_msg
-    except Exception as e:
-        error_msg = f"An unexpected error occurred during creation: {str(e)}"
-        return None, False, error_msg
-
-
-def bulk_get_and_create(
-    model_class: Type[T], data_list: List[Dict[str, Any]], lookup_fields: List[str]
-) -> List[Tuple[Optional[T], bool, str]]:
-    """Performs get-or-create for a list of data dictionaries.
-
-    This function iterates through each item, attempts to retrieve an existing
-    object, and creates a new one if no match is found. It's robust to
-    race conditions and returns a detailed status for each item.
-
-    Args:
-        model_class (Type[T]): The Django Model class.
-        data_list (List[Dict[str, Any]]): A list of dictionaries, each
-            representing the data for a single object.
-        lookup_fields (List[str]): A list of field names that uniquely
-            identify each object.
-
-    Returns:
-        List[Tuple[Optional[T], bool, str]]: A list of tuples, each
-        containing the instance, a boolean for creation status, and an
-        error message.
-    """
-    results = []
-    with transaction.atomic():
-        for item_data in data_list:
-            lookup_kwargs = {field: item_data[field] for field in lookup_fields}
-            try:
-                existing_object = model_class.objects.get(**lookup_kwargs)
-                results.append((existing_object, False, ""))
-                continue
-            except model_class.DoesNotExist:
-                pass
-            except Exception as e:
-                error_msg = f"An unexpected error occurred during lookup: {str(e)}"
-                results.append((None, False, error_msg))
-                continue
-
-            try:
-                new_object = model_class.objects.create(**item_data)
-                results.append((new_object, True, ""))
-            except IntegrityError:
-                error_msg = f"IntegrityError: A matching instance already exists for item."
-                results.append((None, False, error_msg))
-            except Exception as e:
-                error_msg = f"An unexpected error occurred during creation: {str(e)}"
-                results.append((None, False, error_msg))
-    return results
-
-
-def update(
-    model_class: Type[T], lookup_kwargs: Dict[str, Any], update_data: Dict[str, Any]
-) -> Tuple[Optional[T], bool, str]:
-    """Updates an existing model instance.
-
-    Args:
-        model_class (Type[T]): The Django Model class.
-        lookup_kwargs (Dict[str, Any]): The fields used to find the object to update.
-        update_data (Dict[str, Any]): The data to apply to the object.
-
-    Returns:
-        Tuple[Optional[T], bool, str]: A tuple containing the updated instance,
-        a boolean indicating success, and an error message string.
-    """
-    try:
-        with transaction.atomic():
-            instance = model_class.objects.get(**lookup_kwargs)
-            for field_name, value in update_data.items():
-                if hasattr(instance, field_name):
-                    setattr(instance, field_name, value)
-            instance.save()
-            return instance, True, ""
-    except model_class.DoesNotExist:
-        error_msg = f"{model_class.__name__} instance not found for update."
-        return None, False, error_msg
-    except Exception as e:
-        error_msg = f"An unexpected error occurred during update: {str(e)}"
-        return None, False, error_msg
-
-
-def delete(
-    model_class: Type[T], lookup_kwargs: Dict[str, Any]
-) -> Tuple[Optional[Tuple[int, Dict[str, int]]], bool, str]:
-    """Deletes one or more model instances.
-
-    Args:
-        model_class (Type[T]): The Django Model class.
-        lookup_kwargs (Dict[str, Any]): The fields used to find the objects to delete.
-
-    Returns:
-        Tuple[Optional[Tuple[int, Dict[str, int]]], bool, str]: A tuple containing
-        the deletion details (number of deleted objects and per-model counts),
-        a boolean for success, and an error message string.
-    """
-    try:
-        deleted_model = model_class.objects.filter(**lookup_kwargs).delete()
-        return deleted_model, True, ""
-    except Exception as e:
-        error_msg = f"An unexpected error occurred during deletion: {str(e)}"
-        return (0, {}), False, error_msg
-
-
-def clear_table(model_class: Type[T]) -> None:
-    """Deletes all objects from a given table."""
-    model_class.objects.all().delete()
+#################### Utility functions #########################
 
 
 def highest_rated_menu_items(
@@ -311,14 +162,14 @@ def highest_rated_menu_items(
     an average rating, and orders them accordingly.
 
     Args:
-        limit (int): The maximum number of menu items to return.
-        after (Optional[datetime.datetime]): The start date for the rating filter.
-        before (Optional[datetime.datetime]): The end date for the rating filter.
-        highest_first (bool): If True, returns the highest-rated items; otherwise,
-            returns the lowest-rated items.
+      limit (int): The maximum number of menu items to return.
+      after (Optional[datetime.datetime]): The start date for the rating filter.
+      before (Optional[datetime.datetime]): The end date for the rating filter.
+      highest_first (bool): If True, returns the highest-rated items; otherwise,
+        returns the lowest-rated items.
 
     Returns:
-        List[MenuItem]: A list of MenuItem objects.
+      List[MenuItem]: A list of MenuItem objects.
     """
     qs = MenuItem.objects.all()
     ratings_filter_kwargs = {}
@@ -348,10 +199,10 @@ def get_mapped_dining_venue_data(api_data: Dict[str, Any]) -> Dict[str, Any]:
     preparing it for use in model creation or updating functions.
 
     Args:
-        api_data (Dict[str, Any]): The raw data dictionary from the API.
+      api_data (Dict[str, Any]): The raw data dictionary from the API.
 
     Returns:
-        Dict[str, Any]: A dictionary containing lookup and creation arguments.
+      Dict[str, Any]: A dictionary containing lookup and creation arguments.
     """
     amenity_names: List[str] = []
     amenities_data = api_data.get("amenities", {})
@@ -390,11 +241,11 @@ def get_mapped_menu_item_data(api_data: Dict[str, Any], link_data: Dict[str, Any
     description, and merging information from different API sources.
 
     Args:
-        api_data (Dict[str, Any]): The raw menu item data from the API.
-        link_data (Dict[str, Any]): The linked nutritional data for the item.
+      api_data (Dict[str, Any]): The raw menu item data from the API.
+      link_data (Dict[str, Any]): The linked nutritional data for the item.
 
     Returns:
-        Dict[str, Any]: A dictionary containing lookup and creation arguments.
+      Dict[str, Any]: A dictionary containing lookup and creation arguments.
     """
     description = api_data.get("description", "")
     allergen_match = re.search(r"Allergens: (.+)", description)
@@ -425,20 +276,18 @@ def get_mapped_menu_item_data(api_data: Dict[str, Any], link_data: Dict[str, Any
     }
 
 
-def get_mapped_menu_item_nutrient_data(
-    menu_item_id: int, link_data: Dict[str, Any]
-) -> Dict[str, Any]:
+def get_mapped_menu_item_nutrient_data(menu_item_id: int, link_data: Dict[str, Any]) -> Dict[str, Any]:
     """Maps nutritional data from an API link to the MenuItemNutrient model.
 
     This function extracts and converts nutritional values, handling missing
     or invalid data gracefully.
 
     Args:
-        menu_item_id (int): The ID of the parent MenuItem object.
-        link_data (Dict[str, Any]): The raw nutritional data.
+      menu_item_id (int): The ID of the parent MenuItem object.
+      link_data (Dict[str, Any]): The raw nutritional data.
 
     Returns:
-        Dict[str, Any]: A dictionary containing lookup and creation arguments.
+      Dict[str, Any]: A dictionary containing lookup and creation arguments.
     """
 
     def _safe_float_to_decimal(value: Any) -> decimal.Decimal | None:
@@ -452,7 +301,9 @@ def get_mapped_menu_item_nutrient_data(
             return None
 
     serving_size_str = link_data.get("Serving Size", "")
-    serving_size_unit_match = re.search(r"([0-9.]+)\s*([a-zA-Z/]+)", serving_size_str)
+
+    serving_size_unit_match = re.search(r"([\d\./]+)\s*(.*)", serving_size_str)
+
     serving_size = None
     serving_unit = None
     if serving_size_unit_match:
@@ -466,15 +317,9 @@ def get_mapped_menu_item_nutrient_data(
         "serving_unit": serving_unit,
         "calories": link_data.get("Calories"),
         "calories_from_fat": link_data.get("Calories from Fat"),
-        "total_fat": _safe_float_to_decimal(
-            link_data.get("Fat", {}).get("Total Fat", {}).get("Amount")
-        ),
-        "saturated_fat": _safe_float_to_decimal(
-            link_data.get("Fat", {}).get("Saturated Fat", {}).get("Amount")
-        ),
-        "trans_fat": _safe_float_to_decimal(
-            link_data.get("Fat", {}).get("Trans Fat", {}).get("Amount")
-        ),
+        "total_fat": _safe_float_to_decimal(link_data.get("Fat", {}).get("Total Fat", {}).get("Amount")),
+        "saturated_fat": _safe_float_to_decimal(link_data.get("Fat", {}).get("Saturated Fat", {}).get("Amount")),
+        "trans_fat": _safe_float_to_decimal(link_data.get("Fat", {}).get("Trans Fat", {}).get("Amount")),
         "cholesterol": _safe_float_to_decimal(link_data.get("Cholesterol", {}).get("Amount")),
         "sodium": _safe_float_to_decimal(link_data.get("Sodium", {}).get("Amount")),
         "total_carbohydrates": _safe_float_to_decimal(
@@ -483,19 +328,11 @@ def get_mapped_menu_item_nutrient_data(
         "dietary_fiber": _safe_float_to_decimal(
             link_data.get("Carbohydrates", {}).get("Dietary Fiber", {}).get("Amount")
         ),
-        "sugars": _safe_float_to_decimal(
-            link_data.get("Carbohydrates", {}).get("Sugar", {}).get("Amount")
-        ),
+        "sugars": _safe_float_to_decimal(link_data.get("Carbohydrates", {}).get("Sugar", {}).get("Amount")),
         "protein": _safe_float_to_decimal(link_data.get("Protein", {}).get("Amount")),
-        "vitamin_d": _safe_float_to_decimal(
-            link_data.get("Vitamins", {}).get("Vitamin D", {}).get("Amount")
-        ),
-        "potassium": _safe_float_to_decimal(
-            link_data.get("Vitamins", {}).get("Potassium", {}).get("Amount")
-        ),
-        "calcium": _safe_float_to_decimal(
-            link_data.get("Vitamins", {}).get("Calcium", {}).get("Amount")
-        ),
+        "vitamin_d": _safe_float_to_decimal(link_data.get("Vitamins", {}).get("Vitamin D", {}).get("Amount")),
+        "potassium": _safe_float_to_decimal(link_data.get("Vitamins", {}).get("Potassium", {}).get("Amount")),
+        "calcium": _safe_float_to_decimal(link_data.get("Vitamins", {}).get("Calcium", {}).get("Amount")),
         "iron": _safe_float_to_decimal(link_data.get("Vitamins", {}).get("Iron", {}).get("Amount")),
     }
 
@@ -515,7 +352,7 @@ def insert_dining_venue_data(category_ids: Optional[List[int]] = None) -> None:
     sync.
 
     Args:
-        category_ids (Optional[List[int]]): A list of dining category IDs to fetch.
+      category_ids (Optional[List[int]]): A list of dining category IDs to fetch.
     """
     from hoagiemeal.api.dining import DiningAPI
 

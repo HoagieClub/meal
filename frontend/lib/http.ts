@@ -14,6 +14,7 @@
 
 import { ApiResponse, HoagieRequest, RequestConfig, HttpMethod } from '@/types/http';
 import { valid } from '@/utils/http';
+import { withAuth } from '@/utils/http';
 
 // process.env is automatically handled for server components
 const API_URL = process.env.HOAGIE_API_URL;
@@ -95,3 +96,9 @@ request.post = (headers?: HeadersInit) => request({ method: 'POST', headers });
 request.put = (headers?: HeadersInit) => request({ method: 'PUT', headers });
 request.patch = (headers?: HeadersInit) => request({ method: 'PATCH', headers });
 request.delete = (headers?: HeadersInit) => request({ method: 'DELETE', headers });
+
+request.getAuth = (accessToken: string) => request.get(withAuth(accessToken));
+request.postAuth = (accessToken: string) => request.post(withAuth(accessToken));
+request.putAuth = (accessToken: string) => request.put(withAuth(accessToken));
+request.patchAuth = (accessToken: string) => request.patch(withAuth(accessToken));
+request.deleteAuth = (accessToken: string) => request.delete(withAuth(accessToken));

@@ -2,19 +2,15 @@
 import React from 'react';
 import {
   Pane,
-  Heading,
   Text,
   Button,
   ChevronDownIcon,
-  ChevronUpIcon,
   minorScale,
   majorScale,
-  Avatar,
   PinIcon,
 } from 'evergreen-ui';
-import MenuSection from './MenuSection';
+import MenuSection from './menu-selection';
 
-// ——— Import all your banners + a default ———
 import rockyBanner from '../public/images/banners/rockybanner.png';
 import forbesBanner from '../public/images/banners/forbesbanner.png';
 import whitmanBanner from '../public/images/banners/whitmanbanner.png';
@@ -23,25 +19,16 @@ import yehBanner from '../public/images/banners/yehbanner.png';
 import cjlBanner from '../public/images/banners/cjl-banner.png';
 import gradBanner from '../public/images/banners/gradbanner.png';
 import { StaticImageData } from 'next/image';
-
-interface UIMenuItem {
-  name: string;
-  description: string;
-  link: string;
-}
+import { UIVenue } from '@/app/menu/types';
 
 interface DiningHallCardProps {
-  hall: {
-    name: string;
-    items: Record<'Main Entrée' | 'Vegetarian + Vegan Entrée' | 'Soups', UIMenuItem[]>;
-    allergens: Set<string>;
-    calories: Record<string, number>;
-    protein: Record<string, number>;
-  };
-  setModalHall: (hall: DiningHallCardProps['hall']) => void;
+  hall: UIVenue;
+  setModalHall: (hall: UIVenue) => void;
   ALLERGEN_EMOJI: Record<string, string>;
   theme: any;
   showNutrition: boolean;
+  isPinned: boolean;
+  onPinToggle: () => void;
 }
 
 const hallImages: Record<string, StaticImageData> = {
@@ -49,30 +36,10 @@ const hallImages: Record<string, StaticImageData> = {
   'Forbes College': forbesBanner,
   'Mathey College': matheyBanner,
   'Whitman & Butler Colleges': whitmanBanner,
-  'Yeh College & New College West': yehBanner,
+  'Yeh College & NCW': yehBanner,
   'Center for Jewish Life': cjlBanner,
   'Graduate College': gradBanner,
 };
-
-interface UIMenuItem {
-  name: string;
-  description: string;
-  link: string;
-}
-
-interface DiningHallCardProps {
-  hall: {
-    name: string;
-    items: Record<'Main Entrée' | 'Vegetarian + Vegan Entrée' | 'Soups', UIMenuItem[]>;
-    allergens: Set<string>;
-    calories: Record<string, number>;
-    protein: Record<string, number>;
-  };
-  setModalHall: (hall: DiningHallCardProps['hall']) => void;
-  ALLERGEN_EMOJI: Record<string, string>;
-  theme: any;
-  showNutrition: boolean;
-}
 
 const DiningHallCard: React.FC<DiningHallCardProps> = ({
   hall,
@@ -80,9 +47,11 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
   ALLERGEN_EMOJI,
   theme,
   showNutrition,
+  isPinned,
+  onPinToggle,
 }) => {
   const imageSrc = hallImages[hall.name];
-  console.log(imageSrc);
+
   return (
     <Pane
       key={hall.name}
@@ -90,14 +59,10 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
       borderRadius={15}
       boxShadow='0 2px 8px rgba(0,0,0,0.08)'
       padding={majorScale(3)}
+      display='flex'
+      flexDirection='column'
+      height='100%'
     >
-      {/* <Pane display='flex' alignItems='center' marginBottom={minorScale(2)}>
-        <img src={imageSrc?.src} name={hall.name} />
-        <Heading size={600} color={theme.colors.green900}>
-          {hall.name}
-        </Heading>
-      </Pane> */}
-
       <Pane
         display='flex'
         alignItems='center'
@@ -120,39 +85,28 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
 
         {/* 2. Overlapping crests */}
         <Pane className='flex items-center right-[-1rem] h-[140%] absolute'>
-          <PinIcon
-            size={16}
-            color={theme.colors.gray700}
-            marginRight={minorScale(1)}
-            className='mr-4'
-          />
+          <Pane
+            onClick={onPinToggle}
+            cursor='pointer'
+            padding={minorScale(1)}
+            marginRight={minorScale(1)} // Kept original spacing logic
+            className='mr-4' // Kept original class
+            display='flex'
+            alignItems='center'
+            title={isPinned ? 'Unpin hall' : 'Pin hall'} // Added title
+          >
+            <PinIcon
+              size={16}
+              color={isPinned ? theme.colors.green700 : theme.colors.gray700} // Dynamic color
+            />
+          </Pane>
           <img src={imageSrc?.src} className='h-full my-auto w-auto' alt={hall.name} />
         </Pane>
       </Pane>
 
-      {/* <Pane
-        display='grid'
-        gridTemplateColumns={showNutrition?'2fr 1fr 1fr':''}
-        borderBottom={`1px solid ${theme.colors.green300}`}
-        paddingBottom={minorScale(1)}
-      >
-        <Text size={300} fontWeight={500} />
-        {showNutrition&&
-        <>
-        <Text size={300} fontWeight={500} textAlign='right'>
-          Calories
-          <Text size={200} color='muted' display='block'>
-            (per serving)
-          </Text>
-        </Text>
-        <Text size={300} fontWeight={500} textAlign='right'>
-          Protein (g)
-        </Text></>}
-      </Pane> */}
-
       <MenuSection
         label='Main Entrée'
-        items={hall.items['Main Entrée']}
+        items={hall.items['Main Entrée']} // <-- This is UIMenuItem[] with id: number
         allergens={hall.allergens}
         calories={hall.calories}
         protein={hall.protein}
@@ -182,7 +136,8 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         showNutrition={showNutrition}
         limitItems={true}
       />
-      <Pane display='flex' justifyContent='center' marginTop={majorScale(3)}>
+      {/* This Pane with 'mt-auto' will now be pushed to the bottom of the flex column */}
+      <Pane display='flex' justifyContent='center' className='mt-auto'>
         <Button
           appearance='minimal'
           iconBefore={<ChevronDownIcon />}

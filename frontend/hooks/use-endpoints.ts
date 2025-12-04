@@ -93,6 +93,6 @@ export const useGetEvents = (placeId: string = '1007', config?: FetchConfig) => 
  * @returns SWR response containing ApiResponse with an array of MenuItem.
  */
 export const useGetMenu = (locationId: string, menuId: string, config?: FetchConfig) => {
-  const endpoint = `/api/dining/menu?locationId=${encodeURIComponent(locationId)}&menuId=${encodeURIComponent(menuId)}`;
+  const endpoint = `/api/dining/menu?location_id=${encodeURIComponent(locationId)}&menu_id=${encodeURIComponent(menuId)}`;
   return useSWR<ApiResponse<MenuItem[]>>(endpoint, get<MenuItem[]>(), config);
 };

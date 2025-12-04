@@ -14,10 +14,10 @@
 
 import { Pane, majorScale, useTheme } from 'evergreen-ui';
 
-/** 
+/**
  * The footer component is a generic page footer meant for use throughout
  * different Hoagie applications.
- * 
+ *
  * @returns {JSX.Element} The rendered footer component.
  */
 function Footer() {
@@ -41,6 +41,7 @@ function Footer() {
       display='flex'
       justifyContent='center'
       height='100px'
+      paddingTop='30px'
       paddingBottom='30px'
       alignItems='center'
       fontSize='14pt'
