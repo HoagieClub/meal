@@ -45,7 +45,7 @@ interface UIMenuItem {
 
 interface UIVenue {
   name: string;
-  items: Record<'Main Entrée' | 'Vegetarian + Vegan Entrée' | 'Soups', UIMenuItem[]>;
+  items: Record<'Main Entrée' | 'Vegan Entrée' | 'Soups', UIMenuItem[]>;
   allergens: Set<string>;
   calories: Record<string, number>;
   protein: Record<string, number>;
@@ -82,7 +82,6 @@ interface BuildDisplayDataProps {
 }
 
 export type {
-  MealIcon,
   Meal,
   MenuCategory,
   MenuItem,
@@ -94,3 +93,4 @@ export type {
   RawVenue,
   BuildDisplayDataProps,
 };
+

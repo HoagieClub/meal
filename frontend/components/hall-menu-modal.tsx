@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
-import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
-import { Separator } from './ui/separator';
-import MenuSection from './menu-selection';
 import { UIVenue } from '@/app/menu/types';
+import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
+import React from 'react';
+import MenuSection from './menu-selection';
+import { Separator } from './ui/separator';
 
 interface HallMenuModalProps {
   isShown: boolean;
@@ -43,8 +43,8 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
 
         <Separator height='1.5px' />
         <MenuSection
-          label='Vegetarian + Vegan Entrée'
-          items={hall.items['Vegetarian + Vegan Entrée']}
+          label='Vegan Entrée'
+          items={hall.items['Vegan Entrée']}
           allergens={hall.allergens}
           calories={hall.calories}
           protein={hall.protein}

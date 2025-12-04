@@ -1,25 +1,24 @@
 // components/DiningHallCard.tsx
-import React from 'react';
 import {
-  Pane,
-  Text,
   Button,
   ChevronDownIcon,
-  minorScale,
   majorScale,
+  minorScale,
+  Pane,
   PinIcon,
+  Text,
 } from 'evergreen-ui';
+import React from 'react';
 import MenuSection from './menu-selection';
 
-import rockyBanner from '../public/images/banners/rockybanner.png';
-import forbesBanner from '../public/images/banners/forbesbanner.png';
-import whitmanBanner from '../public/images/banners/whitmanbanner.png';
-import matheyBanner from '../public/images/banners/rockybanner.png';
-import yehBanner from '../public/images/banners/yehbanner.png';
-import cjlBanner from '../public/images/banners/cjl-banner.png';
-import gradBanner from '../public/images/banners/gradbanner.png';
-import { StaticImageData } from 'next/image';
 import { UIVenue } from '@/app/menu/types';
+import { StaticImageData } from 'next/image';
+import cjlBanner from '../public/images/banners/cjl-banner.png';
+import forbesBanner from '../public/images/banners/forbesbanner.png';
+import gradBanner from '../public/images/banners/gradbanner.png';
+import { default as matheyBanner, default as rockyBanner } from '../public/images/banners/rockybanner.png';
+import whitmanBanner from '../public/images/banners/whitmanbanner.png';
+import yehBanner from '../public/images/banners/yehbanner.png';
 
 interface DiningHallCardProps {
   hall: UIVenue;
@@ -116,8 +115,8 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
       />
 
       <MenuSection
-        label='Vegetarian + Vegan Entrée'
-        items={hall.items['Vegetarian + Vegan Entrée']}
+        label='Vegan Entrée'
+        items={hall.items['Vegan Entrée']}
         allergens={hall.allergens}
         calories={hall.calories}
         protein={hall.protein}

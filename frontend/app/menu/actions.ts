@@ -1,7 +1,5 @@
-import { RawApiMenuItem, RawVenue, UIMenuItem, UIVenue } from './types';
-import { categorize, extractAllergens } from '@/utils/dining';
 import { classifyDish } from '@/utils/dietary';
-import { BuildDisplayDataProps } from './types';
+import { BuildDisplayDataProps, RawApiMenuItem, RawVenue, UIMenuItem, UIVenue } from './types';
 
 const fetchMenuData = async (
   menuId: string,
@@ -35,7 +33,7 @@ const fetchMenuData = async (
       // 3. Helper to filter items into categories (Logic assumed based on your error message)
       const categorizedItems = {
         'Main Entrée': allItems.filter((i) => true), // Replace 'true' with your category logic
-        'Vegetarian + Vegan Entrée': [],
+        'Vegan Entrée': [],
         Soups: [],
       };
 
@@ -97,7 +95,7 @@ function buildDisplayData({
 
       const items: UIVenue['items'] = {
         'Main Entrée': [],
-        'Vegetarian + Vegan Entrée': [],
+        'Vegan Entrée': [],
         Soups: [],
       };
       let hasAnyItemsAfterFilter = false; // Track if any items remain after filtering this venue
@@ -157,4 +155,5 @@ function buildDisplayData({
     .sort(sortFn);
 }
 
-export { fetchMenuData, buildDisplayData };
+export { buildDisplayData, fetchMenuData };
+

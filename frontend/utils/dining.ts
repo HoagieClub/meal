@@ -106,11 +106,11 @@ export function extractAllergens(items: UIMenuItem[]): Set<string> {
   return set;
 }
 
-// Categorizes menu items into main entrée, vegetarian + vegan entrée, and soups
+// Categorizes menu items into main entrée, vegan entrée, and soups
 export function categorize(items: UIMenuItem[]) {
   const out = {
     'Main Entrée': [] as UIMenuItem[],
-    'Vegetarian + Vegan Entrée': [] as UIMenuItem[],
+    'Vegan Entrée': [] as UIMenuItem[],
     Soups: [] as UIMenuItem[],
   };
   items.forEach((i) => {
@@ -126,7 +126,7 @@ export function categorize(items: UIMenuItem[]) {
       nm.includes('tofu') ||
       nm.includes('vegetable')
     )
-      out['Vegetarian + Vegan Entrée'].push(i);
+      out['Vegan Entrée'].push(i);
     else out['Main Entrée'].push(i);
   });
   return out;
