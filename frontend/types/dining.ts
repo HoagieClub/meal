@@ -34,3 +34,17 @@ export interface DiningEvent {
   uid: string;
   description: string;
 }
+
+export interface MenuItem {
+  apiId: string;
+  name: string;
+  location: string;
+  description: string;
+  link: string;
+  nutrition: {
+    calories: number;
+    protein: number;
+    fat: number;
+    carbohydrates: number;
+  };
+}

@@ -13,12 +13,14 @@ const backgroundByMeal = (theme: Theme): Record<MealType, string> => ({
   Breakfast: theme.colors.green100 as string,
   Lunch: theme.colors.green200 as string,
   Dinner: theme.colors.green400 as string,
+  Brunch: theme.colors.green300 as string,
 });
 
 const MEAL_RANGES: Record<MealType, string> = {
   Breakfast: '7:30 AM – 10:30 AM',
   Lunch: '11:30 AM – 2:00 PM',
   Dinner: '5:00 PM – 8:00 PM',
+  Brunch: '10:00 AM – 2:00 PM',
 };
 
 const ALLERGEN_EMOJI: Record<string, string> = {

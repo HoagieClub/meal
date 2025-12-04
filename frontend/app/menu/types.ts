@@ -1,5 +1,5 @@
 type MealIcon = '🍂' | '🥜' | '🥚' | '🥛' | '🌱' | '🥜';
-type Meal = 'Breakfast' | 'Lunch' | 'Dinner';
+type Meal = 'Breakfast' | 'Lunch' | 'Dinner' | 'Brunch';
 
 interface MenuCategory {
   category: string;
@@ -39,6 +39,8 @@ interface UIMenuItem {
   link: string;
   allergens: string[];
   ingredients: string[];
+  calories: number;
+  protein: number;
 }
 
 interface UIVenue {

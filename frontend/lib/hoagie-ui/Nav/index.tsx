@@ -156,7 +156,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
                         <Menu.Item
                           key={tab.title}
                           onSelect={() => router.push(tab.href)}
-                          isSelected={pathname === tab.href}
+                          // isSelected={pathname === tab.href}
                         >
                           {tab.title}
                         </Menu.Item>

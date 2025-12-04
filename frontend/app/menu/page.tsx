@@ -26,6 +26,7 @@ export default function Index() {
     Breakfast?: UIVenue[];
     Lunch?: UIVenue[];
     Dinner?: UIVenue[];
+    Brunch?: UIVenue[];
   }>({});
   const [menuCache, setMenuCache] = useLocalStorage<Record<string, any>>('menuCache', {});
 

@@ -158,7 +158,18 @@ class DiningAPI(StudentApp):
         try:
             response = self._make_request(self.DINING_MENU, params=params)
             logger.info(msg=f"Menu API response for {location_id}/{menu_id}: {response}")
-            return msj.decode(response)
+            decoded_data = msj.decode(response)
+
+            # If the response is a list, we need to extract the dictionary.
+            if isinstance(decoded_data, list):
+                for item in decoded_data:
+                    # Return the first dictionary found (usually the second element after null)
+                    if isinstance(item, dict):
+                        return item
+                # If the list contains no dicts, return empty dict to prevent AttributeError downstream
+                return {}
+
+            return decoded_data
         except Exception as e:
             logger.error(f"Error fetching menu from raw API for {location_id}/{menu_id}: {e}")
             return {}  # Return an empty dict on failure
