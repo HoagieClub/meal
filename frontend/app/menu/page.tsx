@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon } from 'evergreen-ui';
+import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon, Spinner } from 'evergreen-ui';
 import DiningHallCard from '@/components/dining-hall-card';
 import HallMenuModal from '@/components/hall-menu-modal';
 import AllergenSidebar from '@/app/menu/components/allergen-sidebar';

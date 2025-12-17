@@ -44,7 +44,7 @@ from django.db import models, transaction, IntegrityError
 from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.student_app import StudentApp
 from hoagiemeal.api.schemas import Schemas
-from hoagiemeal.models.menu import MenuItem, MenuRating, Menu, MenuItemNutrient
+from hoagiemeal.models.menu import MenuItem, MenuRating, Menu, MenuItemNutrient, MenuItemBookmark, MenuItemUpvote
 from hoagiemeal.models.dining import DiningVenue
 from hoagiemeal.serializers import (
     MenuRatingSerializer,
@@ -52,6 +52,7 @@ from hoagiemeal.serializers import (
     MenuItemWithRatingsSerializer,
     FullMenuItemSerializer,
 )
+from hoagiemeal.api.user import user_api
 from hoagiemeal.api.database import get_mapped_menu_item_nutrient_data
 from hoagiemeal.utils.scraper import Scraper
 from hoagiemeal.utils.dietary import classify_dietary_restrictions
@@ -981,6 +982,114 @@ def get_dining_locations_with_menus(request):
         return Response(data.get(menu_id, {"locations": {"location": []}}))
     except Exception as e:
         logger.error(f"Error in get_dining_locations_with_menus: {e}")
+        return Response({"error": str(e)}, status=500)
+
+
+@api_view(["GET"])
+def get_upvotes_bookmarks_for_menu_item(request, menu_item_id):
+    """Get upvotes and bookmarks for a menu item.
+
+    Args:
+      request: The HTTP request.
+      menu_item_id: The ID of the menu item.
+
+    Returns:
+      Response: The upvotes and bookmarks for the menu item.
+
+    """
+    try:
+        claims = user_api.authenticate_request(request)
+        if not claims:
+            logger.error("Authentication failed in get_upvotes_bookmarks_for_menu_item view")
+            return Response({"error": "Authentication required"}, status=401)
+
+        menu_item = MenuItem.objects.get(api_id=menu_item_id)
+        user = user_api.get_or_create_user(claims, create=False)
+        if not user:
+            logger.error("User not found in get_upvotes_bookmarks_for_menu_item view")
+            return Response({"error": "User not found"}, status=404)
+
+        upvotes = menu_item.upvote_count
+        bookmarks = menu_item.bookmark_count
+        has_user_upvoted = MenuItemUpvote.objects.filter(user=user, menu_item=menu_item).exists()
+        has_user_bookmarked = MenuItemBookmark.objects.filter(user=user, menu_item=menu_item).exists()
+
+        return Response(
+            {
+                "upvotes": upvotes,
+                "bookmarks": bookmarks,
+                "has_user_upvoted": has_user_upvoted,
+                "has_user_bookmarked": has_user_bookmarked,
+            },
+            status=200,
+        )
+    except Exception as e:
+        logger.error(f"Error in get_upvotes_bookmarks_for_menu_item view: {e}")
+        return Response({"error": str(e)}, status=500)
+
+
+@api_view(["POST"])
+def post_upvotes_bookmarks_for_menu_item(request, menu_item_id):
+    """Post upvotes or bookmarks for a menu item.
+
+    Args:
+      request: The HTTP request.
+      menu_item_id: The ID of the menu item.
+
+    Returns:
+      Response: The response based on the action.
+
+    """
+    try:
+        claims = user_api.authenticate_request(request)
+        if not claims:
+            logger.error("Authentication failed in post_upvotes_bookmarks_for_menu_item view")
+            return Response({"error": "Authentication required"}, status=401)
+
+        menu_item = MenuItem.objects.get(api_id=menu_item_id)
+        user = user_api.get_or_create_user(claims, create=False)
+        if not user:
+            logger.error("User not found in post_upvotes_bookmarks_for_menu_item view")
+            return Response({"error": "User not found"}, status=404)
+
+        action = request.data.get("action")
+        if action not in ["bookmark", "upvote"]:
+            return Response({"error": "Invalid action"}, status=400)
+
+        if action == "bookmark":
+            existing_bookmark = MenuItemBookmark.objects.filter(user=user, menu_item=menu_item).first()
+            if existing_bookmark:
+                existing_bookmark.delete()
+            else:
+                MenuItemBookmark.objects.create(user=user, menu_item=menu_item)
+            menu_item.bookmark_count = MenuItemBookmark.objects.filter(menu_item=menu_item).count()
+            menu_item.save()
+
+        if action == "upvote":
+            existing_upvote = MenuItemUpvote.objects.filter(user=user, menu_item=menu_item).first()
+            if existing_upvote:
+                existing_upvote.delete()
+            else:
+                MenuItemUpvote.objects.create(user=user, menu_item=menu_item)
+            menu_item.upvote_count = MenuItemUpvote.objects.filter(menu_item=menu_item).count()
+            menu_item.save()
+
+        new_upvotes = MenuItemUpvote.objects.filter(menu_item=menu_item).count()
+        new_bookmarks = MenuItemBookmark.objects.filter(menu_item=menu_item).count()
+        has_user_upvoted = MenuItemUpvote.objects.filter(user=user, menu_item=menu_item).exists()
+        has_user_bookmarked = MenuItemBookmark.objects.filter(user=user, menu_item=menu_item).exists()
+
+        return Response(
+            {
+                "upvotes": new_upvotes,
+                "bookmarks": new_bookmarks,
+                "has_user_upvoted": has_user_upvoted,
+                "has_user_bookmarked": has_user_bookmarked,
+            },
+            status=200,
+        )
+    except Exception as e:
+        logger.error(f"Error in post_upvotes_bookmarks_for_menu_item view: {e}")
         return Response({"error": str(e)}, status=500)
 
 

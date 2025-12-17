@@ -18,11 +18,18 @@ import { Separator } from '@/components/ui/separator';
 import { useSearchParams } from 'next/navigation';
 import { MenuItemDetails } from './types';
 import NutritionTable from './components/nutrition-table';
+import { StarIcon, ArrowUpIcon } from 'evergreen-ui';
 
 const NutritionLabelPage: React.FC = () => {
   const [data, setData] = useState<MenuItemDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState({
+    details: true,
+    upvotesBookmarks: true,
+  });
   const [error, setError] = useState<string | null>(null);
+  const [upvotes, setUpvotes] = useState(0);
+  const [upvoted, setUpvoted] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
   const theme = useTheme();
   const searchParams = useSearchParams();
   const menuItemApiId = searchParams.get('id');
@@ -40,7 +47,43 @@ const NutritionLabelPage: React.FC = () => {
       setError(error.message || 'Failed to load menu item');
       setData(null);
     } finally {
-      setLoading(false);
+      setLoading((prev) => ({ ...prev, details: false }));
+    }
+  };
+
+  const getMenuItemUpvotesBookmarks = async () => {
+    try {
+      const response = await fetch(`/api/menu-items/upvotes-bookmarks/${menuItemApiId}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const body = await response.json();
+      console.log('Upvotes and bookmarks data:', body);
+      const { upvotes, bookmarks, hasUserUpvoted, hasUserBookmarked } = body;
+
+      setUpvotes(upvotes);
+      setUpvoted(hasUserUpvoted);
+      setBookmarked(hasUserBookmarked);
+    } catch (error: any) {
+      console.error('Error fetching upvotes and bookmarks:', error);
+      setError(error.message || 'Failed to load upvotes and bookmarks');
+      setUpvotes(0);
+      setUpvoted(false);
+      setBookmarked(false);
+    } finally {
+      setLoading((prev) => ({ ...prev, upvotesBookmarks: false }));
+    }
+  };
+
+  const postMenuItemUpvotesBookmarks = async ({ action }: { action: 'upvote' | 'bookmark' }) => {
+    try {
+      const response = await fetch(`/api/menu-items/upvotes-bookmarks/${menuItemApiId}`, {
+        method: 'POST',
+        body: JSON.stringify({ action }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const body = await response.json();
+      console.log('Upvotes and bookmarks data:', body);
+    } catch (error: any) {
+      console.error('Error posting upvotes and bookmarks:', error);
     }
   };
 
@@ -48,22 +91,23 @@ const NutritionLabelPage: React.FC = () => {
   useEffect(() => {
     if (!menuItemApiId) {
       setError('No menu item ID provided');
-      setLoading(false);
+      setLoading({ ...loading, details: false, upvotesBookmarks: false });
       return;
     }
-    setLoading(true);
+    setLoading((prev) => ({ ...prev, details: true, upvotesBookmarks: true }));
     setError(null);
     getMenuItemDetails();
+    getMenuItemUpvotesBookmarks();
   }, [menuItemApiId]);
 
   // display loading spinner if data is still loading
-  if (loading) {
+  if (loading.details || loading.upvotesBookmarks) {
     return (
       <Pane display='flex' alignItems='center' justifyContent='center' height='300'>
         <Spinner />
       </Pane>
     );
-  // display error message if data fails to load
+    // display error message if data fails to load
   } else if (error || !data) {
     return (
       <Pane padding={majorScale(4)}>
@@ -126,7 +170,6 @@ const NutritionLabelPage: React.FC = () => {
             )}
           </Pane>
           <Separator height='3px' />
-
           <Pane display='grid' className='grid grid-cols-2 h-min'>
             <Pane marginTop={minorScale(3)} paddingBottom={minorScale(2)}>
               <Text fontSize={20} fontWeight={700} color='green700'>
@@ -163,7 +206,6 @@ const NutritionLabelPage: React.FC = () => {
             </Pane>
           </Pane>
           <Separator height='3px' marginTop={majorScale(0)} />
-
           {data.ingredients.length > 0 && (
             <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
               <Text fontWeight={700} color='green700'>
@@ -172,7 +214,6 @@ const NutritionLabelPage: React.FC = () => {
               <Text fontWeight={300}>{data.ingredients.join(', ')}</Text>
             </Pane>
           )}
-
           {data.allergens.length > 0 && (
             <Pane marginTop={majorScale(1)} display='flex' flexDirection='column'>
               <Text fontWeight={700} color='green700'>
@@ -181,7 +222,6 @@ const NutritionLabelPage: React.FC = () => {
               <Text fontWeight={300}>{data.allergens.join(', ')}</Text>
             </Pane>
           )}
-
           {dietaryBadges.length > 0 && (
             <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
               <Text fontWeight={700} color='green700'>
@@ -196,7 +236,6 @@ const NutritionLabelPage: React.FC = () => {
               </Pane>
             </Pane>
           )}
-
           {data?.averageRating !== null && (
             <Pane marginTop={majorScale(2)}>
               <Text fontWeight={700} color='green700'>
@@ -207,6 +246,48 @@ const NutritionLabelPage: React.FC = () => {
               </Text>
             </Pane>
           )}
+
+          <Separator height='3px' />
+          <Pane marginTop={majorScale(2)} display='flex' flexDirection='row' gap={minorScale(2)}>
+            <Pane
+              display='flex'
+              alignItems='center'
+              gap={minorScale(2)}
+              cursor='pointer'
+              onClick={() => {
+                setUpvotes((upvotes) => (upvoted ? upvotes - 1 : upvotes + 1));
+                setUpvoted(!upvoted);
+                postMenuItemUpvotesBookmarks({ action: 'upvote' });
+              }}
+            >
+              <ArrowUpIcon
+                color={upvoted ? theme.colors.orange500 : theme.colors.green700}
+                size={16}
+              />
+              <Text fontWeight={600} color={theme.colors.green700} fontSize={14}>
+                {upvotes}
+              </Text>
+            </Pane>
+            <Pane
+              display='flex'
+              alignItems='center'
+              gap={minorScale(2)}
+              paddingX={majorScale(3)}
+              cursor='pointer'
+              onClick={() => {
+                setBookmarked(!bookmarked);
+                postMenuItemUpvotesBookmarks({ action: 'bookmark' });
+              }}
+            >
+              <StarIcon
+                color={bookmarked ? theme.colors.orange500 : theme.colors.green700}
+                size={16}
+              />
+              <Text fontWeight={600} color={theme.colors.green700} fontSize={14}>
+                {bookmarked ? 'Favorited' : 'Favorite'}
+              </Text>
+            </Pane>
+          </Pane>
         </Pane>
 
         <NutritionTable nutrient={nutrient} />

@@ -15,11 +15,13 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 from hoagiemeal.models.dining import DiningVenue
 
+
 class Menu(models.Model):
     """Represent a daily menu for a specific meal at a dining hall."""
 
     class MealType(models.TextChoices):
         """Meal type choices for the Menu model."""
+
         BREAKFAST = "BR", _("Breakfast")
         LUNCH = "LU", _("Lunch")
         DINNER = "DI", _("Dinner")
@@ -28,11 +30,12 @@ class Menu(models.Model):
     date = models.DateField(default=timezone.now, db_index=True)
     meal = models.CharField(max_length=2, choices=MealType.choices, db_index=True)
     last_fetched = models.DateTimeField(auto_now=True, help_text=_("Last time menu was updated from API"))
-    
+
     menu_items = models.ManyToManyField("MenuItem", related_name="menus")
 
     class Meta:
         """Meta class for the Menu model."""
+
         db_table = "menus"
         unique_together = ("dining_venue", "date", "meal")
         indexes = [
@@ -71,24 +74,35 @@ class MenuItem(models.Model):
     link = models.URLField(max_length=500, blank=True)
     allergens = ArrayField(models.CharField(max_length=100), blank=True, default=list)
     ingredients = ArrayField(models.CharField(max_length=255), blank=True, default=list)
-    
+
     # Dietary classification fields
-    is_vegetarian = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
+    is_vegetarian = models.BooleanField(
+        default=False, db_index=True, help_text=_("Determined from ingredients/allergens")
+    )
     is_vegan = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
     is_halal = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
     is_kosher = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
     dietary_flags = ArrayField(
-        models.CharField(max_length=50), 
-        blank=True, 
+        models.CharField(max_length=50),
+        blank=True,
         default=list,
-        help_text=_("Raw dietary flags from source (e.g., icons on nutrition page)")
+        help_text=_("Raw dietary flags from source (e.g., icons on nutrition page)"),
     )
-    
+    upvote_count = models.PositiveIntegerField(
+        default=0,
+        help_text=_("Cached number of upvotes for this menu item"),
+    )
+    bookmark_count = models.PositiveIntegerField(
+        default=0,
+        help_text=_("Cached number of bookmarks for this menu item"),
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Meta class for the MenuItem model."""
+
         db_table = "menu_items"
         indexes = [
             models.Index(fields=["name"]),
@@ -98,7 +112,7 @@ class MenuItem(models.Model):
             models.Index(fields=["is_halal"]),
             models.Index(fields=["is_kosher"]),
         ]
-        
+
     def __str__(self):
         """Return the string representation of the MenuItem instance."""
         return f"{self.name} ({self.api_id})"
@@ -129,6 +143,7 @@ class MenuItemNutrient(models.Model):
 
     class Meta:
         """Meta class for the MenuItemNutrient model."""
+
         db_table = "menu_item_nutrients"
         indexes = [
             models.Index(fields=["calories"]),
@@ -192,6 +207,7 @@ class MenuItemMetrics(models.Model):
 
         """
         return f"Metrics for {self.menu_item.name}"
+
 
 # TODO: Should probably be used somewhere
 class MenuRating(models.Model):
@@ -286,3 +302,91 @@ class MenuRating(models.Model):
 
         """
         return f"Rating {self.rating} for {self.menu_item.name} by {self.user.get_full_name()}"
+
+
+class MenuItemUpvote(models.Model):
+    """Stores user upvotes for menu items.
+
+    Attributes:
+        user (CustomUser): The user who upvoted the item.
+        menu_item (MenuItem): The (canonical) menu item that was upvoted.
+        created_at (datetime): Timestamp when the upvote was created.
+    """
+
+    user = models.ForeignKey(
+        "CustomUser",
+        on_delete=models.CASCADE,
+        related_name="menu_item_upvotes",
+        help_text=_("User who upvoted the menu item"),
+    )
+    menu_item = models.ForeignKey(
+        MenuItem,
+        on_delete=models.CASCADE,
+        related_name="upvotes",
+        help_text=_("Menu item that was upvoted"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        """Meta class for the MenuItemUpvote model."""
+
+        db_table = "menu_item_upvotes"
+        unique_together = ["user", "menu_item"]
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["menu_item"]),
+            models.Index(fields=["created_at"]),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        """Return the string representation of the MenuItemUpvote instance.
+
+        Returns:
+            str: A description of the upvote.
+        """
+        return f"{self.user} upvoted {self.menu_item.name}"
+
+
+class MenuItemBookmark(models.Model):
+    """Stores user bookmarks for menu items.
+
+    Attributes:
+        user (CustomUser): The user who bookmarked the item.
+        menu_item (MenuItem): The (canonical) menu item that was bookmarked.
+        created_at (datetime): Timestamp when the bookmark was created.
+    """
+
+    user = models.ForeignKey(
+        "CustomUser",
+        on_delete=models.CASCADE,
+        related_name="menu_item_bookmarks",
+        help_text=_("User who bookmarked the menu item"),
+    )
+    menu_item = models.ForeignKey(
+        MenuItem,
+        on_delete=models.CASCADE,
+        related_name="bookmarks",
+        help_text=_("Menu item that was bookmarked"),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        """Meta class for the MenuItemBookmark model."""
+
+        db_table = "menu_item_bookmarks"
+        unique_together = ["user", "menu_item"]
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["menu_item"]),
+            models.Index(fields=["created_at"]),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        """Return the string representation of the MenuItemBookmark instance.
+
+        Returns:
+            str: A description of the bookmark.
+        """
+        return f"{self.user} bookmarked {self.menu_item.name}"
