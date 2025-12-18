@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
-import useLocalStorage from '@/hooks/useLocalStorage';
+import { useMemo, useRef } from 'react';
+import useLocalStorage from '@/hooks/use-local-storage';
 
 const PINNED_HALLS_KEY = 'diningPinnedHalls';
 

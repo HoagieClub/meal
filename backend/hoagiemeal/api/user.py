@@ -168,27 +168,27 @@ def update_user_profile(request):
         fields_to_update = {}
 
         dietary_restrictions = request.data.get("dietary_restrictions")
-        if dietary_restrictions is not None and len(dietary_restrictions) > 0:
+        if dietary_restrictions is not None:
             user.dietary_restrictions = dietary_restrictions
             fields_to_update["dietary_restrictions"] = dietary_restrictions
 
         allergens = request.data.get("allergens")
-        if allergens is not None and len(allergens) > 0:
+        if allergens is not None:
             user.allergens = allergens
             fields_to_update["allergens"] = allergens
 
         dining_halls = request.data.get("dining_halls")
-        if dining_halls is not None and len(dining_halls) > 0:
+        if dining_halls is not None:
             user.dining_halls = dining_halls
             fields_to_update["dining_halls"] = dining_halls
 
         daily_calorie_target = request.data.get("daily_calorie_target")
-        if daily_calorie_target is not None and daily_calorie_target > 0:
+        if daily_calorie_target is not None:
             user.daily_calorie_target = daily_calorie_target
             fields_to_update["daily_calorie_target"] = daily_calorie_target
 
         daily_protein_target = request.data.get("daily_protein_target")
-        if daily_protein_target is not None and daily_protein_target > 0:
+        if daily_protein_target is not None:
             user.daily_protein_target = daily_protein_target
             fields_to_update["daily_protein_target"] = daily_protein_target
 

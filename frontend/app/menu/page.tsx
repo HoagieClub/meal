@@ -10,6 +10,7 @@ import {
   useTheme,
   SearchIcon,
   Spinner,
+  Theme,
 } from 'evergreen-ui';
 import DiningHallCard from '@/components/dining-hall-card';
 import HallMenuModal from '@/components/hall-menu-modal';
@@ -17,66 +18,51 @@ import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
 import FilterSidebar from '@/app/menu/components/filter-sidebar';
 import MenuPageHeader from '@/app/menu/components/menu-header';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
-import { AllergenKey, DietKey, UIVenue, Meal as MealType } from './types';
-import { useUserProfile } from '@/hooks/use-user-profile';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { ALLERGEN_EMOJI, initialSelectedHalls, backgroundByMeal } from '@/app/menu/data';
+import { UIVenue } from './types';
+import useLocalStorage from '@/hooks/use-local-storage';
 import { buildDisplayData, fetchMenuData } from './actions';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useDate } from '@/hooks/use-date';
 import { usePinnedHalls } from '@/hooks/use-pinned-halls';
 import { usePreferences } from '@/hooks/use-preferences';
-
-const FILTER_PREFS_KEY = 'diningFilterPrefs';
+import { DINING_HALLS, MealType } from '@/data';
+import { MEAL_COLOR_MAP } from '@/styles';
 
 export default function Index() {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const { user, isLoading: authLoading, error: authError } = useUser();
 
+  const { selectedDate, isWeekend, currentMeal, goToNextDay, goToPreviousDay } = useDate();
+
   const [menusByMeal, setMenusByMeal] = useState<{
-    Breakfast?: UIVenue[];
-    Lunch?: UIVenue[];
-    Dinner?: UIVenue[];
-    Brunch?: UIVenue[];
+    [key in MealType]?: UIVenue[];
   }>({});
   const [menuCache, setMenuCache] = useLocalStorage<Record<string, any>>('menuCache', {});
+  const [meal, setMeal] = useState<MealType>(currentMeal as MealType);
 
-  const { selectedDate, isWeekend, currentMeal, goToNextDay, goToPreviousDay } = useDate();
-  const [meal, setMeal] = useState(currentMeal);
+  const usePreferencesObject = usePreferences();
+  const {
+    setAllergens,
+    dietaryRestrictions,
+    allergens,
+    diningHalls,
+    showNutrition,
+    loading: preferencesLoading,
+  } = usePreferencesObject;
 
   const [searchTerm, setSearchTerm] = useState('');
-
-  const PAGE_BG = backgroundByMeal(theme)[meal as MealType];
   const availableMeals: MealType[] = isWeekend
     ? ['Lunch', 'Dinner']
     : ['Breakfast', 'Lunch', 'Dinner'];
 
-  const {
-    setPreferences,
-    setAllergens,
-    dietary,
-    allergens,
-    halls,
-    showNutrition,
-    loading: preferencesLoading,
-  } = usePreferences();
-
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
-
-  useEffect(() => {
-    if (isWeekend && meal === 'Breakfast') {
-      setMeal('Lunch');
-    }
-  }, [isWeekend, meal]); // Dependency simplified
-
   const { pinnedHalls, togglePin } = usePinnedHalls();
 
-  // ─── Data Fetching for Menus ────────────────────────────────────────────
-
   useEffect(() => {
-    if (preferencesLoading || !selectedDate) return;
+    if (preferencesLoading || !selectedDate || !meal) return;
     let isCurrent = true;
+
     const checkIsCurrent = () => isCurrent;
     setLoading(true);
     const dateKey = selectedDate.toISOString().split('T')[0];
@@ -87,13 +73,13 @@ export default function Index() {
         : ['Breakfast', 'Lunch', 'Dinner'];
       const mealsToFetch = [meal, ...baseMeals.filter((m) => m !== meal)];
 
-      const ids = mealsToFetch.map((m) => `${dateKey}-${m}`);
+      const ids = mealsToFetch.map((m) => `${dateKey}-${m as MealType}`);
       const results = await Promise.all(ids.map((id) => fetchMenuData(id, checkIsCurrent)));
       if (!checkIsCurrent()) return;
 
       const combined: any = {};
       results.forEach((res, i) => {
-        combined[mealsToFetch[i]] = res ?? [];
+        combined[mealsToFetch[i] as MealType] = res ?? [];
       });
 
       const noData = Object.values(combined as Record<MealType, UIVenue[]>).every(
@@ -110,7 +96,6 @@ export default function Index() {
     }
 
     if (menuCache[dateKey]) {
-      console.log('Menu cache hit for date:', dateKey);
       console.log(menuCache[dateKey]);
       setMenusByMeal(menuCache[dateKey]);
       setLoading(false);
@@ -121,24 +106,24 @@ export default function Index() {
     return () => {
       isCurrent = false;
     };
-  }, [selectedDate, preferencesLoading, isWeekend]);
+  }, [selectedDate, preferencesLoading, isWeekend, meal, menuCache, setMenusByMeal]);
 
   const venues = menusByMeal[meal as MealType] ?? [];
   const displayData = useMemo(
     () =>
       buildDisplayData({
         venues,
-        appliedHalls: halls,
-        appliedDietary: dietary,
-        appliedAllergens: allergens,
+        appliedDiningHalls: diningHalls ?? DINING_HALLS,
+        appliedDietaryRestrictions: dietaryRestrictions ?? [],
+        appliedAllergens: allergens ?? [],
         searchTerm,
-        pinnedHalls,
+        pinnedHalls: pinnedHalls ?? new Set(),
         showNutrition,
       }),
-    [venues, halls, dietary, allergens, searchTerm, pinnedHalls, showNutrition]
+    [venues, diningHalls, dietaryRestrictions, allergens, searchTerm, pinnedHalls, showNutrition]
   );
 
-  if (authLoading) {
+  if (authLoading || preferencesLoading) {
     return (
       <Pane display='flex' alignItems='center' justifyContent='center' height='300'>
         <Spinner />
@@ -158,36 +143,13 @@ export default function Index() {
     <Pane
       display='flex'
       className='sm:flex-row overflow-hidden min-h-screen flex-col'
-      background={PAGE_BG}
+      background={MEAL_COLOR_MAP(theme)[meal as MealType]}
     >
       <FilterSidebar
-        profileLoaded={!preferencesLoading}
-        applied={{
-          halls,
-          dietary,
-          allergens,
-          searchTerm,
-          showNutrition,
-        }}
-        onApply={({ halls, dietary, allergens, searchTerm, showNutrition }) => {
-          setPreferences({ halls, dietary, allergens, showNutrition });
-          setSearchTerm(searchTerm);
-
-          fetch('/api/user/update', {
-            method: 'POST',
-            body: JSON.stringify({
-              dietary_restrictions: dietary,
-              allergens,
-              dining_halls: halls,
-              show_nutrition: showNutrition,
-            }),
-          })
-            .then((response) => response.json())
-            .catch((error) => console.error('Error updating user preferences:', error));
-        }}
+        usePreferencesObject={usePreferencesObject}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
       />
-
-      {/* ─── MAIN VIEW ──────────────────────────────────────────────────────── */}
 
       <Pane flex={1} className='overflow-x-hidden h-full no-scrollbar px-4'>
         <MenuPageHeader
@@ -246,27 +208,24 @@ export default function Index() {
             gap={majorScale(1)}
             className='h-full no-scrollbar'
           >
-            {displayData.map((hall) => (
+            {displayData.map((diningHall) => (
               <DiningHallCard
-                key={hall.name}
-                hall={hall}
+                key={diningHall.name}
+                diningHall={diningHall}
                 setModalHall={setModalHall}
-                ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-                theme={theme}
                 showNutrition={showNutrition}
-                isPinned={pinnedHalls.has(hall.name)}
-                onPinToggle={() => togglePin(hall.name)}
+                isPinned={pinnedHalls.has(diningHall.name)}
+                onPinToggle={() => togglePin(diningHall.name)}
               />
             ))}
           </Pane>
         )}
       </Pane>
-      <AllergenSidebar selected={allergens} setAppliedAllergens={setAllergens} theme={theme} />
+      <AllergenSidebar selected={allergens} setAppliedAllergens={setAllergens} />
       <HallMenuModal
-        isShown={!!modalHall}
-        onClose={() => setModalHall(null)}
-        hall={modalHall}
-        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
+        modalHall={modalHall}
+        setModalHall={setModalHall}
+        showNutrition={showNutrition}
       />
     </Pane>
   );

@@ -1,6 +1,7 @@
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
+import { toSnakeCase } from '@/utils/toCamelCase';
 
 const ROUTE = '/api/user/update/';
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -13,25 +14,14 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { dietary_restrictions, allergens, daily_calorie_target, daily_protein_target, dining_halls, show_nutrition } = body;
-
-    const res = await request.postAuth(accessToken)(ROUTE, {
-      arg: { 
-        dietary_restrictions,
-        allergens,
-        daily_calorie_target,
-        daily_protein_target,
-        dining_halls,
-        show_nutrition
-      }
-    });
+    const snakeCaseBody = toSnakeCase(body);
+    const res = await request.postAuth(accessToken)(ROUTE, { arg: snakeCaseBody });
 
     return NextResponse.json({
       data: res,
       message: 'Successfully updated user profile',
       status: 200,
     });
-
   } catch (error: unknown) {
     DEBUG && console.error('Error:', error);
 
@@ -44,8 +34,7 @@ export async function POST(req: Request) {
         }),
       },
       {
-        status: error instanceof Error && 'status' in error ?
-          (error as any).status : 500,
+        status: error instanceof Error && 'status' in error ? (error as any).status : 500,
       }
     );
   }

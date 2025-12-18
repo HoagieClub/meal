@@ -3,6 +3,7 @@
 import React from 'react';
 import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
 import { UIMenuItem } from '@/app/menu/types';
+import { AllergenType } from '@/data';
 
 interface MenuSectionProps {
   label: string;
@@ -10,7 +11,7 @@ interface MenuSectionProps {
   allergens: Set<string>;
   calories: Record<string, number>;
   protein: Record<string, number>;
-  ALLERGEN_EMOJI: Record<string, string>;
+  ALLERGEN_EMOJI: Record<AllergenType, string>;
   showNutrition?: boolean;
   limitItems?: boolean;
 }
@@ -105,7 +106,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
                             background={theme.colors.green100}
                             border={`1px solid ${theme.colors.green700}`}
                           >
-                            <Text>{ALLERGEN_EMOJI[a.toLowerCase()]}</Text>
+                            <Text>{ALLERGEN_EMOJI[a as AllergenType]}</Text>
                           </Pane>
                         ))
                       ) : (

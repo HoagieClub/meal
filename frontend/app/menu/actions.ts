@@ -1,5 +1,6 @@
-import { classifyDish } from '@/utils/dietary';
-import { BuildDisplayDataProps, RawApiMenuItem, RawVenue, UIMenuItem, UIVenue } from './types';
+import { classifyDish, DietTag } from '@/utils/dietary';
+import { RawApiMenuItem, RawVenue, UIMenuItem, UIVenue } from './types';
+import { AllergenType, DietaryTagType, DiningHallType } from '@/data';
 
 const fetchMenuData = async (
   menuId: string,
@@ -57,10 +58,20 @@ const fetchMenuData = async (
   }
 };
 
+interface BuildDisplayDataProps {
+  venues: UIVenue[];
+  appliedDiningHalls: DiningHallType[];
+  appliedDietaryRestrictions: DietaryTagType[];
+  appliedAllergens: AllergenType[];
+  searchTerm: string;
+  pinnedHalls: Set<DiningHallType>;
+  showNutrition: boolean;
+}
+
 function buildDisplayData({
   venues,
-  appliedHalls,
-  appliedDietary,
+  appliedDiningHalls,
+  appliedDietaryRestrictions,
   appliedAllergens,
   searchTerm,
   pinnedHalls,
@@ -68,40 +79,39 @@ function buildDisplayData({
 }: BuildDisplayDataProps): UIVenue[] {
   const term = searchTerm.trim().toLowerCase();
 
-  const hasDietFilter = appliedDietary.length > 0;
+  const hasDietFilter = appliedDietaryRestrictions.length > 0;
   const hasAllergenFilter = appliedAllergens.length > 0;
   const hasSearch = term !== '';
 
   const sortByPinned = (a: UIVenue, b: UIVenue) => {
-    const aPinned = pinnedHalls.has(a.name);
-    const bPinned = pinnedHalls.has(b.name);
+    const aPinned = pinnedHalls.has(a.name as DiningHallType);
+    const bPinned = pinnedHalls.has(b.name as DiningHallType);
     if (aPinned === bPinned) return 0;
     return aPinned ? -1 : 1;
   };
 
-  // fast path
   if (!hasDietFilter && !hasAllergenFilter && !hasSearch) {
-    return appliedHalls
-      .map((name) => venues.find((v) => v.name === name))
+    return appliedDiningHalls
+      .map((name) => venues.find((v) => v.name === name as DiningHallType))
       .filter((v): v is UIVenue => !!v)
       .sort(sortByPinned);
   }
 
-  const matchesDish = (dish: Dish): boolean => {
+  const matchesDish = (dish: any): boolean => {
     const text = `${dish.name} ${dish.description}`.toLowerCase();
 
     if (hasSearch && !text.includes(term)) return false;
 
     if (hasDietFilter) {
       const tags = classifyDish(dish);
-      if (!tags.some((tag) => appliedDietary.includes(tag))) {
+      if (!tags.some((tag: DietTag) => appliedDietaryRestrictions.includes(tag))) {
         return false;
       }
     }
 
     if (hasAllergenFilter) {
-      const allergens = dish.allergens.map((a) => a.toLowerCase());
-      if (appliedAllergens.some((a) => allergens.includes(a.toLowerCase()))) {
+      const allergens = dish.allergens.map((a: AllergenType) => a);
+      if (appliedAllergens.some((a: AllergenType) => allergens.includes(a))) {
         return false;
       }
     }
@@ -109,7 +119,7 @@ function buildDisplayData({
     return true;
   };
 
-  const normalizeDish = (dish: Dish): Dish => {
+  const normalizeDish = (dish: any): any => {
     if (showNutrition) return dish;
     if (!('nutrition' in dish)) return dish;
 
@@ -117,7 +127,7 @@ function buildDisplayData({
     return rest;
   };
 
-  const buildVenue = (hallName: string): UIVenue | null => {
+  const buildVenue = (hallName: DiningHallType): UIVenue | null => {
     const venue = venues.find((v) => v.name === hallName);
     if (!venue) return null;
 
@@ -134,7 +144,7 @@ function buildDisplayData({
     return { ...venue, items };
   };
 
-  return appliedHalls
+  return appliedDiningHalls
     .map(buildVenue)
     .filter((v): v is UIVenue => v !== null)
     .sort(sortByPinned);

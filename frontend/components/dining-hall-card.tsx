@@ -7,53 +7,36 @@ import {
   Pane,
   PinIcon,
   Text,
+  useTheme,
 } from 'evergreen-ui';
 import React from 'react';
 import MenuSection from './menu-selection';
 
 import { UIVenue } from '@/app/menu/types';
-import { StaticImageData } from 'next/image';
-import cjlBanner from '../public/images/banners/cjl-banner.png';
-import forbesBanner from '../public/images/banners/forbesbanner.png';
-import gradBanner from '../public/images/banners/gradbanner.png';
-import { default as matheyBanner, default as rockyBanner } from '../public/images/banners/rockybanner.png';
-import whitmanBanner from '../public/images/banners/whitmanbanner.png';
-import yehBanner from '../public/images/banners/yehbanner.png';
+import { ALLERGEN_EMOJI } from '@/styles';
+import { HALL_BANNER_MAP } from '@/styles';
 
 interface DiningHallCardProps {
-  hall: UIVenue;
-  setModalHall: (hall: UIVenue) => void;
-  ALLERGEN_EMOJI: Record<string, string>;
-  theme: any;
+  diningHall: UIVenue;
+  setModalHall: (hall: UIVenue | null) => void;
   showNutrition: boolean;
   isPinned: boolean;
   onPinToggle: () => void;
 }
 
-const hallImages: Record<string, StaticImageData> = {
-  'Rockefeller College': rockyBanner,
-  'Forbes College': forbesBanner,
-  'Mathey College': matheyBanner,
-  'Whitman & Butler Colleges': whitmanBanner,
-  'Yeh College & NCW': yehBanner,
-  'Center for Jewish Life': cjlBanner,
-  'Graduate College': gradBanner,
-};
-
 const DiningHallCard: React.FC<DiningHallCardProps> = ({
-  hall,
+  diningHall,
   setModalHall,
-  ALLERGEN_EMOJI,
-  theme,
   showNutrition,
   isPinned,
   onPinToggle,
 }) => {
-  const imageSrc = hallImages[hall.name];
+  const theme = useTheme();
+  const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
 
   return (
     <Pane
-      key={hall.name}
+      key={diningHall.name}
       background='white'
       borderRadius={15}
       boxShadow='0 2px 8px rgba(0,0,0,0.08)'
@@ -78,7 +61,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           paddingY={minorScale(1)}
         >
           <Text size={700} fontWeight={600} color={theme.colors.gray900}>
-            {hall.name}
+            {diningHall.name}
           </Text>
         </Pane>
 
@@ -99,16 +82,16 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
               color={isPinned ? theme.colors.green700 : theme.colors.gray700} // Dynamic color
             />
           </Pane>
-          <img src={imageSrc?.src} className='h-full my-auto w-auto' alt={hall.name} />
+          <img src={imageSrc?.src} className='h-full my-auto w-auto' alt={diningHall.name} />
         </Pane>
       </Pane>
 
       <MenuSection
         label='Main Entrée'
-        items={hall.items['Main Entrée']} // <-- This is UIMenuItem[] with id: number
-        allergens={hall.allergens}
-        calories={hall.calories}
-        protein={hall.protein}
+        items={diningHall.items['Main Entrée']} // <-- This is UIMenuItem[] with id: number
+        allergens={diningHall.allergens}
+        calories={diningHall.calories}
+        protein={diningHall.protein}
         ALLERGEN_EMOJI={ALLERGEN_EMOJI}
         showNutrition={showNutrition}
         limitItems={true}
@@ -116,10 +99,10 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
 
       <MenuSection
         label='Vegan Entrée'
-        items={hall.items['Vegan Entrée']}
-        allergens={hall.allergens}
-        calories={hall.calories}
-        protein={hall.protein}
+        items={diningHall.items['Vegan Entrée']}
+        allergens={diningHall.allergens}
+        calories={diningHall.calories}
+        protein={diningHall.protein}
         ALLERGEN_EMOJI={ALLERGEN_EMOJI}
         showNutrition={showNutrition}
         limitItems={true}
@@ -127,10 +110,10 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
 
       <MenuSection
         label='Soups'
-        items={hall.items['Soups']}
-        allergens={hall.allergens}
-        calories={hall.calories}
-        protein={hall.protein}
+        items={diningHall.items['Soups']}
+        allergens={diningHall.allergens}
+        calories={diningHall.calories}
+        protein={diningHall.protein}
         ALLERGEN_EMOJI={ALLERGEN_EMOJI}
         showNutrition={showNutrition}
         limitItems={true}
@@ -140,7 +123,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         <Button
           appearance='minimal'
           iconBefore={<ChevronDownIcon />}
-          onClick={() => setModalHall(hall)}
+          onClick={() => setModalHall(diningHall)}
           className='w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold'
         >
           {'More Details'}

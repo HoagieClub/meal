@@ -1,6 +1,3 @@
-type MealIcon = '🍂' | '🥜' | '🥚' | '🥛' | '🌱' | '🥜';
-type Meal = 'Breakfast' | 'Lunch' | 'Dinner' | 'Brunch';
-
 interface MenuCategory {
   category: string;
   items: MenuItem[];
@@ -16,21 +13,6 @@ interface MenuItem {
   protein?: number;
   link?: string;
 }
-
-type DietKey = 'Vegetarian' | 'Vegan' | 'Halal' | 'Kosher';
-
-type AllergenKey =
-  | 'Peanut'
-  | 'Coconut'
-  | 'Eggs'
-  | 'Milk'
-  | 'Wheat'
-  | 'Soybeans'
-  | 'Crustacean'
-  | 'Alcohol'
-  | 'Gluten'
-  | 'Fish'
-  | 'Sesame';
 
 interface UIMenuItem {
   id: number;
@@ -72,26 +54,13 @@ interface RawVenue {
   menu: { menus?: RawApiMenuItem[] };
 }
 
-interface BuildDisplayDataProps {
-  venues: UIVenue[];
-  appliedHalls: string[];
-  appliedDietary: DietKey[];
-  appliedAllergens: AllergenKey[];
-  searchTerm: string;
-  pinnedHalls: Set<string>;
-  showNutrition: boolean;
-}
-
 export type {
   Meal,
   MenuCategory,
   MenuItem,
-  DietKey,
-  AllergenKey,
   UIMenuItem,
   UIVenue,
   RawApiMenuItem,
   RawVenue,
-  BuildDisplayDataProps,
 };
 

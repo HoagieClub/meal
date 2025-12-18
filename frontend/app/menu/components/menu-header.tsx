@@ -9,8 +9,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'evergreen-ui';
-import { Meal as MealType } from '../types';
-import { MEAL_RANGES } from '../data';
+import { MEAL_RANGES, MealType } from '@/data';
 
 interface MenuPageHeaderProps {
   meal: MealType;
@@ -41,7 +40,7 @@ export default function MenuPageHeader({
     if (isWeekend && m === 'Lunch') {
       return '11:00 AM – 2:00 PM';
     }
-    return MEAL_RANGES[m as MealType];
+    return MEAL_RANGES[m];
   };
 
   const getMealLabel = (m: MealType) => {
@@ -99,7 +98,6 @@ export default function MenuPageHeader({
 
         <Pane
           display='flex'
-          border={`1px solid ${theme.colors.green700}`}
           borderRadius={999}
           background={theme.colors.green25}
           overflow='hidden'

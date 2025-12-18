@@ -1,70 +1,70 @@
 'use client';
 
-import { useEffect, useRef, useMemo } from 'react';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { DietKey, AllergenKey } from '@/app/menu/types';
-import { initialSelectedHalls } from '@/app/menu/data';
+import { useEffect, useRef, useMemo, useState } from 'react';
+import { DINING_HALLS, DietaryTagType, AllergenType, DiningHallType } from '@/data';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import { toSnakeCase } from '@/utils/toCamelCase';
 
-const PREFERENCES_KEY = 'diningFilterPrefs';
+const UPDATE_PREFERENCES_URL = '/api/user/update';
 
 export interface MenuPreferences {
-  halls: string[];
-  dietary: DietKey[];
-  allergens: AllergenKey[];
+  diningHalls: DiningHallType[];
+  dietaryRestrictions: DietaryTagType[];
+  allergens: AllergenType[];
   showNutrition: boolean;
 }
 
 export function usePreferences() {
   const { userProfile, loading: profileLoading } = useUserProfile();
+  const hasHydratedRef = useRef(false);
 
-  const [preferences, setPreferences] = useLocalStorage<MenuPreferences>(PREFERENCES_KEY, {
-    halls: initialSelectedHalls,
-    dietary: [],
+  const [preferences, setPreferences] = useState<MenuPreferences>({
+    diningHalls: DINING_HALLS,
+    dietaryRestrictions: [],
     allergens: [],
     showNutrition: true,
   });
 
-  const lastProfileKeyRef = useRef<string>('');
-
-  const profileKey = useMemo(() => {
-    if (!userProfile) return '';
-    return JSON.stringify(userProfile);
-  }, [userProfile]);
-
   useEffect(() => {
-    if (profileLoading || !userProfile || !profileKey) return;
-    if (profileKey === lastProfileKeyRef.current) return;
+    if (profileLoading || !userProfile) return;
+    if (hasHydratedRef.current) return;
 
-    const dietaryRestrictions = userProfile.dietaryRestrictions ?? [];
-    const allergens = userProfile.allergens ?? [];
-    const diningHalls = userProfile.diningHalls ?? [];
-    const showNutrition = userProfile.showNutrition ?? true;
+    hasHydratedRef.current = true;
 
-    if (dietaryRestrictions.length === 0 && allergens.length === 0 && diningHalls.length === 0) {
-      lastProfileKeyRef.current = profileKey;
-      return;
-    }
-
-    const nextPreferences: MenuPreferences = {
-      halls: diningHalls.length > 0 ? diningHalls : preferences.halls,
-      dietary: dietaryRestrictions.length > 0 ? dietaryRestrictions : preferences.dietary,
-      allergens: allergens.length > 0 ? allergens : preferences.allergens,
-      showNutrition,
+    const nextPreferences = {
+      diningHalls: userProfile.diningHalls,
+      dietaryRestrictions: userProfile.dietaryRestrictions,
+      allergens: userProfile.allergens,
+      showNutrition: userProfile.showNutrition,
     };
 
-    lastProfileKeyRef.current = profileKey;
-
-    const hasChanges =
-      nextPreferences.halls !== preferences.halls ||
-      nextPreferences.dietary !== preferences.dietary ||
-      nextPreferences.allergens !== preferences.allergens ||
-      nextPreferences.showNutrition !== preferences.showNutrition;
-
-    if (!hasChanges) return;
-
     setPreferences(nextPreferences);
-  }, [profileKey, profileLoading, userProfile, preferences, setPreferences]);
+  }, [profileLoading, userProfile, hasHydratedRef]);
+
+  const updatePreferencesBackend = async (preferences: MenuPreferences) => {
+    try {
+      const response = await fetch(UPDATE_PREFERENCES_URL, {
+        method: 'POST',
+        body: JSON.stringify(toSnakeCase(preferences)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update user preferences');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error updating user preferences:', error);
+    }
+  };
+
+  const resetPreferencesBackend = () => {
+    updatePreferencesBackend({
+      dietaryRestrictions: [],
+      allergens: [],
+      diningHalls: DINING_HALLS,
+      showNutrition: true,
+    });
+  };
 
   const setShowNutrition = (value: React.SetStateAction<boolean>) => {
     setPreferences((prev) => {
@@ -76,22 +76,22 @@ export function usePreferences() {
     });
   };
 
-  const setHalls = (value: React.SetStateAction<string[]>) => {
+  const setDiningHalls = (value: React.SetStateAction<string[]>) => {
     setPreferences((prev) => {
-      const current = prev.halls ?? [];
+      const current = prev.diningHalls ?? [];
       return {
         ...prev,
-        halls: value instanceof Function ? value(current) : value,
+        diningHalls: value instanceof Function ? value(current) : value,
       };
     });
   };
 
-  const setDietary = (value: React.SetStateAction<DietKey[]>) => {
+  const setDietaryRestrictions = (value: React.SetStateAction<DietKey[]>) => {
     setPreferences((prev) => {
-      const current = prev.dietary ?? [];
+      const current = prev.dietaryRestrictions ?? [];
       return {
         ...prev,
-        dietary: value instanceof Function ? value(current) : value,
+        dietaryRestrictions: value instanceof Function ? value(current) : value,
       };
     });
   };
@@ -108,15 +108,17 @@ export function usePreferences() {
 
   return {
     preferences,
-    halls: preferences.halls,
-    dietary: preferences.dietary,
+    diningHalls: preferences.diningHalls,
+    dietaryRestrictions: preferences.dietaryRestrictions,
     allergens: preferences.allergens,
     showNutrition: preferences.showNutrition,
-    setHalls,
-    setDietary,
+    setDiningHalls,
+    setDietaryRestrictions,
     setAllergens,
     setShowNutrition,
     setPreferences,
     loading: profileLoading,
+    updatePreferencesBackend,
+    resetPreferencesBackend,
   };
 }

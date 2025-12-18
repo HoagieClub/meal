@@ -1,21 +1,19 @@
 'use client';
 
 import React from 'react';
-import { Pane, Heading, Text, majorScale, minorScale } from 'evergreen-ui';
-import { AllergenKey } from '../types';
-import { ALLERGENS, ALLERGEN_EMOJI } from '../data';
-
-interface AllergenSidebarProps {
-  selected: string[];
-  theme: any;
-  setAppliedAllergens: any;
-}
+import { Pane, Heading, Text, majorScale, minorScale, useTheme } from 'evergreen-ui';
+import { AllergenType } from '@/data';
+import { ALLERGENS } from '@/data';
+import { ALLERGEN_EMOJI } from '@/styles';
 
 export default function AllergenSidebar({
   selected,
-  theme,
   setAppliedAllergens,
-}: AllergenSidebarProps) {
+}: {
+  selected: string[];
+  setAppliedAllergens: any;
+}) {
+  const theme = useTheme();
   const ICON_SIZE = 28;
 
   return (
@@ -31,10 +29,9 @@ export default function AllergenSidebar({
         Allergens to Avoid
       </Heading>
       <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
-        {ALLERGENS.map((allergen: AllergenKey) => {
+        {ALLERGENS.map((allergen: AllergenType) => {
           const isSelected = selected.includes(allergen);
-          const allergenKey = allergen.toLowerCase();
-          const emojiForAllergen = ALLERGEN_EMOJI[allergenKey];
+          const emojiForAllergen = ALLERGEN_EMOJI[allergen as AllergenType];
           const backgroundColor = isSelected ? theme.colors.red100 : theme.colors.gray100;
 
           return (
@@ -45,9 +42,9 @@ export default function AllergenSidebar({
               cursor='pointer'
               opacity={isSelected ? 1.0 : 0.6}
               onClick={() => {
-                setAppliedAllergens((prev: AllergenKey[]) =>
-                  prev.includes(allergen as AllergenKey)
-                    ? prev.filter((a: AllergenKey) => a !== allergen)
+                setAppliedAllergens((prev: AllergenType[]) =>
+                  prev.includes(allergen as AllergenType)
+                    ? prev.filter((a: AllergenType) => a !== allergen)
                     : [...prev, allergen]
                 );
               }}

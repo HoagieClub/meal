@@ -14,11 +14,21 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@auth0/nextjs-auth0/client';
-import toCamelCase from '@/utils/toCamelCase';
+import { toCamelCase } from '@/utils/toCamelCase';
+import { AllergenType, DietaryTagType, DiningHallType } from '@/data';
 
 const FETCH_USER_PROFILE_URL = '/api/user/me';
+
+export interface UserProfile {
+  dailyCalorieTarget: number;
+  dailyProteinTarget: number;
+  dietaryRestrictions: DietaryTagType[];
+  diningHalls: DiningHallType[];
+  allergens: AllergenType[];
+  showNutrition: boolean;
+}
 
 /**
  * Hook to fetch the authenticated user's profile data.
@@ -31,9 +41,10 @@ const FETCH_USER_PROFILE_URL = '/api/user/me';
  *          and commonly accessed derived fields.
  */
 export const useUserProfile = () => {
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasHydratedRef = useRef(false);
 
   const { user, isLoading: authLoading, error: authError } = useUser();
 
@@ -56,6 +67,9 @@ export const useUserProfile = () => {
       return;
     }
 
+    if (hasHydratedRef.current) return;
+    hasHydratedRef.current = true;
+
     // fetch user profile
     const fetchUserProfile = async () => {
       try {
@@ -68,7 +82,8 @@ export const useUserProfile = () => {
         }
 
         const data = await response.json();
-        setUserProfile(toCamelCase(data.data ?? null));
+        const userProfile = toCamelCase(data.data ?? null) as UserProfile;
+        setUserProfile(userProfile);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch user profile');
         console.error('Error fetching user profile:', err);
@@ -78,7 +93,7 @@ export const useUserProfile = () => {
     };
 
     fetchUserProfile();
-  }, [authLoading, user, authError]);
+  }, [authLoading, user, authError, hasHydratedRef]);
 
   return {
     userProfile,

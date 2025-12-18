@@ -5,27 +5,20 @@ import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
 import React from 'react';
 import MenuSection from './menu-selection';
 import { Separator } from './ui/separator';
+import { ALLERGEN_EMOJI } from '@/styles';
 
-interface HallMenuModalProps {
-  isShown: boolean;
-  onClose: () => void;
-  hall: UIVenue | null;
-  ALLERGEN_EMOJI: any;
-}
-
-const HallMenuModal: React.FC<HallMenuModalProps> = ({
-  isShown,
-  onClose,
-  hall,
-  ALLERGEN_EMOJI,
-}) => {
-  if (!hall) return null;
+const HallMenuModal: React.FC<{
+  modalHall: UIVenue | null;
+  setModalHall: (hall: UIVenue | null) => void;
+  showNutrition: boolean;
+}> = ({ modalHall, setModalHall, showNutrition }) => {
+  if (!modalHall) return null;
 
   return (
     <Dialog
-      isShown={isShown}
-      title={`${hall.name} — Full Menu`}
-      onCloseComplete={onClose}
+      isShown={!!modalHall}
+      title={`${modalHall.name} — Full Menu`}
+      onCloseComplete={() => setModalHall(null)}
       hasFooter={false}
       width='80vw'
     >
@@ -33,34 +26,34 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
         <Separator height='1.5px' marginTop={0} />
         <MenuSection
           label='Main Entrée'
-          items={hall.items['Main Entrée']}
-          allergens={hall.allergens}
-          calories={hall.calories}
-          protein={hall.protein}
+          items={modalHall.items['Main Entrée']}
+          allergens={modalHall.allergens}
+          calories={modalHall.calories}
+          protein={modalHall.protein}
           ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-          showNutrition={true}
+          showNutrition={showNutrition}
         />
 
         <Separator height='1.5px' />
         <MenuSection
           label='Vegan Entrée'
-          items={hall.items['Vegan Entrée']}
-          allergens={hall.allergens}
-          calories={hall.calories}
-          protein={hall.protein}
+          items={modalHall.items['Vegan Entrée']}
+          allergens={modalHall.allergens}
+          calories={modalHall.calories}
+          protein={modalHall.protein}
           ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-          showNutrition={true}
+          showNutrition={showNutrition}
         />
 
         <Separator height='1.5px' />
         <MenuSection
           label='Soups'
-          items={hall.items['Soups']}
-          allergens={hall.allergens}
-          calories={hall.calories}
-          protein={hall.protein}
+          items={modalHall.items['Soups']}
+          allergens={modalHall.allergens}
+          calories={modalHall.calories}
+          protein={modalHall.protein}
           ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-          showNutrition={true}
+          showNutrition={showNutrition}
         />
       </Pane>
     </Dialog>
