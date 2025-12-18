@@ -1,7 +1,16 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon, Spinner } from 'evergreen-ui';
+import {
+  Pane,
+  Heading,
+  Text,
+  majorScale,
+  minorScale,
+  useTheme,
+  SearchIcon,
+  Spinner,
+} from 'evergreen-ui';
 import DiningHallCard from '@/components/dining-hall-card';
 import HallMenuModal from '@/components/hall-menu-modal';
 import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
@@ -13,14 +22,17 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { ALLERGEN_EMOJI, initialSelectedHalls, backgroundByMeal } from '@/app/menu/data';
 import { buildDisplayData, fetchMenuData } from './actions';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { useDate } from '@/hooks/use-date';
+import { usePinnedHalls } from '@/hooks/use-pinned-halls';
+import { usePreferences } from '@/hooks/use-preferences';
 
-const defaultDate = new Date(new Date().setHours(0, 0, 0, 0));
 const FILTER_PREFS_KEY = 'diningFilterPrefs';
-const PINNED_HALLS_KEY = 'diningPinnedHalls';
 
 export default function Index() {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
+  const { user, isLoading: authLoading, error: authError } = useUser();
 
   const [menusByMeal, setMenusByMeal] = useState<{
     Breakfast?: UIVenue[];
@@ -30,100 +42,25 @@ export default function Index() {
   }>({});
   const [menuCache, setMenuCache] = useLocalStorage<Record<string, any>>('menuCache', {});
 
-  const [selectedDate, setSelectedDate] = useState(defaultDate);
-  const [meal, setMeal] = useState(() => {
-    const now = new Date();
-    const hour = now.getHours();
-    if (hour < 11) return 'Breakfast';
-    else if (hour < 17) return 'Lunch';
-    else return 'Dinner';
-  });
+  const { selectedDate, isWeekend, currentMeal, goToNextDay, goToPreviousDay } = useDate();
+  const [meal, setMeal] = useState(currentMeal);
 
-  const [searchTerm, setSearchTerm] = useLocalStorage('diningSearchTerm', '');
-  const [showNutrition, setShowNutrition] = useLocalStorage('diningShowNutrition', true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const PAGE_BG = backgroundByMeal(theme)[meal as MealType];
-  const dayOfWeek = selectedDate.getDay();
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
   const availableMeals: MealType[] = isWeekend
     ? ['Lunch', 'Dinner']
     : ['Breakfast', 'Lunch', 'Dinner'];
 
-  const prevDay = () =>
-    setSelectedDate((d) => {
-      const t = new Date(d);
-      t.setDate(t.getDate() - 1);
-      return t;
-    });
-
-  const nextDay = () =>
-    setSelectedDate((d) => {
-      const t = new Date(d);
-      t.setDate(t.getDate() + 1);
-      return t;
-    });
-
-  const formatMenuId = (date: Date, meal: MealType): string => {
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}-${meal}`;
-  };
-
-  const [appliedFilterPrefs, setAppliedFilterPrefs] = useLocalStorage(FILTER_PREFS_KEY, {
-    halls: initialSelectedHalls,
-    dietary: [] as DietKey[],
-    allergens: [] as AllergenKey[],
-  });
   const {
-    halls: appliedHalls,
-    dietary: appliedDietary,
-    allergens: appliedAllergens,
-  } = appliedFilterPrefs;
-
-  const setAppliedHalls = (value: React.SetStateAction<string[]>) => {
-    setAppliedFilterPrefs((prev) => ({
-      ...prev,
-      halls: value instanceof Function ? value(prev.halls) : value,
-    }));
-  };
-  const setAppliedDietary = (value: React.SetStateAction<DietKey[]>) => {
-    setAppliedFilterPrefs((prev) => ({
-      ...prev,
-      dietary: value instanceof Function ? value(prev.dietary) : value,
-    }));
-  };
-  const setAppliedAllergens = (value: React.SetStateAction<AllergenKey[]>) => {
-    setAppliedFilterPrefs((prev) => ({
-      ...prev,
-      allergens: value instanceof Function ? value(prev.allergens) : value,
-    }));
-  };
-
-  const [profileLoaded, setProfileLoaded] = useState(false);
-  const { dietaryRestrictions, allergens, diningHalls } = useUserProfile();
-  const profileReady =
-    dietaryRestrictions !== undefined && allergens !== undefined && diningHalls !== undefined;
-
-  useEffect(() => {
-    if (profileLoaded || !profileReady) return;
-    if (
-      (dietaryRestrictions && dietaryRestrictions.length > 0) ||
-      (allergens && allergens.length > 0) ||
-      (diningHalls && diningHalls.length > 0)
-    ) {
-      console.log('Profile loaded, syncing filters from DB...');
-      setAppliedFilterPrefs((prev) => ({
-        halls: diningHalls && diningHalls.length > 0 ? diningHalls : prev.halls,
-        dietary:
-          dietaryRestrictions && dietaryRestrictions.length > 0
-            ? dietaryRestrictions
-            : prev.dietary,
-        allergens: allergens && allergens.length > 0 ? allergens : prev.allergens,
-      }));
-    }
-    setProfileLoaded(true);
-  }, [dietaryRestrictions, allergens, diningHalls, setAppliedFilterPrefs]);
+    setPreferences,
+    setAllergens,
+    dietary,
+    allergens,
+    halls,
+    showNutrition,
+    loading: preferencesLoading,
+  } = usePreferences();
 
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
 
@@ -133,39 +70,12 @@ export default function Index() {
     }
   }, [isWeekend, meal]); // Dependency simplified
 
-  // ─── Pinned Halls (using useLocalStorage) ───────────────────────────────
-  // Store pinned halls as a string array in localStorage
-  const [pinnedArray, setPinnedArray] = useLocalStorage<string[]>(PINNED_HALLS_KEY, []);
-
-  // Derive the Set from the array for efficient lookups
-  const pinnedHalls = useMemo(() => new Set(pinnedArray), [pinnedArray]);
-
-  // Create a setter that matches the React.Dispatch type
-  const setPinnedHalls: React.Dispatch<React.SetStateAction<Set<string>>> = (value) => {
-    setPinnedArray((prevArray) => {
-      const prevSet = new Set(prevArray);
-      const newSet = value instanceof Function ? value(prevSet) : value;
-      return Array.from(newSet); // Store the new array
-    });
-  };
-
-  // This function works as-is with the new setPinnedHalls wrapper
-  const togglePin = (hallName: string) => {
-    setPinnedHalls((prevPins) => {
-      const newPins = new Set(prevPins); // Create a new set to ensure state update
-      if (newPins.has(hallName)) {
-        newPins.delete(hallName);
-      } else {
-        newPins.add(hallName);
-      }
-      return newPins;
-    });
-  };
+  const { pinnedHalls, togglePin } = usePinnedHalls();
 
   // ─── Data Fetching for Menus ────────────────────────────────────────────
 
   useEffect(() => {
-    if (!profileLoaded || !selectedDate) return;
+    if (preferencesLoading || !selectedDate) return;
     let isCurrent = true;
     const checkIsCurrent = () => isCurrent;
     setLoading(true);
@@ -177,7 +87,7 @@ export default function Index() {
         : ['Breakfast', 'Lunch', 'Dinner'];
       const mealsToFetch = [meal, ...baseMeals.filter((m) => m !== meal)];
 
-      const ids = mealsToFetch.map((m) => formatMenuId(selectedDate, m as MealType));
+      const ids = mealsToFetch.map((m) => `${dateKey}-${m}`);
       const results = await Promise.all(ids.map((id) => fetchMenuData(id, checkIsCurrent)));
       if (!checkIsCurrent()) return;
 
@@ -211,21 +121,38 @@ export default function Index() {
     return () => {
       isCurrent = false;
     };
-  }, [selectedDate, profileLoaded, isWeekend]);
+  }, [selectedDate, preferencesLoading, isWeekend]);
 
   const venues = menusByMeal[meal as MealType] ?? [];
   const displayData = useMemo(
     () =>
       buildDisplayData({
         venues,
-        appliedHalls,
-        appliedDietary,
-        appliedAllergens,
+        appliedHalls: halls,
+        appliedDietary: dietary,
+        appliedAllergens: allergens,
         searchTerm,
         pinnedHalls,
+        showNutrition,
       }),
-    [venues, appliedHalls, appliedDietary, appliedAllergens, searchTerm, pinnedHalls]
+    [venues, halls, dietary, allergens, searchTerm, pinnedHalls, showNutrition]
   );
+
+  if (authLoading) {
+    return (
+      <Pane display='flex' alignItems='center' justifyContent='center' height='300'>
+        <Spinner />
+      </Pane>
+    );
+  } else if (authError) {
+    return (
+      <Pane padding={majorScale(4)}>
+        <Text color='red' size={500}>
+          {authError?.message || 'Failed to load user profile'}
+        </Text>
+      </Pane>
+    );
+  }
 
   return (
     <Pane
@@ -234,20 +161,17 @@ export default function Index() {
       background={PAGE_BG}
     >
       <FilterSidebar
-        profileLoaded={profileLoaded}
+        profileLoaded={!preferencesLoading}
         applied={{
-          halls: appliedHalls,
-          dietary: appliedDietary,
-          allergens: appliedAllergens,
+          halls,
+          dietary,
+          allergens,
           searchTerm,
           showNutrition,
         }}
         onApply={({ halls, dietary, allergens, searchTerm, showNutrition }) => {
-          setAppliedHalls(halls);
-          setAppliedDietary(dietary);
-          setAppliedAllergens(allergens);
+          setPreferences({ halls, dietary, allergens, showNutrition });
           setSearchTerm(searchTerm);
-          setShowNutrition(showNutrition);
 
           fetch('/api/user/update', {
             method: 'POST',
@@ -255,12 +179,10 @@ export default function Index() {
               dietary_restrictions: dietary,
               allergens,
               dining_halls: halls,
+              show_nutrition: showNutrition,
             }),
           })
             .then((response) => response.json())
-            .then((data) => {
-              console.log('Preferences saved to DB:', data);
-            })
             .catch((error) => console.error('Error updating user preferences:', error));
         }}
       />
@@ -271,13 +193,12 @@ export default function Index() {
         <MenuPageHeader
           meal={meal as MealType}
           selectedDate={selectedDate}
-          prevDay={prevDay}
-          nextDay={nextDay}
           availableMeals={availableMeals}
           setMeal={setMeal}
+          goToNextDay={goToNextDay}
+          goToPreviousDay={goToPreviousDay}
         />
 
-        {/* Grid of cards */}
         {loading ? (
           <Pane
             display='grid'
@@ -340,11 +261,7 @@ export default function Index() {
           </Pane>
         )}
       </Pane>
-      <AllergenSidebar
-        selected={appliedAllergens}
-        setAppliedAllergens={setAppliedAllergens}
-        theme={theme}
-      />
+      <AllergenSidebar selected={allergens} setAppliedAllergens={setAllergens} theme={theme} />
       <HallMenuModal
         isShown={!!modalHall}
         onClose={() => setModalHall(null)}

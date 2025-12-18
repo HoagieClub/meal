@@ -165,29 +165,41 @@ def update_user_profile(request):
             logger.error("User not found in update_user_profile view")
             return Response({"error": "User not found"}, status=404)
 
-        updated_fields = {}
-        list_fields = {
-            "dietary_restrictions": request.data.get("dietary_restrictions"),
-            "allergens": request.data.get("allergens"),
-            "dining_halls": request.data.get("dining_halls"),
-        }
-        numeric_fields = {
-            "daily_calorie_target": request.data.get("daily_calorie_target"),
-            "daily_protein_target": request.data.get("daily_protein_target"),
-        }
+        fields_to_update = {}
 
-        for field, value in list_fields.items():
-            if value and len(value) > 0:
-                setattr(user, field, value)
-                updated_fields[field] = value
-        for field, value in numeric_fields.items():
-            if value and value > 0:
-                setattr(user, field, value)
-                updated_fields[field] = value
+        dietary_restrictions = request.data.get("dietary_restrictions")
+        if dietary_restrictions is not None and len(dietary_restrictions) > 0:
+            user.dietary_restrictions = dietary_restrictions
+            fields_to_update["dietary_restrictions"] = dietary_restrictions
+
+        allergens = request.data.get("allergens")
+        if allergens is not None and len(allergens) > 0:
+            user.allergens = allergens
+            fields_to_update["allergens"] = allergens
+
+        dining_halls = request.data.get("dining_halls")
+        if dining_halls is not None and len(dining_halls) > 0:
+            user.dining_halls = dining_halls
+            fields_to_update["dining_halls"] = dining_halls
+
+        daily_calorie_target = request.data.get("daily_calorie_target")
+        if daily_calorie_target is not None and daily_calorie_target > 0:
+            user.daily_calorie_target = daily_calorie_target
+            fields_to_update["daily_calorie_target"] = daily_calorie_target
+
+        daily_protein_target = request.data.get("daily_protein_target")
+        if daily_protein_target is not None and daily_protein_target > 0:
+            user.daily_protein_target = daily_protein_target
+            fields_to_update["daily_protein_target"] = daily_protein_target
+
+        show_nutrition = request.data.get("show_nutrition")
+        if show_nutrition is not None:
+            user.show_nutrition = show_nutrition
+            fields_to_update["show_nutrition"] = show_nutrition
 
         user.save()
-        logger.info(f"Updated profile for user {user.username}: {list(updated_fields.keys())}")
-        return Response({"message": "Profile updated successfully", "updated_fields": updated_fields}, status=200)
+        logger.info(f"Updated profile for user {user.username}: {list(fields_to_update.keys())}")
+        return Response({"message": "Profile updated successfully", "updated_fields": fields_to_update}, status=200)
 
     except Exception as e:
         logger.error(f"Error in update_user_profile view: {e}")

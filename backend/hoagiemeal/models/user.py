@@ -75,6 +75,7 @@ class CustomUser(AbstractUser):
     daily_protein_target = models.PositiveSmallIntegerField(
         null=True, blank=True, validators=[MaxValueValidator(1000)]
     )
+    show_nutrition = models.BooleanField(default=True, help_text=_("Show nutrition information"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -113,7 +114,6 @@ class UserDietaryProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="dietary_profile")
     favorite_menu_items = models.ManyToManyField(MenuItem, related_name="favorited_by")
     excluded_ingredients = ArrayField(models.CharField(max_length=100), blank=True, default=list)
-    # preferred_dining_venues = models.ManyToManyField(DiningVenue, related_name="preferred_by")
     cuisine_preferences = models.JSONField(default=dict, help_text=_("Weighted cuisine type preferences"))
     meal_time_preferences = models.JSONField(default=dict, help_text=_("Preferred dining times"))
     sustainability_preference = models.BooleanField(default=False, help_text=_("Preference for sustainable options"))

@@ -79,6 +79,7 @@ interface BuildDisplayDataProps {
   appliedAllergens: AllergenKey[];
   searchTerm: string;
   pinnedHalls: Set<string>;
+  showNutrition: boolean;
 }
 
 export type {

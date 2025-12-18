@@ -15,19 +15,19 @@ import { MEAL_RANGES } from '../data';
 interface MenuPageHeaderProps {
   meal: MealType;
   selectedDate: Date;
-  prevDay: () => void;
-  nextDay: () => void;
   availableMeals: MealType[];
   setMeal: (meal: MealType) => void;
+  goToPreviousDay: () => void;
+  goToNextDay: () => void;
 }
 
 export default function MenuPageHeader({
   meal,
   selectedDate,
-  prevDay,
-  nextDay,
   availableMeals,
   setMeal,
+  goToPreviousDay,
+  goToNextDay,
 }: MenuPageHeaderProps) {
   const theme = useTheme();
   const formattedDate = selectedDate.toLocaleString('en-US', {
@@ -76,7 +76,7 @@ export default function MenuPageHeader({
             borderRadius={999}
             padding={minorScale(1)}
             appearance='minimal'
-            onClick={prevDay}
+            onClick={goToPreviousDay}
           >
             <ChevronLeftIcon size={20} />
           </Button>
@@ -91,7 +91,7 @@ export default function MenuPageHeader({
             borderRadius={999}
             padding={minorScale(1)}
             appearance='minimal'
-            onClick={nextDay}
+            onClick={goToNextDay}
           >
             <ChevronRightIcon size={20} />
           </Button>

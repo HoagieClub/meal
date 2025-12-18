@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { dietary_restrictions, allergens, daily_calorie_target, daily_protein_target, dining_halls } = body;
+    const { dietary_restrictions, allergens, daily_calorie_target, daily_protein_target, dining_halls, show_nutrition } = body;
 
     const res = await request.postAuth(accessToken)(ROUTE, {
       arg: { 
@@ -21,7 +21,8 @@ export async function POST(req: Request) {
         allergens,
         daily_calorie_target,
         daily_protein_target,
-        dining_halls
+        dining_halls,
+        show_nutrition
       }
     });
 

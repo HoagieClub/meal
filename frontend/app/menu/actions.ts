@@ -64,96 +64,80 @@ function buildDisplayData({
   appliedAllergens,
   searchTerm,
   pinnedHalls,
+  showNutrition,
 }: BuildDisplayDataProps): UIVenue[] {
   const term = searchTerm.trim().toLowerCase();
-  // ** A filter is active if one or more options are selected **
-  const isDietFilterActive = appliedDietary.length > 0;
-  const isAllergenFilterActive = appliedAllergens.length > 0;
-  const isSearchActive = term !== '';
 
-  const sortFn = (a: UIVenue, b: UIVenue) => {
-    const aIsPinned = pinnedHalls.has(a.name);
-    const bIsPinned = pinnedHalls.has(b.name);
-    if (aIsPinned && !bIsPinned) return -1;
-    if (!aIsPinned && bIsPinned) return 1;
-    return 0;
+  const hasDietFilter = appliedDietary.length > 0;
+  const hasAllergenFilter = appliedAllergens.length > 0;
+  const hasSearch = term !== '';
+
+  const sortByPinned = (a: UIVenue, b: UIVenue) => {
+    const aPinned = pinnedHalls.has(a.name);
+    const bPinned = pinnedHalls.has(b.name);
+    if (aPinned === bPinned) return 0;
+    return aPinned ? -1 : 1;
   };
 
-  // If no filters are active, return the base data directly
-  if (!isDietFilterActive && !isAllergenFilterActive && !isSearchActive) {
+  // fast path
+  if (!hasDietFilter && !hasAllergenFilter && !hasSearch) {
     return appliedHalls
-      .map((h) => venues.find((v) => v.name === h))
+      .map((name) => venues.find((v) => v.name === name))
       .filter((v): v is UIVenue => !!v)
-      .sort(sortFn);
+      .sort(sortByPinned);
   }
 
-  // Otherwise, apply filters
-  return appliedHalls
-    .map((hallName) => {
-      const venue = venues.find((v) => v.name === hallName);
-      if (!venue) return null;
+  const matchesDish = (dish: Dish): boolean => {
+    const text = `${dish.name} ${dish.description}`.toLowerCase();
 
-      const items: UIVenue['items'] = {
-        'Main Entrée': [],
-        'Vegan Entrée': [],
-        Soups: [],
-      };
-      let hasAnyItemsAfterFilter = false; // Track if any items remain after filtering this venue
+    if (hasSearch && !text.includes(term)) return false;
 
-      for (const cat of Object.keys(venue.items) as (keyof typeof venue.items)[]) {
-        items[cat] = venue.items[cat].filter((dish) => {
-          const dishText = (dish.name + ' ' + dish.description).toLowerCase();
-
-          // ** 1. Get all dietary tags for this dish using the new function **
-          const dishTags = classifyDish(dish); // e.g., ['Vegan', 'Vegetarian', 'Halal']
-
-          // --- DIETARY FILTER (Opt-In: Show items that MATCH selected) ---
-          if (isDietFilterActive) {
-            // Check if *any* of the dish's tags are in the user's selected filter list
-            // e.g., dishTags = ['Vegan', 'Vegetarian'], appliedDietary = ['Vegan']
-            const matchesADiet = dishTags.some((tag) => appliedDietary.includes(tag));
-
-            // If it doesn't match *any* of the selected diets, filter it out
-            if (!matchesADiet) {
-              return false;
-            }
-          }
-
-          // --- ALLERGEN FILTER (Opt-In Avoidance: Hide items that MATCH selected allergens) ---
-          if (isAllergenFilterActive) {
-            // Use the structured dish.allergens array for reliable filtering
-            // We must compare case-insensitively.
-            const dishAllergensLower = dish.allergens.map((a) => a.toLowerCase());
-            const containsAvoidedAllergen = appliedAllergens.some((avoidedAllergen) =>
-              dishAllergensLower.includes(avoidedAllergen.toLowerCase())
-            );
-
-            // If it *does* contain an allergen the user wants to avoid, filter it out
-            if (containsAvoidedAllergen) {
-              return false;
-            }
-          }
-
-          // --- SEARCH FILTER ---
-          if (isSearchActive && !dishText.includes(term)) {
-            return false;
-          }
-
-          // If we reach here, the item passes all active filters
-          hasAnyItemsAfterFilter = true; // Mark that this venue has at least one item
-          return true; // Keep the item
-        });
+    if (hasDietFilter) {
+      const tags = classifyDish(dish);
+      if (!tags.some((tag) => appliedDietary.includes(tag))) {
+        return false;
       }
+    }
 
-      // If, after filtering all categories, this venue has no items left, exclude the venue
-      if (!hasAnyItemsAfterFilter) return null;
+    if (hasAllergenFilter) {
+      const allergens = dish.allergens.map((a) => a.toLowerCase());
+      if (appliedAllergens.some((a) => allergens.includes(a.toLowerCase()))) {
+        return false;
+      }
+    }
 
-      // Otherwise, return the venue with its filtered items
-      return { ...venue, items } as UIVenue;
-    })
-    .filter((v): v is UIVenue => v !== null) // Remove venues that became null
-    .sort(sortFn);
+    return true;
+  };
+
+  const normalizeDish = (dish: Dish): Dish => {
+    if (showNutrition) return dish;
+    if (!('nutrition' in dish)) return dish;
+
+    const { nutrition, ...rest } = dish;
+    return rest;
+  };
+
+  const buildVenue = (hallName: string): UIVenue | null => {
+    const venue = venues.find((v) => v.name === hallName);
+    if (!venue) return null;
+
+    const items = Object.fromEntries(
+      Object.entries(venue.items).map(([category, dishes]) => [
+        category,
+        dishes.filter(matchesDish).map(normalizeDish),
+      ])
+    ) as UIVenue['items'];
+
+    const hasItems = Object.values(items).some((list) => list.length > 0);
+    if (!hasItems) return null;
+
+    return { ...venue, items };
+  };
+
+  return appliedHalls
+    .map(buildVenue)
+    .filter((v): v is UIVenue => v !== null)
+    .sort(sortByPinned);
 }
 
 export { buildDisplayData, fetchMenuData };
-
