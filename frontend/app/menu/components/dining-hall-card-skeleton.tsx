@@ -1,8 +1,27 @@
-import { Pane, majorScale, minorScale } from 'evergreen-ui';
-import { DefaultTheme } from 'evergreen-ui';
+/**
+ * @overview Dining hall card skeleton component.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this tree or at
+ *
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
+
+import { Pane, majorScale, minorScale, useTheme } from 'evergreen-ui';
 import SkeletonBlock from '@/components/skeleton-block';
 
-export default function SkeletonDiningHallCard({ theme }: { theme: DefaultTheme }) {
+/**
+ * Dining hall card skeleton component.
+ *
+ * @returns The dining hall card skeleton component.
+ */
+export default function SkeletonDiningHallCard() {
+  const theme = useTheme();
   return (
     <Pane
       background='white'

@@ -1,91 +1,88 @@
+/**
+ * @overview Hook for managing local storage.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree or at
+ *
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
+
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 
+interface UseLocalStorageProps<T> {
+  key: string;
+  initialValue: T;
+  expiryInMs?: number;
+}
+
 /**
- * @overview A custom React hook to persist state in localStorage with expiration.
- * This version is safe for Server-Side Rendering (SSR) / Next.js.
- *
- * @param {string} key The key to use for storing the value in localStorage.
- * @param {T} initialValue The initial value to use if nothing is found or item is expired.
- * @param {number} [expiryInMs] Optional. Time in milliseconds until the item expires.
- * @returns A stateful value, and a function to update it.
+ * Hook for managing local storage.
+ * @param key - The key to store the value in localStorage.
+ * @param initialValue - The initial value to store in localStorage.
+ * @param expiryInMs - The expiry time in milliseconds.
+ * @returns A tuple containing the stored value and a function to set the value.
  */
-export default function useLocalStorage<T>(key: string, initialValue: T, expiryInMs?: number) {
-  // 1. Initialize state with initialValue.
-  // This ensures the server render and initial client render are identical.
+export function useLocalStorage<T>({ key, initialValue, expiryInMs }: UseLocalStorageProps<T>) {
   const [storedValue, setStoredValue] = useState<T>(initialValue);
 
-  // 2. Use useEffect to read from localStorage only on the client, after hydration.
   useEffect(() => {
-    // This effect runs only on the client, after the component has mounted.
-    if (typeof window === 'undefined') {
-      return;
-    }
+    // if the window is undefined, return
+    if (typeof window === 'undefined') return;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return;
 
     try {
-      const item = window.localStorage.getItem(key);
-      if (!item) {
-        return; // No item, state remains initialValue
-      }
+      // parse the raw value
+      const parsed = JSON.parse(raw);
 
-      const parsedItem = JSON.parse(item);
-
-      // If no expiry rule, just set the value
       if (!expiryInMs) {
-        setStoredValue(parsedItem);
+        // if there is no expiry, set the stored value to the parsed value
+        setStoredValue(parsed);
         return;
       }
 
-      // Expiry rule IS in effect. We expect {value, expiry} structure.
-      if (parsedItem && typeof parsedItem.expiry === 'number' && parsedItem.value !== undefined) {
-        if (Date.now() > parsedItem.expiry) {
-          // It's expired!
-          window.localStorage.removeItem(key); // Clean up
-          // State remains initialValue
-        } else {
-          // Not expired, set the unwrapped value
-          setStoredValue(parsedItem.value);
-        }
-      } else {
-        // Item exists but is malformed or doesn't match {value, expiry}
-        window.localStorage.removeItem(key); // Clean up
+      // check if the parsed value is valid
+      const valid = parsed && typeof parsed.expiry === 'number' && parsed.value !== undefined;
+      if (!valid) {
+        window.localStorage.removeItem(key);
+        return;
       }
-    } catch (error) {
-      console.error(error);
-      window.localStorage.removeItem(key); // Clean up corrupted item
+
+      // check if the expiry time has passed
+      if (Date.now() > parsed.expiry) {
+        window.localStorage.removeItem(key);
+        return;
+      }
+
+      // set the stored value to the parsed value
+      setStoredValue(parsed.value);
+    } catch {
+      window.localStorage.removeItem(key);
     }
-    // We only want this effect to run once on mount to hydrate the state.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [key, expiryInMs]);
 
-  // 3. The setter function.
-  // ** WRAPPED IN useCallback to stabilize its reference **
+  // set the value to the local storage
   const setValue = useCallback(
-    (value: T | ((val: T) => T)) => {
-      try {
-        // Use the functional update form of useState to get the latest state
-        setStoredValue((prevValue) => {
-          const valueToStore = value instanceof Function ? value(prevValue) : value;
+    (value: T | ((prev: T) => T)) => {
+      setStoredValue((prev) => {
+        const next = value instanceof Function ? value(prev) : value;
 
-          if (typeof window !== 'undefined') {
-            let itemToStore: any = valueToStore;
+        if (typeof window !== 'undefined') {
+          const stored = expiryInMs ? { value: next, expiry: Date.now() + expiryInMs } : next;
+          window.localStorage.setItem(key, JSON.stringify(stored));
+        }
 
-            // If expiry is provided, wrap the value
-            if (expiryInMs) {
-              itemToStore = {
-                value: valueToStore,
-                expiry: Date.now() + expiryInMs,
-              };
-            }
-            window.localStorage.setItem(key, JSON.stringify(itemToStore));
-          }
-
-          return valueToStore;
-        });
-      } catch (error) {
-        console.error(error);
-      }
+        return next;
+      });
     },
-    [key, expiryInMs] // Dependencies for useCallback
+    [key, expiryInMs]
   );
 
   return [storedValue, setValue] as const;

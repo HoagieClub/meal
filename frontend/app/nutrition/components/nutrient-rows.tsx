@@ -1,11 +1,41 @@
+/**
+ * @overview Nutrient rows component.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this tree or at
+ *
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
+
 'use client';
 
 import { Pane, Text, Tooltip } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
-import { MacronutrientRowProps, MicronutrientRowProps } from '../types';
 
+export interface MacronutrientRowProps {
+  label: string;
+  amount: number | string | null;
+  unit: string;
+  dvPercent: number | null;
+}
+
+/**
+ * Macronutrient row component.
+ *
+ * @param label - The label of the nutrient.
+ * @param amount - The amount of the nutrient.
+ * @param unit - The unit of the nutrient.
+ * @param dvPercent - The dv percent of the nutrient.
+ * @returns The macronutrient row component.
+ */
 export const MacronutrientRow = ({ label, amount, unit, dvPercent }: MacronutrientRowProps) => {
   if (amount === null || amount === undefined) return null;
+
   let color = 'green';
   if (dvPercent !== null) {
     if (dvPercent >= 20) {
@@ -38,6 +68,18 @@ export const MacronutrientRow = ({ label, amount, unit, dvPercent }: Macronutrie
   );
 };
 
+export interface MicronutrientRowProps {
+  label: string;
+  dvPercent?: string | null;
+}
+
+/**
+ * Micronutrient row component.
+ *
+ * @param label - The label of the nutrient.
+ * @param dvPercent - The dv percent of the nutrient.
+ * @returns The micronutrient row component.
+ */
 export const MicronutrientRow = ({ label, dvPercent }: MicronutrientRowProps) => {
   if (dvPercent === null) return null;
   return (

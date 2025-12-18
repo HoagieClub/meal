@@ -21,11 +21,17 @@ import {
   Paragraph,
   minorScale,
 } from 'evergreen-ui';
-import useMediaQuery from '@/hooks/use-media-query';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { SocialIconButton } from '@/app/about/components/icons';
 import { TeamMember } from '@/types/team';
 import { SOCIAL_ICONS } from '../data';
 
+/**
+ * Team lead card component.
+ *
+ * @param lead - The team lead to display.
+ * @returns The team lead card component.
+ */
 export default function TeamLeadCard({ lead }: { lead: TeamMember }) {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width: 768px)');

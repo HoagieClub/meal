@@ -1,3 +1,19 @@
+/**
+ * @overview Menu page header component.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this tree or at
+ *
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
+
+'use client';
+
 import {
   Pane,
   majorScale,
@@ -10,43 +26,40 @@ import {
   ChevronRightIcon,
 } from 'evergreen-ui';
 import { MEAL_RANGES, MealType } from '@/data';
+import { useDate } from '@/hooks/use-date';
 
 interface MenuPageHeaderProps {
   meal: MealType;
-  selectedDate: Date;
+  useDateObject: ReturnType<typeof useDate>;
   availableMeals: MealType[];
   setMeal: (meal: MealType) => void;
-  goToPreviousDay: () => void;
-  goToNextDay: () => void;
 }
 
+/**
+ * Menu page header component.
+ *
+ * @param meal - The current meal.
+ * @param useDateObject - The useDateObject to use.
+ * @param availableMeals - The available meals.
+ * @param setMeal - The function to set the meal.
+ * @returns The menu page header component.
+ */
 export default function MenuPageHeader({
   meal,
-  selectedDate,
+  useDateObject,
   availableMeals,
   setMeal,
-  goToPreviousDay,
-  goToNextDay,
 }: MenuPageHeaderProps) {
   const theme = useTheme();
-  const formattedDate = selectedDate.toLocaleString('en-US', {
-    weekday: 'long',
-    month: 'numeric',
-    day: 'numeric',
-  });
-  const isWeekend = selectedDate.getDay() === 0 || selectedDate.getDay() === 6;
+  const { goToPreviousDay, goToNextDay, formattedDateForDisplay, isWeekend } = useDateObject;
 
   const getDisplayMealRange = (m: MealType) => {
-    if (isWeekend && m === 'Lunch') {
-      return '11:00 AM – 2:00 PM';
-    }
+    if (isWeekend && m === 'Lunch') return '11:00 AM – 2:00 PM';
     return MEAL_RANGES[m];
   };
 
   const getMealLabel = (m: MealType) => {
-    if (isWeekend && m === 'Lunch') {
-      return 'Brunch';
-    }
+    if (isWeekend && m === 'Lunch') return 'Brunch';
     return m;
   };
 
@@ -81,7 +94,7 @@ export default function MenuPageHeader({
           </Button>
 
           <Text className='text-2xl text-center w-[14rem] truncate' color={theme.colors.green700}>
-            {formattedDate}
+            {formattedDateForDisplay}
           </Text>
 
           <Button
@@ -96,12 +109,7 @@ export default function MenuPageHeader({
           </Button>
         </Pane>
 
-        <Pane
-          display='flex'
-          borderRadius={999}
-          background={theme.colors.green25}
-          overflow='hidden'
-        >
+        <Pane display='flex' borderRadius={999} background={theme.colors.green25} overflow='hidden'>
           {availableMeals.map((mealOption) => {
             const isSelectedMeal = meal === mealOption;
             const backgroundColor = isSelectedMeal ? theme.colors.green700 : 'transparent';

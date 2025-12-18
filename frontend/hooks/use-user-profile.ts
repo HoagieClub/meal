@@ -15,9 +15,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useUser } from '@auth0/nextjs-auth0/client';
 import { toCamelCase } from '@/utils/toCamelCase';
-import { AllergenType, DietaryTagType, DiningHallType } from '@/data';
+import { AllergenType, DietaryTagType, DiningHallType, DINING_HALLS } from '@/data';
+import { api } from './use-next-api';
 
 const FETCH_USER_PROFILE_URL = '/api/user/me';
 
@@ -30,73 +30,62 @@ export interface UserProfile {
   showNutrition: boolean;
 }
 
+const DEFAULT_USER_PROFILE: UserProfile = {
+  dailyCalorieTarget: 0,
+  dailyProteinTarget: 0,
+  dietaryRestrictions: [],
+  diningHalls: DINING_HALLS,
+  allergens: [],
+  showNutrition: true,
+};
+
 /**
  * Hook to fetch the authenticated user's profile data.
  *
- * This hook waits for Auth0 authentication to resolve before issuing
- * a request to the user profile endpoint. It handles authentication
- * errors, HTTP failures, and loading state internally.
+ * This hook issues a request to the user profile endpoint,
+ * handles loading, errors, and provides a safe default profile
+ * so the UI always has usable data. It fetches only once per
+ * lifecycle thanks to a hydration guard.
  *
- * @returns An object containing the user profile, loading state, error state,
- *          and commonly accessed derived fields.
+ * @returns
+ * - userProfile: The user profile.
+ * - fetchedProfile: Whether we successfully fetched a real profile.
+ * - loading: Whether the profile is being loaded.
+ * - error: Any error that occurred when fetching the profile.
  */
 export const useUserProfile = () => {
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
+  const [fetchedProfile, setFetchedProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const hasHydratedRef = useRef(false);
-
-  const { user, isLoading: authLoading, error: authError } = useUser();
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    // return if auth is still loading
-    if (authLoading) {
-      return;
-    }
+    // if the profile has already been fetched, return
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
 
-    // return if auth error
-    if (authError) {
-      setError('Authentication failed');
-      setLoading(false);
-      return;
-    }
-
-    // return if user is not authenticated
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    if (hasHydratedRef.current) return;
-    hasHydratedRef.current = true;
-
-    // fetch user profile
+    // fetch the user profile
     const fetchUserProfile = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch(FETCH_USER_PROFILE_URL);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const userProfile = toCamelCase(data.data ?? null) as UserProfile;
-        setUserProfile(userProfile);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch user profile');
-        console.error('Error fetching user profile:', err);
-      } finally {
-        setLoading(false);
+      const { data, error } = await api.get(FETCH_USER_PROFILE_URL);
+      if (error) {
+        console.error('Failed to fetch user profile:', error);
+        setError(error?.message);
+        return;
       }
-    };
 
+      // parse the user profile
+      const parsed = toCamelCase(data?.data) as UserProfile;
+      setUserProfile(parsed);
+      setFetchedProfile(true);
+      setLoading(false);
+    };
     fetchUserProfile();
-  }, [authLoading, user, authError, hasHydratedRef]);
+  }, []);
 
   return {
     userProfile,
+    fetchedProfile,
     loading,
     error,
   };

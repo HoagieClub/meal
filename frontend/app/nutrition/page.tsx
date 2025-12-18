@@ -1,4 +1,16 @@
-// frontend/app/nutrition/page.tsx
+/**
+ * @overview Nutrition label page component.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this tree or at
+ *
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
 
 'use client';
 
@@ -16,11 +28,20 @@ import {
 } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
 import { useSearchParams } from 'next/navigation';
-import { MenuItemDetails } from './types';
 import NutritionTable from './components/nutrition-table';
 import { StarIcon, ArrowUpIcon } from 'evergreen-ui';
+import { MenuItemDetails } from '@/data';
+import { api } from '@/hooks/use-next-api';
 
-const NutritionLabelPage: React.FC = () => {
+const GET_MENU_ITEM_DETAILS_URL = '/api/menu-items/details/';
+const GET_MENU_ITEM_UPVOTES_BOOKMARKS_URL = '/api/menu-items/upvotes-bookmarks/';
+
+/**
+ * Nutrition label page component.
+ *
+ * @returns The nutrition label page component.
+ */
+const NutritionLabelPage = () => {
   const [data, setData] = useState<MenuItemDetails | null>(null);
   const [loading, setLoading] = useState({
     details: true,
@@ -36,54 +57,56 @@ const NutritionLabelPage: React.FC = () => {
 
   // fetch menu item details from backend
   const getMenuItemDetails = async () => {
-    try {
-      const response = await fetch(`/api/menu-items/details/${menuItemApiId}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      const itemData = await response.json();
-      setData(itemData);
-      console.log('Fetched menu item data:', itemData);
-    } catch (error: any) {
+    const { data, error } = await api.get(`${GET_MENU_ITEM_DETAILS_URL}${menuItemApiId}`);
+
+    if (error) {
       console.error('Error fetching menu item:', error);
       setError(error.message || 'Failed to load menu item');
       setData(null);
-    } finally {
-      setLoading((prev) => ({ ...prev, details: false }));
+    } else {
+      setData(data as any);
+      console.log('Fetched menu item data:', data);
     }
+
+    setLoading((prev) => ({ ...prev, details: false }));
   };
 
+  // fetch menu item upvotes and bookmarks from backend
   const getMenuItemUpvotesBookmarks = async () => {
-    try {
-      const response = await fetch(`/api/menu-items/upvotes-bookmarks/${menuItemApiId}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      const body = await response.json();
-      console.log('Upvotes and bookmarks data:', body);
-      const { upvotes, bookmarks, hasUserUpvoted, hasUserBookmarked } = body;
+    const { data, error } = await api.get(`${GET_MENU_ITEM_UPVOTES_BOOKMARKS_URL}${menuItemApiId}`);
 
-      setUpvotes(upvotes);
-      setUpvoted(hasUserUpvoted);
-      setBookmarked(hasUserBookmarked);
-    } catch (error: any) {
+    if (error) {
       console.error('Error fetching upvotes and bookmarks:', error);
       setError(error.message || 'Failed to load upvotes and bookmarks');
       setUpvotes(0);
       setUpvoted(false);
       setBookmarked(false);
-    } finally {
-      setLoading((prev) => ({ ...prev, upvotesBookmarks: false }));
+    } else {
+      console.log('Upvotes and bookmarks data:', data);
+
+      const { upvotes, bookmarks, hasUserUpvoted, hasUserBookmarked }: any = data;
+
+      setUpvotes(upvotes);
+      setUpvoted(hasUserUpvoted);
+      setBookmarked(hasUserBookmarked);
     }
+
+    setLoading((prev) => ({ ...prev, upvotesBookmarks: false }));
   };
 
+  // post menu item upvotes and bookmarks to backend
   const postMenuItemUpvotesBookmarks = async ({ action }: { action: 'upvote' | 'bookmark' }) => {
-    try {
-      const response = await fetch(`/api/menu-items/upvotes-bookmarks/${menuItemApiId}`, {
-        method: 'POST',
-        body: JSON.stringify({ action }),
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      const body = await response.json();
-      console.log('Upvotes and bookmarks data:', body);
-    } catch (error: any) {
+    const { error, data } = await api.post(
+      `${GET_MENU_ITEM_UPVOTES_BOOKMARKS_URL}${menuItemApiId}`,
+      {
+        action,
+      }
+    );
+
+    if (error) {
       console.error('Error posting upvotes and bookmarks:', error);
+    } else {
+      console.log('Upvotes and bookmarks updated:', data);
     }
   };
 
@@ -107,8 +130,10 @@ const NutritionLabelPage: React.FC = () => {
         <Spinner />
       </Pane>
     );
-    // display error message if data fails to load
-  } else if (error || !data) {
+  }
+
+  // display error message if data fails to load
+  if (error || !data) {
     return (
       <Pane padding={majorScale(4)}>
         <Text color='red' size={500}>
@@ -152,7 +177,6 @@ const NutritionLabelPage: React.FC = () => {
           <ChevronLeftIcon className='h-6 w-6' color='green600' />
         </Link>
 
-        {/* display nutrition label */}
         <Pane>
           <Pane display='flex' flexDirection='column'>
             <Text fontSize={50} fontWeight={800} color='green800' marginBottom={majorScale(4)}>
@@ -169,6 +193,7 @@ const NutritionLabelPage: React.FC = () => {
               </Text>
             )}
           </Pane>
+
           <Separator height='3px' />
           <Pane display='grid' className='grid grid-cols-2 h-min'>
             <Pane marginTop={minorScale(3)} paddingBottom={minorScale(2)}>
@@ -205,6 +230,7 @@ const NutritionLabelPage: React.FC = () => {
               />
             </Pane>
           </Pane>
+
           <Separator height='3px' marginTop={majorScale(0)} />
           {data.ingredients.length > 0 && (
             <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
@@ -214,6 +240,7 @@ const NutritionLabelPage: React.FC = () => {
               <Text fontWeight={300}>{data.ingredients.join(', ')}</Text>
             </Pane>
           )}
+
           {data.allergens.length > 0 && (
             <Pane marginTop={majorScale(1)} display='flex' flexDirection='column'>
               <Text fontWeight={700} color='green700'>
@@ -222,6 +249,7 @@ const NutritionLabelPage: React.FC = () => {
               <Text fontWeight={300}>{data.allergens.join(', ')}</Text>
             </Pane>
           )}
+
           {dietaryBadges.length > 0 && (
             <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
               <Text fontWeight={700} color='green700'>
@@ -236,6 +264,7 @@ const NutritionLabelPage: React.FC = () => {
               </Pane>
             </Pane>
           )}
+
           {data?.averageRating !== null && (
             <Pane marginTop={majorScale(2)}>
               <Text fontWeight={700} color='green700'>
@@ -268,6 +297,7 @@ const NutritionLabelPage: React.FC = () => {
                 {upvotes}
               </Text>
             </Pane>
+
             <Pane
               display='flex'
               alignItems='center'
@@ -289,7 +319,6 @@ const NutritionLabelPage: React.FC = () => {
             </Pane>
           </Pane>
         </Pane>
-
         <NutritionTable nutrient={nutrient} />
       </Pane>
     </Pane>

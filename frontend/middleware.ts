@@ -17,15 +17,17 @@ import type { NextRequest } from 'next/server';
 
 // As an example, we will use middleware to implement protected routes.
 // Docs: https://nextjs.org/docs/app/building-your-application/authentication#defining-protected-routes
-const protectedRoutes = ['/feature1', '/feature2', '/feature3'];
+const protectedRoutes = ['/goals', 'menu'];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // const token = await 
   // Check if the user is trying to access one of the protected routes
   if (protectedRoutes.some((route) => pathname.startsWith(route))) {
     // The Auth0 session is stored in a cookie called 'appSession' by default
     const token = req.cookies.get('appSession');
+    console.log('token', token);
 
     // If no session token exists, redirect to login
     if (!token) {
@@ -42,5 +44,5 @@ export function middleware(req: NextRequest) {
 
 // Apply this middleware to the protected routes
 export const config = {
-  matcher: ['/feature1/:path*', '/feature2/:path*', '/feature3/:path*'],
+  matcher: ['/:path*'],
 };

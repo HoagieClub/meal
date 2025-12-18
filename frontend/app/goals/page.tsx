@@ -51,8 +51,8 @@ import { Nutrients, PlanSettings, WeeklyPlan, DailyPlan, MealType } from './type
 import MicronutrientPopover from '@/app/goals/components/micronutrient-popover';
 import { SkeletonWeeklySummary, SkeletonDayPlanCard } from '@/app/goals/components/skeletons';
 import SavedPlansManager from '@/app/goals/components/saved-plans-manager';
-import useLocalStorage from '@/hooks/use-local-storage';
-import useMediaQuery from '@/hooks/use-media-query';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   DEFAULT_NUTRIENTS,
   DIET_PRESETS,

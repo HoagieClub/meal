@@ -1,20 +1,48 @@
+/**
+ * @overview Actions for the Menu page.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
+
 import { classifyDish, DietTag } from '@/utils/dietary';
-import { RawApiMenuItem, RawVenue, UIMenuItem, UIVenue } from './types';
+import { RawApiMenuItem, UIMenuItem, UIVenue } from '@/data';
 import { AllergenType, DietaryTagType, DiningHallType } from '@/data';
 
+const FETCH_MENU_DATA_URL = '/api/dining/locations/with-menus';
+
+interface RawVenue {
+  name: string;
+  menu: {
+    menus: RawApiMenuItem[];
+  };
+}
+
+/**
+ * Fetch the menu data for the given menu ID.
+ *
+ * @param menuId - The menu ID to fetch.
+ * @param isCurrent - The function to check if the current menu is the current menu.
+ * @returns The menu data.
+ */
 const fetchMenuData = async (
   menuId: string,
   isCurrent: () => boolean
 ): Promise<UIVenue[] | null> => {
   try {
-    const response = await fetch(`/api/dining/locations/with-menus?menu_id=${menuId}`);
+    const response = await fetch(`${FETCH_MENU_DATA_URL}?menu_id=${menuId}`);
     if (!response.ok) {
       throw new Error(`HTTP error fetching menu! status: ${response.status}`);
     }
     const data: { locations: { location: RawVenue[] } } = await response.json();
     if (!isCurrent()) return null;
 
-    const uiVenues: UIVenue[] = data.locations.location.map((raw: RawVenue) => {
+    const uiVenues: UIVenue[] = data.locations.location.map((raw) => {
       // 1. Create the flat list of items
       const allItems: UIMenuItem[] = (raw.menu.menus || []).map((x: RawApiMenuItem) => ({
         id: x.id,
@@ -68,6 +96,18 @@ interface BuildDisplayDataProps {
   showNutrition: boolean;
 }
 
+/**
+ * Build the display data for the menu.
+ *
+ * @param venues - The venues to build the display data for.
+ * @param appliedDiningHalls - The applied dining halls.
+ * @param appliedDietaryRestrictions - The applied dietary restrictions.
+ * @param appliedAllergens - The applied allergens.
+ * @param searchTerm - The search term.
+ * @param pinnedHalls - The pinned halls.
+ * @param showNutrition - The show nutrition.
+ * @returns The display data.
+ */
 function buildDisplayData({
   venues,
   appliedDiningHalls,
@@ -92,7 +132,7 @@ function buildDisplayData({
 
   if (!hasDietFilter && !hasAllergenFilter && !hasSearch) {
     return appliedDiningHalls
-      .map((name) => venues.find((v) => v.name === name as DiningHallType))
+      .map((name) => venues.find((v) => v.name === (name as DiningHallType)))
       .filter((v): v is UIVenue => !!v)
       .sort(sortByPinned);
   }

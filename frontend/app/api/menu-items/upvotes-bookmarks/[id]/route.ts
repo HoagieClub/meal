@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
-import toCamelCase from '@/utils/toCamelCase';
+import { toCamelCase } from '@/utils/toCamelCase';
 import { error } from 'console';
 import { getAccessToken } from '@auth0/nextjs-auth0';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
+  return NextResponse.json(
+    { upvotes: 0, bookmarks: 0, hasUserUpvoted: false, hasUserBookmarked: false },
+    { status: 200 }
+  );
+
   try {
     const { accessToken } = await getAccessToken();
     if (!accessToken) {

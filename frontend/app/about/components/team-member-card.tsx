@@ -15,6 +15,12 @@ import { SocialIconButton } from '@/app/about/components/icons';
 import { TeamMember } from '@/types/team';
 import { SOCIAL_ICONS } from '../data';
 
+/**
+ * Team member card component.
+ *
+ * @param member - The team member to display.
+ * @returns The team member card component.
+ */
 export default function TeamMemberCard({ member }: { member: TeamMember }) {
   const theme = useTheme();
   return (

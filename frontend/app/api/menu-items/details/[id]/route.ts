@@ -14,7 +14,7 @@
 
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
-import toCamelCase from '@/utils/toCamelCase';
+import { toCamelCase } from '@/utils/toCamelCase';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 

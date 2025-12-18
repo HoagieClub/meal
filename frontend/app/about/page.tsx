@@ -2,10 +2,10 @@
  * @overview About page for the Hoagie Meal app.
  * @description This page displays information about the Hoagie Meal app team.
  * Copyright © 2021-2025 Hoagie Club and affiliates.
- * 
+ *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/meal/LICENSE.
- * 
+ *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
@@ -24,11 +24,16 @@ import {
   PersonIcon,
   Spinner,
 } from 'evergreen-ui';
-import useMediaQuery from '@/hooks/use-media-query';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { TEAM_LEADS, TEAM_MEMBERS } from './data';
 import TeamLeadCard from './components/team-lead-card';
 import TeamMemberCard from './components/team-member-card';
 
+/**
+ * About page component. Displays the team leads and team members.
+ *
+ * @returns The about page component.
+ */
 export default function About() {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -37,7 +42,6 @@ export default function About() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
   if (!isMounted) {
     return <Spinner />;
   }
@@ -81,7 +85,6 @@ export default function About() {
           </Paragraph>
         </Pane>
 
-        {/* Team Leadership Section */}
         <Pane is='section' marginBottom={majorScale(6)}>
           <Heading
             is='h2'
@@ -100,7 +103,6 @@ export default function About() {
           </Pane>
         </Pane>
 
-        {/* Team Members Section */}
         <Pane is='section' marginBottom={majorScale(6)}>
           <Heading
             is='h2'

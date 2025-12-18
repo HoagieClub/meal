@@ -71,6 +71,15 @@ export function useDate() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
+  // format date for display
+  const formatDateForDisplay = (date: Date): string => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'numeric',
+      day: 'numeric',
+    });
+  };
+
   // check if date is today
   const isToday = (date: Date): boolean => {
     const today = getToday();
@@ -106,23 +115,28 @@ export function useDate() {
   const isWeekendDay = isWeekend(selectedDate);
   const dateKey = getDateKey(selectedDate);
   const formattedDate = formatDate(selectedDate);
+  const formattedDateForDisplay = formatDateForDisplay(selectedDate);
   const isSelectedToday = isToday(selectedDate);
   const isSelectedPast = isPast(selectedDate);
   const isSelectedFuture = isFuture(selectedDate);
   const currentMeal = getCurrentMeal();
 
+  // go to previous day
   const goToPreviousDay = () => {
     setSelectedDate(getPreviousDay);
   };
 
+  // go to next day
   const goToNextDay = () => {
     setSelectedDate(getNextDay);
   };
 
+  // go to today
   const goToToday = () => {
     setSelectedDate(getToday());
   };
 
+  // go to date
   const goToDate = (date: Date) => {
     setSelectedDate(date);
   };
@@ -134,6 +148,7 @@ export function useDate() {
     isWeekend: isWeekendDay,
     dateKey,
     formattedDate,
+    formattedDateForDisplay,
     isToday: isSelectedToday,
     isPast: isSelectedPast,
     isFuture: isSelectedFuture,
