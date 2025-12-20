@@ -101,7 +101,7 @@ class MenuItem(models.Model):
         created_at (datetime): Timestamp when the record was created.
         updated_at (datetime): Timestamp when the record was last updated.
     """
-
+    
     id = models.BigAutoField(primary_key=True)
     api_id = models.PositiveIntegerField(unique=True, help_text=_("Original menu item ID from the API"))
     name = models.CharField(max_length=255, db_index=True)
