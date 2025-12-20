@@ -7,7 +7,6 @@ Licensed under the MIT License.
 
 from typing import List, Set, Dict
 
-# Keyword definitions for dietary classification
 MEAT_KEYWORDS = {
     'chicken', 'beef', 'pork', 'lamb', 'bacon', 'ham', 'turkey', 'duck', 'veal',
     'sausage', 'pepperoni', 'salami', 'prosciutto', 'chorizo', 'bison', 'venison',

@@ -2,8 +2,9 @@
 
 from rest_framework import serializers
 from django.db import models
-from hoagiemeal.models.user import CustomUser
-from hoagiemeal.models.menu import MenuItem, MenuRating, MenuItemNutrient
+from hoagiemeal.models.user import CustomUser, UserProfile
+from hoagiemeal.models.menu import MenuItem, MenuItemNutrient
+
 
 class GeoLocationSerializer(serializers.Serializer):
     """Serializer for the GeoLocation model."""
@@ -62,127 +63,159 @@ class DiningEventSerializer(serializers.Serializer):
     description = serializers.CharField()
 
 
-class MenuRatingSerializer(serializers.ModelSerializer):
-    """Serializer for the MenuRating model."""
+# class MenuRatingSerializer(serializers.ModelSerializer):
+#     """Serializer for the MenuRating model."""
 
-    username = serializers.SerializerMethodField()
-    menu_item_name = serializers.SerializerMethodField()
+#     username = serializers.SerializerMethodField()
+#     menu_item_name = serializers.SerializerMethodField()
 
-    class Meta:
-        """Meta class for the MenuRatingSerializer."""
+#     class Meta:
+#         """Meta class for the MenuRatingSerializer."""
 
-        model = MenuRating
-        fields = [
-            "id",
-            "user",
-            "username",
-            "menu_item",
-            "menu_item_name",
-            "rating",
-            "comment",
-            "created_at",
-            "updated_at",
-            "is_anonymous",
-            "dining_experience",
-            "taste_rating",
-            "presentation_rating",
-            "value_rating",
-        ]
-        read_only_fields = ["id", "user", "username", "menu_item_name", "created_at", "updated_at"]
+#         model = MenuRating
+#         fields = [
+#             "id",
+#             "user",
+#             "username",
+#             "menu_item",
+#             "menu_item_name",
+#             "rating",
+#             "comment",
+#             "created_at",
+#             "updated_at",
+#             "is_anonymous",
+#             "dining_experience",
+#             "taste_rating",
+#             "presentation_rating",
+#             "value_rating",
+#         ]
+#         read_only_fields = ["id", "user", "username", "menu_item_name", "created_at", "updated_at"]
 
-    def get_username(self, obj):
-        """Get the username of the user who created the rating."""
-        if obj.is_anonymous:
-            return "Anonymous"
-        return obj.user.get_full_name()
+#     def get_username(self, obj):
+#         """Get the username of the user who created the rating."""
+#         if obj.is_anonymous:
+#             return "Anonymous"
+#         return obj.user.get_full_name()
 
-    def get_menu_item_name(self, obj):
-        """Get the name of the menu item being rated."""
-        return obj.menu_item.name
-
-
-class MenuRatingCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating a MenuRating."""
-
-    class Meta:
-        """Meta class for the MenuRatingCreateSerializer."""
-
-        model = MenuRating
-        fields = [
-            "menu_item",
-            "rating",
-            "comment",
-            "is_anonymous",
-            "dining_experience",
-            "taste_rating",
-            "presentation_rating",
-            "value_rating",
-        ]
-
-    def create(self, validated_data):
-        """Create a new MenuRating instance.
-
-        If a rating already exists for this user and menu item, update it instead.
-        """
-        user = self.context["request"].user
-        menu_item = validated_data.get("menu_item")
-
-        # Check if a rating already exists
-        try:
-            rating = MenuRating.objects.get(user=user, menu_item=menu_item)
-            # Update existing rating
-            for key, value in validated_data.items():
-                setattr(rating, key, value)
-            rating.save()
-            return rating
-        except MenuRating.DoesNotExist:
-            # Create new rating
-            return MenuRating.objects.create(user=user, **validated_data)
+#     def get_menu_item_name(self, obj):
+#         """Get the name of the menu item being rated."""
+#         return obj.menu_item.name
 
 
-class MenuItemWithRatingsSerializer(serializers.ModelSerializer):
-    """Serializer for MenuItem with aggregated ratings."""
+# class MenuRatingCreateSerializer(serializers.ModelSerializer):
+#     """Serializer for creating a MenuRating."""
 
-    average_rating = serializers.SerializerMethodField()
-    rating_count = serializers.SerializerMethodField()
-    user_rating = serializers.SerializerMethodField()
+#     class Meta:
+#         """Meta class for the MenuRatingCreateSerializer."""
 
-    class Meta:
-        """Meta class for the MenuItemWithRatingsSerializer."""
+#         model = MenuRating
+#         fields = [
+#             "menu_item",
+#             "rating",
+#             "comment",
+#             "is_anonymous",
+#             "dining_experience",
+#             "taste_rating",
+#             "presentation_rating",
+#             "value_rating",
+#         ]
 
-        model = MenuItem
-        fields = ["id", "name", "description", "link", "average_rating", "rating_count", "user_rating"]
+#     def create(self, validated_data):
+#         """Create a new MenuRating instance.
 
-    def get_average_rating(self, obj):
-        """Get the average rating for the menu item."""
-        return obj.ratings.aggregate(avg_rating=models.Avg("rating"))["avg_rating"]
+#         If a rating already exists for this user and menu item, update it instead.
+#         """
+#         user = self.context["request"].user
+#         menu_item = validated_data.get("menu_item")
 
-    def get_rating_count(self, obj):
-        """Get the number of ratings for the menu item."""
-        return obj.ratings.count()
+#         # Check if a rating already exists
+#         try:
+#             rating = MenuRating.objects.get(user=user, menu_item=menu_item)
+#             # Update existing rating
+#             for key, value in validated_data.items():
+#                 setattr(rating, key, value)
+#             rating.save()
+#             return rating
+#         except MenuRating.DoesNotExist:
+#             # Create new rating
+#             return MenuRating.objects.create(user=user, **validated_data)
 
-    def get_user_rating(self, obj):
-        """Get the current user's rating for the menu item, if it exists."""
-        user = self.context.get("request").user
-        if user.is_authenticated:
-            try:
-                rating = obj.ratings.get(user=user)
-                return MenuRatingSerializer(rating).data
-            except MenuRating.DoesNotExist:
-                return None
-        return None
-    
+
+# class MenuItemWithRatingsSerializer(serializers.ModelSerializer):
+#     """Serializer for MenuItem with aggregated ratings."""
+
+#     average_rating = serializers.SerializerMethodField()
+#     rating_count = serializers.SerializerMethodField()
+#     user_rating = serializers.SerializerMethodField()
+
+#     class Meta:
+#         """Meta class for the MenuItemWithRatingsSerializer."""
+
+#         model = MenuItem
+#         fields = ["id", "name", "description", "link", "average_rating", "rating_count", "user_rating"]
+
+#     def get_average_rating(self, obj):
+#         """Get the average rating for the menu item."""
+#         return obj.ratings.aggregate(avg_rating=models.Avg("rating"))["avg_rating"]
+
+#     def get_rating_count(self, obj):
+#         """Get the number of ratings for the menu item."""
+#         return obj.ratings.count()
+
+#     def get_user_rating(self, obj):
+#         """Get the current user's rating for the menu item, if it exists."""
+#         user = self.context.get("request").user
+#         if user.is_authenticated:
+#             try:
+#                 rating = obj.ratings.get(user=user)
+#                 return MenuRatingSerializer(rating).data
+#             except MenuRating.DoesNotExist:
+#                 return None
+#         return None
+
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for the CustomUser model."""
-    class Meta:
-        """Meta class for the UserSerializer."""
 
+    class Meta:
         model = CustomUser
-        fields = '__all__'
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "net_id",
+            "class_year",
+            "auth0_id",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    """Serializer for the UserProfile model."""
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            "id",
+            "user",
+            "dietary_restrictions",
+            "allergens",
+            "dining_halls",
+            "daily_calorie_target",
+            "daily_protein_target",
+            "show_nutrition",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "user", "updated_at"]
+
 
 class MenuItemNutrientSerializer(serializers.ModelSerializer):
     """Serializer for the MenuItemNutrient model."""
+
     class Meta:
         model = MenuItemNutrient
         fields = [
@@ -208,10 +241,10 @@ class MenuItemNutrientSerializer(serializers.ModelSerializer):
 
 class FullMenuItemSerializer(serializers.ModelSerializer):
     """Serializer for a MenuItem with all details including nutrients, dietary info, and ratings."""
-    
+
     # Use the nutrient serializer for the OneToOne relationship
     nutrient_info = MenuItemNutrientSerializer(read_only=True)
-    
+
     # Re-use logic from MenuItemWithRatingsSerializer
     average_rating = serializers.SerializerMethodField()
     rating_count = serializers.SerializerMethodField()
@@ -220,19 +253,19 @@ class FullMenuItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = MenuItem
         fields = [
-            "id",                  # Internal primary key
-            "api_id",             # External API ID (use this for lookups)
+            "id",  # Internal primary key
+            "api_id",  # External API ID (use this for lookups)
             "name",
             "description",
             "link",
             "allergens",
             "ingredients",
-            "is_vegetarian",      # NEW
-            "is_vegan",           # NEW
-            "is_halal",           # NEW
-            "is_kosher",          # NEW
-            "dietary_flags",      # NEW - raw flags from source
-            "nutrient_info",      # Nested nutrient object with serving size
+            "is_vegetarian",  # NEW
+            "is_vegan",  # NEW
+            "is_halal",  # NEW
+            "is_kosher",  # NEW
+            "dietary_flags",  # NEW - raw flags from source
+            "nutrient_info",  # Nested nutrient object with serving size
             "average_rating",
             "rating_count",
             "user_rating",
@@ -248,13 +281,13 @@ class FullMenuItemSerializer(serializers.ModelSerializer):
         """Get the number of ratings for the menu item."""
         return obj.ratings.count()
 
-    def get_user_rating(self, obj):
-        """Get the current user's rating for the menu item, if it exists."""
-        user = self.context.get("request").user
-        if user and user.is_authenticated:
-            try:
-                rating = obj.ratings.get(user=user)
-                return MenuRatingSerializer(rating).data
-            except MenuRating.DoesNotExist:
-                return None
-        return None
+    # def get_user_rating(self, obj):
+    #     """Get the current user's rating for the menu item, if it exists."""
+    #     user = self.context.get("request").user
+    #     if user and user.is_authenticated:
+    #         try:
+    #             rating = obj.ratings.get(user=user)
+    #             return MenuRatingSerializer(rating).data
+    #         except MenuRating.DoesNotExist:
+    #             return None
+    #     return None

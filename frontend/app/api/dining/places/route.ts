@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -14,12 +14,18 @@
 
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
-import toCamelCase from '@/utils/toCamelCase';
+import { toCamelCase } from '@/utils/toCamelCase';
 import type { Place, PlacesResponse } from '@/types/places';
 
 const ROUTE = '/places/open';
 const DEBUG = process.env.NODE_ENV === 'development';
 
+/**
+ * Fetches open places availability.
+ *
+ * @param req - The HTTP request object.
+ * @returns A NextResponse object with the open places availability data.
+ */
 export async function GET(req: Request) {
   /**
    * @description Fetches open places availability.
@@ -37,10 +43,7 @@ export async function GET(req: Request) {
     const res = await request.get<Place[]>()(ROUTE, {});
 
     if (!res.data || res.data.length === 0) {
-      return NextResponse.json(
-        { error: 'No open places found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'No open places found' }, { status: 404 });
     }
 
     const data = toCamelCase(res.data) as Place[];
@@ -64,10 +67,7 @@ export async function GET(req: Request) {
         }),
       },
       {
-        status:
-          error instanceof Error && 'status' in error
-            ? (error as any).status
-            : 500,
+        status: error instanceof Error && 'status' in error ? (error as any).status : 500,
       }
     );
   }

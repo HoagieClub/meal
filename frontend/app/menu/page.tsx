@@ -50,11 +50,12 @@ const MENU_CACHE_KEY = 'menuCache';
 export default function MenuPage() {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
-  const { isLoading: authLoading, error: authError } = useUser();
 
+  // useDate hook for date management tools
   const useDateObject = useDate();
-  const { selectedDate, isWeekend, currentMeal } = useDateObject;
+  const { selectedDate, isWeekend, currentMeal, dateKey } = useDateObject;
 
+  // meal and menu state management
   const [menusByMeal, setMenusByMeal] = useState<{ [key in MealType]?: UIVenue[] }>({});
   const [meal, setMeal] = useState<MealType>(currentMeal as MealType);
   const [menuCache, setMenuCache] = useLocalStorage<Record<string, any>>({
@@ -62,6 +63,7 @@ export default function MenuPage() {
     initialValue: {},
   });
 
+  // usePreferences hook for preferences management
   const usePreferencesObject = usePreferences();
   const { setAllergens, preferences, loading: preferencesLoading } = usePreferencesObject;
 
@@ -72,45 +74,48 @@ export default function MenuPage() {
   const [modalHall, setModalHall] = useState<UIVenue | null>(null);
   const { pinnedHalls, togglePin } = usePinnedHalls();
 
+  // fetch all menus for the selected date and meal
   useEffect(() => {
     if (preferencesLoading || !selectedDate || !meal) return;
     let isCurrent = true;
-
     const checkIsCurrent = () => isCurrent;
     setLoading(true);
-    const dateKey = selectedDate.toISOString().split('T')[0];
 
+    // fetch all menus for the selected date and meal
     async function fetchAllMeals() {
       let baseMeals: MealType[] = isWeekend
         ? ['Lunch', 'Dinner']
         : ['Breakfast', 'Lunch', 'Dinner'];
       const mealsToFetch = [meal, ...baseMeals.filter((m) => m !== meal)];
 
-      const ids = mealsToFetch.map((m) => `${dateKey}-${m as MealType}`);
+      const ids = mealsToFetch.map((meal) => `${dateKey}-${meal as MealType}`);
       const results = await Promise.all(ids.map((id) => fetchMenuData(id, checkIsCurrent)));
       if (!checkIsCurrent()) return;
 
-      const combined: any = {};
-      results.forEach((res, i) => {
-        combined[mealsToFetch[i] as MealType] = res ?? [];
+      const combinedMenus: any = {};
+      results.forEach((menu, i) => {
+        combinedMenus[mealsToFetch[i] as MealType] = menu ?? [];
       });
 
-      const noData = Object.values(combined as Record<MealType, UIVenue[]>).every(
+      // only set cache if there is data
+      const noDataFound = Object.values(combinedMenus as Record<MealType, UIVenue[]>).every(
         (items: UIVenue[]) => items.length === 0
       );
-      if (!noData) {
+      if (!noDataFound) {
         setMenuCache((prev) => ({
           ...prev,
-          [dateKey]: combined,
+          [dateKey]: combinedMenus,
         }));
       }
-      setMenusByMeal(combined);
+
+      console.log('combinedMenus', combinedMenus);
+      setMenusByMeal(combinedMenus);
       setLoading(false);
     }
 
-    if (menuCache[dateKey]) {
-      console.log(menuCache[dateKey]);
-      setMenusByMeal(menuCache[dateKey]);
+    const menuCacheForDate = menuCache[dateKey];
+    if (menuCacheForDate) {
+      setMenusByMeal(menuCacheForDate);
       setLoading(false);
     } else {
       fetchAllMeals();
@@ -121,11 +126,11 @@ export default function MenuPage() {
     };
   }, [selectedDate, preferencesLoading, isWeekend, meal, menuCache, setMenusByMeal]);
 
-  const venues = menusByMeal[meal as MealType] ?? [];
+  // build the display data for the menu and auto detect state changes
   const displayData = useMemo(
     () =>
       buildDisplayData({
-        venues,
+        venues: menusByMeal[meal as MealType] ?? [],
         appliedDiningHalls: preferences.diningHalls ?? DINING_HALLS,
         appliedDietaryRestrictions: preferences.dietaryRestrictions ?? [],
         appliedAllergens: preferences.allergens ?? [],
@@ -134,7 +139,7 @@ export default function MenuPage() {
         showNutrition: preferences.showNutrition ?? true,
       }),
     [
-      venues,
+      menusByMeal[meal as MealType] ?? [],
       preferences.diningHalls,
       preferences.dietaryRestrictions,
       preferences.allergens,
@@ -144,18 +149,11 @@ export default function MenuPage() {
     ]
   );
 
-  if (authLoading || preferencesLoading) {
+  // render the loading state
+  if (preferencesLoading) {
     return (
       <Pane display='flex' alignItems='center' justifyContent='center' height='300'>
         <Spinner />
-      </Pane>
-    );
-  } else if (authError) {
-    return (
-      <Pane padding={majorScale(4)}>
-        <Text color='red' size={500}>
-          {authError?.message || 'Failed to load user profile'}
-        </Text>
       </Pane>
     );
   }

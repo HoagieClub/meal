@@ -15,13 +15,25 @@
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
+import { getAccessToken } from '@auth0/nextjs-auth0';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
+/**
+ * Fetches menu item details.
+ *
+ * @param req - The HTTP request object.
+ * @param params - The parameters object.
+ * @returns A NextResponse object with the menu item details.
+ */
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
-    const menuItemApiId = params.id;
+    const { accessToken } = await getAccessToken();
+    if (!accessToken) {
+      return NextResponse.json({ error: 'No access token available' }, { status: 401 });
+    }
 
+    const menuItemApiId = params.id;
     if (!menuItemApiId) {
       return NextResponse.json({ error: 'Missing menu item ID parameter' }, { status: 400 });
     }
@@ -30,8 +42,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     // Call the Django backend endpoint
     const ROUTE = `/api/menu-items/details/${menuItemApiId}/`;
-    const res = await request.get<any>()(ROUTE, {});
-
+    const res = await request.getAuth(accessToken)(ROUTE, {});
     DEBUG && console.log('Backend response for menu item:', menuItemApiId, res);
 
     // Handle both wrapped (res.data) and direct (res) response formats
@@ -44,14 +55,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       );
     }
 
-    // Convert snake_case to camelCase for frontend consumption
     const camelCaseData = toCamelCase(data);
-
     return NextResponse.json(camelCaseData);
   } catch (error: unknown) {
     DEBUG && console.error('Error fetching menu item details:', error);
 
-    // Check if it's a 404 from the backend
     if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
       return NextResponse.json(
         {

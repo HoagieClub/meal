@@ -1,9 +1,7 @@
-"""API manager class for the /dining/ endpoints from the StudentApp API.
+"""API manager class for the /dining/menu endpoints from the StudentApp API.
 
 This module fetches data from the following endpoints:
 
-- /dining/locations
-- /dining/events
 - /dining/menus
 
 Copyright © 2021-2025 Hoagie Club and affiliates.
@@ -28,6 +26,7 @@ import re
 import datetime
 from random import sample
 from decimal import Decimal, InvalidOperation
+from typing import Optional, Tuple, Dict
 
 import msgspec.json as msj
 import pytz
@@ -44,115 +43,284 @@ from django.db import models, transaction, IntegrityError
 from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.student_app import StudentApp
 from hoagiemeal.api.schemas import Schemas
-from hoagiemeal.models.menu import MenuItem, MenuRating, Menu, MenuItemNutrient, MenuItemBookmark, MenuItemUpvote
+from hoagiemeal.models.menu import MenuItem, Menu, MenuItemNutrient
 from hoagiemeal.models.dining import DiningVenue
 from hoagiemeal.serializers import (
-    MenuRatingSerializer,
-    MenuRatingCreateSerializer,
-    MenuItemWithRatingsSerializer,
     FullMenuItemSerializer,
 )
-from hoagiemeal.api.user import user_api
+from hoagiemeal.api.locations import LocationsAPI
 from hoagiemeal.api.database import get_mapped_menu_item_nutrient_data
 from hoagiemeal.utils.scraper import Scraper
 from hoagiemeal.utils.dietary import classify_dietary_restrictions
 
 
 USE_SAMPLE_MENUS = False
+MEAL_TYPE_MAP = {"Breakfast": "BR", "Lunch": "LU", "Dinner": "DI"}
 
 
-class DiningAPI(StudentApp):
-    """Handles functionalities related to dining information, such as locations, menus, and events."""
+def parse_menu_id(menu_id: str) -> Tuple[datetime.date, str]:
+    """Parse menu_id into date and meal code."""
+    date_str, meal_type = menu_id.rsplit("-", 1)
+    menu_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+    meal_code = MEAL_TYPE_MAP.get(meal_type)
+    if not meal_code:
+        raise ValueError(
+            f"Invalid meal type '{meal_type}' in menu_id '{menu_id}'. Expected: Breakfast, Lunch, or Dinner."
+        )
+    return menu_date, meal_code
 
-    DINING_LOCATIONS = "/dining/locations"
-    DINING_EVENTS = "/dining/events"
+
+class MenuAPI(StudentApp):
+    """Handles API communication for dining menus."""
+
+    DINING_MENU = "/dining/menu"
+    schemas = Schemas()
+
+    def get_menu(self, location_id: str, menu_id: str) -> dict:
+        """Fetch menu from external API.
+
+        Args:
+            location_id (str): The location ID.
+            menu_id (str): The menu ID.
+
+        Returns:
+            dict: Raw menu data from API.
+
+        """
+        logger.info(f"Fetching menu for location_id: {location_id}, menu_id: {menu_id}.")
+        params = {"locationID": location_id, "menuID": menu_id}
+        response = self._make_request(self.DINING_MENU, params=params)
+        decoded_menu = msj.decode(response)
+
+        # Handle list response (API sometimes returns list)
+        if isinstance(decoded_menu, list):
+            for item in decoded_menu:
+                if isinstance(item, dict):
+                    return item
+            return {}
+        return decoded_menu
+
+    def get_menus_for_locations(self, menu_id: str, location_ids: "list[str]") -> dict:
+        """Fetch menu for multiple locations.
+
+        Args:
+            menu_id (str): The menu ID (date and meal type).
+            location_ids (list[str]): List of location IDs to fetch menus for.
+
+        Returns:
+            dict: Dictionary mapping location_id to menu data.
+                  Structure: {location_id: menu_data, ...}
+
+        """
+        logger.info(f"Fetching menus for {len(location_ids)} locations, menu_id: {menu_id}.")
+        menus = {}
+        for location_id in location_ids:
+            menus[location_id] = self.get_menu(location_id, menu_id)
+        return menus
+
+    def get_menus_for_locations_and_menu_ids(self, location_ids: "list[str]", menu_ids: "list[str]") -> dict:
+        """Fetch multiple menus for multiple locations.
+
+        Args:
+            location_ids (list[str]): List of location IDs to fetch menus for.
+            menu_ids (list[str]): List of menu IDs to fetch.
+
+        Returns:
+            dict: Nested dictionary mapping location_id to menu_id to menu data.
+                  Structure: {location_id: {menu_id: menu_data, ...}, ...}
+
+        """
+        logger.info(
+            f"Fetching {len(menu_ids)} menus for {len(location_ids)} locations. ({len(location_ids) * len(menu_ids)} total requests)."
+        )
+        menus = {}
+        for location_id in location_ids:
+            menus[location_id] = {}
+            for menu_id in menu_ids:
+                menus[location_id][menu_id] = self.get_menu(location_id, menu_id)
+        return menus
+
+
+class MenuCache:
+    """Handles database caching operations for dining menus.
+
+    This class manages caching of menu data in the database, including
+    cache lookups, saving menus, and managing menu items.
+    """
+
+    MEAL_TYPE_MAP = {"Breakfast": "BR", "Lunch": "LU", "Dinner": "DI"}
+
+    def get_cached_menu(self, location_id: str, menu_id: str) -> Optional[Menu]:
+        """Get cached menu from database.
+
+        Args:
+            location_id (str): The location ID.
+            menu_id (str): The menu ID (date and meal type, e.g., "2024-01-15-Breakfast").
+
+        Returns:
+            Optional[Menu]: Cached menu if found, None otherwise.
+
+        """
+        logger.info(f"Checking cache for location_id: {location_id}, menu_id: {menu_id}.")
+
+        menu_date, meal_code = parse_menu_id(menu_id)
+        venue = DiningVenue.objects.get(database_id=location_id)
+        cached_menu = (
+            Menu.objects.prefetch_related(
+                models.Prefetch("menu_items", queryset=MenuItem.objects.select_related("nutrient_info"))
+            )
+            .filter(dining_venue=venue, date=menu_date, meal=meal_code)
+            .first()
+        )
+        return cached_menu
+
+    def get_cached_menus_for_locations_and_menu_ids(self, location_ids: "list[str]", menu_ids: "list[str]") -> dict:
+        """Get cached menus for multiple locations and multiple menu IDs.
+
+        Args:
+            location_ids (list[str]): List of location IDs.
+            menu_ids (list[str]): List of menu IDs.
+
+        Returns:
+            dict: Nested dictionary mapping location_id to menu_id to Menu object or None.
+                  Structure: {location_id: {menu_id: Menu | None, ...}, ...}
+
+        """
+        logger.info(
+            f"Checking cache for {len(menu_ids)} menus across {len(location_ids)} locations "
+            f"({len(location_ids) * len(menu_ids)} total lookups)."
+        )
+        menus = {}
+        for location_id in location_ids:
+            menus[location_id] = {}
+            for menu_id in menu_ids:
+                menus[location_id][menu_id] = self.get_cached_menu(location_id, menu_id)
+        return menus
+
+    def cache_menu(self, location_id: str, menu_id: str, api_menu_data: dict) -> Optional[Menu]:
+        """Save menu to database cache.
+
+        Args:
+            location_id (str): The location ID.
+            menu_id (str): The menu ID (date and meal type, e.g., "2024-01-15-Breakfast").
+            api_menu_data (dict): Raw menu data from API.
+
+        Returns:
+            Optional[Menu]: The saved Menu object, or None if venue not found or invalid menu_id.
+
+        """
+        logger.info(f"Saving menu to cache for location_id: {location_id}, menu_id: {menu_id}.")
+
+        menu_date, meal_code = parse_menu_id(menu_id)
+        venue = DiningVenue.objects.get(database_id=location_id)
+        menu_items_in_api = api_menu_data.get("menus", []) if api_menu_data else []
+
+        # Handle empty menu
+        if not menu_items_in_api:
+            with transaction.atomic():
+                menu, _ = Menu.objects.get_or_create(dining_venue=venue, date=menu_date, meal=meal_code)
+                menu.menu_items.set([])
+                logger.info(f"Cached empty menu for location_id: {location_id}, menu_id: {menu_id}.")
+            return menu
+
+        # Build API ID map and get existing items
+        menu_item_api_id_map = {}
+        for menu_item_data in menu_items_in_api:
+            menu_item_api_id_str = menu_item_data.get("id")
+            if not menu_item_api_id_str:
+                logger.warning(f"Missing api_id for item '{menu_item_data.get('name')}'. Skipping.")
+                continue
+            try:
+                menu_item_api_id_map[int(menu_item_api_id_str)] = menu_item_data
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid api_id '{menu_item_api_id_str}'. Skipping item.")
+
+        menu_item_api_ids = set(menu_item_api_id_map.keys())
+        existing_menu_item_api_ids = set(
+            MenuItem.objects.filter(api_id__in=menu_item_api_ids).values_list("api_id", flat=True)
+        )
+
+        # Create new menu items
+        menu_items_to_create = []
+        for menu_item_api_id, menu_item_data in menu_item_api_id_map.items():
+            if menu_item_api_id not in existing_menu_item_api_ids:
+                menu_items_to_create.append(
+                    MenuItem(
+                        api_id=menu_item_api_id,
+                        name=menu_item_data.get("name"),
+                        description=menu_item_data.get("description"),
+                        link=menu_item_data.get("link"),
+                    )
+                )
+
+        # Bulk-create new menu items
+        if len(menu_items_to_create) > 0:
+            MenuItem.objects.bulk_create(menu_items_to_create, ignore_conflicts=True)
+            logger.info(f"Bulk-created {len(menu_items_to_create)} new menu items.")
+
+        # Associate all menu items with the menu
+        menu_items = MenuItem.objects.filter(api_id__in=menu_item_api_ids)
+        with transaction.atomic():
+            menu, _ = Menu.objects.get_or_create(dining_venue=venue, date=menu_date, meal=meal_code)
+            menu.menu_items.set(menu_items)
+
+        logger.info(
+            f"Cached menu with {len(menu_items)} items (created {len(menu_items_to_create)} new) "
+            f"for location_id: {location_id}, menu_id: {menu_id}."
+        )
+        return menu
+
+    def cache_nutrition_info(self, menu_item: MenuItem, nutrition_data: dict) -> Optional[MenuItemNutrient]:
+        """Cache nutrition information for a menu item and update associated MenuItem fields.
+
+        Args:
+            menu_item: The MenuItem instance to cache nutrition for.
+            nutrition_data: Dictionary with fields already in Django model format.
+                          Contains both MenuItemNutrient fields and MenuItem fields (allergens, ingredients, dietary_flags).
+
+        Returns:
+            Optional[MenuItemNutrient]: The cached MenuItemNutrient instance, or None if nutrition info was not cached.
+
+        """
+        # Separate the MenuItemNutrient fields from the MenuItem fields
+        menu_item_fields = ["allergens", "ingredients", "dietary_flags"]
+        nutrient_fields = {k: v for k, v in nutrition_data.items() if k not in menu_item_fields}
+        if not nutrient_fields:
+            raise ValueError("Nutrition data is required")
+
+        # Cache the nutrition information
+        nutrient, _ = MenuItemNutrient.objects.update_or_create(menu_item=menu_item, defaults=nutrient_fields)
+
+        # Update the MenuItem fields
+        updated_menu_item = False
+        for field in menu_item_fields:
+            if field in nutrition_data and nutrition_data[field]:
+                setattr(menu_item, field, nutrition_data[field])
+                updated_menu_item = True
+
+        if updated_menu_item:
+            menu_item.save(
+                update_fields=[
+                    "allergens",
+                    "ingredients",
+                    "dietary_flags",
+                ]
+            )
+        return nutrient
+
+
+class MenuAPILegacy(StudentApp):
+    """Legacy MenuAPI class with caching, scraping, and database operations.
+
+    This class is kept for backward compatibility. The new MenuAPI class above
+    provides a pure API interface similar to EventsAPI and LocationsAPI.
+    """
+
     DINING_MENU = "/dining/menu"
     schemas = Schemas()
     scraper = Scraper()
 
-    def get_locations(self, category_id: str = "2", fmt: str = "xml") -> dict:
-        """Fetch a list of dining locations in XML format.
-
-        NOTE: The API expects the parameters to be in camelCase.
-
-        Args:
-          category_id (str): The category ID to fetch. Defaults to "2".
-                    Use "2" for residential colleges, "3" for cafes/specialty venues.
-          fmt (str): The format of the response. Defaults to "xml".
-
-        Returns:
-          dict: A dictionary containing the dining locations.
-
-        """
-        logger.info(f"Fetching dining locations for category {category_id}.")
-        response = self._make_request(
-            self.DINING_LOCATIONS,
-            params={"categoryId": category_id},
-            fmt=fmt,
-        )
-        schema = self.schemas.get_dining_xsd()
-        if not self.validate_xml(response, schema):
-            logger.error(f"Invalid XML format for dining locations (category {category_id}).")
-            raise ValueError(f"Invalid XML format for dining locations (category {category_id}).")
-        return self._parse_xml(response)
-
-    def get_all_category_locations(self, category_ids=None, fmt: str = "xml") -> dict:
-        """Fetch dining locations from multiple categories and combine them.
-
-        Args:
-          category_ids (list): List of category IDs to fetch. Defaults to ["2", "3"].
-          fmt (str): The format of the response. Defaults to "xml".
-
-        Returns:
-          dict: A dictionary containing combined dining locations from all categories.
-
-        """
-        if category_ids is None:
-            category_ids = ["2", "3"]
-
-        logger.info(f"Fetching dining locations for categories: {', '.join(category_ids)}")
-
-        all_locations = {"locations": {"location": []}}
-
-        for category_id in category_ids:
-            try:
-                response = self.get_locations(category_id=category_id, fmt=fmt)
-                if response and "locations" in response and "location" in response["locations"]:
-                    locations = response["locations"]["location"]
-                    if isinstance(locations, list):
-                        all_locations["locations"]["location"].extend(locations)
-                    else:
-                        all_locations["locations"]["location"].append(locations)
-                    logger.info(
-                        f"Added {len(locations) if isinstance(locations, list) else 1} locations from category {category_id}"
-                    )
-            except Exception as e:
-                logger.error(f"Error fetching locations for category {category_id}: {e}")
-
-        return all_locations
-
-    def get_events(self, place_id: str = "1007") -> dict:
-        """Fetch dining venue open hours as an iCal stream for a given place_id.
-
-        NOTE: "1007" seems to correspond to the Princeton Dining Calendar.
-        NOTE: The API expects the parameters to be in camelCase.
-
-        Remark: The response uses LF line-endings with a Content-Type of text/plain
-        but is actually in iCal (text/calendar) format.
-
-        Args:
-          place_id (str): The ID of the dining venue.
-
-        Returns:
-          dict: Parsed iCal data with event details (summary, start time, end time, etc.).
-
-        """
-        logger.info(f"Fetching dining events for place_id: {place_id}.")
-        params = {"placeID": place_id}
-        response = self._make_request(self.DINING_EVENTS, params=params, fmt="ical")
-        return self._parse_ical(response)
-
-    def fetch_and_decode_menu_from_api(self, location_id: str, menu_id: str) -> dict:
+    def fetch_menu_from_api(self, location_id: str, menu_id: str) -> dict:
         """Fetch and decode the menu from the API."""
         params = {"locationID": location_id, "menuID": menu_id}
         try:
@@ -613,7 +781,8 @@ class DiningAPI(StudentApp):
         if category_ids is None:
             category_ids = ["2", "3"]
 
-        combined = self.get_all_category_locations(category_ids=category_ids, fmt="xml")
+        locations_api = LocationsAPI()
+        combined = locations_api.get_all_category_locations(category_ids=category_ids, fmt="xml")
         locations_obj = combined.get("locations", {}) or {}
         locs = locations_obj.get("location", [])
         if not isinstance(locs, list):
@@ -636,39 +805,9 @@ class DiningAPI(StudentApp):
 
 #################### Exposed endpoints #########################
 
-dining_api = DiningAPI()
-
-
-@api_view(["GET"])
-@cache_page(60 * 5)
-def get_dining_locations(request):
-    """Django view function to get dining locations."""
-    try:
-        category_ids = request.GET.getlist("category_id", ["2", "3"])
-        locations = dining_api.get_all_category_locations(category_ids)
-        return Response(locations)
-    except Exception as e:
-        logger.error(f"Error in get_dining_locations view: {e}")
-        return Response({"error": str(e)}, status=500)
-
-
-@api_view(["GET"])
-@cache_page(60 * 5)
-def get_dining_events(request):
-    """Django view function to get dining events."""
-    try:
-        category_ids = request.GET.getlist("category_id", ["2", "3"])
-        date_str = request.GET.get("date", None)
-
-        if date_str:
-            events = get_dining_events_for_date(date_str, category_ids)
-        else:
-            events = get_all_dining_events(category_ids)
-
-        return Response(events)
-    except Exception as e:
-        logger.error(f"Error in get_dining_events view: {e}")
-        return Response({"error": str(e)}, status=500)
+# Using legacy class for backward compatibility
+# New pure MenuAPI class is available above for future use
+dining_api = MenuAPILegacy()
 
 
 @api_view(["GET"])
@@ -782,49 +921,6 @@ def scrape_nutrition_url(request):
 
 
 @api_view(["GET"])
-def get_menu_item_with_ratings(request, menu_item_id):
-    """Get a menu item with its ratings.
-
-    Args:
-      request: The HTTP request.
-      menu_item_id: The ID of the menu item.
-
-    Returns:
-      Response: The menu item with its ratings.
-
-    """
-    try:
-        menu_item = MenuItem.objects.get(id=menu_item_id)
-    except MenuItem.DoesNotExist:
-        return Response({"error": "Menu item not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    serializer = MenuItemWithRatingsSerializer(menu_item, context={"request": request})
-    return Response(serializer.data)
-
-
-@api_view(["GET"])
-def get_menu_item_ratings(request, menu_item_id):
-    """Get all ratings for a menu item.
-
-    Args:
-      request: The HTTP request.
-      menu_item_id: The ID of the menu item.
-
-    Returns:
-      Response: The ratings for the menu item.
-
-    """
-    try:
-        menu_item = MenuItem.objects.get(id=menu_item_id)
-    except MenuItem.DoesNotExist:
-        return Response({"error": "Menu item not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    ratings = menu_item.ratings.all()
-    serializer = MenuRatingSerializer(ratings, many=True)
-    return Response(serializer.data)
-
-
-@api_view(["GET"])
 def get_menu_item_details(request, menu_item_api_id):
     """
     Get all details for a menu item by its external API ID.
@@ -851,119 +947,6 @@ def get_menu_item_details(request, menu_item_api_id):
     return Response(serializer.data)
 
 
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def create_menu_item_rating(request, menu_item_id):
-    """Create a rating for a menu item.
-
-    Args:
-      request: The HTTP request.
-      menu_item_id: The ID of the menu item.
-
-    Returns:
-      Response: The created rating.
-
-    """
-    try:
-        menu_item = MenuItem.objects.get(id=menu_item_id)
-    except MenuItem.DoesNotExist:
-        return Response({"error": "Menu item not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    # Add menu_item to the request data
-    data = request.data.copy()
-    data["menu_item"] = menu_item.id
-
-    serializer = MenuRatingCreateSerializer(data=data, context={"request": request})
-
-    if serializer.is_valid():
-        rating = serializer.save()
-        return Response(MenuRatingSerializer(rating).data, status=status.HTTP_201_CREATED)
-
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["GET", "PUT", "DELETE"])
-@permission_classes([IsAuthenticated])
-def manage_rating(request, rating_id):
-    """Get, update, or delete a rating.
-
-    Args:
-      request: The HTTP request.
-      rating_id: The ID of the rating.
-
-    Returns:
-      Response: The response based on the action.
-
-    """
-    try:
-        rating = MenuRating.objects.get(id=rating_id)
-    except MenuRating.DoesNotExist:
-        return Response({"error": "Rating not found"}, status=status.HTTP_44_NOT_FOUND)
-
-    # Check if the user is the owner of the rating
-    if rating.user != request.user:
-        return Response(
-            {"error": "You do not have permission to perform this action"},
-            status=status.HTTP_403_FORBIDDEN,  # Corrected typo from 4OS
-        )
-
-    if request.method == "GET":
-        serializer = MenuRatingSerializer(rating)
-        return Response(serializer.data)
-
-    elif request.method == "PUT":
-        serializer = MenuRatingCreateSerializer(rating, data=request.data, partial=True)
-
-        if serializer.is_valid():
-            updated_rating = serializer.save()
-            return Response(MenuRatingSerializer(updated_rating).data)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  # Corrected from 403
-
-    elif request.method == "DELETE":
-        rating.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def get_user_ratings(request):
-    """Get all ratings by the current user.
-
-    Args:
-      request: The HTTP request.
-
-    Returns:
-      Response: The user's ratings.
-
-    """
-    ratings = MenuRating.objects.filter(user=request.user)
-    serializer = MenuRatingSerializer(ratings, many=True)
-    return Response(serializer.data)
-
-
-@api_view(["GET"])
-def get_top_rated_menu_items(request):
-    """Get the top-rated menu items.
-
-    Args:
-      request: The HTTP request.
-
-    Returns:
-      Response: The top-rated menu items.
-
-    """
-    # Get menu items with at least 3 ratings
-    menu_items = (
-        MenuItem.objects.annotate(avg_rating=models.Avg("ratings__rating"), num_ratings=models.Count("ratings"))
-        .filter(num_ratings__gte=3)
-        .order_by("-avg_rating")[:10]
-    )
-
-    serializer = MenuItemWithRatingsSerializer(menu_items, many=True, context={"request": request})
-    return Response(serializer.data)
-
-
 @api_view(["GET"])
 @cache_page(60 * 5)
 def get_dining_locations_with_menus(request):
@@ -978,340 +961,3 @@ def get_dining_locations_with_menus(request):
     except Exception as e:
         logger.error(f"Error in get_dining_locations_with_menus: {e}")
         return Response({"error": str(e)}, status=500)
-
-
-@api_view(["GET"])
-def get_upvotes_bookmarks_for_menu_item(request, menu_item_id):
-    """Get upvotes and bookmarks for a menu item.
-
-    Args:
-      request: The HTTP request.
-      menu_item_id: The ID of the menu item.
-
-    Returns:
-      Response: The upvotes and bookmarks for the menu item.
-
-    """
-    try:
-        claims = user_api.authenticate_request(request)
-        if not claims:
-            logger.error("Authentication failed in get_upvotes_bookmarks_for_menu_item view")
-            return Response({"error": "Authentication required"}, status=401)
-
-        menu_item = MenuItem.objects.get(api_id=menu_item_id)
-        user = user_api.get_or_create_user(claims, create=False)
-        if not user:
-            logger.error("User not found in get_upvotes_bookmarks_for_menu_item view")
-            return Response({"error": "User not found"}, status=404)
-
-        upvotes = menu_item.upvote_count
-        bookmarks = menu_item.bookmark_count
-        has_user_upvoted = MenuItemUpvote.objects.filter(user=user, menu_item=menu_item).exists()
-        has_user_bookmarked = MenuItemBookmark.objects.filter(user=user, menu_item=menu_item).exists()
-
-        return Response(
-            {
-                "upvotes": upvotes,
-                "bookmarks": bookmarks,
-                "has_user_upvoted": has_user_upvoted,
-                "has_user_bookmarked": has_user_bookmarked,
-            },
-            status=200,
-        )
-    except Exception as e:
-        logger.error(f"Error in get_upvotes_bookmarks_for_menu_item view: {e}")
-        return Response({"error": str(e)}, status=500)
-
-
-# Utility functions for working with dining data
-
-
-def get_all_dining_locations(category_ids=None):
-    """Fetch all dining locations and return them as a list of dictionaries.
-
-    Args:
-      category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
-
-    Returns:
-      list: A list of dictionaries containing location information.
-
-    """
-    if category_ids is None:
-        category_ids = ["2", "3"]  # Default to residential colleges and cafes/specialty venues
-
-    dining = DiningAPI()
-    try:
-        # Use the new method to get locations from all categories
-        response = dining.get_all_category_locations(category_ids)
-        locations = []
-
-        for location in response["locations"]["location"]:
-            loc_info = {
-                "name": location.get("name"),
-                "map_name": location.get("mapName"),
-                "dbid": location.get("dbid"),
-                "latitude": location["geoloc"].get("lat"),
-                "longitude": location["geoloc"].get("long"),
-                "building_name": location["building"].get("name"),
-            }
-
-            # Handle both single and multiple amenities
-            amenities_data = location["amenities"]["amenity"]
-            if isinstance(amenities_data, list):
-                loc_info["amenities"] = [amenity["name"] for amenity in amenities_data]
-            else:
-                loc_info["amenities"] = [amenities_data["name"]]
-
-            locations.append(loc_info)
-
-        logger.info(f"Retrieved {len(locations)} dining locations from categories: {', '.join(category_ids)}")
-        return locations
-    except Exception as e:
-        logger.error(f"Error fetching dining locations: {e}")
-        return []
-
-
-def get_events_for_location(dbid, location_name):
-    """Fetch events for a specific dining location.
-
-    Args:
-      dbid (str): The database ID of the location.
-      location_name (str): The name of the location (for logging).
-
-    Returns:
-      list: A list of event dictionaries.
-
-    """
-    dining = DiningAPI()
-    try:
-        logger.info(f"Fetching events for {location_name} (ID: {dbid})")
-        events_data = dining.get_events(place_id=dbid)
-        events = events_data.get("events", [])
-
-        # Format the events for better readability
-        formatted_events = []
-        for event in events:
-            formatted_event = {
-                "summary": event.get("summary", "No Summary"),
-                "start": event.get("start", "No Start Time"),
-                "end": event.get("end", "No End Time"),
-                "description": event.get("description", "No Description"),
-            }
-            formatted_events.append(formatted_event)
-
-        logger.info(f"Retrieved {len(formatted_events)} events for {location_name}")
-        return formatted_events
-    except Exception as e:
-        logger.error(f"Error fetching events for {location_name} (ID: {dbid}): {e}")
-        return []
-
-
-def get_events_for_location_with_date(dbid, location_name, date_str=None):
-    """Fetch events for a specific dining location with an optional date filter.
-
-    Args:
-      dbid (str): The database ID of the location.
-      location_name (str): The name of the location (for logging).
-      date_str (str, optional): Date string in YYYY-MM-DD format. Defaults to None.
-
-    Returns:
-      list: A list of event dictionaries.
-
-    """
-    dining = DiningAPI()
-    try:
-        logger.info(f"Fetching events for {location_name} (ID: {dbid})")
-
-        # Try to add date parameter if provided
-        params = {"placeId": dbid}
-        if date_str:
-            # Add date parameter if API supports it
-            params["date"] = date_str
-            logger.info(f"Using date parameter: {date_str}")
-
-        # Use the standard get_events method
-        events_data = dining.get_events(place_id=dbid)
-        events = events_data.get("events", [])
-
-        # Format the events for better readability
-        formatted_events = []
-        for event in events:
-            formatted_event = {
-                "summary": event.get("summary", "No Summary"),
-                "start": event.get("start", "No Start Time"),
-                "end": event.get("end", "No End Time"),
-                "description": event.get("description", "No Description"),
-            }
-
-            # Filter by date if specified
-            if date_str and isinstance(formatted_event["start"], datetime.datetime):
-                event_date = formatted_event["start"].date()
-                filter_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-
-                if event_date == filter_date:
-                    formatted_events.append(formatted_event)
-            else:
-                formatted_events.append(formatted_event)
-
-        logger.info(f"Retrieved {len(formatted_events)} events for {location_name}")
-        return formatted_events
-    except Exception as e:
-        logger.error(f"Error fetching events for {location_name} (ID: {dbid}): {e}")
-        return []
-
-
-def analyze_date_range(all_location_events):
-    """Analyze the date range of the events data.
-
-    Args:
-      all_location_events (dict): Dictionary mapping location names to events.
-
-    Returns:
-      tuple: (earliest_date, latest_date, total_days)
-
-    """
-    earliest_date = None
-    latest_date = None
-
-    # Collect all dates from all events
-    all_dates = []
-
-    for name, data in all_location_events.items():
-        logger.info(f"Analyzing date range for {name}")
-
-        events = data["events"]
-
-        for event in events:
-            start_time = event["start"]
-            end_time = event["end"]
-
-            if isinstance(start_time, datetime.datetime):
-                all_dates.append(start_time.date())
-
-            if isinstance(end_time, datetime.datetime):
-                all_dates.append(end_time.date())
-
-    # Find the earliest and latest dates
-    if all_dates:
-        earliest_date = min(all_dates)
-        latest_date = max(all_dates)
-
-        # Calculate the total number of days
-        total_days = (latest_date - earliest_date).days + 1
-
-        return (earliest_date, latest_date, total_days)
-
-    return (None, None, 0)
-
-
-def get_all_dining_events(category_ids=None):
-    """Fetch events for all dining locations.
-
-    Args:
-      category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
-
-    Returns:
-      dict: Dictionary mapping location names to events.
-
-    """
-    if category_ids is None:
-        category_ids = ["2", "3"]  # Default to residential colleges and cafes/specialty venues
-
-    logger.info(f"Fetching events for all dining locations in categories: {', '.join(category_ids)}...")
-
-    # Get all dining locations from specified categories
-    locations = get_all_dining_locations(category_ids)
-
-    # Dictionary to store location name -> events mapping
-    all_location_events = {}
-
-    # Fetch events for each location
-    for location in locations:
-        name = location["name"]
-        dbid = location["dbid"]
-
-        events = get_events_for_location(dbid, name)
-        all_location_events[name] = {"location_info": location, "events": events}
-
-    return all_location_events
-
-
-def get_dining_events_for_date(date_str, category_ids=None):
-    """Fetch events for all dining locations for a specific date.
-
-    Args:
-      date_str (str): Date string in YYYY-MM-DD format.
-      category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
-
-    Returns:
-      dict: Dictionary mapping location names to events.
-
-    """
-    if category_ids is None:
-        category_ids = ["2", "3"]  # Default to residential colleges and cafes/specialty venues
-
-    logger.info(f"Fetching events for all dining locations on {date_str} in categories: {', '.join(category_ids)}...")
-
-    # Get all dining locations from specified categories
-    locations = get_all_dining_locations(category_ids)
-
-    # Dictionary to store location name -> events mapping
-    all_location_events = {}
-
-    # Fetch events for each location
-    for location in locations:
-        name = location["name"]
-        dbid = location["dbid"]
-
-        events = get_events_for_location_with_date(dbid, name, date_str)
-        all_location_events[name] = {"location_info": location, "events": events}
-
-    return all_location_events
-
-
-def convert_utc_to_eastern(dt):
-    """Convert a UTC datetime to Eastern Time.
-
-    Args:
-      dt: A datetime object in UTC
-
-    Returns:
-      A datetime object in Eastern Time with proper timezone info
-
-    """
-    # If it's not a datetime object, return as is
-    if not isinstance(dt, datetime.datetime):
-        return dt
-
-    # If the datetime has no timezone info, assume it's UTC
-    if dt.tzinfo is None:
-        dt = pytz.utc.localize(dt)
-
-    # Convert to Eastern Time
-    eastern = pytz.timezone("US/Eastern")
-    return dt.astimezone(eastern)
-
-
-# For testing directly
-if __name__ == "__main__":
-    print("WARNING: This script should be run through Django's management command:")
-    print("python manage.py test_dining")
-    print("\nAttempting to run directly, but this may fail if Django is not properly configured.")
-
-    # Try to set up Django environment
-    import os
-    import django
-
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hoagiemeal.settings")
-    try:
-        django.setup()
-        # Test getting all dining locations
-        locations = get_all_dining_locations()
-        print(f"Retrieved {len(locations)} dining locations")
-
-        # Test getting all dining events
-        events = get_all_dining_events()
-        print(f"Retrieved events for {len(events)} dining locations")
-    except Exception as e:
-        print(f"Error: {e}")
-        print("Please use the management command instead.")

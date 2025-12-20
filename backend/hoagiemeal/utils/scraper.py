@@ -21,6 +21,47 @@ import requests
 from bs4 import BeautifulSoup
 from copy import deepcopy
 from hoagiemeal.utils.logger import logger
+from typing import TypedDict, Optional, List, Union
+from decimal import Decimal
+import re
+
+
+Numeric = Union[int, Decimal]
+
+
+class NutrientField(TypedDict, total=False):
+    amount: Optional[Numeric]
+    dv: Optional[Numeric]
+    unit: Optional[str]
+
+
+class NutritionSchema(TypedDict, total=False):
+    serving_size: Optional[Numeric]
+    serving_unit: Optional[str]
+
+    calories: Optional[int]
+    calories_from_fat: Optional[int]
+
+    ingredients: Optional[List[str]]
+    allergens: Optional[List[str]]
+
+    total_fat: NutrientField
+    saturated_fat: NutrientField
+    trans_fat: NutrientField
+
+    cholesterol: NutrientField
+    sodium: NutrientField
+
+    total_carbohydrates: NutrientField
+    dietary_fiber: NutrientField
+    sugars: NutrientField
+
+    protein: NutrientField
+
+    vitamin_d: NutrientField
+    potassium: NutrientField
+    calcium: NutrientField
+    iron: NutrientField
 
 
 class Scraper:
@@ -37,33 +78,27 @@ class Scraper:
         "ingredients include alcohol": "Alcohol",
         "ingredients include coconut": "Coconut",
     }
-    # Empty menu schema for when the scraper fails to find any data
-    EMPTY_MENU_SCHEMA = {
-        "Name": "",
-        "Serving Size": "",
-        "Calories": "",
-        "Calories from Fat": "",
-        "Ingredients": [],
-        "Allergens": [],
-        "Fat": {
-            "Total Fat": {"Amount": "", "Daily Value": ""},
-            "Saturated Fat": {"Amount": "", "Daily Value": ""},
-            "Trans Fat": {"Amount": "", "Daily Value": ""},
-        },
-        "Cholesterol": {"Amount": "", "Daily Value": ""},
-        "Sodium": {"Amount": "", "Daily Value": ""},
-        "Carbohydrates": {
-            "Total Carbohydrates": {"Amount": "", "Daily Value": ""},
-            "Dietary Fiber": {"Amount": "", "Daily Value": ""},
-            "Sugar": {"Amount": "", "Daily Value": ""},
-        },
-        "Protein": {"Amount": "", "Daily Value": ""},
-        "Vitamins": {
-            "Vitamin D": {"Amount": "", "Daily Value": ""},
-            "Calcium": {"Amount": "", "Daily Value": ""},
-            "Iron": {"Amount": "", "Daily Value": ""},
-            "Potassium": {"Amount": "", "Daily Value": ""},
-        },
+
+    EMPTY_MENU_SCHEMA: NutritionSchema = {
+        "serving_size": None,
+        "serving_unit": None,
+        "calories": None,
+        "calories_from_fat": None,
+        "ingredients": None,
+        "allergens": None,
+        "total_fat": {"amount": None, "dv": None, "unit": None},
+        "saturated_fat": {"amount": None, "dv": None, "unit": None},
+        "trans_fat": {"amount": None, "dv": None, "unit": None},
+        "cholesterol": {"amount": None, "dv": None, "unit": None},
+        "sodium": {"amount": None, "dv": None, "unit": None},
+        "total_carbohydrates": {"amount": None, "dv": None, "unit": None},
+        "dietary_fiber": {"amount": None, "dv": None, "unit": None},
+        "sugars": {"amount": None, "dv": None, "unit": None},
+        "protein": {"amount": None, "dv": None, "unit": None},
+        "vitamin_d": {"amount": None, "dv": None, "unit": None},
+        "potassium": {"amount": None, "dv": None, "unit": None},
+        "calcium": {"amount": None, "dv": None, "unit": None},
+        "iron": {"amount": None, "dv": None, "unit": None},
     }
 
     def scrape(self, link: str) -> dict:
@@ -76,7 +111,7 @@ class Scraper:
             soup = BeautifulSoup(response.content, "lxml")
         except Exception as e:
             logger.error(f"Unexpected error fetching HTML content: {e}")
-            return deepcopy(self.EMPTY_MENU_SCHEMA)
+            return deepcopy(self.EMPTY_MENU_SCHEMA)  # type: ignore
 
         data = deepcopy(self.EMPTY_MENU_SCHEMA)
 
@@ -95,6 +130,25 @@ class Scraper:
             m = a.lower()
             return self.ALLERGEN_MAPPINGS.get(m, a.capitalize())
 
+        def to_numeric(value: str) -> Optional[Numeric]:
+            if not value:
+                return None
+            match = re.search(r"[\d\.]+", value)
+            if not match:
+                return None
+            number = match.group(0)
+            if "." in number:
+                return Decimal(number)
+            return int(number)
+
+        def parse_amount_and_unit(value: str):
+            if not value:
+                return None, None
+            num = to_numeric(value)
+            unit_match = re.search(r"(mg|g|mcg)", value, re.IGNORECASE)
+            unit = unit_match.group(0).lower() if unit_match else None
+            return num, unit
+
         ingredients_el = soup.find(class_=self.INGREDIENTS_CLASS)
         allergens_el = soup.find(class_=self.ALLERGENS_CLASS)
         name_el = soup.find(self.NAME_QUERY)
@@ -103,60 +157,65 @@ class Scraper:
         vitamins = soup.find_all("li")
 
         if ingredients_el:
-            items = [x.strip().capitalize() for x in ingredients_el.get_text().split(",")]
-            data["Ingredients"] = items
+            items = [x.strip().capitalize() for x in ingredients_el.get_text().split(",") if x.strip()]
+            data["ingredients"] = items
 
         if allergens_el:
             txt = allergens_el.get_text().strip()
             if txt.startswith("Ingredients include"):
                 txt = txt[len("Ingredients include") :]
             allergen_list = [process_allergen(a) for a in txt.split(",") if a.strip()]
-            data["Allergens"] = allergen_list
+            data["allergens"] = allergen_list
 
-        if name_el:
-            data["Name"] = name_el.get_text().strip()
+        data["serving_size"] = to_numeric(safe(0, calories_fields))
 
-        data["Serving Size"] = safe(0, calories_fields)
-        data["Calories"] = safe(1, calories_fields)
-        data["Calories from Fat"] = safe(2, calories_fields)
+        try:
+            data["calories"] = int(safe(1, calories_fields)) if safe(1, calories_fields) else None
+        except Exception:
+            data["calories"] = None
+
+        try:
+            data["calories_from_fat"] = int(safe(2, calories_fields)) if safe(2, calories_fields) else None
+        except Exception:
+            data["calories_from_fat"] = None
 
         mappings = [
-            ("Fat", "Total Fat", 0, 1),
-            ("Carbohydrates", "Total Carbohydrates", 2, 3),
-            ("Fat", "Saturated Fat", 4, 5),
-            ("Carbohydrates", "Dietary Fiber", 6, 7),
-            ("Fat", "Trans Fat", 8, 9),
-            ("Carbohydrates", "Sugar", 10, 11),
+            ("total_fat", 0, 1),
+            ("total_carbohydrates", 2, 3),
+            ("saturated_fat", 4, 5),
+            ("dietary_fiber", 6, 7),
+            ("trans_fat", 8, 9),
+            ("sugars", 10, 11),
         ]
 
-        for section, nutrient, idx_amt, idx_dv in mappings:
-            data[section][nutrient]["Amount"] = safe(idx_amt, nutrition_fields)
-            data[section][nutrient]["Daily Value"] = safe(idx_dv, nutrition_fields)
+        for key, idx_amt, idx_dv in mappings:
+            amt_raw = safe(idx_amt, nutrition_fields)
+            dv_raw = safe(idx_dv, nutrition_fields)
+            amount, unit = parse_amount_and_unit(amt_raw)
+            dv = to_numeric(dv_raw)
+            data[key] = {"amount": amount, "dv": dv, "unit": unit}
 
-        data["Cholesterol"]["Amount"] = safe(12, nutrition_fields)
-        data["Cholesterol"]["Daily Value"] = safe(13, nutrition_fields)
-        data["Protein"]["Amount"] = safe(14, nutrition_fields)
-        data["Protein"]["Daily Value"] = safe(15, nutrition_fields)
-        data["Sodium"]["Amount"] = safe(16, nutrition_fields)
-        data["Sodium"]["Daily Value"] = safe(17, nutrition_fields)
+        chol_amt, chol_unit = parse_amount_and_unit(safe(12, nutrition_fields))
+        data["cholesterol"] = {"amount": chol_amt, "dv": to_numeric(safe(13, nutrition_fields)), "unit": chol_unit}
 
-        vitamin_keys = ["Vitamin D", "Potassium", "Calcium", "Iron"]
-        for i, key in enumerate(vitamin_keys):
-            data["Vitamins"][key]["Daily Value"] = safe(i, vitamins)
+        prot_amt, prot_unit = parse_amount_and_unit(safe(14, nutrition_fields))
+        data["protein"] = {"amount": prot_amt, "dv": to_numeric(safe(15, nutrition_fields)), "unit": prot_unit}
 
-        return data
+        sodium_amt, sodium_unit = parse_amount_and_unit(safe(16, nutrition_fields))
+        data["sodium"] = {"amount": sodium_amt, "dv": to_numeric(safe(17, nutrition_fields)), "unit": sodium_unit}
+
+        vitamin_map = ["vitamin_d", "potassium", "calcium", "iron"]
+        for i, key in enumerate(vitamin_map):
+            dv = to_numeric(safe(i, vitamins))
+            data[key] = {"amount": None, "dv": dv, "unit": None}
+
+        return data  # type: ignore
 
 
 def _test_scraper():
     """Test the dining hall menus scraper."""
     # This link is for "Choice of Toppings", which has full nutrition
     link = "http://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=680005"
-
-    # This link is for "Shanghai Pork Noodles", which also has full nutrition
-    # link = "http://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=601067"
-
-    # This link is for an item that might be missing data (for testing robustness)
-    # link = "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=390047"
 
     scraper = Scraper()
     info = scraper.scrape(link=link)

@@ -13,15 +13,9 @@
 import { classifyDish, DietTag } from '@/utils/dietary';
 import { RawApiMenuItem, UIMenuItem, UIVenue } from '@/data';
 import { AllergenType, DietaryTagType, DiningHallType } from '@/data';
+import { api } from '@/hooks/use-next-api';
 
 const FETCH_MENU_DATA_URL = '/api/dining/locations/with-menus';
-
-interface RawVenue {
-  name: string;
-  menu: {
-    menus: RawApiMenuItem[];
-  };
-}
 
 /**
  * Fetch the menu data for the given menu ID.
@@ -35,15 +29,15 @@ const fetchMenuData = async (
   isCurrent: () => boolean
 ): Promise<UIVenue[] | null> => {
   try {
-    const response = await fetch(`${FETCH_MENU_DATA_URL}?menu_id=${menuId}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error fetching menu! status: ${response.status}`);
+    const { data, error }: any = await api.get(`${FETCH_MENU_DATA_URL}?menu_id=${menuId}`);
+    if (error) {
+      console.error(`Error fetching menu data for ${menuId}:`, error);
+      return null;
     }
-    const data: { locations: { location: RawVenue[] } } = await response.json();
+
     if (!isCurrent()) return null;
 
-    const uiVenues: UIVenue[] = data.locations.location.map((raw) => {
-      // 1. Create the flat list of items
+    const uiVenues: UIVenue[] = data.locations.location.map((raw: any) => {
       const allItems: UIMenuItem[] = (raw.menu.menus || []).map((x: RawApiMenuItem) => ({
         id: x.id,
         name: x.name,
@@ -55,18 +49,15 @@ const fetchMenuData = async (
         ingredients: x.ingredients || [],
       }));
 
-      // 2. Aggregate Allergens from all items for the Venue-level Set
       const venueAllergens = new Set<string>();
       allItems.forEach((item) => item.allergens.forEach((a) => venueAllergens.add(a)));
 
-      // 3. Helper to filter items into categories (Logic assumed based on your error message)
       const categorizedItems = {
-        'Main Entrée': allItems.filter((i) => true), // Replace 'true' with your category logic
+        'Main Entrée': allItems.filter(() => true),
         'Vegan Entrée': [],
         Soups: [],
       };
 
-      // 4. Return the full UIVenue object
       return {
         name: raw.name,
         items: categorizedItems,
@@ -77,6 +68,7 @@ const fetchMenuData = async (
       };
     });
 
+    console.log('uiVenues', uiVenues);
     return uiVenues;
   } catch (error) {
     if (isCurrent()) {
@@ -184,10 +176,12 @@ function buildDisplayData({
     return { ...venue, items };
   };
 
-  return appliedDiningHalls
+  const displayData = appliedDiningHalls
     .map(buildVenue)
     .filter((v): v is UIVenue => v !== null)
     .sort(sortByPinned);
+  console.log('displayData', displayData);
+  return displayData;
 }
 
 export { buildDisplayData, fetchMenuData };

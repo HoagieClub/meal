@@ -34,9 +34,6 @@ class CustomUser(AbstractUser):
     Attributes:
         net_id (str): University NetID; unique identifier for campus users.
         class_year (int): Expected graduation year, validated between 1900 and 2100.
-        dietary_restrictions (list of str): List of dietary restrictions/preferences.
-        daily_calorie_target (int): Target daily calorie intake (max 10000).
-        daily_protein_target (int): Target daily protein intake (max 1000).
         created_at (datetime): Timestamp when the record was created.
         updated_at (datetime): Timestamp when the record was last updated.
 
@@ -51,6 +48,42 @@ class CustomUser(AbstractUser):
     class_year = models.PositiveSmallIntegerField(
         null=True, blank=True, validators=[MinValueValidator(1900), MaxValueValidator(2100)]
     )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        """Meta class for the CustomUser model."""
+
+        db_table = "users"
+        verbose_name = _("user")
+        verbose_name_plural = _("users")
+
+    def __str__(self):
+        """Return the string representation of the CustomUser instance.
+
+        Returns:
+            str: The user's full name and net_id.
+
+        """
+        return f"{self.get_full_name()} ({self.net_id})"
+
+
+class UserProfile(models.Model):
+    """Detail user profile for personalized recommendations.
+
+    Attributes:
+        user (CustomUser): Associated user.
+        dietary_restrictions (list of str): List of dietary restrictions/preferences.
+        allergens (list of str): List of allergens.
+        dining_halls (list of str): List of visible dining halls.
+        daily_calorie_target (int): Target daily calorie intake (max 10000).
+        daily_protein_target (int): Target daily protein intake (max 1000).
+        show_nutrition (bool): Show nutrition information.
+        updated_at (datetime): Timestamp when the profile was last updated.
+
+    """
+
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="dietary_profile")
     dietary_restrictions = ArrayField(
         models.CharField(max_length=50),
         blank=True,
@@ -76,47 +109,6 @@ class CustomUser(AbstractUser):
         null=True, blank=True, validators=[MaxValueValidator(1000)]
     )
     show_nutrition = models.BooleanField(default=True, help_text=_("Show nutrition information"))
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        """Meta class for the CustomUser model."""
-
-        db_table = "users"
-        verbose_name = _("user")
-        verbose_name_plural = _("users")
-
-    def __str__(self):
-        """Return the string representation of the CustomUser instance.
-
-        Returns:
-            str: The user's full name and net_id.
-
-        """
-        return f"{self.get_full_name()} ({self.net_id})"
-
-
-class UserDietaryProfile(models.Model):
-    """Detail dietary profile for personalized recommendations.
-
-    Attributes:
-        user (CustomUser): Associated user.
-        favorite_menu_items (QuerySet[MenuItem]): Menu items marked as favorites.
-        excluded_ingredients (list of str): Ingredients the user wishes to avoid.
-        preferred_dining_halls (QuerySet[DiningVenue]): Dining halls preferred by the user.
-        cuisine_preferences (dict): Weighted cuisine type preferences.
-        meal_time_preferences (dict): Preferred dining times.
-        sustainability_preference (bool): Preference for sustainable options.
-        updated_at (datetime): Timestamp when the profile was last updated.
-
-    """
-
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="dietary_profile")
-    favorite_menu_items = models.ManyToManyField(MenuItem, related_name="favorited_by")
-    excluded_ingredients = ArrayField(models.CharField(max_length=100), blank=True, default=list)
-    cuisine_preferences = models.JSONField(default=dict, help_text=_("Weighted cuisine type preferences"))
-    meal_time_preferences = models.JSONField(default=dict, help_text=_("Preferred dining times"))
-    sustainability_preference = models.BooleanField(default=False, help_text=_("Preference for sustainable options"))
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

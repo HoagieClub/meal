@@ -15,34 +15,17 @@ copies of the Software, subject to the following conditions:
 This software is provided "as-is", without warranty of any kind.
 """
 
-from .user import CustomUser, UserDietaryProfile
+from .user import CustomUser
 from .dining import DiningVenue
-from .menu import Menu, MenuItem, MenuItemNutrient, MenuItemMetrics
-from .nutrition import UserMealLog, NutritionGoalType, UserGoal, DailyGoalProgress
-from .recommendation import (
-    FoodVector, UserVector, 
-    RecommendationAction, RecommendationFeedback, 
-    BanditModel, RecommendationExplanation, 
-    ExplanationTemplate,
-)
-from .engagement import UserStreak, UserPreferenceSnapshot, PreferenceChangeEvent
-from .meal_plan import MealPlanType, UserMealPlan, SwipeTransactionIndividual
-from .marketplace import SwipeListingStatus, SwipeListing, SwipeOffer, SwipeTransactionMarketplace
-from .achievement import AchievementCategory, Achievement, UserAchievement, Badge, UserBadge
-from .interest_graph import InterestNode, MenuItemInterest, UserInterest, SocialRecommendation
-from .experiment import RecommendationExperiment, ExperimentAssignment, ExperimentMetricLog
+from .menu import Menu, MenuItem, MenuItemNutrient
+from .engagement import MenuItemLike, MenuItemFavorite
 
 __all__ = [
-    "CustomUser", "UserDietaryProfile",
+    "CustomUser",
     "DiningVenue",
-    "Menu", "MenuItem", "MenuItemNutrient", "MenuItemMetrics",
-    "UserMealLog", "NutritionGoalType", "UserGoal", "DailyGoalProgress",
-    "FoodVector", "UserVector",
-    "RecommendationAction", "RecommendationFeedback", "BanditModel", "RecommendationExplanation", "ExplanationTemplate",
-    "UserStreak", "UserPreferenceSnapshot", "PreferenceChangeEvent",
-    "MealPlanType", "UserMealPlan", "SwipeTransactionIndividual",
-    "SwipeListingStatus", "SwipeListing", "SwipeOffer", "SwipeTransactionMarketplace",
-    "AchievementCategory", "Achievement", "UserAchievement", "Badge", "UserBadge",
-    "InterestNode", "MenuItemInterest", "UserInterest", "SocialRecommendation",
-    "RecommendationExperiment", "ExperimentAssignment", "ExperimentMetricLog",
+    "Menu",
+    "MenuItem",
+    "MenuItemNutrient",
+    "MenuItemLike",
+    "MenuItemFavorite",
 ]

@@ -1,17 +1,34 @@
+/**
+ * @overview Next.js Route Handler to fetch and update menu item ratings.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree or at
+ *
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
+
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
-import { error } from 'console';
 import { getAccessToken } from '@auth0/nextjs-auth0';
 
 const DEBUG = process.env.NODE_ENV === 'development';
+const GET_RATINGS_ROUTE = '/api/menu-items/ratings/';
+const UPDATE_RATINGS_ROUTE = '/api/menu-items/upvotes-bookmarks/update/';
 
+/**
+ * Fetches menu item ratings.
+ *
+ * @param req - The HTTP request object.
+ * @param params - The parameters object.
+ * @returns A NextResponse object with the menu item ratings.
+ */
 export async function GET(req: Request, { params }: { params: { id: string } }) {
-  return NextResponse.json(
-    { upvotes: 0, bookmarks: 0, hasUserUpvoted: false, hasUserBookmarked: false },
-    { status: 200 }
-  );
-
   try {
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
@@ -23,23 +40,22 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       return NextResponse.json({ error: 'Missing menu item ID' }, { status: 400 });
     }
 
-    const ROUTE = `/api/menu-items/upvotes-bookmarks/${menuItemId}/`;
-    const res = await request.getAuth(accessToken)(ROUTE, {});
+    const res = await request.getAuth(accessToken)(`${GET_RATINGS_ROUTE}${menuItemId}/`, {});
     const data = res.data || res;
     if (!data) {
-      return NextResponse.json({ error: 'Failed to fetch upvotes or bookmarks' }, { status: 404 });
+      return NextResponse.json({ error: 'Failed to fetch menu item ratings' }, { status: 404 });
     }
 
     return NextResponse.json(toCamelCase(data));
   } catch (error: any) {
-    DEBUG && console.error('Error fetching upvotes or bookmarks:', error);
+    DEBUG && console.error('Error fetching menu item ratings:', error);
     if (error?.status === 404) {
       return NextResponse.json({ error: 'Menu item not found' }, { status: 404 });
     }
 
     return NextResponse.json(
       {
-        error: 'Failed to fetch upvotes or bookmarks',
+        error: 'Failed to fetch menu item ratings',
         message: error.message || 'Unexpected error',
         ...(DEBUG && { details: error.stack }),
       },
@@ -48,6 +64,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
+/**
+ * Updates menu item ratings.
+ *
+ * @param req - The HTTP request object.
+ * @param params - The parameters object.
+ * @returns A NextResponse object with the updated menu item ratings.
+ */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   try {
     const { accessToken } = await getAccessToken();
@@ -60,33 +83,22 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ error: 'Missing menu item ID' }, { status: 400 });
     }
 
-    const body = await req.json();
-    const { action } = body;
-    if (!action || (action !== 'bookmark' && action !== 'upvote')) {
-      return NextResponse.json({ error: 'Invalid or missing action' }, { status: 400 });
-    }
-
-    const ROUTE = `/api/menu-items/upvotes-bookmarks/update/${menuItemId}/`;
-    const res = await request.postAuth(accessToken)(ROUTE, {
-      arg: {
-        action,
-      },
-    });
+    const res = await request.postAuth(accessToken)(`${UPDATE_RATINGS_ROUTE}${menuItemId}/`, {});
     const data = res.data || res;
     if (!data) {
-      return NextResponse.json({ error: 'Failed to update upvotes or bookmarks' }, { status: 404 });
+      return NextResponse.json({ error: 'Failed to update menu item ratings' }, { status: 404 });
     }
 
     return NextResponse.json(toCamelCase(data));
   } catch (error: any) {
-    DEBUG && console.error('Error updating upvotes or bookmarks:', error);
+    DEBUG && console.error('Error updating menu item ratings:', error);
     if (error?.status === 404) {
-      return NextResponse.json({ error: 'Failed to update upvotes or bookmarks' }, { status: 404 });
+      return NextResponse.json({ error: 'Failed to update menu item ratings' }, { status: 404 });
     }
 
     return NextResponse.json(
       {
-        error: 'Failed to update upvotes or bookmarks',
+        error: 'Failed to update menu item ratings',
         message: error instanceof Error ? error.message : 'Unexpected error',
         ...(DEBUG && { details: error.stack }),
       },

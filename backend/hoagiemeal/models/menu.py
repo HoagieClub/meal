@@ -58,10 +58,6 @@ class MenuItem(models.Model):
         link (str): URL linking to more details about the dish.
         allergens (list of str): List of allergens present.
         ingredients (list of str): List of ingredients used.
-        is_vegetarian (bool): Whether the item is vegetarian.
-        is_vegan (bool): Whether the item is vegan.
-        is_halal (bool): Whether the item is halal.
-        is_kosher (bool): Whether the item is kosher.
         dietary_flags (list of str): Raw dietary flags from the source (e.g., ["Vegetarian", "Halal"]).
         created_at (datetime): Timestamp when the record was created.
         updated_at (datetime): Timestamp when the record was last updated.
@@ -74,29 +70,12 @@ class MenuItem(models.Model):
     link = models.URLField(max_length=500, blank=True)
     allergens = ArrayField(models.CharField(max_length=100), blank=True, default=list)
     ingredients = ArrayField(models.CharField(max_length=255), blank=True, default=list)
-
-    # Dietary classification fields
-    is_vegetarian = models.BooleanField(
-        default=False, db_index=True, help_text=_("Determined from ingredients/allergens")
-    )
-    is_vegan = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
-    is_halal = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
-    is_kosher = models.BooleanField(default=False, db_index=True, help_text=_("Determined from ingredients/allergens"))
     dietary_flags = ArrayField(
         models.CharField(max_length=50),
         blank=True,
         default=list,
         help_text=_("Raw dietary flags from source (e.g., icons on nutrition page)"),
     )
-    upvote_count = models.PositiveIntegerField(
-        default=0,
-        help_text=_("Cached number of upvotes for this menu item"),
-    )
-    bookmark_count = models.PositiveIntegerField(
-        default=0,
-        help_text=_("Cached number of bookmarks for this menu item"),
-    )
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -104,14 +83,6 @@ class MenuItem(models.Model):
         """Meta class for the MenuItem model."""
 
         db_table = "menu_items"
-        indexes = [
-            models.Index(fields=["name"]),
-            models.Index(fields=["api_id"]),
-            models.Index(fields=["is_vegetarian"]),
-            models.Index(fields=["is_vegan"]),
-            models.Index(fields=["is_halal"]),
-            models.Index(fields=["is_kosher"]),
-        ]
 
     def __str__(self):
         """Return the string representation of the MenuItem instance."""
@@ -155,238 +126,150 @@ class MenuItemNutrient(models.Model):
         return f"Nutrients for {self.menu_item.name}"
 
 
-class MenuItemMetrics(models.Model):
-    """Aggregate metrics and cached computations for menu items.
+# class MenuItemMetrics(models.Model):
+#     """Aggregate metrics and cached computations for menu items.
 
-    Updated periodically via celery tasks.
+#     Updated periodically via celery tasks.
 
-    Attributes:
-        menu_item (MenuItem): Associated menu item.
-        times_served (int): Number of times the item has been served.
-        times_consumed (int): Number of times the item has been consumed.
-        avg_portion_size (float): Average portion size consumed.
-        popularity_score (float): Calculated popularity score.
-        seasonal_availability (list of int): Monthly availability pattern (1-12).
-        last_served (date): Last date the item was served.
-        common_pairings (list of int): IDs of commonly co-consumed menu items.
-        updated_at (datetime): Timestamp when the metrics were last updated.
+#     Attributes:
+#         menu_item (MenuItem): Associated menu item.
+#         times_served (int): Number of times the item has been served.
+#         times_consumed (int): Number of times the item has been consumed.
+#         avg_portion_size (float): Average portion size consumed.
+#         popularity_score (float): Calculated popularity score.
+#         seasonal_availability (list of int): Monthly availability pattern (1-12).
+#         last_served (date): Last date the item was served.
+#         common_pairings (list of int): IDs of commonly co-consumed menu items.
+#         updated_at (datetime): Timestamp when the metrics were last updated.
 
-    """
+#     """
 
-    menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="metrics")
-    times_served = models.PositiveIntegerField(default=0)
-    times_consumed = models.PositiveIntegerField(default=0)
-    avg_portion_size = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
-    popularity_score = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0.0, help_text=_("Calculated score based on consumption patterns")
-    )
-    seasonal_availability = ArrayField(
-        models.PositiveSmallIntegerField(), size=12, help_text=_("Monthly availability pattern (1-12)")
-    )
-    last_served = models.DateField(null=True, blank=True)
-    common_pairings = ArrayField(
-        models.BigIntegerField(), blank=True, default=list, help_text=_("IDs of commonly co-consumed menu items")
-    )
-    updated_at = models.DateTimeField(auto_now=True)
+#     menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="metrics")
+#     times_served = models.PositiveIntegerField(default=0)
+#     times_consumed = models.PositiveIntegerField(default=0)
+#     avg_portion_size = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+#     popularity_score = models.DecimalField(
+#         max_digits=5, decimal_places=2, default=0.0, help_text=_("Calculated score based on consumption patterns")
+#     )
+#     seasonal_availability = ArrayField(
+#         models.PositiveSmallIntegerField(), size=12, help_text=_("Monthly availability pattern (1-12)")
+#     )
+#     last_served = models.DateField(null=True, blank=True)
+#     common_pairings = ArrayField(
+#         models.BigIntegerField(), blank=True, default=list, help_text=_("IDs of commonly co-consumed menu items")
+#     )
+#     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        """Meta class for the MenuItemMetrics model."""
+#     class Meta:
+#         """Meta class for the MenuItemMetrics model."""
 
-        db_table = "menu_item_metrics"
-        indexes = [
-            models.Index(fields=["popularity_score"]),
-            models.Index(fields=["times_consumed"]),
-            models.Index(fields=["last_served"]),
-        ]
+#         db_table = "menu_item_metrics"
+#         indexes = [
+#             models.Index(fields=["popularity_score"]),
+#             models.Index(fields=["times_consumed"]),
+#             models.Index(fields=["last_served"]),
+#         ]
 
-    def __str__(self):
-        """Return the string representation of the MenuItemMetrics instance.
+#     def __str__(self):
+#         """Return the string representation of the MenuItemMetrics instance.
 
-        Returns:
-            str: A summary string linking metrics to the associated menu item.
+#         Returns:
+#             str: A summary string linking metrics to the associated menu item.
 
-        """
-        return f"Metrics for {self.menu_item.name}"
+#         """
+#         return f"Metrics for {self.menu_item.name}"
 
 
 # TODO: Should probably be used somewhere
-class MenuRating(models.Model):
-    """Stores user ratings for menu items.
+# class MenuRating(models.Model):
+#     """Stores user ratings for menu items.
 
-    Attributes:
-        user (CustomUser): The user who provided the rating.
-        menu_item (MenuItem): The (canonical) menu item being rated.
-        rating (float): User's rating of the menu item (1.0-5.0).
-        comment (str): Optional user comment about the menu item.
-        created_at (datetime): When the rating was created.
-        updated_at (datetime): When the rating was last updated.
-        is_anonymous (bool): Whether the rating should be displayed anonymously.
-        dining_experience (str): The overall dining experience context.
-        taste_rating (float): Specific rating for taste (1.0-5.0).
-        presentation_rating (float): Specific rating for presentation (1.0-5.0).
-        value_rating (float): Specific rating for value/portion size (1.0-5.0).
+#     Attributes:
+#         user (CustomUser): The user who provided the rating.
+#         menu_item (MenuItem): The (canonical) menu item being rated.
+#         rating (float): User's rating of the menu item (1.0-5.0).
+#         comment (str): Optional user comment about the menu item.
+#         created_at (datetime): When the rating was created.
+#         updated_at (datetime): When the rating was last updated.
+#         is_anonymous (bool): Whether the rating should be displayed anonymously.
+#         dining_experience (str): The overall dining experience context.
+#         taste_rating (float): Specific rating for taste (1.0-5.0).
+#         presentation_rating (float): Specific rating for presentation (1.0-5.0).
+#         value_rating (float): Specific rating for value/portion size (1.0-5.0).
 
-    """
+#     """
 
-    class DiningExperience(models.TextChoices):
-        """Dining experience choices for the MenuRating model."""
+#     class DiningExperience(models.TextChoices):
+#         """Dining experience choices for the MenuRating model."""
 
-        DINE_IN = "DI", _("Dine In")
-        TAKE_OUT = "TO", _("Take Out")
-        LATE_MEAL = "LM", _("Late Meal")
-        SPECIAL_EVENT = "SE", _("Special Event")
+#         DINE_IN = "DI", _("Dine In")
+#         TAKE_OUT = "TO", _("Take Out")
+#         LATE_MEAL = "LM", _("Late Meal")
+#         SPECIAL_EVENT = "SE", _("Special Event")
 
-    user = models.ForeignKey(
-        "CustomUser",
-        on_delete=models.CASCADE,
-        related_name="menu_ratings",
-        help_text=_("User who provided the rating"),
-    )
-    menu_item = models.ForeignKey(
-        MenuItem, on_delete=models.CASCADE, related_name="ratings", help_text=_("Menu item being rated")
-    )
-    rating = models.FloatField(
-        validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
-        help_text=_("Overall rating of the menu item (1.0-5.0)"),
-    )
-    comment = models.TextField(blank=True, help_text=_("Optional user comment about the menu item"))
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_anonymous = models.BooleanField(
-        default=False, help_text=_("Whether the rating should be displayed anonymously")
-    )
-    dining_experience = models.CharField(
-        max_length=2,
-        choices=DiningExperience.choices,
-        default=DiningExperience.DINE_IN,
-        help_text=_("The overall dining experience context"),
-    )
-    taste_rating = models.FloatField(
-        null=True,
-        blank=True,
-        validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
-        help_text=_("Specific rating for taste (1.0-5.0)"),
-    )
-    presentation_rating = models.FloatField(
-        null=True,
-        blank=True,
-        validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
-        help_text=_("Specific rating for presentation (1.0-5.0)"),
-    )
-    value_rating = models.FloatField(
-        null=True,
-        blank=True,
-        validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
-        help_text=_("Specific rating for value/portion size (1.0-5.0)"),
-    )
+#     user = models.ForeignKey(
+#         "CustomUser",
+#         on_delete=models.CASCADE,
+#         related_name="menu_ratings",
+#         help_text=_("User who provided the rating"),
+#     )
+#     menu_item = models.ForeignKey(
+#         MenuItem, on_delete=models.CASCADE, related_name="ratings", help_text=_("Menu item being rated")
+#     )
+#     rating = models.FloatField(
+#         validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
+#         help_text=_("Overall rating of the menu item (1.0-5.0)"),
+#     )
+#     comment = models.TextField(blank=True, help_text=_("Optional user comment about the menu item"))
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+#     is_anonymous = models.BooleanField(
+#         default=False, help_text=_("Whether the rating should be displayed anonymously")
+#     )
+#     dining_experience = models.CharField(
+#         max_length=2,
+#         choices=DiningExperience.choices,
+#         default=DiningExperience.DINE_IN,
+#         help_text=_("The overall dining experience context"),
+#     )
+#     taste_rating = models.FloatField(
+#         null=True,
+#         blank=True,
+#         validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
+#         help_text=_("Specific rating for taste (1.0-5.0)"),
+#     )
+#     presentation_rating = models.FloatField(
+#         null=True,
+#         blank=True,
+#         validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
+#         help_text=_("Specific rating for presentation (1.0-5.0)"),
+#     )
+#     value_rating = models.FloatField(
+#         null=True,
+#         blank=True,
+#         validators=[MinValueValidator(1.0), MaxValueValidator(5.0)],
+#         help_text=_("Specific rating for value/portion size (1.0-5.0)"),
+#     )
 
-    class Meta:
-        """Meta class for the MenuRating model."""
+#     class Meta:
+#         """Meta class for the MenuRating model."""
 
-        db_table = "menu_ratings"
-        unique_together = ["user", "menu_item"]
-        indexes = [
-            models.Index(fields=["user"]),
-            models.Index(fields=["menu_item"]),
-            models.Index(fields=["rating"]),
-            models.Index(fields=["created_at"]),
-            models.Index(fields=["dining_experience"]),
-        ]
-        ordering = ["-created_at"]
+#         db_table = "menu_ratings"
+#         unique_together = ["user", "menu_item"]
+#         indexes = [
+#             models.Index(fields=["user"]),
+#             models.Index(fields=["menu_item"]),
+#             models.Index(fields=["rating"]),
+#             models.Index(fields=["created_at"]),
+#             models.Index(fields=["dining_experience"]),
+#         ]
+#         ordering = ["-created_at"]
 
-    def __str__(self):
-        """Return the string representation of the MenuRating instance.
+#     def __str__(self):
+#         """Return the string representation of the MenuRating instance.
 
-        Returns:
-            str: A description of the rating.
+#         Returns:
+#             str: A description of the rating.
 
-        """
-        return f"Rating {self.rating} for {self.menu_item.name} by {self.user.get_full_name()}"
-
-
-class MenuItemUpvote(models.Model):
-    """Stores user upvotes for menu items.
-
-    Attributes:
-        user (CustomUser): The user who upvoted the item.
-        menu_item (MenuItem): The (canonical) menu item that was upvoted.
-        created_at (datetime): Timestamp when the upvote was created.
-    """
-
-    user = models.ForeignKey(
-        "CustomUser",
-        on_delete=models.CASCADE,
-        related_name="menu_item_upvotes",
-        help_text=_("User who upvoted the menu item"),
-    )
-    menu_item = models.ForeignKey(
-        MenuItem,
-        on_delete=models.CASCADE,
-        related_name="upvotes",
-        help_text=_("Menu item that was upvoted"),
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        """Meta class for the MenuItemUpvote model."""
-
-        db_table = "menu_item_upvotes"
-        unique_together = ["user", "menu_item"]
-        indexes = [
-            models.Index(fields=["user"]),
-            models.Index(fields=["menu_item"]),
-            models.Index(fields=["created_at"]),
-        ]
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        """Return the string representation of the MenuItemUpvote instance.
-
-        Returns:
-            str: A description of the upvote.
-        """
-        return f"{self.user} upvoted {self.menu_item.name}"
-
-
-class MenuItemBookmark(models.Model):
-    """Stores user bookmarks for menu items.
-
-    Attributes:
-        user (CustomUser): The user who bookmarked the item.
-        menu_item (MenuItem): The (canonical) menu item that was bookmarked.
-        created_at (datetime): Timestamp when the bookmark was created.
-    """
-
-    user = models.ForeignKey(
-        "CustomUser",
-        on_delete=models.CASCADE,
-        related_name="menu_item_bookmarks",
-        help_text=_("User who bookmarked the menu item"),
-    )
-    menu_item = models.ForeignKey(
-        MenuItem,
-        on_delete=models.CASCADE,
-        related_name="bookmarks",
-        help_text=_("Menu item that was bookmarked"),
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        """Meta class for the MenuItemBookmark model."""
-
-        db_table = "menu_item_bookmarks"
-        unique_together = ["user", "menu_item"]
-        indexes = [
-            models.Index(fields=["user"]),
-            models.Index(fields=["menu_item"]),
-            models.Index(fields=["created_at"]),
-        ]
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        """Return the string representation of the MenuItemBookmark instance.
-
-        Returns:
-            str: A description of the bookmark.
-        """
-        return f"{self.user} bookmarked {self.menu_item.name}"
+#         """
+#         return f"Rating {self.rating} for {self.menu_item.name} by {self.user.get_full_name()}"

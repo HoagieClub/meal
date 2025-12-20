@@ -15,11 +15,17 @@
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
 import { getCurrentMenuId } from '@/utils/dining';
-import toCamelCase from '@/utils/toCamelCase';
+import { toCamelCase } from '@/utils/toCamelCase';
 
 const ROUTE = '/api/dining/menu/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
+/**
+ * Fetches dining hall menu data.
+ *
+ * @param req - The HTTP request object.
+ * @returns A NextResponse object with the dining hall menu data.
+ */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);

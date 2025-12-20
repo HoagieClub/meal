@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -14,12 +14,17 @@
 
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
-import type { DiningLocation } from '@/types/dining';
-import toCamelCase from '@/utils/toCamelCase';
+import { toCamelCase } from '@/utils/toCamelCase';
 
 const ROUTE = '/api/dining/locations';
 const DEBUG = process.env.NODE_ENV === 'development';
 
+/**
+ * Fetches dining locations data.
+ *
+ * @param req - The HTTP request object.
+ * @returns A NextResponse object with the dining locations data.
+ */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -30,10 +35,10 @@ export async function GET(req: Request) {
 
     const locations =
       fmt === 'xml'
-        ? res.data?.locations?.location ?? []
+        ? (res.data?.locations?.location ?? [])
         : Array.isArray(res.data)
           ? res.data
-          : res.data?.data ?? [];
+          : (res.data?.data ?? []);
 
     if (!locations?.length)
       return NextResponse.json(
@@ -41,7 +46,7 @@ export async function GET(req: Request) {
           error: 'No dining locations found',
           message: 'No dining locations available',
           status: 404,
-          data: []
+          data: [],
         },
         { status: 404 }
       );
@@ -49,7 +54,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       data: toCamelCase(locations),
       message: 'Successfully fetched dining locations',
-      status: 200
+      status: 200,
     });
   } catch (error: unknown) {
     DEBUG && console.error('Error:', error);
@@ -60,7 +65,7 @@ export async function GET(req: Request) {
       {
         error: 'Failed to fetch dining locations',
         message,
-        ...(details && { details })
+        ...(details && { details }),
       },
       { status }
     );

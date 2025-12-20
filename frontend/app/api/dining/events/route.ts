@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -14,34 +14,36 @@
 
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
-import toCamelCase from '@/utils/toCamelCase';
+import { toCamelCase } from '@/utils/toCamelCase';
 import type { DiningEvent } from '@/types/dining';
 
 const ROUTE = '/api/dining/events/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
+/**
+ * Fetches dining events for a given place ID.
+ *
+ * @param req - The HTTP request object.
+ * @returns A NextResponse object with the dining events data.
+ */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const placeId = searchParams.get('placeId') || '1007';
 
     const res = await request.get<DiningEvent[]>()(ROUTE, {
-      arg: { place_id: placeId }
+      arg: { place_id: placeId },
     });
 
     if (!res.data || res.data.length === 0) {
-      return NextResponse.json(
-        { error: `No events found for place ${placeId}` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `No events found for place ${placeId}` }, { status: 404 });
     }
 
     return NextResponse.json({
       data: toCamelCase(res.data),
       message: 'Successfully fetched dining events',
-      status: 200
+      status: 200,
     });
-
   } catch (error: unknown) {
     DEBUG && console.error('Error:', error);
 
@@ -50,12 +52,11 @@ export async function GET(req: Request) {
         error: 'Failed to fetch dining events',
         message: error instanceof Error ? error.message : 'Unexpected error',
         ...(DEBUG && {
-          details: error instanceof Error ? error.stack : String(error)
-        })
+          details: error instanceof Error ? error.stack : String(error),
+        }),
       },
       {
-        status: error instanceof Error && 'status' in error ?
-          (error as any).status : 500
+        status: error instanceof Error && 'status' in error ? (error as any).status : 500,
       }
     );
   }

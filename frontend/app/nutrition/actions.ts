@@ -12,7 +12,7 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { NutrientInfo } from './page';
+import { NutrientInfo } from '@/data';
 import { MacronutrientRowProps, MicronutrientRowProps } from './components/nutrient-rows';
 
 /**

@@ -12,7 +12,7 @@
 
 import { IconButton } from 'evergreen-ui';
 
-const LinkedinIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
+export const LinkedinIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
     width='20'
@@ -31,7 +31,7 @@ const LinkedinIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGS
   </svg>
 );
 
-const TwitterIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
+export const TwitterIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
     width='20'
@@ -48,7 +48,7 @@ const TwitterIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSV
   </svg>
 );
 
-const GithubIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
+export const GithubIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
     width='20'
@@ -65,7 +65,7 @@ const GithubIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVG
   </svg>
 );
 
-const WebsiteIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
+export const WebsiteIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>) => (
   <svg
     {...props}
     width='20'
@@ -84,7 +84,7 @@ const WebsiteIcon = (props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSV
   </svg>
 );
 
-const SocialIconButton = ({
+export const SocialIconButton = ({
   href,
   label,
   icon,
@@ -106,5 +106,3 @@ const SocialIconButton = ({
     background={background || 'transparent'}
   />
 );
-
-export { LinkedinIcon, TwitterIcon, GithubIcon, WebsiteIcon, SocialIconButton };

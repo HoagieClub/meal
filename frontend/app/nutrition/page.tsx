@@ -34,7 +34,8 @@ import { MenuItemDetails } from '@/data';
 import { api } from '@/hooks/use-next-api';
 
 const GET_MENU_ITEM_DETAILS_URL = '/api/menu-items/details/';
-const GET_MENU_ITEM_UPVOTES_BOOKMARKS_URL = '/api/menu-items/upvotes-bookmarks/';
+const GET_MENU_ITEM_RATINGS_URL = '/api/menu-items/ratings/';
+const FAVORITE_MENU_ITEM_URL = '/api/menu-items/favorite/';
 
 /**
  * Nutrition label page component.
@@ -45,12 +46,14 @@ const NutritionLabelPage = () => {
   const [data, setData] = useState<MenuItemDetails | null>(null);
   const [loading, setLoading] = useState({
     details: true,
-    upvotesBookmarks: true,
+    ratings: true,
+    favorite: true,
   });
   const [error, setError] = useState<string | null>(null);
-  const [upvotes, setUpvotes] = useState(0);
-  const [upvoted, setUpvoted] = useState(false);
-  const [bookmarked, setBookmarked] = useState(false);
+  const [ratings, setRatings] = useState<any>(null);
+  const [personalRating, setPersonalRating] = useState<number | null>(null);
+  const [favorite, setFavorite] = useState<boolean | null>(null);
+
   const theme = useTheme();
   const searchParams = useSearchParams();
   const menuItemApiId = searchParams.get('id');
@@ -68,12 +71,24 @@ const NutritionLabelPage = () => {
       console.log('Fetched menu item data:', data);
     }
 
-    setLoading((prev) => ({ ...prev, details: false }));
+    setLoading(false);
   };
 
   // fetch menu item upvotes and bookmarks from backend
-  const getMenuItemUpvotesBookmarks = async () => {
-    const { data, error } = await api.get(`${GET_MENU_ITEM_UPVOTES_BOOKMARKS_URL}${menuItemApiId}`);
+  const getMenuItemRatings = async () => {
+    setLoading((prev) => ({ ...prev, upvotesBookmarks: false }));
+    return;
+    const { data, error } = await api.get(`${GET_MENU_ITEM_RATINGS_URL}${menuItemApiId}`);
+
+    if (error) {
+      console.error('Error fetching menu item ratings:', error);
+      setError(error.message || 'Failed to load menu item ratings');
+      setUpvotes(0);
+      setUpvoted(false);
+      setBookmarked(false);
+    } else {
+      console.log('Menu item ratings data:', data);
+    }
 
     if (error) {
       console.error('Error fetching upvotes and bookmarks:', error);
@@ -96,6 +111,7 @@ const NutritionLabelPage = () => {
 
   // post menu item upvotes and bookmarks to backend
   const postMenuItemUpvotesBookmarks = async ({ action }: { action: 'upvote' | 'bookmark' }) => {
+    return;
     const { error, data } = await api.post(
       `${GET_MENU_ITEM_UPVOTES_BOOKMARKS_URL}${menuItemApiId}`,
       {
