@@ -99,18 +99,12 @@ class Scraper:
         "iron": {"amount": None, "dv": None, "unit": None},
     }
 
-    def scrape(self, link: str) -> dict:
+    def scrape_api_url(self, api_url: str) -> dict:
         """Fetch HTML and extract menu item information in one call."""
-        logger.info(f"Fetching HTML content for link: {link}.")
-
-        try:
-            response = requests.get(link, timeout=10)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.content, "lxml")
-        except Exception as error:
-            logger.error(f"Unexpected error fetching HTML content: {error}")
-            return deepcopy(self.EMPTY_MENU_SCHEMA)  # type: ignore
-
+        response = requests.get(api_url, timeout=10)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, "lxml")
         scraped_data: NutritionSchema = deepcopy(self.EMPTY_MENU_SCHEMA)
 
         def extract_field(text: str) -> str:
@@ -263,8 +257,43 @@ def _test_scraper():
     link = "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=680000"
 
     scraper = Scraper()
-    scraped_info = scraper.scrape(link=link)
-    pprint.pprint(scraped_info)
+    scraped_data = scraper.scrape_api_url(api_url=link)
+    pprint.pprint(scraped_data)
+
+    """
+    Example output:
+    {'allergens': ['Fish', 'Soybeans', 'Alcohol'],
+    'calcium': {'amount': None, 'dv': 1, 'unit': None},
+    'calories': {'amount': 45, 'dv': None, 'unit': None},
+    'calories_from_fat': {'amount': None, 'dv': None, 'unit': None},
+    'cholesterol': {'amount': 12, 'dv': None, 'unit': 'mg'},
+    'dietary_fiber': {'amount': Decimal('0.4'), 'dv': 1, 'unit': 'g'},
+    'ingredients': ['Chipotle beef (ground beef vegetable blend (grass-fed beef, '
+                    'spare starter (cauliflower, zucchini, tomato, onion, '
+                    'eggplant, salt, garlic powder, black pepper), carrot fiber), '
+                    'tomato strips, chipotle peppers)',
+                    'Cumin tofu (tofu, cumin, smoked paprika, coriander, black '
+                    'pepper, kosher salt)',
+                    'Chipotle honey chicken (halal chicken breast, hot sauce '
+                    '(aged cayenne red peppers, vinegar, water, salt, garlic '
+                    'powder.), honey, chipotle peppers)',
+                    'Dijon salmon (salmon filet, dijon mustard (water, vinegar, '
+                    'mustard seed, salt, white wine, fruit pectin, citric  acid, '
+                    'tartaric acid, sugar, spice.), flat leaf parsley, whole '
+                    'grain mustard (water, mustard seeds, vinegar, salt))'],
+    'iron': {'amount': None, 'dv': 3, 'unit': None},
+    'name': 'Choice of Beef Chicken Salmon or Tofu',
+    'potassium': {'amount': None, 'dv': 2, 'unit': None},
+    'protein': {'amount': 5, 'dv': None, 'unit': 'g'},
+    'saturated_fat': {'amount': Decimal('0.6'), 'dv': 2, 'unit': 'g'},
+    'serving_size': {'amount': 6, 'dv': None, 'unit': 'oz'},
+    'sodium': {'amount': Decimal('128.9'), 'dv': 6, 'unit': 'mg'},
+    'sugars': {'amount': Decimal('0.7'), 'dv': None, 'unit': 'g'},
+    'total_carbohydrates': {'amount': Decimal('1.3'), 'dv': 1, 'unit': 'g'},
+    'total_fat': {'amount': Decimal('2.1'), 'dv': 3, 'unit': 'g'},
+    'trans_fat': {'amount': Decimal('0.1'), 'dv': None, 'unit': 'g'},
+    'vitamin_d': {'amount': None, 'dv': 0, 'unit': None}}
+    """
 
 
 if __name__ == "__main__":

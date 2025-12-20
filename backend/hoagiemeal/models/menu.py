@@ -12,8 +12,47 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
-
+from typing import TypedDict, Set, Dict, Union, Tuple, Optional, List
+from decimal import Decimal
 from hoagiemeal.models.dining import DiningVenue
+
+
+Numeric = Union[int, Decimal]
+
+
+class AmountField(TypedDict, total=False):
+    amount: Optional[Numeric]
+    dv: Optional[Numeric]
+    unit: Optional[str]
+
+
+class NutritionSchema(TypedDict, total=False):
+    name: Optional[str]
+    ingredients: Optional[List[str]]
+    allergens: Optional[List[str]]
+
+    serving_size: AmountField
+
+    calories: AmountField
+    calories_from_fat: AmountField
+
+    total_fat: AmountField
+    saturated_fat: AmountField
+    trans_fat: AmountField
+
+    cholesterol: AmountField
+    sodium: AmountField
+
+    total_carbohydrates: AmountField
+    dietary_fiber: AmountField
+    sugars: AmountField
+
+    protein: AmountField
+
+    vitamin_d: AmountField
+    potassium: AmountField
+    calcium: AmountField
+    iron: AmountField
 
 
 class Menu(models.Model):
@@ -124,6 +163,57 @@ class MenuItemNutrient(models.Model):
     def __str__(self):
         """Return the string representation of the MenuItemNutrient instance."""
         return f"Nutrients for {self.menu_item.name}"
+
+    @classmethod
+    def from_nutrition_data(cls, menu_item: MenuItem, nutrition_data: NutritionSchema) -> Tuple[models.Model, bool]:
+        """Create nutrients if missing. If already exists, do nothing.
+
+        Args:
+            menu_item: The MenuItem instance to create nutrients for.
+            nutrition_data: The nutrition data to create nutrients from.
+
+        Returns:
+            Tuple[models.Model, bool]: The created nutrients instance and a boolean indicating if it was created.
+
+        """
+        existing = cls.objects.filter(menu_item=menu_item).first()
+        if existing:
+            return existing, False
+
+        def amt(field: str):
+            field_data = nutrition_data.get(field) or {}
+            return field_data.get("amount")
+
+        def dv(field: str):
+            field_data = nutrition_data.get(field) or {}
+            return field_data.get("dv")
+
+        def unit(field: str):
+            field_data = nutrition_data.get(field) or {}
+            return field_data.get("unit")
+
+        instance = cls.objects.create(
+            menu_item=menu_item,
+            serving_size=amt("serving_size"),
+            serving_unit=unit("serving_size"),
+            calories=amt("calories"),
+            calories_from_fat=amt("calories_from_fat"),
+            total_fat=amt("total_fat"),
+            saturated_fat=amt("saturated_fat"),
+            trans_fat=amt("trans_fat"),
+            cholesterol=amt("cholesterol"),
+            sodium=amt("sodium"),
+            total_carbohydrates=amt("total_carbohydrates"),
+            dietary_fiber=amt("dietary_fiber"),
+            sugars=amt("sugars"),
+            protein=amt("protein"),
+            vitamin_d=dv("vitamin_d"),
+            potassium=dv("potassium"),
+            calcium=dv("calcium"),
+            iron=dv("iron"),
+        )
+
+        return instance, True
 
 
 # class MenuItemMetrics(models.Model):
