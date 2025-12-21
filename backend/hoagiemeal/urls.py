@@ -20,7 +20,7 @@ from django.urls import path
 #     post_upvotes_bookmarks_for_menu_item,
 # )
 # from hoagiemeal.api.places import get_open_places
-from hoagiemeal.api.user import verify
+# from hoagiemeal.api.user import verify
 
 
 urlpatterns = [
@@ -49,6 +49,6 @@ urlpatterns = [
     # path("api/user/ratings/", get_user_ratings, name="user-ratings"),
     # path("api/menu-items/top-rated/", get_top_rated_menu_items, name="top-rated-menu-items"),
     # path("api/user/me/", me, name="auth-me"),
-    path("api/auth/verify/", verify, name="auth-verify"),
+    # path("api/auth/verify/", verify, name="auth-verify"),
     # path("api/user/update/", update_user_profile, name="update-user-profile"),
 ]

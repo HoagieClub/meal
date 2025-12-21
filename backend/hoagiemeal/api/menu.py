@@ -475,3 +475,16 @@ def get_dining_menu_with_menu_item_nutrition_info_for_locations(request):
     except Exception as e:
         logger.error(f"Error in get_dining_menu_with_menu_item_nutrition_info_for_locations: {e}")
         return Response({"error": str(e)}, status=500)
+    
+    
+#################### Test endpoints and classes #########################
+
+if __name__ == "__main__":
+    menu_service = MenuService()
+    location_api = LocationsAPI()
+    locations = location_api.get_all_category_locations(category_ids=["2", "3"])
+    print(locations)
+    
+    # pass
+    # menu = menu_service.get_menu_with_menu_item_nutrition_info(location_id="1", menu_id="2025-12-10-Breakfast")
+    # print(menu)
