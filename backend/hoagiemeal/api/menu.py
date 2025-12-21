@@ -84,13 +84,11 @@ class MenuAPI(StudentApp):
             params = {"locationID": location_id, "menuID": menu_id}
             response = self._make_request(self.DINING_MENU, params=params)
             api_menu_data = msj.decode(response)
+
             if isinstance(api_menu_data, dict):
                 return api_menu_data.get("menus", [])
             elif isinstance(api_menu_data, list):
                 return api_menu_data
-            else:
-                logger.error(f"Invalid menu data for location_id: {location_id}, menu_id: {menu_id}.")
-                return []
         except Exception as e:
             logger.error(f"Error fetching menu for location_id: {location_id}, menu_id: {menu_id}: {e}")
             return []
@@ -438,6 +436,64 @@ def get_dining_menu(request):
 
 
 @api_view(["GET"])
+def get_dining_menus_for_locations(request):
+    """Django view function to get dining menus for all locations."""
+    try:
+        menu_id = request.GET.get("menu_id")
+        if not menu_id:
+            return Response({"error": "menu_id is required"}, status=400)
+
+        locations_api = LocationsAPI()
+        locations = locations_api.get_all_category_locations(category_ids=["2", "3"])
+        locations = locations["locations"]["location"]
+        if len(locations) == 0:
+            logger.error("No locations found.")
+            return Response({"error": "No locations found"}, status=404)
+
+        menus = []
+        for location in locations:
+            menu = menu_service.get_menu(location["dbid"], menu_id)
+            if len(menu) == 0:
+                logger.error(f"No menu found for location_id: {location['dbid']}, menu_id: {menu_id}.")
+                continue
+            location["menu"] = menu
+            menus.append(location)
+        return Response(menus)
+    except Exception as e:
+        logger.error(f"Error in get_dining_menus_for_locations view: {e}")
+        return Response({"error": str(e)}, status=500)
+
+
+@api_view(["GET"])
+def get_dining_menus_for_locations_and_menu_ids(request):
+    """Django view function to get dining menus for all locations and select menu ids."""
+    try:
+        menu_ids = request.GET.getlist("menu_ids")
+        if len(menu_ids) == 0:
+            logger.error("menu_ids are required.")
+            return Response({"error": "menu_ids are required."}, status=404)
+
+        locations_api = LocationsAPI()
+        locations = locations_api.get_all_category_locations(category_ids=["2", "3"])
+        locations = locations["locations"]["location"]
+        if len(locations) == 0:
+            logger.error("No locations found.")
+            return Response({"error": "No locations found"}, status=404)
+
+        menus = []
+        for menu_id in menu_ids:
+            menus = get_dining_menus_for_locations(request)
+            if len(menus) == 0:
+                logger.error(f"No menus found for menu_id: {menu_id}.")
+                return Response({"error": "No menus found"}, status=404)
+            menus.append({menu_id: menus})
+        return Response(menus)
+    except Exception as e:
+        logger.error(f"Error in get_dining_menus_for_locations_and_menu_ids view: {e}")
+        return Response({"error": str(e)}, status=500)
+
+
+@api_view(["GET"])
 def get_dining_menu_with_menu_item_nutrition_info(request):
     """Django view function to get dining menu with nutrition information for each menu item."""
     try:
@@ -463,6 +519,7 @@ def get_dining_menu_with_menu_item_nutrition_info_for_locations(request):
 
         locations_api = LocationsAPI()
         locations = locations_api.get_all_category_locations(category_ids=["2", "3"])
+        locations = locations["locations"]["location"]
 
         locations_with_menu = []
         for location in locations:
@@ -475,16 +532,3 @@ def get_dining_menu_with_menu_item_nutrition_info_for_locations(request):
     except Exception as e:
         logger.error(f"Error in get_dining_menu_with_menu_item_nutrition_info_for_locations: {e}")
         return Response({"error": str(e)}, status=500)
-    
-    
-#################### Test endpoints and classes #########################
-
-if __name__ == "__main__":
-    menu_service = MenuService()
-    location_api = LocationsAPI()
-    locations = location_api.get_all_category_locations(category_ids=["2", "3"])
-    print(locations)
-    
-    # pass
-    # menu = menu_service.get_menu_with_menu_item_nutrition_info(location_id="1", menu_id="2025-12-10-Breakfast")
-    # print(menu)
