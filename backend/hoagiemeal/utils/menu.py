@@ -16,7 +16,8 @@ furnished to do so, subject to the following conditions:
 This software is provided "as-is", without warranty of any kind.
 """
 
-from typing import List, Set
+from typing import List, Set, TypedDict, Optional, Union
+from decimal import Decimal
 
 
 MEAT_KEYWORDS = {
@@ -264,6 +265,66 @@ def classify_by_dietary_flags(ingredients: List[str], allergens: List[str], name
     return final_flags
 
 
-def transform_nutrition_data(nutrition_data: dict) -> dict:
-    """Transform nutrition data to a format that can be used to create a MenuItemNutrient instance or returned as a response."""
-    
+Numeric = Union[int, Decimal]
+
+
+class AmountField(TypedDict, total=False):
+    amount: Optional[Numeric]
+    dv: Optional[Numeric]
+    unit: Optional[str]
+
+
+class NutritionSchema(TypedDict, total=False):
+    name: Optional[str]
+    ingredients: Optional[List[str]]
+    allergens: Optional[List[str]]
+    serving_size: AmountField
+    calories: AmountField
+    calories_from_fat: AmountField
+    total_fat: AmountField
+    saturated_fat: AmountField
+    trans_fat: AmountField
+    cholesterol: AmountField
+    sodium: AmountField
+    total_carbohydrates: AmountField
+    dietary_fiber: AmountField
+    sugars: AmountField
+    protein: AmountField
+    vitamin_d: AmountField
+    potassium: AmountField
+    calcium: AmountField
+    iron: AmountField
+    dietary_flags: List[str]
+
+
+def parse_nutrition_data_for_menu_item_nutrient(nutrition_data: NutritionSchema) -> dict:
+    """Parse nutrition data to a format that can be used to create a menu item nutrient instance ."""
+
+    return {
+        "serving_size": nutrition_data.get("serving_size", {}).get("amount"),
+        "serving_size_unit": nutrition_data.get("serving_size", {}).get("unit"),
+        "calories": nutrition_data.get("calories", {}).get("amount"),
+        "calories_from_fat": nutrition_data.get("calories_from_fat", {}).get("amount"),
+        "total_fat": nutrition_data.get("total_fat", {}).get("amount"),
+        "saturated_fat": nutrition_data.get("saturated_fat", {}).get("amount"),
+        "trans_fat": nutrition_data.get("trans_fat", {}).get("amount"),
+        "cholesterol": nutrition_data.get("cholesterol", {}).get("amount"),
+        "sodium": nutrition_data.get("sodium", {}).get("amount"),
+        "total_carbohydrates": nutrition_data.get("total_carbohydrates", {}).get("amount"),
+        "dietary_fiber": nutrition_data.get("dietary_fiber", {}).get("amount"),
+        "sugars": nutrition_data.get("sugars", {}).get("amount"),
+        "protein": nutrition_data.get("protein", {}).get("amount"),
+        "vitamin_d": nutrition_data.get("vitamin_d", {}).get("dv"),
+        "potassium": nutrition_data.get("potassium", {}).get("dv"),
+        "calcium": nutrition_data.get("calcium", {}).get("dv"),
+        "iron": nutrition_data.get("iron", {}).get("dv"),
+    }
+
+
+def parse_nutrition_data_for_menu_item(nutrition_data: NutritionSchema) -> dict:
+    """Parse nutrition data to a format that can be used to update a menu item instance."""
+
+    return {
+        "allergens": nutrition_data.get("allergens", []),
+        "ingredients": nutrition_data.get("ingredients", []),
+    }
