@@ -328,3 +328,17 @@ def parse_nutrition_data_for_menu_item(nutrition_data: NutritionSchema) -> dict:
         "allergens": nutrition_data.get("allergens", []),
         "ingredients": nutrition_data.get("ingredients", []),
     }
+
+
+def parse_location_data_for_dining_venue(location: dict) -> dict:
+    """Parse dining location data to a format that can be used to create a dining location instance."""
+
+    return {
+        "name": location.get("name"),
+        "map_name": location.get("mapName"),
+        "database_id": location.get("dbid"),
+        "latitude": location["geoloc"].get("lat"),
+        "longitude": location["geoloc"].get("long"),
+        "building_name": location["building"].get("name"),
+        "amenities": [amenity["name"] for amenity in location["amenities"]["amenity"]],
+    }

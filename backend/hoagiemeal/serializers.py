@@ -4,6 +4,7 @@ from rest_framework import serializers
 from django.db import models
 from hoagiemeal.models.user import CustomUser, UserProfile
 from hoagiemeal.models.menu import MenuItem, MenuItemNutrient
+from hoagiemeal.models.dining import DiningVenue
 
 
 class GeoLocationSerializer(serializers.Serializer):
@@ -281,3 +282,12 @@ class FullMenuItemSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "api_id", "created_at", "updated_at"]
+
+
+class DiningVenueSerializer(serializers.ModelSerializer):
+    """Serializer for the DiningVenue model."""
+
+    class Meta:
+        model = DiningVenue
+        fields = "__all__"
+        read_only_fields = ["id", "database_id", "created_at", "updated_at"]

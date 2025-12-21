@@ -2,13 +2,12 @@
 
 from django.contrib import admin
 from django.urls import path
-from hoagiemeal.api.locations import get_dining_locations
+from hoagiemeal.api.locations import get_dining_locations, get_all_dining_locations
 from hoagiemeal.api.menu import (
     get_dining_menu_with_menu_item_nutrition_info,
     get_dining_menu,
     get_dining_menu_with_menu_item_nutrition_info_for_locations,
     get_dining_menus_for_locations,
-    get_dining_menus_for_locations_and_menu_ids,
 )
 
 # from hoagiemeal.api.dining import (
@@ -34,9 +33,10 @@ from hoagiemeal.api.menu import (
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/dining/locations/", get_dining_locations, name="dining-locations"),
+    path("api/dining/locations/all/", get_all_dining_locations, name="all-dining-locations"),
+    
     path("api/dining/menu/", get_dining_menu, name="dining-menu"),
     path("api/dining/menu/all-locations/", get_dining_menus_for_locations, name="dining-menu-for-all-locations"),
-    path("api/dining/menu/all-locations-and-menu-ids/", get_dining_menus_for_locations_and_menu_ids, name="dining-menu-for-all-locations-and-menu-ids"),
     path(
         "api/dining/menu/with-nutrition/",
         get_dining_menu_with_menu_item_nutrition_info,

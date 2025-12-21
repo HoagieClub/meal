@@ -43,7 +43,7 @@ from hoagiemeal.serializers import (
     MenuItemNutrientSerializer,
 )
 from hoagiemeal.utils.scraper import Scraper
-from hoagiemeal.utils.menu import (
+from hoagiemeal.utils.dining import (
     classify_by_dietary_flags,
     parse_nutrition_data_for_menu_item_nutrient,
     parse_nutrition_data_for_menu_item,
@@ -461,35 +461,6 @@ def get_dining_menus_for_locations(request):
         return Response(menus)
     except Exception as e:
         logger.error(f"Error in get_dining_menus_for_locations view: {e}")
-        return Response({"error": str(e)}, status=500)
-
-
-@api_view(["GET"])
-def get_dining_menus_for_locations_and_menu_ids(request):
-    """Django view function to get dining menus for all locations and select menu ids."""
-    try:
-        menu_ids = request.GET.getlist("menu_ids")
-        if len(menu_ids) == 0:
-            logger.error("menu_ids are required.")
-            return Response({"error": "menu_ids are required."}, status=404)
-
-        locations_api = LocationsAPI()
-        locations = locations_api.get_all_category_locations(category_ids=["2", "3"])
-        locations = locations["locations"]["location"]
-        if len(locations) == 0:
-            logger.error("No locations found.")
-            return Response({"error": "No locations found"}, status=404)
-
-        menus = []
-        for menu_id in menu_ids:
-            menus = get_dining_menus_for_locations(request)
-            if len(menus) == 0:
-                logger.error(f"No menus found for menu_id: {menu_id}.")
-                return Response({"error": "No menus found"}, status=404)
-            menus.append({menu_id: menus})
-        return Response(menus)
-    except Exception as e:
-        logger.error(f"Error in get_dining_menus_for_locations_and_menu_ids view: {e}")
         return Response({"error": str(e)}, status=500)
 
 
