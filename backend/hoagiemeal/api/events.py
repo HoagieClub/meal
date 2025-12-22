@@ -37,7 +37,7 @@ class EventsAPI(StudentApp):
     DINING_EVENTS = "/dining/events"
     schemas = Schemas()
 
-    def get_events(self, place_id: str = "1007") -> dict:
+    def get_events(self, place_id: str = "1088") -> dict:
         """Fetch dining venue open hours as an iCal stream for a given place_id.
 
         NOTE: "1007" seems to correspond to the Princeton Dining Calendar.
@@ -238,7 +238,7 @@ def get_all_dining_events(category_ids=None):
     # Fetch events for each location
     for location in locations:
         name = location["name"]
-        dbid = location["dbid"]
+        dbid = location["database_id"]
 
         events = get_events_for_location(dbid, name)
         all_location_events[name] = {"location_info": location, "events": events}
@@ -272,7 +272,7 @@ def get_dining_events_for_date(date_str, category_ids=None):
     # Fetch events for each location
     for location in locations:
         name = location["name"]
-        dbid = location["dbid"]
+        dbid = location["database_id"]
 
         events = get_events_for_location_with_date(dbid, name, date_str)
         all_location_events[name] = {"location_info": location, "events": events}

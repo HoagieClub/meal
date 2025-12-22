@@ -289,5 +289,5 @@ class DiningVenueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DiningVenue
-        fields = "__all__"
-        read_only_fields = ["id", "database_id", "created_at", "updated_at"]
+        exclude = ["updated_at", "created_at"]
+        read_only_fields = ["id", "database_id", "category_id", "created_at", "updated_at"]

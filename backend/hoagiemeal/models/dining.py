@@ -48,7 +48,7 @@ class DiningVenue(models.Model):
     building_name = models.CharField(max_length=255)
     amenities = ArrayField(models.CharField(max_length=100), blank=True, default=list)
     is_active = models.BooleanField(default=True, help_text=_("Whether this dining hall is currently operational"))
-    operation_hours = models.JSONField(null=True, blank=True, help_text=_("Operating hours in JSON format"))
+    category_id = models.PositiveIntegerField(help_text=_("The category ID of the dining venue"), null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -59,6 +59,7 @@ class DiningVenue(models.Model):
         indexes = [
             models.Index(fields=["database_id"]),
             models.Index(fields=["name"]),
+            models.Index(fields=["category_id"]),
         ]
         
     

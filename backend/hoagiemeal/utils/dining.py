@@ -19,149 +19,7 @@ This software is provided "as-is", without warranty of any kind.
 from typing import List, Set, TypedDict, Optional, Union
 from decimal import Decimal
 
-
-MEAT_KEYWORDS = {
-    "chicken",
-    "beef",
-    "pork",
-    "lamb",
-    "bacon",
-    "ham",
-    "turkey",
-    "duck",
-    "veal",
-    "sausage",
-    "pepperoni",
-    "salami",
-    "prosciutto",
-    "chorizo",
-    "bison",
-    "venison",
-    "goat",
-    "mutton",
-    "anchovy",
-    "anchovies",
-    "tuna",
-    "salmon",
-    "cod",
-    "trout",
-    "sardine",
-    "sardines",
-    "shrimp",
-    "crab",
-    "lobster",
-    "clam",
-    "clams",
-    "oyster",
-    "oysters",
-    "mussel",
-    "mussels",
-    "scallop",
-    "scallops",
-    "crayfish",
-    "squid",
-    "octopus",
-    "calamari",
-    "caviar",
-    "roe",
-    "poultry",
-    "meat",
-    "game",
-    "fish",
-}
-
-DAIRY_EGG_HONEY_KEYWORDS = {
-    "milk",
-    "cheese",
-    "butter",
-    "cream",
-    "yogurt",
-    "kefir",
-    "ghee",
-    "casein",
-    "caseinate",
-    "whey",
-    "lactose",
-    "egg",
-    "eggs",
-    "mayonnaise",
-    "honey",
-    "royal jelly",
-    "beeswax",
-}
-
-HIDDEN_ANIMAL_KEYWORDS = {
-    "gelatin",
-    "lard",
-    "tallow",
-    "suet",
-    "collagen",
-    "cochineal",
-    "carmine",
-    "isinglass",
-    "shellac",
-    "rennet",
-}
-
-PORK_KEYWORDS = {
-    "pork",
-    "bacon",
-    "ham",
-    "lard",
-    "gelatin",
-    "pepperoni",
-    "salami",
-    "prosciutto",
-    "chorizo",
-    "pancetta",
-}
-
-NON_KOSHER_SEAFOOD_KEYWORDS = {
-    "shrimp",
-    "crab",
-    "lobster",
-    "clam",
-    "clams",
-    "oyster",
-    "oysters",
-    "mussel",
-    "mussels",
-    "scallop",
-    "scallops",
-    "crayfish",
-    "squid",
-    "octopus",
-    "calamari",
-    "catfish",
-    "swordfish",
-    "shark",
-    "eel",
-    "sturgeon",
-}
-
-ALCOHOL_KEYWORDS = {
-    "alcohol",
-    "wine",
-    "beer",
-    "lager",
-    "ale",
-    "stout",
-    "cider",
-    "brandy",
-    "cognac",
-    "rum",
-    "whiskey",
-    "whisky",
-    "gin",
-    "vodka",
-    "tequila",
-    "vermouth",
-    "sherry",
-    "port",
-    "sake",
-    "liqueur",
-    "mead",
-}
+from hoagiemeal.utils.logger import logger
 
 
 def classify_by_dietary_flags(ingredients: List[str], allergens: List[str], name: str, description: str) -> List[str]:
@@ -177,6 +35,148 @@ def classify_by_dietary_flags(ingredients: List[str], allergens: List[str], name
         A list of dietary flags.
 
     """
+    MEAT_KEYWORDS = {
+        "chicken",
+        "beef",
+        "pork",
+        "lamb",
+        "bacon",
+        "ham",
+        "turkey",
+        "duck",
+        "veal",
+        "sausage",
+        "pepperoni",
+        "salami",
+        "prosciutto",
+        "chorizo",
+        "bison",
+        "venison",
+        "goat",
+        "mutton",
+        "anchovy",
+        "anchovies",
+        "tuna",
+        "salmon",
+        "cod",
+        "trout",
+        "sardine",
+        "sardines",
+        "shrimp",
+        "crab",
+        "lobster",
+        "clam",
+        "clams",
+        "oyster",
+        "oysters",
+        "mussel",
+        "mussels",
+        "scallop",
+        "scallops",
+        "crayfish",
+        "squid",
+        "octopus",
+        "calamari",
+        "caviar",
+        "roe",
+        "poultry",
+        "meat",
+        "game",
+        "fish",
+    }
+
+    DAIRY_EGG_HONEY_KEYWORDS = {
+        "milk",
+        "cheese",
+        "butter",
+        "cream",
+        "yogurt",
+        "kefir",
+        "ghee",
+        "casein",
+        "caseinate",
+        "whey",
+        "lactose",
+        "egg",
+        "eggs",
+        "mayonnaise",
+        "honey",
+        "royal jelly",
+        "beeswax",
+    }
+
+    HIDDEN_ANIMAL_KEYWORDS = {
+        "gelatin",
+        "lard",
+        "tallow",
+        "suet",
+        "collagen",
+        "cochineal",
+        "carmine",
+        "isinglass",
+        "shellac",
+        "rennet",
+    }
+
+    PORK_KEYWORDS = {
+        "pork",
+        "bacon",
+        "ham",
+        "lard",
+        "gelatin",
+        "pepperoni",
+        "salami",
+        "prosciutto",
+        "chorizo",
+        "pancetta",
+    }
+
+    NON_KOSHER_SEAFOOD_KEYWORDS = {
+        "shrimp",
+        "crab",
+        "lobster",
+        "clam",
+        "clams",
+        "oyster",
+        "oysters",
+        "mussel",
+        "mussels",
+        "scallop",
+        "scallops",
+        "crayfish",
+        "squid",
+        "octopus",
+        "calamari",
+        "catfish",
+        "swordfish",
+        "shark",
+        "eel",
+        "sturgeon",
+    }
+
+    ALCOHOL_KEYWORDS = {
+        "alcohol",
+        "wine",
+        "beer",
+        "lager",
+        "ale",
+        "stout",
+        "cider",
+        "brandy",
+        "cognac",
+        "rum",
+        "whiskey",
+        "whisky",
+        "gin",
+        "vodka",
+        "tequila",
+        "vermouth",
+        "sherry",
+        "port",
+        "sake",
+        "liqueur",
+        "mead",
+    }
 
     def get_tokens(text: str) -> Set[str]:
         """Tokenize and normalize text into searchable terms."""
@@ -300,45 +300,52 @@ class NutritionSchema(TypedDict, total=False):
 def parse_nutrition_data_for_menu_item_nutrient(nutrition_data: NutritionSchema) -> dict:
     """Parse nutrition data to a format that can be used to create a menu item nutrient instance ."""
 
+    serving_size = nutrition_data.get("serving_size", {}).get("amount")
+    serving_size_unit = nutrition_data.get("serving_size", {}).get("unit")
+    calories = nutrition_data.get("calories", {}).get("amount")
+    calories_from_fat = nutrition_data.get("calories_from_fat", {}).get("amount")
+    total_fat = nutrition_data.get("total_fat", {}).get("amount")
+    saturated_fat = nutrition_data.get("saturated_fat", {}).get("amount")
+    trans_fat = nutrition_data.get("trans_fat", {}).get("amount")
+    cholesterol = nutrition_data.get("cholesterol", {}).get("amount")
+    sodium = nutrition_data.get("sodium", {}).get("amount")
+    total_carbohydrates = nutrition_data.get("total_carbohydrates", {}).get("amount")
+    dietary_fiber = nutrition_data.get("dietary_fiber", {}).get("amount")
+    sugars = nutrition_data.get("sugars", {}).get("amount")
+    protein = nutrition_data.get("protein", {}).get("amount")
+    vitamin_d = nutrition_data.get("vitamin_d", {}).get("dv")
+    potassium = nutrition_data.get("potassium", {}).get("dv")
+    calcium = nutrition_data.get("calcium", {}).get("dv")
+    iron = nutrition_data.get("iron", {}).get("dv")
+
     return {
-        "serving_size": nutrition_data.get("serving_size", {}).get("amount"),
-        "serving_size_unit": nutrition_data.get("serving_size", {}).get("unit"),
-        "calories": nutrition_data.get("calories", {}).get("amount"),
-        "calories_from_fat": nutrition_data.get("calories_from_fat", {}).get("amount"),
-        "total_fat": nutrition_data.get("total_fat", {}).get("amount"),
-        "saturated_fat": nutrition_data.get("saturated_fat", {}).get("amount"),
-        "trans_fat": nutrition_data.get("trans_fat", {}).get("amount"),
-        "cholesterol": nutrition_data.get("cholesterol", {}).get("amount"),
-        "sodium": nutrition_data.get("sodium", {}).get("amount"),
-        "total_carbohydrates": nutrition_data.get("total_carbohydrates", {}).get("amount"),
-        "dietary_fiber": nutrition_data.get("dietary_fiber", {}).get("amount"),
-        "sugars": nutrition_data.get("sugars", {}).get("amount"),
-        "protein": nutrition_data.get("protein", {}).get("amount"),
-        "vitamin_d": nutrition_data.get("vitamin_d", {}).get("dv"),
-        "potassium": nutrition_data.get("potassium", {}).get("dv"),
-        "calcium": nutrition_data.get("calcium", {}).get("dv"),
-        "iron": nutrition_data.get("iron", {}).get("dv"),
+        "serving_size": serving_size,
+        "serving_size_unit": serving_size_unit,
+        "calories": calories,
+        "calories_from_fat": calories_from_fat,
+        "total_fat": total_fat,
+        "saturated_fat": saturated_fat,
+        "trans_fat": trans_fat,
+        "cholesterol": cholesterol,
+        "sodium": sodium,
+        "total_carbohydrates": total_carbohydrates,
+        "dietary_fiber": dietary_fiber,
+        "sugars": sugars,
+        "protein": protein,
+        "vitamin_d": vitamin_d,
+        "potassium": potassium,
+        "calcium": calcium,
+        "iron": iron,
     }
 
 
 def parse_nutrition_data_for_menu_item(nutrition_data: NutritionSchema) -> dict:
     """Parse nutrition data to a format that can be used to update a menu item instance."""
 
-    return {
-        "allergens": nutrition_data.get("allergens", []),
-        "ingredients": nutrition_data.get("ingredients", []),
-    }
-
-
-def parse_location_data_for_dining_venue(location: dict) -> dict:
-    """Parse dining location data to a format that can be used to create a dining location instance."""
+    allergens = nutrition_data.get("allergens", [])
+    ingredients = nutrition_data.get("ingredients", [])
 
     return {
-        "name": location.get("name"),
-        "map_name": location.get("mapName"),
-        "database_id": location.get("dbid"),
-        "latitude": location["geoloc"].get("lat"),
-        "longitude": location["geoloc"].get("long"),
-        "building_name": location["building"].get("name"),
-        "amenities": [amenity["name"] for amenity in location["amenities"]["amenity"]],
+        "allergens": allergens,
+        "ingredients": ingredients,
     }

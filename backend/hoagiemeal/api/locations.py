@@ -30,7 +30,6 @@ from hoagiemeal.api.schemas import Schemas
 from hoagiemeal.models.dining import DiningVenue
 from django.db import transaction
 from typing import TypedDict, List
-from hoagiemeal.utils.dining import parse_location_data_for_dining_venue
 from hoagiemeal.serializers import DiningVenueSerializer
 
 
@@ -40,7 +39,7 @@ class LocationsAPI(StudentApp):
     DINING_LOCATIONS = "/dining/locations"
     schemas = Schemas()
 
-    def get_locations(self, category_id: str = "2", fmt: str = "xml") -> dict:
+    def get_locations(self, category_id: str = "2", fmt: str = "xml") -> list:
         """Fetch a list of dining locations in XML format.
 
         NOTE: The API expects the parameters to be in camelCase.
@@ -51,8 +50,9 @@ class LocationsAPI(StudentApp):
           fmt (str): The format of the response. Defaults to "xml".
 
         Returns:
-          dict: A dictionary containing the dining locations.
-          Structure:
+          list: A list of dining locations.
+
+          API Response Structure:
           [
             {
                 "name": str,
@@ -80,10 +80,29 @@ class LocationsAPI(StudentApp):
                     ]
                 }
             }
-        ]
+          ]
+
+          Parsed Location Data Structure:
+          [
+            {
+               "name": str,
+               "map_name": str,
+               "database_id": str,
+               "latitude": str,
+               "longitude": str,
+               "building_name": str,
+               "amenities": [str],
+               "is_active": bool,
+               "category_id": int,
+            }
+          ]
 
         """
         logger.info(f"Fetching dining locations for category {category_id}.")
+        if category_id[0] not in ["2", "3"]:
+            logger.error(f"Invalid category ID: {category_id[0]}.")
+            raise ValueError(f"Invalid category ID: {category_id[0]}.")
+
         response = self._make_request(
             self.DINING_LOCATIONS,
             params={"categoryId": category_id},
@@ -94,37 +113,13 @@ class LocationsAPI(StudentApp):
             logger.error(f"Invalid XML format for dining locations (category {category_id}).")
             raise ValueError(f"Invalid XML format for dining locations (category {category_id}).")
         locations = self._parse_xml(response).get("locations", {}).get("location", [])
+        locations = [parse_location_data(location) for location in locations]
+
+        if len(locations) == 0:
+            logger.error(f"No locations found for category {category_id}.")
+            return []
+        logger.info(f"Retrieved {len(locations)} dining locations for category {category_id}.")
         return locations
-
-    def get_all_category_locations(self, category_ids=None, fmt: str = "xml") -> list:
-        """Fetch dining locations from multiple categories and combine them.
-
-        Args:
-          category_ids (list): List of category IDs to fetch. Defaults to ["2", "3"].
-          fmt (str): The format of the response. Defaults to "xml".
-
-        Returns:
-          dict: A dictionary containing combined dining locations from all categories.
-
-        """
-        if category_ids is None:
-            category_ids = ["2", "3"]
-
-        logger.info(f"Fetching dining locations for categories: {', '.join(category_ids)}")
-        all_locations = []
-
-        for category_id in category_ids:
-            try:
-                response = self.get_locations(category_id=category_id, fmt=fmt)
-                if isinstance(response, list):
-                    all_locations.extend(response)
-                else:
-                    all_locations.append(response)
-            except Exception as e:
-                logger.error(f"Error fetching locations for category {category_id}: {e}")
-
-        logger.info(f"Retrieved {len(all_locations)} dining locations from categories: {', '.join(category_ids)}")
-        return all_locations
 
 
 class LocationsCache:
@@ -140,51 +135,56 @@ class LocationsCache:
             list: A list of dining venue data.
 
         """
+        logger.info(f"Getting cached dining locations for categories: {', '.join(category_ids)}")
         if category_ids is None:
             category_ids = ["2", "3"]
+        if not all(category_id in ["2", "3"] for category_id in category_ids):
+            logger.error(f"Invalid category IDs: {category_ids}.")
+            raise ValueError(f"Invalid category IDs: {category_ids}.")
 
         locations = DiningVenue.objects.filter(category_id__in=category_ids)
         if len(locations) == 0:
             logger.error(f"No locations found for category {category_ids}.")
             return []
 
-        dining_venues_data = [DiningVenueSerializer(location).data for location in locations]
-        logger.info(f"Retrieved {len(dining_venues_data)} dining locations for category {category_ids}.")
-        return dining_venues_data
+        serializer = DiningVenueSerializer(locations, many=True)
+        logger.info(f"Retrieved {len(serializer.data)} dining locations for category {category_ids}.")
+        return serializer.data
 
-    def cache_locations(self, locations: list, category_ids=None) -> list:
-        """Cache dining locations for a given category.
+    def cache_locations(self, locations: list) -> list:
+        """Cache dining locations.
 
         Args:
-            category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
             locations (list): The list of locations to cache.
 
         Returns:
             list: A list of dining venue data.
 
         """
-        if category_ids is None:
-            category_ids = ["2", "3"]
-
+        logger.info(f"Caching {len(locations)} dining locations.")
         if len(locations) == 0:
-            logger.error(f"No locations found for category {category_ids}.")
+            logger.error("No locations to cache.")
             return []
 
         dining_venues = []
         for location in locations:
+            database_id = location.get("database_id")
+            category_id = location.get("category_id")
             try:
                 with transaction.atomic():
-                    parsed_location = parse_location_data_for_dining_venue(location)
-                    dining_venue, _ = DiningVenue.objects.get_or_create(**parsed_location)
-                    dining_venue.save()
-
-                    dining_venue_data = DiningVenueSerializer(dining_venue).data
-                    dining_venues.append(dining_venue_data)
-                    logger.info(f"Cached location: {dining_venue_data.get('name')} for category {category_ids}.")
+                    exists = DiningVenue.objects.filter(database_id=database_id, category_id=category_id).exists()
+                    if exists:
+                        continue
+                    dining_venue, _ = DiningVenue.objects.get_or_create(**location)
+                    dining_venues.append(DiningVenueSerializer(dining_venue).data)
             except Exception as e:
-                logger.error(f"Error caching location {location.get('name')} for category {category_ids}: {e}")
+                logger.error(f"Error caching location {location.get('name')}: {e}")
                 continue
 
+        if len(dining_venues) == 0:
+            logger.error("No locations cached.")
+            return []
+        logger.info(f"Cached {len(dining_venues)} dining locations.")
         return dining_venues
 
 
@@ -195,26 +195,46 @@ class LocationsService:
     LOCATIONS_CACHE = LocationsCache()
 
     def get_locations(self, category_ids=None) -> list:
-        """Get dining locations from the cache or API."""
+        """Get dining locations from the cache or API.
+
+        Args:
+            category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
+
+        Returns:
+            list: A list of dining venue data.
+
+        """
+        logger.info(
+            f"Getting dining locations for categories: {', '.join(category_ids if category_ids else ['2', '3'])}"
+        )
         cached_locations = self.LOCATIONS_CACHE.get_cached_locations(category_ids)
         if len(cached_locations) > 0:
             return cached_locations
 
         api_locations = self.LOCATIONS_API.get_all_category_locations(category_ids)
-        api_locations = api_locations["locations"]["location"]
         if len(api_locations) == 0:
             logger.error(f"No locations found for category {category_ids}.")
             return []
         return api_locations
 
-    def cache_locations(self, category_ids=None) -> list:
-        """Cache dining locations for a given category."""
+    def get_or_cache_locations(self, category_ids=None) -> list:
+        """Get or cache dining locations for a given category.
+
+        Args:
+            category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
+
+        Returns:
+            list: A list of dining venue data.
+
+        """
+        logger.info(
+            f"Getting or caching dining locations for categories: {', '.join(category_ids if category_ids else ['2', '3'])}"
+        )
         cached_locations = self.LOCATIONS_CACHE.get_cached_locations(category_ids)
         if len(cached_locations) > 0:
             return cached_locations
 
         api_locations = self.LOCATIONS_API.get_all_category_locations(category_ids)
-        api_locations = api_locations["locations"]["location"]
         cached_locations = self.LOCATIONS_CACHE.cache_locations(api_locations)
         if len(cached_locations) == 0:
             logger.error(f"No locations cached for category {category_ids}.")
@@ -225,16 +245,28 @@ class LocationsService:
 #################### Exposed endpoints #########################
 
 locations_service = LocationsService()
-locations_api = LocationsAPI()
 
 
 @api_view(["GET"])
 @cache_page(60 * 5)
 def get_dining_locations(request):
-    """Django view function to get dining locations."""
+    """Django view function to get dining locations.
+
+    Args:
+        request (Request): The HTTP request object.
+        category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
+
+    Returns:
+        Response: The HTTP response object.
+        locations (list): A list of dining venue data.
+
+    """
     try:
+        logger.info(
+            f"Getting dining locations for categories: {', '.join(request.GET.getlist('category_id', ['2', '3']))}"
+        )
         category_ids = request.GET.getlist("category_id", ["2", "3"])
-        locations = locations_api.get_locations(category_ids)
+        locations = locations_service.get_locations(category_ids)
         return Response(locations)
     except Exception as e:
         logger.error(f"Error in get_dining_locations view: {e}")
@@ -243,57 +275,126 @@ def get_dining_locations(request):
 
 @api_view(["GET"])
 @cache_page(60 * 5)
-def get_all_dining_locations(request):
-    """Django view function to get all dining locations."""
+def get_or_cache_locations(request):
+    """Django view function to get or cache dining locations for a given category.
+
+    Args:
+        request (Request): The HTTP request object.
+        category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
+
+    Returns:
+        Response: The HTTP response object.
+        locations (list): A list of dining venue data.
+
+    """
     try:
-        locations = locations_api.get_all_category_locations(category_ids=["2", "3"])
+        logger.info(
+            f"Getting or caching dining locations for categories: {', '.join(request.GET.getlist('category_id', ['2', '3']))}"
+        )
+        category_ids = request.GET.getlist("category_id", ["2", "3"])
+        locations = locations_service.get_or_cache_locations(category_ids)
         return Response(locations)
     except Exception as e:
-        logger.error(f"Error in get_all_dining_locations view: {e}")
+        logger.error(f"Error in get_or_cache_locations view: {e}")
         return Response({"error": str(e)}, status=500)
 
 
 #################### Utility functions for working with dining data #########################
 
 
-def get_all_dining_locations_utility(category_ids=None):
-    """Fetch all dining locations and return them as a list of dictionaries.
+def parse_location_data(location: dict) -> dict:
+    """Parse dining location data to a format that can be used to create a dining location instance.
 
     Args:
-      category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
+        location (dict): The location data to parse.
 
     Returns:
-      list: A list of dictionaries containing location information.
+        dict: The parsed location data.
+        Returned data structure:
+        {
+            "name": str,
+            "map_name": str,
+            "database_id": str,
+            "latitude": str,
+            "longitude": str,
+            "building_name": str,
+            "amenities": [str],
+            "is_active": bool,
+            "category_id": int,
+        }
 
     """
-    if category_ids is None:
-        category_ids = ["2", "3"]  # Default to residential colleges and cafes/specialty venues
+    amenities = location.get("amenities", {}).get("amenity", [])
+    if isinstance(amenities, dict):
+        amenities = [amenities]
+    amenity_list = [amenity.get("name") for amenity in amenities]
 
-    try:
-        response = locations_api.get_all_category_locations(category_ids)
-        locations = []
+    name = location.get("name", "").strip()
+    map_name = location.get("mapName", "").strip()
+    latitude = location.get("geoloc", {}).get("lat", "").strip()
+    longitude = location.get("geoloc", {}).get("long", "").strip()
+    building_name = location.get("building", {}).get("name", "").strip()
+    database_id = location.get("dbid", "").strip()
+    is_active = True
 
-        for location in response["locations"]["location"]:
-            loc_info = {
-                "name": location.get("name"),
-                "map_name": location.get("mapName"),
-                "dbid": location.get("dbid"),
-                "latitude": location["geoloc"].get("lat"),
-                "longitude": location["geoloc"].get("long"),
-                "building_name": location["building"].get("name"),
-            }
+    inactive_suffixes = [" - closed", " -closed"]
+    for suffix in inactive_suffixes:
+        lower_suffix = suffix.lower()
 
-            # Handle both single and multiple amenities
-            amenities_data = location["amenities"]["amenity"]
-            if isinstance(amenities_data, list):
-                loc_info["amenities"] = [amenity["name"] for amenity in amenities_data]
-            else:
-                loc_info["amenities"] = [amenities_data["name"]]
+        if name.lower().endswith(lower_suffix):
+            name = name[: -len(suffix)].rstrip()
+            is_active = False
 
-            locations.append(loc_info)
+        if map_name.lower().endswith(lower_suffix):
+            map_name = map_name[: -len(suffix)].rstrip()
+            is_active = False
 
-        logger.info(f"Retrieved {len(locations)} dining locations from categories: {', '.join(category_ids)}")
-        return locations
-    except Exception as e:
-        logger.error(f"Error fetching dining locations: {e}")
-        return []
+    remove_suffix = "-Fri & Sat Dinner Hours based on sundown & service times"
+    if name.endswith(remove_suffix):
+        name = name[: -len(remove_suffix)].rstrip()
+    if map_name.endswith(remove_suffix):
+        map_name = map_name[: -len(remove_suffix)].rstrip()
+
+    CATEGORY_2_DINING_VENUES = {
+        "Center for Jewish Life",
+        "Forbes College",
+        "Graduate College",
+        "Mathey College",
+        "Rockefeller College",
+        "Whitman & Butler Colleges",
+        "Yeh College & New College West",
+    }
+    CATEGORY_3_DINING_VENUES = {
+        "Atrium Cafe",
+        "Cafe 701",
+        "Cafe Vivian",
+        "Chancellor Green Cafe",
+        "Chemistry CaFe",
+        "EQuad Cafe",
+        "Frist Gallery",
+        "Garden Room",
+        "Genomics Cafe",
+        "Meadows Cafe",
+        "Mosaic Restaurant",
+        "Sally Frank Cafe at Prospect House",
+        "Shultz Cafe",
+        "Studio 34",
+        "Tiger Tea Room",
+        "Witherspoon's",
+    }
+
+    category_id = 2 if name in CATEGORY_2_DINING_VENUES else 3 if name in CATEGORY_3_DINING_VENUES else None
+    if category_id is None:
+        logger.error(f"Unknown category for dining venue: {name}")
+
+    return {
+        "name": name,
+        "map_name": map_name,
+        "database_id": database_id,
+        "latitude": latitude,
+        "longitude": longitude,
+        "building_name": building_name,
+        "amenities": amenity_list,
+        "is_active": is_active,
+        "category_id": category_id,
+    }
