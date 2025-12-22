@@ -93,7 +93,7 @@ class Scraper:
         "iron": {"amount": None, "dv": None, "unit": None},
     }
 
-    def scrape_api_url(self, api_url: str) -> NutritionSchema:
+    def scrape_api_url(self, api_url: str) -> dict:
         """Fetch HTML and extract menu item information in one call."""
         response = requests.get(api_url, timeout=10)
         response.raise_for_status()

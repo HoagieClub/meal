@@ -45,15 +45,6 @@ class DiningLocationSerializer(serializers.Serializer):
         return [amenities_data["name"]]
 
 
-class MenuItemSerializer(serializers.Serializer):
-    """Serializer for the MenuItem model."""
-
-    id = serializers.CharField()
-    name = serializers.CharField()
-    description = serializers.CharField()
-    link = serializers.CharField()
-
-
 class DiningEventSerializer(serializers.Serializer):
     """Serializer for the DiningEvent model."""
 
@@ -189,8 +180,6 @@ class UserSerializer(serializers.ModelSerializer):
             "net_id",
             "class_year",
             "auth0_id",
-            "created_at",
-            "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
@@ -209,9 +198,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "daily_calorie_target",
             "daily_protein_target",
             "show_nutrition",
-            "updated_at",
         ]
-        read_only_fields = ["id", "user", "updated_at"]
+        read_only_fields = ["id", "user", "created_at", "updated_at"]
 
 
 class MenuItemNutrientSerializer(serializers.ModelSerializer):
@@ -219,26 +207,8 @@ class MenuItemNutrientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MenuItemNutrient
-        fields = [
-            "serving_size",
-            "serving_unit",
-            "calories",
-            "calories_from_fat",
-            "total_fat",
-            "saturated_fat",
-            "trans_fat",
-            "cholesterol",
-            "sodium",
-            "total_carbohydrates",
-            "dietary_fiber",
-            "sugars",
-            "protein",
-            "vitamin_d",
-            "potassium",
-            "calcium",
-            "iron",
-        ]
-        read_only_fields = ["id", "menu_item", "updated_at"]
+        exclude = ["updated_at", "created_at"]
+        read_only_fields = ["id", "menu_item", "created_at", "updated_at"]
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
@@ -246,41 +216,18 @@ class MenuItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MenuItem
-        fields = [
-            "id",
-            "api_id",
-            "name",
-            "description",
-            "link",
-            "allergens",
-            "ingredients",
-            "dietary_flags",
-            "created_at",
-            "updated_at",
-        ]
+        exclude = ["updated_at", "created_at"]
         read_only_fields = ["id", "api_id", "created_at", "updated_at"]
 
 
 class FullMenuItemSerializer(serializers.ModelSerializer):
     """Serializer for a MenuItem with all details including nutrients, dietary info, and ratings."""
 
-    nutrient_info = MenuItemNutrientSerializer(read_only=True)
+    nutrition = MenuItemNutrientSerializer(read_only=True)
 
     class Meta:
         model = MenuItem
-        fields = [
-            "id",
-            "api_id",
-            "name",
-            "description",
-            "link",
-            "allergens",
-            "ingredients",
-            "dietary_flags",
-            "nutrition",
-            "created_at",
-            "updated_at",
-        ]
+        exclude = ["updated_at", "created_at"]
         read_only_fields = ["id", "api_id", "created_at", "updated_at"]
 
 

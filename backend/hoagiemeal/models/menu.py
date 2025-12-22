@@ -131,7 +131,7 @@ class MenuItem(models.Model):
 class MenuItemNutrient(models.Model):
     """Provide detailed nutritional information for a menu item."""
 
-    menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="nutrient_info")
+    menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="nutrition")
     serving_size = models.CharField(max_length=50, blank=True)
     serving_unit = models.CharField(max_length=20, blank=True)
     calories = models.PositiveSmallIntegerField(null=True, blank=True, db_index=True)
@@ -150,6 +150,7 @@ class MenuItemNutrient(models.Model):
     calcium = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     iron = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Meta class for the MenuItemNutrient model."""
@@ -163,6 +164,7 @@ class MenuItemNutrient(models.Model):
     def __str__(self):
         """Return the string representation of the MenuItemNutrient instance."""
         return f"Nutrients for {self.menu_item.name}"
+
 
 # class MenuItemMetrics(models.Model):
 #     """Aggregate metrics and cached computations for menu items.
