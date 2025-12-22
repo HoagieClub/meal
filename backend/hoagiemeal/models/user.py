@@ -21,9 +21,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.contrib.postgres.fields import ArrayField
 
-from hoagiemeal.models.menu import MenuItem
-from hoagiemeal.models.dining import DiningVenue
-
 
 class CustomUser(AbstractUser):
     """Extend user model for the Hoagie Meal application.
