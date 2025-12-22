@@ -54,7 +54,7 @@ from hoagiemeal.utils.data import (
     NON_KOSHER_SEAFOOD_KEYWORDS,
     ALCOHOL_KEYWORDS,
 )
-from hoagiemeal.archives.menus import SAMPLE_MENUS
+from hoagiemeal.utils.data import SAMPLE_MENUS
 
 USE_SAMPLE_MENUS = True
 
@@ -851,27 +851,6 @@ def parse_nutrition_data_for_menu_item_nutrient(nutrition_data: dict) -> dict:
     Returns:
         dict: The parsed nutrition data.
 
-    Return structure:
-    {
-        "serving_size": str,
-        "serving_unit": str,
-        "calories": int,
-        "calories_from_fat": int,
-        "total_fat": float,
-        "saturated_fat": float,
-        "trans_fat": float,
-        "cholesterol": float,
-        "sodium": float,
-        "total_carbohydrates": float,
-        "dietary_fiber": float,
-        "sugars": float,
-        "protein": float,
-        "vitamin_d": float,
-        "potassium": float,
-        "calcium": float,
-        "iron": float,
-    }
-
     """
     serving_size = nutrition_data.get("serving_size", {}).get("amount")
     serving_unit = nutrition_data.get("serving_size", {}).get("unit")
@@ -920,12 +899,6 @@ def parse_nutrition_data_for_menu_item(nutrition_data: dict) -> dict:
 
     Returns:
         dict: The parsed nutrition data.
-
-    Return structure:
-    {
-        "allergens": list[str],
-        "ingredients": list[str],
-    }
 
     """
     allergens = nutrition_data.get("allergens", [])

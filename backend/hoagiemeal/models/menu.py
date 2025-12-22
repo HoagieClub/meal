@@ -5,54 +5,21 @@ Copyright © 2021-2025 Hoagie Club and affiliates.
 Licensed under the MIT License. You may obtain a copy of the License at:
 
     https://github.com/hoagieclub/meal/blob/main/LICENSE
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, subject to the following conditions:
+
+This software is provided "as-is", without warranty of any kind.
 """
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
-from django.core.validators import MinValueValidator, MaxValueValidator
-from typing import TypedDict, Set, Dict, Union, Tuple, Optional, List
-from decimal import Decimal
 from hoagiemeal.models.dining import DiningVenue
-
-
-Numeric = Union[int, Decimal]
-
-
-class AmountField(TypedDict, total=False):
-    amount: Optional[Numeric]
-    dv: Optional[Numeric]
-    unit: Optional[str]
-
-
-class NutritionSchema(TypedDict, total=False):
-    name: Optional[str]
-    ingredients: Optional[List[str]]
-    allergens: Optional[List[str]]
-
-    serving_size: AmountField
-
-    calories: AmountField
-    calories_from_fat: AmountField
-
-    total_fat: AmountField
-    saturated_fat: AmountField
-    trans_fat: AmountField
-
-    cholesterol: AmountField
-    sodium: AmountField
-
-    total_carbohydrates: AmountField
-    dietary_fiber: AmountField
-    sugars: AmountField
-
-    protein: AmountField
-
-    vitamin_d: AmountField
-    potassium: AmountField
-    calcium: AmountField
-    iron: AmountField
 
 
 class Menu(models.Model):
@@ -101,7 +68,7 @@ class MenuItem(models.Model):
         created_at (datetime): Timestamp when the record was created.
         updated_at (datetime): Timestamp when the record was last updated.
     """
-    
+
     id = models.BigAutoField(primary_key=True)
     api_id = models.PositiveIntegerField(unique=True, help_text=_("Original menu item ID from the API"))
     name = models.CharField(max_length=255, db_index=True)

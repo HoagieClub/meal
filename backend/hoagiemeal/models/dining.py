@@ -34,7 +34,7 @@ class DiningVenue(models.Model):
         building_name (str): Name of the building.
         amenities (list of str): List of available amenities.
         is_active (bool): Operational status of the dining hall.
-        operation_hours (dict): Operating hours in JSON format.
+        category_id (int): The category ID of the dining venue.
         created_at (datetime): Timestamp when the record was created.
         updated_at (datetime): Timestamp when the record was last updated.
 

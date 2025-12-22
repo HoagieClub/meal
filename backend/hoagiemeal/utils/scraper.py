@@ -21,40 +21,12 @@ import requests
 from bs4 import BeautifulSoup
 from copy import deepcopy
 from hoagiemeal.utils.logger import logger
-from typing import TypedDict, Optional, List, Union
+from typing import Optional, List
 from decimal import Decimal
 import re
+from typing import Union
 
 Numeric = Union[int, Decimal]
-
-
-class AmountField(TypedDict, total=False):
-    amount: Optional[Numeric]
-    dv: Optional[Numeric]
-    unit: Optional[str]
-
-
-class NutritionSchema(TypedDict, total=False):
-    name: Optional[str]
-    ingredients: Optional[List[str]]
-    allergens: Optional[List[str]]
-    serving_size: AmountField
-    calories: AmountField
-    calories_from_fat: AmountField
-    total_fat: AmountField
-    saturated_fat: AmountField
-    trans_fat: AmountField
-    cholesterol: AmountField
-    sodium: AmountField
-    total_carbohydrates: AmountField
-    dietary_fiber: AmountField
-    sugars: AmountField
-    protein: AmountField
-    vitamin_d: AmountField
-    potassium: AmountField
-    calcium: AmountField
-    iron: AmountField
-    dietary_flags: List[str]
 
 
 class Scraper:
@@ -71,7 +43,7 @@ class Scraper:
         "ingredients include coconut": "Coconut",
     }
 
-    EMPTY_NUTRITION_SCHEMA: NutritionSchema = {
+    EMPTY_NUTRITION_SCHEMA = {
         "name": None,
         "ingredients": None,
         "allergens": None,
@@ -99,7 +71,7 @@ class Scraper:
         response.raise_for_status()
 
         soup = BeautifulSoup(response.content, "lxml")
-        scraped_data: NutritionSchema = deepcopy(self.EMPTY_NUTRITION_SCHEMA)
+        scraped_data = deepcopy(self.EMPTY_NUTRITION_SCHEMA)
 
         def extract_field(text: str) -> str:
             for index, char in enumerate(text):

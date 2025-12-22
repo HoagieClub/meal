@@ -79,19 +79,27 @@ class UserAPI:
     HOAGIE_IO_NAME_CLAIM = HOAGIE_IO_NAME_CLAIM
     DEFAULT_USER_PROFILE_DATA = DEFAULT_USER_PROFILE_DATA
 
-    def create_user_if_not_exists(self, auth0_claims: Auth0Claims) -> Optional[Any]:
-        """Create a user if they don't exist based on Auth0 token claims."""
-        auth0_id = auth0_claims.get("sub")
-        if not auth0_id:
-            raise ValueError("No Auth0 ID found in auth0_claims in create_user_if_not_exists")
+    def get_or_create_user(self, auth0_claims: Auth0Claims) -> Optional[Any]:
+        """Get or create a user based on Auth0 token claims.
 
+        Args:
+            auth0_claims (Auth0Claims): The Auth0 token claims.
+
+        Returns:
+            Optional[Any]: The user if they exist, otherwise None.
+
+        """
+        logger.info(f"Getting or creating user based on Auth0 token claims: {auth0_claims}")
+        auth0_id = auth0_claims.get("sub")
         try:
+            logger.info(f"User exists, getting user based on Auth0 ID: {auth0_id}")
             user = User.objects.get(auth0_id=auth0_id)
             user.last_login = timezone.now()
             user.save()
             return user
 
         except User.DoesNotExist:
+            logger.info(f"User does not exist, creating user based on Auth0 token claims: {auth0_claims}")
             email = auth0_claims.get(self.HOAGIE_IO_EMAIL_CLAIM)
             full_name = auth0_claims.get(self.HOAGIE_IO_NAME_CLAIM)
             name_parts = full_name.split(" ") if full_name else []
@@ -110,18 +118,40 @@ class UserAPI:
             )
             return user
 
-    def create_user_profile_if_not_exists(self, user_id: int) -> Optional[UserProfile]:
-        """Create a user profile if it doesn't exist for the given user."""
+    def get_or_create_user_profile(self, user_id: int) -> Optional[UserProfile]:
+        """Get or create a user profile for the given user.
+
+        Args:
+            user_id (int): The ID of the user.
+
+        Returns:
+            Optional[UserProfile]: The user profile if it exists, otherwise None.
+
+        """
+        logger.info(f"Getting or creating user profile for user ID: {user_id}")
         try:
             user_profile = UserProfile.objects.get(user_id=user_id)
+            logger.info(f"User profile exists, getting user profile for user ID: {user_id}")
             return user_profile
+
         except UserProfile.DoesNotExist:
+            logger.info(f"User profile does not exist, creating user profile for user ID: {user_id}")
             new_user_profile_data = self.DEFAULT_USER_PROFILE_DATA.copy()
             user_profile = UserProfile.objects.create(user_id=user_id, **new_user_profile_data)
             return user_profile
 
     def update_user_profile(self, user_id: int, user_profile_data: dict) -> Optional[UserProfile]:
-        """Update the user profile for the given user."""
+        """Update the user profile for the given user.
+
+        Args:
+            user_id (int): The ID of the user.
+            user_profile_data (dict): The data to update the user profile with.
+
+        Returns:
+            Optional[UserProfile]: The updated user profile.
+
+        """
+        logger.info(f"Updating user profile for user ID: {user_id} with data: {user_profile_data}")
         user_profile = UserProfile.objects.get(user_id=user_id)
         serializer = UserProfileSerializer(user_profile, data=user_profile_data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -129,7 +159,16 @@ class UserAPI:
         return user_profile
 
     def decode_auth0_token(self, request: HttpRequest) -> Auth0Claims:
-        """Decode the Auth0 token from the request."""
+        """Decode the Auth0 token from the request.
+
+        Args:
+            request (HttpRequest): The request object.
+
+        Returns:
+            Auth0Claims: The Auth0 token claims.
+
+        """
+        logger.info(f"Decoding Auth0 token from request: {request}")
         try:
             auth_headers = request.headers.get("Authorization")
             auth0_token = auth_headers.split()[1].strip()
@@ -154,27 +193,46 @@ user_api = UserAPI()
 
 
 @api_view(["GET"])
-def get_user_by_auth0_token(request):
-    """Get the user by the given Auth0 token."""
+def get_user(request):
+    """Get the user by the given Auth0 token.
+
+    Args:
+        request (HttpRequest): The request object.
+
+    Returns:
+        Response: The response object.
+        user (User): The user's data.
+
+    """
+    logger.info(f"Getting user by Auth0 token from request: {request}")
     try:
         auth0_claims = user_api.decode_auth0_token(request)
         auth0_id = auth0_claims.get("sub")
         user = User.objects.get(auth0_id=auth0_id)
         user_data = UserSerializer(user).data
         return Response({"user": user_data}, status=200)
-
     except AuthTokenError:
         return Response({"error": "Authentication error"}, status=401)
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=404)
     except Exception as e:
-        logger.error(f"Error in get_user_by_auth0_token view: {e}")
+        logger.error(f"Error in get_user view: {e}")
         return Response({"error": str(e)}, status=500)
 
 
 @api_view(["GET"])
-def get_user_profile_by_auth0_token(request):
-    """Get the user profile by the given Auth0 token."""
+def get_user_profile(request):
+    """Get the user profile by the given Auth0 token.
+
+    Args:
+        request (HttpRequest): The request object.
+
+    Returns:
+        Response: The response object.
+        user_profile (UserProfile): The user profile.
+
+    """
+    logger.info(f"Getting user profile by Auth0 token from request: {request}")
     try:
         auth0_claims = user_api.decode_auth0_token(request)
         auth0_id = auth0_claims.get("sub")
@@ -182,39 +240,55 @@ def get_user_profile_by_auth0_token(request):
         user_profile = UserProfile.objects.get(user_id=user.id)
         user_profile_data = UserProfileSerializer(user_profile).data
         return Response({"user_profile": user_profile_data}, status=200)
-
     except AuthTokenError:
         return Response({"error": "Authentication error"}, status=401)
-    except User.DoesNotExist:
-        return Response({"error": "User not found"}, status=404)
     except UserProfile.DoesNotExist:
         return Response({"error": "User profile not found"}, status=404)
     except Exception as e:
-        logger.error(f"Error in get_user_profile_by_auth0_token view: {e}")
+        logger.error(f"Error in get_user_profile view: {e}")
         return Response({"error": str(e)}, status=500)
 
 
 @api_view(["POST"])
-def verify_and_create_user_and_profile_by_auth0_token(request):
-    """Verify if the user is authenticated and create the user and user profile if they don't exist."""
+def verify_and_get_or_create_user_and_profile(request):
+    """Verify if the user is authenticated and create the user and user profile if they don't exist.
+
+    Args:
+        request (HttpRequest): The request object.
+
+    Returns:
+        Response: The response object.
+        user (User): The user's data.
+        user_profile (UserProfile): The user profile.
+
+    """
+    logger.info(f"Verifying and getting or creating user and profile by Auth0 token from request: {request}")
     try:
         auth0_claims = user_api.decode_auth0_token(request)
-        user = user_api.create_user_if_not_exists(auth0_claims)
-        user_profile = user_api.create_user_profile_if_not_exists(user.id)
+        user = user_api.get_or_create_user(auth0_claims)
+        user_profile = user_api.get_or_create_user_profile(user.id)  # type: ignore
         user_data = UserSerializer(user).data
         user_profile_data = UserProfileSerializer(user_profile).data
         return Response({"user": user_data, "user_profile": user_profile_data}, status=200)
-
     except AuthTokenError:
         return Response({"error": "Authentication error"}, status=401)
     except Exception as e:
-        logger.error(f"Error in verify_and_create_user_and_profile_by_auth0_token view: {e}")
+        logger.error(f"Error in verify_and_get_or_create_user_and_profile view: {e}")
         return Response({"error": str(e)}, status=500)
 
 
 @api_view(["POST"])
-def update_user_and_profile_by_auth0_token(request):
-    """Update user's profile information."""
+def update_user_profile(request):
+    """Update user's profile information.
+
+    Args:
+        request (HttpRequest): The request object.
+
+    Returns:
+        Response: The response object.
+        user_profile (UserProfile): The user profile.
+
+    """
     try:
         auth0_claims = user_api.decode_auth0_token(request)
         auth0_id = auth0_claims.get("sub")
@@ -222,7 +296,6 @@ def update_user_and_profile_by_auth0_token(request):
         user_profile = user_api.update_user_profile(user.id, request.data)
         user_profile_data = UserProfileSerializer(user_profile).data
         return Response({"user_profile": user_profile_data}, status=200)
-
     except AuthTokenError:
         return Response({"error": "Authentication error"}, status=401)
     except User.DoesNotExist:
@@ -230,5 +303,5 @@ def update_user_and_profile_by_auth0_token(request):
     except UserProfile.DoesNotExist:
         return Response({"error": "User profile not found"}, status=404)
     except Exception as e:
-        logger.error(f"Error in update_user_and_profile_by_auth0_token view: {e}")
+        logger.error(f"Error in update_user_profile view: {e}")
         return Response({"error": str(e)}, status=500)

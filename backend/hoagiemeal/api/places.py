@@ -49,11 +49,11 @@ class PlacesAPI(StudentApp):
             }]
 
         """
-        return self._make_request(self.PLACES_OPEN)  # JSON-only endpoint.
+        return self._make_request(self.PLACES_OPEN)  # type: ignore
 
 
 @api_view(["GET"])
-@cache_page(60 * 5)  # Cache for 5 minutes
+@cache_page(60 * 5)
 def get_open_places(request):
     """Django view function to get open places."""
     try:
@@ -109,7 +109,6 @@ if __name__ == "__main__":
     print("python manage.py test_places")
     print("\nAttempting to run directly, but this may fail if Django is not properly configured.")
 
-    # Try to set up Django environment
     import os
     import django
 
