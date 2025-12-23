@@ -62,11 +62,9 @@ class MenuItem(models.Model):
         name (str): Name of the menu item.
         description (str): Description of the dish.
         link (str): URL linking to more details about the dish.
-        allergens (list of str): List of allergens present.
-        ingredients (list of str): List of ingredients used.
-        dietary_flags (list of str): Raw dietary flags from the source (e.g., ["Vegetarian", "Halal"]).
         created_at (datetime): Timestamp when the record was created.
         updated_at (datetime): Timestamp when the record was last updated.
+
     """
 
     id = models.BigAutoField(primary_key=True)
@@ -74,14 +72,6 @@ class MenuItem(models.Model):
     name = models.CharField(max_length=255, db_index=True)
     description = models.TextField(blank=True)
     link = models.URLField(max_length=500, blank=True)
-    allergens = ArrayField(models.CharField(max_length=100), blank=True, default=list)
-    ingredients = ArrayField(models.CharField(max_length=255), blank=True, default=list)
-    dietary_flags = ArrayField(
-        models.CharField(max_length=50),
-        blank=True,
-        default=list,
-        help_text=_("Raw dietary flags from source (e.g., icons on nutrition page)"),
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -96,10 +86,36 @@ class MenuItem(models.Model):
 
 
 class MenuItemNutrient(models.Model):
-    """Provide detailed nutritional information for a menu item."""
+    """Provide detailed nutritional information for a menu item.
 
-    menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="nutrition")
-    serving_size = models.CharField(max_length=50, blank=True)
+    Attributes:
+        serving_size (DecimalField): The serving size of the menu item.
+        serving_unit (CharField): The serving unit of the menu item.
+        calories (PositiveSmallIntegerField): The calories of the menu item.
+        calories_from_fat (PositiveSmallIntegerField): The calories from fat of the menu item.
+        total_fat (DecimalField): The total fat of the menu item.
+        saturated_fat (DecimalField): The saturated fat of the menu item.
+        trans_fat (DecimalField): The trans fat of the menu item.
+        cholesterol (DecimalField): The cholesterol of the menu item.
+        sodium (DecimalField): The sodium of the menu item.
+        total_carbohydrates (DecimalField): The total carbohydrates of the menu item.
+        dietary_fiber (DecimalField): The dietary fiber of the menu item.
+        sugars (DecimalField): The sugars of the menu item.
+        protein (DecimalField): The protein of the menu item.
+        vitamin_d (DecimalField): The vitamin D of the menu item.
+        potassium (DecimalField): The potassium of the menu item.
+        calcium (DecimalField): The calcium of the menu item.
+        iron (DecimalField): The iron of the menu item.
+        allergens (ArrayField): The allergens of the menu item.
+        ingredients (ArrayField): The ingredients of the menu item.
+        dietary_flags (ArrayField): The dietary flags of the menu item.
+        menu_item (ForeignKey): The menu item associated with the nutrient.
+        updated_at (DateTimeField): The date and time the nutrient was last updated.
+        created_at (DateTimeField): The date and time the nutrient was created.
+
+    """
+
+    serving_size = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     serving_unit = models.CharField(max_length=20, blank=True)
     calories = models.PositiveSmallIntegerField(null=True, blank=True, db_index=True)
     calories_from_fat = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -116,6 +132,15 @@ class MenuItemNutrient(models.Model):
     potassium = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     calcium = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     iron = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    allergens = ArrayField(models.CharField(max_length=100), blank=True, default=list)
+    ingredients = ArrayField(models.CharField(max_length=255), blank=True, default=list)
+    dietary_flags = ArrayField(
+        models.CharField(max_length=50),
+        blank=True,
+        default=list,
+        help_text=_("Raw dietary flags from source (e.g., icons on nutrition page)"),
+    )
+    menu_item = models.OneToOneField(MenuItem, on_delete=models.CASCADE, related_name="nutrition")
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now=True)
 

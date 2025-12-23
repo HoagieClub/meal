@@ -222,7 +222,7 @@ class MenuItemNutrientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MenuItemNutrient
-        exclude = ["updated_at", "created_at"]
+        exclude = ["updated_at", "created_at", "id", "menu_item"]
         read_only_fields = ["id", "menu_item", "created_at", "updated_at"]
 
 
@@ -231,8 +231,8 @@ class MenuItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MenuItem
-        exclude = ["updated_at", "created_at"]
-        read_only_fields = ["id", "api_id", "created_at", "updated_at"]
+        fields = ["api_id", "name", "description", "link"]
+        read_only_fields = ["id", "created_at", "updated_at", "api_id"]
 
 
 class FullMenuItemSerializer(serializers.ModelSerializer):
@@ -242,8 +242,8 @@ class FullMenuItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MenuItem
-        exclude = ["updated_at", "created_at"]
-        read_only_fields = ["id", "api_id", "created_at", "updated_at"]
+        exclude = ["updated_at", "created_at", "id"]
+        read_only_fields = ["id", "created_at", "updated_at", "api_id"]
 
 
 class DiningVenueSerializer(serializers.ModelSerializer):

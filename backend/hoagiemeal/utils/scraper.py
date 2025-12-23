@@ -24,7 +24,10 @@ from hoagiemeal.utils.logger import logger
 from typing import Optional, List
 from decimal import Decimal
 import re
+from typing import TypedDict
+import typing
 from typing import Union
+
 
 Numeric = Union[int, Decimal]
 

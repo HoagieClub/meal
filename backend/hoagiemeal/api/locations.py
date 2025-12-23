@@ -30,7 +30,7 @@ from hoagiemeal.api.schemas import Schemas
 from hoagiemeal.models.dining import DiningVenue
 from django.db import transaction
 from hoagiemeal.serializers import DiningVenueSerializer
-from hoagiemeal.utils.data import DINING_HALLS, DINING_CAFES
+from hoagiemeal.data import DINING_HALLS, DINING_CAFES
 
 
 class LocationsAPI(StudentApp):
@@ -154,20 +154,25 @@ class LocationsCache:
         logger.info(f"Retrieved {len(serializer.data)} dining locations for categories: {', '.join(category_ids)}.")
         return serializer.data
 
-    def cache_locations(self, locations: list) -> list:
-        """Cache dining locations.
+    def get_or_cache_locations(self, category_ids: list = ["2", "3"], locations: list = []) -> list:
+        """Get or cache dining locations.
 
         Args:
+            category_ids (list): The list of category IDs to fetch.
             locations (list): The list of locations to cache.
 
         Returns:
             list: A list of dining venue data.
 
         """
-        logger.info(f"Caching {len(locations)} dining locations.")
-        if len(locations) == 0:
-            logger.error("No locations to cache.")
-            return []
+        logger.info(f"Getting or caching {len(locations)} dining locations.")
+        cached_all_categories = all(
+            self.get_cached_locations(category_ids=category_id) for category_id in category_ids
+        )
+        if cached_all_categories:
+            logger.info(f"Returning cached locations for categories: {', '.join(category_ids)}.")
+            locations = self.get_cached_locations(category_ids=category_ids)
+            return locations
 
         dining_venues = []
         for location in locations:
@@ -175,10 +180,9 @@ class LocationsCache:
             category_id = location.get("category_id")
             try:
                 with transaction.atomic():
-                    exists = DiningVenue.objects.filter(database_id=database_id, category_id=category_id).exists()
-                    if exists:
-                        continue
-                    dining_venue, _ = DiningVenue.objects.get_or_create(**location)
+                    dining_venue, _ = DiningVenue.objects.get_or_create(
+                        database_id=database_id, category_id=category_id
+                    )
                     dining_venues.append(DiningVenueSerializer(dining_venue).data)
             except Exception as e:
                 logger.error(f"Error caching location {location.get('name')}: {e}")
@@ -197,32 +201,11 @@ class LocationsService:
     LOCATIONS_API = LocationsAPI()
     LOCATIONS_CACHE = LocationsCache()
 
-    def get_locations(self, category_ids: list = ["2", "3"]) -> list:
-        """Get dining locations from the cache or API.
-
-        Args:
-            category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
-
-        Returns:
-            list: A list of dining venue data.
-
-        """
-        logger.info(f"Getting dining locations for categories: {', '.join(category_ids)}")
-        cached_locations = self.LOCATIONS_CACHE.get_cached_locations(category_ids)
-        if len(cached_locations) > 0:
-            return cached_locations
-
-        api_locations = self.LOCATIONS_API.get_locations(category_ids)
-        if len(api_locations) == 0:
-            logger.error(f"No locations found for categories: {', '.join(category_ids)}.")
-            return []
-        return api_locations
-
     def get_or_cache_locations(self, category_ids: list = ["2", "3"]) -> list:
         """Get or cache dining locations for a given category.
 
         Args:
-            category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
+            category_ids (list): List of category IDs to fetch.
 
         Returns:
             list: A list of dining venue data.
@@ -231,13 +214,11 @@ class LocationsService:
         logger.info(f"Getting or caching dining locations for categories: {', '.join(category_ids)}")
         cached_locations = self.LOCATIONS_CACHE.get_cached_locations(category_ids)
         if len(cached_locations) > 0:
+            logger.info(f"Returning cached locations for categories: {', '.join(category_ids)}.")
             return cached_locations
 
         api_locations = self.LOCATIONS_API.get_locations(category_ids)
-        cached_locations = self.LOCATIONS_CACHE.cache_locations(api_locations)
-        if len(cached_locations) == 0:
-            logger.error(f"No locations cached for categories: {', '.join(category_ids)}.")
-            return []
+        cached_locations = self.LOCATIONS_CACHE.get_or_cache_locations(category_ids, api_locations)
         return cached_locations
 
 
@@ -249,32 +230,7 @@ locations_service = LocationsService()
 @api_view(["GET"])
 @cache_page(60 * 5)
 def get_dining_locations(request):
-    """Django view function to get dining locations.
-
-    Args:
-        request (Request): The HTTP request object.
-        category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
-
-    Returns:
-        Response: The HTTP response object.
-        locations (list): A list of dining venue data.
-
-    """
-    logger.info(f"Getting dining locations for request: {request}")
-    try:
-        category_ids = request.GET.getlist("category_id", ["2", "3"])
-        logger.info(f"Getting dining locations for categories: {', '.join(category_ids)}")
-        locations = locations_service.get_locations(category_ids)
-        return Response(locations)
-    except Exception as e:
-        logger.error(f"Error in get_dining_locations view: {e}")
-        return Response({"error": str(e)}, status=500)
-
-
-@api_view(["GET"])
-@cache_page(60 * 5)
-def get_or_cache_locations(request):
-    """Django view function to get or cache dining locations for a given category.
+    """Django view function to get or cache dining locations.
 
     Args:
         request (Request): The HTTP request object.
@@ -292,7 +248,7 @@ def get_or_cache_locations(request):
         locations = locations_service.get_or_cache_locations(category_ids)
         return Response(locations)
     except Exception as e:
-        logger.error(f"Error in get_or_cache_locations view: {e}")
+        logger.error(f"Error in get_or_cache_dining_locations view: {e}")
         return Response({"error": str(e)}, status=500)
 
 
