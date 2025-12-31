@@ -21,9 +21,12 @@ from hoagiemeal.api.locations import (
     get_dining_locations,
 )
 from hoagiemeal.api.menu import (
+    get_dining_menu,
+    get_dining_menu_item_nutrition_info,
     get_dining_menu_with_menu_item_nutrition_info,
     get_dining_menu_with_menu_item_nutrition_info_for_locations,
-    get_dining_menu,
+    get_dining_menu_with_menu_item_nutrition_info_for_locations_and_day,
+    clear_cache,
 )
 from hoagiemeal.api.user import (
     get_user,
@@ -39,6 +42,11 @@ urlpatterns = [
     # Menu API Endpoints
     path("api/dining/menu/", get_dining_menu, name="dining-menu"),
     path(
+        "api/dining/menu/item/nutrition-info/",
+        get_dining_menu_item_nutrition_info,
+        name="dining-menu-item-nutrition-info",
+    ),
+    path(
         "api/dining/menu/with-nutrition/",
         get_dining_menu_with_menu_item_nutrition_info,
         name="dining-menu-with-nutrition",
@@ -48,6 +56,11 @@ urlpatterns = [
         get_dining_menu_with_menu_item_nutrition_info_for_locations,
         name="dining-menu-with-nutrition-for-all-locations",
     ),
+    path(
+        "api/dining/menu/with-nutrition/all-locations/day/",
+        get_dining_menu_with_menu_item_nutrition_info_for_locations_and_day,
+        name="dining-menu-with-nutrition-for-all-locations-and-day",
+    ),
     # User API Endpoints
     path("api/user/", get_user, name="user"),
     path("api/user/profile/", get_user_profile, name="user-profile"),
@@ -55,4 +68,5 @@ urlpatterns = [
         "api/user/verify/", verify_and_get_or_create_user_and_profile, name="verify-and-get-or-create-user-and-profile"
     ),
     path("api/user/update/", update_user_profile, name="update-user-profile"),
+    path("api/clear-cache/", clear_cache, name="clear-cache"),
 ]

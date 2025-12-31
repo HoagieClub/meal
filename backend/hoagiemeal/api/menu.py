@@ -244,6 +244,8 @@ class MenuCache:
     cache lookups, saving menus, and managing menu items.
     """
 
+    LOCATIONS_SERVICE = LocationsService()
+
     def get_cached_menu(self, location_id: str, menu_id: str) -> list:
         """Get cached menu from database.
 
@@ -355,6 +357,12 @@ class MenuCache:
 
         """
         logger.info(f"Caching menu for location_id: {location_id}, menu_id: {menu_id}.")
+
+        # Make sure locations are cached
+        locations = self.LOCATIONS_SERVICE.get_or_cache_locations(category_ids=["2", "3"])
+        if len(locations) == 0:
+            logger.error(f"No locations found for menu_id: {menu_id}.")
+            return False
 
         # Parse menu ID into date and meal code
         menu_date, meal_code = parse_menu_id(menu_id)
@@ -532,6 +540,7 @@ class MenuService:
             return api_menu
 
         # Return cached menu
+        logger.info(f"Returning cached menu for location_id: {location_id}, menu_id: {menu_id}.")
         return self.MENU_CACHE.get_cached_menu(location_id, menu_id)
 
     def get_or_cache_menu_item_nutrition_info(self, api_url: str) -> dict:
@@ -574,7 +583,7 @@ class MenuService:
             return nutrition_data
 
         # Return cached nutrition information
-        logger.info(f"Cached nutrition information for menu_item: {menu_item_id}.")
+        logger.info(f"Returning cached nutrition information for menu_item: {menu_item_id}.")
         return self.MENU_CACHE.get_cached_menu_item_nutrition_info(menu_item_id)
 
     def get_or_cache_menu_with_menu_item_nutrition_info(self, location_id: str, menu_id: str) -> list:
@@ -617,7 +626,9 @@ class MenuService:
             return api_menu_with_nutrition_info
 
         # Return cached menu with nutrition information
-        logger.info(f"Cached menu with nutrition information for location_id: {location_id}, menu_id: {menu_id}.")
+        logger.info(
+            f"Returning cached menu with nutrition information for location_id: {location_id}, menu_id: {menu_id}."
+        )
         return self.MENU_CACHE.get_cached_menu_with_menu_item_nutrition_info(location_id, menu_id)
 
     def get_or_cache_menu_with_menu_item_nutrition_info_for_locations(self, menu_id: str) -> list:
@@ -648,7 +659,7 @@ class MenuService:
             location["menu"] = menu_with_menu_item_nutrition_info
             locations_with_menu.append(location)
 
-        logger.info(f"Cached menu with nutrition information for all locations for menu_id: {menu_id}.")
+        logger.info(f"Returning cached menu with nutrition information for all locations for menu_id: {menu_id}.")
         return locations_with_menu
 
     def get_or_cache_menu_with_menu_item_nutrition_info_for_locations_and_day(
@@ -681,7 +692,7 @@ class MenuService:
                 continue
             menus[meal] = menu
 
-        logger.info(f"Cached menu with nutrition information for all locations and day: {menu_date}.")
+        logger.info(f"Returning cached menu with nutrition information for all locations and day: {menu_date}.")
         return menus
 
 
@@ -837,7 +848,46 @@ def get_dining_menu_with_menu_item_nutrition_info_for_locations_and_day(request)
         return Response({"error": str(e)}, status=500)
 
 
+@api_view(["GET"])
+def clear_cache(request):
+    """Django view function to clear the database cache for dining_venues, dining menus, menu items, and menu item nutrients.
+
+    Args:
+        request (Request): The HTTP request object.
+
+    """
+    logger.info(
+        f"Clearing database cache for dining_venues, dining menus, menu items, and menu item nutrients for request: {request}"
+    )
+    try:
+        clear_database_cache()
+        logger.info("Database cache cleared successfully.")
+        return Response({"message": "Database cache cleared successfully."})
+    except Exception as e:
+        logger.error(f"Error in clear_database_cache view: {e}")
+        return Response({"error": str(e)}, status=500)
+
+
 #################### Utility functions for working with menu data #########################
+
+
+def clear_database_cache():
+    """Clear the database cache for dining_venues, dining menus, menu items, and menu item nutrients.
+
+    Returns:
+        bool: True if database cache was cleared successfully, False otherwise.
+
+    """
+    logger.info("Clearing database cache for dining_venues, dining menus, menu items, and menu item nutrients.")
+    try:
+        DiningVenue.objects.all().delete()
+        Menu.objects.all().delete()
+        MenuItem.objects.all().delete()
+        MenuItemNutrient.objects.all().delete()
+    except Exception as e:
+        logger.error(f"Error clearing database cache: {e}")
+        return False
+    return True
 
 
 def parse_menu_id(menu_id: str) -> Tuple[Optional[datetime.date], Optional[str]]:
