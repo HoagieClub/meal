@@ -25,6 +25,49 @@ load_dotenv()
 init(autoreset=True)
 
 
+#################### File Blacklist #########################
+# Add filenames (without path) to this set to prevent logging from those files.
+# Example: LOGGER_FILE_BLACKLIST = {"migrations.py", "test_file.py"}
+LOGGER_FILE_BLACKLIST = {"student_app.py"}
+
+
+class FileBlacklistFilter(logging.Filter):
+    """A custom log filter that prevents logging from blacklisted files.
+
+    Attributes:
+        blacklist (set): A set of filenames to exclude from logging.
+
+    Methods:
+        filter(record):
+            Returns False if the record's filename is in the blacklist, True otherwise.
+
+    """
+
+    def __init__(self, blacklist=None):
+        """Initialize the FileBlacklistFilter with a blacklist of filenames.
+
+        Args:
+            blacklist (set, optional): A set of filenames to exclude from logging. Defaults to empty set.
+
+        """
+        super().__init__()
+        self.blacklist = set(blacklist) if blacklist else set()
+
+    def filter(self, record):
+        """Filter log records based on the filename blacklist.
+
+        Args:
+            record (logging.LogRecord): The log record to filter.
+
+        Returns:
+            bool: False if the filename is in the blacklist (log is filtered out), True otherwise.
+
+        """
+        # Check if the filename (without path) is in the blacklist
+        filename = os.path.basename(record.pathname) if hasattr(record, "pathname") else record.filename
+        return filename not in self.blacklist
+
+
 class ColorFormatter(logging.Formatter):
     """A custom log formatter that applies color based on the log level using the Colorama library.
 
@@ -99,6 +142,11 @@ def setup_logger():
     # Set custom formatter
     formatter = ColorFormatter()
     handler.setFormatter(formatter)
+
+    # Add file blacklist filter
+    blacklist_filter = FileBlacklistFilter(blacklist=LOGGER_FILE_BLACKLIST)
+    handler.addFilter(blacklist_filter)
+
     logger = logging.getLogger(__name__)
 
     # Set to DEBUG to capture all logging levels

@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.urls import path
 from hoagiemeal.api.locations import (
     get_dining_locations,
+    get_all_dining_locations,
 )
 from hoagiemeal.api.menu import (
     get_dining_menu,
@@ -39,6 +40,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # Location API Endpoints
     path("api/dining/locations/", get_dining_locations, name="dining-locations"),
+    path("api/dining/locations/all/", get_all_dining_locations, name="all-dining-locations"),
     # Menu API Endpoints
     path("api/dining/menu/", get_dining_menu, name="dining-menu"),
     path(

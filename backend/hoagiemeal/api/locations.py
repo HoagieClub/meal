@@ -107,18 +107,20 @@ class LocationsAPI(StudentApp):
         for category_id in category_ids:
             response = self._make_request(
                 self.DINING_LOCATIONS,
-                params={"categoryId": category_ids},
+                params={"categoryId": category_id},
                 fmt=fmt,
             )
             schema = self.schemas.get_dining_xsd()
             if not self.validate_xml(response, schema):  # type: ignore
                 logger.error(f"Invalid XML format for dining locations (category {category_id}).")
                 raise ValueError(f"Invalid XML format for dining locations (category {category_id}).")
-            locations = self._parse_xml(response).get("locations", {}).get("location", [])  # type: ignore
-            if isinstance(locations, dict):
-                locations = [locations]
-            locations = [parse_location_data(location) for location in locations]
-            locations.extend(locations)
+            category_locations = self._parse_xml(response).get("locations", {}).get("location", [])  # type: ignore
+            if isinstance(category_locations, dict):
+                category_locations = [category_locations]
+
+            logger.info(f"Found {len(category_locations)} locations for category {category_id}.")
+            category_locations = [parse_location_data(location, category_id) for location in category_locations]
+            locations.extend(category_locations)
 
         if len(locations) == 0:
             logger.error(f"No locations found for categories: {', '.join(category_ids)}.")
@@ -147,7 +149,7 @@ class LocationsCache:
 
         locations = DiningVenue.objects.filter(category_id__in=category_ids)
         if len(locations) == 0:
-            logger.error(f"No locations found for categories: {', '.join(category_ids)}.")
+            logger.error(f"No cached locations found for categories: {', '.join(category_ids)}.")
             return []
 
         serializer = DiningVenueSerializer(locations, many=True)
@@ -168,10 +170,8 @@ class LocationsCache:
 
         dining_venues = []
         for location in locations:
-            database_id = location.get("database_id")
-            category_id = location.get("category_id")
             try:
-                dining_venue, _ = DiningVenue.objects.get_or_create(database_id=database_id, category_id=category_id)
+                dining_venue, _ = DiningVenue.objects.get_or_create(**location)
                 dining_venues.append(DiningVenueSerializer(dining_venue).data)
             except Exception as e:
                 logger.error(f"Error caching location {location.get('name')}: {e}")
@@ -200,7 +200,7 @@ class LocationsService:
             list: A list of dining venue data.
 
         """
-        logger.info(f"Getting or caching dining locations for categories: {', '.join(category_ids)}")
+        logger.info(f"Getting or caching dining locations for categories: {', '.join(category_ids)}.")
 
         # Return cached locations if they exist
         cached_locations = self.LOCATIONS_CACHE.get_cached_locations(category_ids)
@@ -218,7 +218,7 @@ class LocationsService:
         cached_locations = self.LOCATIONS_CACHE.cache_locations(api_locations)
         if not cached_locations:
             logger.error(f"No locations cached for categories: {', '.join(category_ids)}.")
-            return []
+            return api_locations
 
         # Return cached locations
         logger.info(f"Returning cached locations for categories: {', '.join(category_ids)}.")
@@ -237,7 +237,7 @@ def get_dining_locations(request):
 
     Args:
         request (Request): The HTTP request object.
-        category_ids (list, optional): List of category IDs to fetch. Defaults to ["2", "3"].
+        category_ids (list, optional): List of category IDs to fetch. Defaults to ["2"].
 
     Returns:
         Response: The HTTP response object.
@@ -246,7 +246,7 @@ def get_dining_locations(request):
     """
     logger.info(f"Getting or caching dining locations for request: {request}")
     try:
-        category_ids = request.GET.getlist("category_id", ["2", "3"])
+        category_ids = request.GET.getlist("category_id", ["2"])
         logger.info(f"Getting or caching dining locations for categories: {', '.join(category_ids)}")
         locations = locations_service.get_or_cache_locations(category_ids)
         return Response(locations)
@@ -255,14 +255,37 @@ def get_dining_locations(request):
         return Response({"error": str(e)}, status=500)
 
 
+@api_view(["GET"])
+def get_all_dining_locations(request):
+    """Django view function to get all dining locations.
+
+    Args:
+        request (Request): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response object.
+        locations (list): A list of dining venue data.
+
+    """
+    logger.info(f"Getting all dining locations for request: {request}")
+    try:
+        all_category_ids = ["2", "3"]
+        locations = locations_service.get_or_cache_locations(all_category_ids)
+        return Response(locations)
+    except Exception as e:
+        logger.error(f"Error in get_all_dining_locations view: {e}")
+        return Response({"error": str(e)}, status=500)
+
+
 #################### Utility functions for working with locations data #########################
 
 
-def parse_location_data(location: dict) -> dict:
+def parse_location_data(location: dict, category_id: str) -> dict:
     """Parse dining location data to a format that can be used to create a dining location instance.
 
     Args:
         location (dict): The location data to parse.
+        category_id (str): The category ID of the location.
 
     Returns:
         dict: The parsed location data.
@@ -270,9 +293,9 @@ def parse_location_data(location: dict) -> dict:
         {
             "name": str,
             "map_name": str,
-            "database_id": str,
-            "latitude": str,
-            "longitude": str,
+            "database_id": int,
+            "latitude": float,
+            "longitude": float,
             "building_name": str,
             "amenities": [str],
             "is_active": bool,
@@ -287,10 +310,10 @@ def parse_location_data(location: dict) -> dict:
 
     name = location.get("name", "").strip()
     map_name = location.get("mapName", "").strip()
-    latitude = location.get("geoloc", {}).get("lat", "").strip()
-    longitude = location.get("geoloc", {}).get("long", "").strip()
+    latitude = float(location.get("geoloc", {}).get("lat", "").strip())
+    longitude = float(location.get("geoloc", {}).get("long", "").strip())
     building_name = location.get("building", {}).get("name", "").strip()
-    database_id = location.get("dbid", "").strip()
+    database_id = int(location.get("dbid", "").strip())
     is_active = True
 
     inactive_suffixes = [" - closed", " -closed"]
@@ -311,10 +334,6 @@ def parse_location_data(location: dict) -> dict:
     if map_name.endswith(remove_suffix):
         map_name = map_name[: -len(remove_suffix)].rstrip()
 
-    category_id = 2 if name in DINING_HALLS else 3 if name in DINING_CAFES else None
-    if category_id is None:
-        logger.error(f"Unknown category for dining venue: {name}")
-
     return {
         "name": name,
         "map_name": map_name,
@@ -324,5 +343,5 @@ def parse_location_data(location: dict) -> dict:
         "building_name": building_name,
         "amenities": amenity_list,
         "is_active": is_active,
-        "category_id": category_id,
+        "category_id": int(category_id),
     }
