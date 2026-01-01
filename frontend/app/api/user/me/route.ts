@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { NextJSProfileResponse, BackendProfileResponse, Profile } from '@/types/profile';
 import { request } from '@/lib/http';
 
-const ROUTE = '/api/user/me/';
+const ROUTE = '/api/user/verify/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 export async function GET(req: Request) {
@@ -13,9 +13,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'No access token available' }, { status: 401 });
     }
 
-    const res = await request.getAuth(accessToken)(ROUTE, {
+    const res = (await request.getAuth(accessToken)(ROUTE, {
       arg: {},
-    }) as BackendProfileResponse;
+    })) as BackendProfileResponse;
 
     if (!res.user) {
       return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });

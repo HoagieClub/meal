@@ -49,15 +49,14 @@ export type DietaryTagType = 'Vegetarian' | 'Vegan' | 'Halal' | 'Kosher';
 
 export const DIETARY_TAGS: DietaryTagType[] = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
 
-export type MealType = 'Breakfast' | 'Lunch' | 'Dinner' | 'Brunch';
+export type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
-export const MEALS: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Brunch'];
+export const MEALS: MealType[] = ['Breakfast', 'Lunch', 'Dinner'];
 
 export const MEAL_RANGES: Record<MealType, string> = {
   Breakfast: '7:30 AM – 10:30 AM',
   Lunch: '11:30 AM – 2:00 PM',
   Dinner: '5:00 PM – 8:00 PM',
-  Brunch: '10:00 AM – 2:00 PM',
 };
 
 export type MenuCategoryType = 'Main Entrée' | 'Vegan Entrée' | 'Soups';

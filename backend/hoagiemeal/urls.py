@@ -17,10 +17,7 @@ This software is provided "as-is", without warranty of any kind.
 
 from django.contrib import admin
 from django.urls import path
-from hoagiemeal.api.locations import (
-    get_dining_locations,
-    get_all_dining_locations,
-)
+from hoagiemeal.api.locations import get_dining_locations, get_all_dining_locations
 from hoagiemeal.api.menu import (
     get_dining_menu,
     get_dining_menu_item_nutrition_info,

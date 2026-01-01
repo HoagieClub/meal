@@ -31,12 +31,20 @@ interface UseLocalStorageProps<T> {
  */
 export function useLocalStorage<T>({ key, initialValue, expiryInMs }: UseLocalStorageProps<T>) {
   const [storedValue, setStoredValue] = useState<T>(initialValue);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     // if the window is undefined, return
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+
     const raw = window.localStorage.getItem(key);
-    if (!raw) return;
+    if (!raw) {
+      setLoading(false);
+      return;
+    }
 
     try {
       // parse the raw value
@@ -45,6 +53,7 @@ export function useLocalStorage<T>({ key, initialValue, expiryInMs }: UseLocalSt
       if (!expiryInMs) {
         // if there is no expiry, set the stored value to the parsed value
         setStoredValue(parsed);
+        setLoading(false);
         return;
       }
 
@@ -52,19 +61,23 @@ export function useLocalStorage<T>({ key, initialValue, expiryInMs }: UseLocalSt
       const valid = parsed && typeof parsed.expiry === 'number' && parsed.value !== undefined;
       if (!valid) {
         window.localStorage.removeItem(key);
+        setLoading(false);
         return;
       }
 
       // check if the expiry time has passed
       if (Date.now() > parsed.expiry) {
         window.localStorage.removeItem(key);
+        setLoading(false);
         return;
       }
 
       // set the stored value to the parsed value
       setStoredValue(parsed.value);
+      setLoading(false);
     } catch {
       window.localStorage.removeItem(key);
+      setLoading(false);
     }
   }, [key, expiryInMs]);
 
@@ -85,5 +98,5 @@ export function useLocalStorage<T>({ key, initialValue, expiryInMs }: UseLocalSt
     [key, expiryInMs]
   );
 
-  return [storedValue, setValue] as const;
+  return [storedValue, setValue, loading] as const;
 }
