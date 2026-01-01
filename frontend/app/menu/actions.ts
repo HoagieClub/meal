@@ -15,12 +15,12 @@ import { RawApiMenuItem, UIMenuItem, UIVenue } from '@/data';
 import { AllergenType, DietaryTagType, DiningHallType } from '@/data';
 import { api } from '@/hooks/use-next-api';
 
-const FETCH_MENU_DATA_URL = '/api/dining/locations/with-menus';
+const FETCH_MENU_DATA_URL = '/api/dining/menu';
 
 /**
  * Fetch the menu data for the given menu ID.
  *
- * @param menuId - The menu ID to fetch.
+ * @param menuId - The menu ID to fetch (format: YYYY-MM-DD-Meal).
  * @param isCurrent - The function to check if the current menu is the current menu.
  * @returns The menu data.
  */
@@ -29,7 +29,16 @@ const fetchMenuData = async (
   isCurrent: () => boolean
 ): Promise<UIVenue[] | null> => {
   try {
-    const { data, error }: any = await api.get(`${FETCH_MENU_DATA_URL}?menu_id=${menuId}`);
+    // Extract date and meal from menuId (format: YYYY-MM-DD-Meal)
+    const parts = menuId.split('-');
+    if (parts.length < 4) {
+      console.error(`Invalid menuId format: ${menuId}`);
+      return null;
+    }
+    const menuDate = `${parts[0]}-${parts[1]}-${parts[2]}`;
+    const meal = parts.slice(3).join('-'); // Handle meal names with hyphens
+
+    const { data, error }: any = await api.get(`${FETCH_MENU_DATA_URL}?menu_date=${menuDate}`);
     if (error) {
       console.error(`Error fetching menu data for ${menuId}:`, error);
       return null;
@@ -37,8 +46,14 @@ const fetchMenuData = async (
 
     if (!isCurrent()) return null;
 
-    const uiVenues: UIVenue[] = data.locations.location.map((raw: any) => {
-      const allItems: UIMenuItem[] = (raw.menu.menus || []).map((x: RawApiMenuItem) => ({
+    // The response structure is: { data: { Breakfast: [...], Lunch: [...], Dinner: [...] } }
+    const menuData = data.data || data;
+    const locationsForMeal = menuData[meal] || [];
+
+    const uiVenues: UIVenue[] = locationsForMeal.map((raw: any) => {
+      // The menu items are in raw.menu array
+      const menuItems = raw.menu || [];
+      const allItems: UIMenuItem[] = menuItems.map((x: RawApiMenuItem) => ({
         id: x.id,
         name: x.name,
         description: x.description,

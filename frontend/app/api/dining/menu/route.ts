@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch dining hall menu data.
+ * @overview Next.js Route Handler to fetch dining hall menu data for all locations and a given day.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -14,14 +14,13 @@
 
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
-import { getCurrentMenuId } from '@/utils/dining';
 import { toCamelCase } from '@/utils/toCamelCase';
 
-const ROUTE = '/api/dining/menu/';
+const ROUTE = '/api/dining/menu/with-nutrition/all-locations/day/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches dining hall menu data.
+ * Fetches dining hall menu data with nutrition information for all locations and a given day.
  *
  * @param req - The HTTP request object.
  * @returns A NextResponse object with the dining hall menu data.
@@ -29,38 +28,26 @@ const DEBUG = process.env.NODE_ENV === 'development';
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const locationId = searchParams.get('location_id');
+    const menuDate = searchParams.get('menu_date');
 
-    if (!locationId) {
-      return NextResponse.json({ error: 'Missing location_id parameter' }, { status: 400 });
+    if (!menuDate) {
+      return NextResponse.json({ error: 'Missing menu_date parameter' }, { status: 400 });
     }
 
-    // If no menuId provided, get the next relevant menu
-    const menuId = searchParams.get('menu_id') || getCurrentMenuId();
+    const res = await request.get<any>()(`${ROUTE}?menu_date=${menuDate}`, {});
 
-    const res = await request.get<any>()(`${ROUTE}?location_id=${locationId}&menu_id=${menuId}`, {});
-
-    DEBUG && console.log('Backend response for menu:', menuId, 'location:', locationId, res);
+    DEBUG && console.log('Backend response for menu:', menuDate, res);
 
     // Handle both wrapped (res.data) and direct (res) response formats
     const data = res.data || res;
 
-    if (!data || (Array.isArray(data) && data.length === 0)) {
-      return NextResponse.json(
-        { error: `No menu found for location ${locationId} at ${menuId}` },
-        { status: 404 }
-      );
-    }
-
-    // If data has a 'menus' property, return it directly (for compatibility)
-    // Otherwise wrap in the standard format
-    if (data.menus) {
-      return NextResponse.json(data);
+    if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+      return NextResponse.json({ error: `No menu found for date ${menuDate}` }, { status: 404 });
     }
 
     return NextResponse.json({
       data: toCamelCase(data),
-      message: `Successfully fetched ${menuId} menu`,
+      message: `Successfully fetched menu for ${menuDate}`,
       status: 200,
     });
   } catch (error: unknown) {

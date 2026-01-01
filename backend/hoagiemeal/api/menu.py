@@ -666,9 +666,7 @@ class MenuService:
         logger.info(f"Returning cached menu with nutrition information for all locations for menu_id: {menu_id}.")
         return locations_with_menu
 
-    def get_or_cache_menu_with_menu_item_nutrition_info_for_locations_and_day(
-        self, menu_date: datetime.date
-    ) -> dict:
+    def get_or_cache_menu_with_menu_item_nutrition_info_for_locations_and_day(self, menu_date: datetime.date) -> dict:
         """Get or cache menu with nutrition information for each menu item for all locations and a given day.
 
         Args:
@@ -676,7 +674,7 @@ class MenuService:
 
         Returns:
             dict: Dictionary of menu items with nutrition information for each meal at each location on the given day.
-            
+
         """
         logger.info(f"Getting or caching menu with nutrition information for all locations and day: {menu_date}.")
 
