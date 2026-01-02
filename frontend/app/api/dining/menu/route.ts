@@ -36,11 +36,8 @@ export async function GET(req: Request) {
 
     const res = await request.get<any>()(`${ROUTE}?menu_date=${menuDate}`, {});
 
-    DEBUG && console.log('Backend response for menu:', menuDate, res);
-
     // Handle both wrapped (res.data) and direct (res) response formats
     const data = res.data || res;
-
     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
       return NextResponse.json({ error: `No menu found for date ${menuDate}` }, { status: 404 });
     }

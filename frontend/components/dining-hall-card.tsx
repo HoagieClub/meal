@@ -12,8 +12,7 @@ import {
 import React from 'react';
 import MenuSection from './menu-selection';
 
-import { UIVenue } from '@/app/menu/types';
-import { ALLERGEN_EMOJI } from '@/styles';
+import { UIVenue } from '@/data';
 import { HALL_BANNER_MAP } from '@/styles';
 
 interface DiningHallCardProps {
@@ -34,6 +33,20 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
 
+  // Divide items into main entrees and vegan entrees
+  const menuItems = diningHall?.menu ?? [];
+  const mainEntreeMenuItems = [];
+  const veganEntreeMenuItems = [];
+  for (const menuItem of menuItems) {
+    const dietaryFlags = menuItem?.nutrition?.dietaryFlags ?? [];
+    const dietaryFlagsLower = dietaryFlags.map((flag: string) => flag.toLowerCase());
+    if (dietaryFlagsLower.includes('vegetarian') || dietaryFlagsLower.includes('vegan')) {
+      veganEntreeMenuItems.push(menuItem);
+    } else {
+      mainEntreeMenuItems.push(menuItem);
+    }
+  }
+
   return (
     <Pane
       key={diningHall.name}
@@ -52,7 +65,6 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         background={theme.colors.gray100}
         className='py-4 border relative border-gray-300 rounded-md flex items-center'
       >
-        {/* 1. Pill with pin + name */}
         <Pane
           display='flex'
           alignItems='center'
@@ -65,17 +77,16 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           </Text>
         </Pane>
 
-        {/* 2. Overlapping crests */}
         <Pane className='flex items-center right-[-1rem] h-[140%] absolute'>
           <Pane
             onClick={onPinToggle}
             cursor='pointer'
             padding={minorScale(1)}
-            marginRight={minorScale(1)} // Kept original spacing logic
-            className='mr-4' // Kept original class
+            marginRight={minorScale(1)}
+            className='mr-4'
             display='flex'
             alignItems='center'
-            title={isPinned ? 'Unpin hall' : 'Pin hall'} // Added title
+            title={isPinned ? 'Unpin hall' : 'Pin hall'}
           >
             <PinIcon
               size={16}
@@ -86,39 +97,23 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         </Pane>
       </Pane>
 
-      <MenuSection
-        label='Main Entrée'
-        items={diningHall.items['Main Entrée']} // <-- This is UIMenuItem[] with id: number
-        allergens={diningHall.allergens}
-        calories={diningHall.calories}
-        protein={diningHall.protein}
-        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-        showNutrition={showNutrition}
-        limitItems={true}
-      />
+      {mainEntreeMenuItems.length > 0 && (
+        <MenuSection
+          label='Main Entrée'
+          items={mainEntreeMenuItems}
+          showNutrition={showNutrition}
+          limitItems={true}
+        />
+      )}
+      {veganEntreeMenuItems.length > 0 && (
+        <MenuSection
+          label='Vegan Entrée'
+          items={veganEntreeMenuItems}
+          showNutrition={showNutrition}
+          limitItems={true}
+        />
+      )}
 
-      <MenuSection
-        label='Vegan Entrée'
-        items={diningHall.items['Vegan Entrée']}
-        allergens={diningHall.allergens}
-        calories={diningHall.calories}
-        protein={diningHall.protein}
-        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-        showNutrition={showNutrition}
-        limitItems={true}
-      />
-
-      <MenuSection
-        label='Soups'
-        items={diningHall.items['Soups']}
-        allergens={diningHall.allergens}
-        calories={diningHall.calories}
-        protein={diningHall.protein}
-        ALLERGEN_EMOJI={ALLERGEN_EMOJI}
-        showNutrition={showNutrition}
-        limitItems={true}
-      />
-      {/* This Pane with 'mt-auto' will now be pushed to the bottom of the flex column */}
       <Pane display='flex' justifyContent='center' className='mt-auto'>
         <Button
           appearance='minimal'

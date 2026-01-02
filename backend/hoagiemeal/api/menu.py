@@ -567,9 +567,7 @@ class MenuService:
             return nutrition_data
 
         # Return cached nutrition information if it exists
-        cached_menu_item_nutrition_info = (
-            self.MENU_CACHE.get_cached_menu_item_nutrition_info(menu_item_id) if menu_item_id else None
-        )
+        cached_menu_item_nutrition_info = self.MENU_CACHE.get_cached_menu_item_nutrition_info(menu_item_id)
         if cached_menu_item_nutrition_info:
             logger.info(f"Returning cached nutrition information for menu_item: {menu_item_id}.")
             return cached_menu_item_nutrition_info

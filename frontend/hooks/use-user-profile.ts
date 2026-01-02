@@ -49,13 +49,11 @@ const DEFAULT_USER_PROFILE: UserProfile = {
  *
  * @returns
  * - userProfile: The user profile.
- * - fetchedProfile: Whether we successfully fetched a real profile.
  * - loading: Whether the profile is being loaded.
  * - error: Any error that occurred when fetching the profile.
  */
 export const useUserProfile = () => {
   const [userProfile, setUserProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
-  const [fetchedProfile, setFetchedProfile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const hasFetchedRef = useRef(false);
@@ -67,25 +65,30 @@ export const useUserProfile = () => {
 
     // fetch the user profile
     const fetchUserProfile = async () => {
-      const { data, error } = await api.get(FETCH_USER_PROFILE_URL);
-      if (error) {
-        console.error('Failed to fetch user profile:', error);
-        setError(error?.message);
-        return;
-      }
+      try {
+        const { data, error } = await api.get(FETCH_USER_PROFILE_URL);
+        if (error) {
+          console.error('Failed to fetch user profile:', error);
+          setError(error?.message);
+          return;
+        }
 
-      // parse the user profile
-      const parsed = toCamelCase(data?.data) as UserProfile;
-      setUserProfile(parsed);
-      setFetchedProfile(true);
-      setLoading(false);
+        const parsed = toCamelCase(data?.data) as UserProfile;
+        setUserProfile(parsed);
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch user profile');
+        setUserProfile(DEFAULT_USER_PROFILE);
+        return;
+      } finally {
+        setLoading(false);
+      }
     };
     fetchUserProfile();
   }, []);
 
   return {
     userProfile,
-    fetchedProfile,
     loading,
     error,
   };

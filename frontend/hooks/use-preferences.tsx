@@ -42,12 +42,7 @@ export const DEFAULT_PREFERENCES: DiningPreferences = {
  * @returns An object containing the user preferences, a function to save the user preferences to the backend or local storage, a function to save the default preferences to the backend or local storage, and functions to set the user's dining halls, dietary restrictions, allergens, and show nutrition preference.
  */
 export function usePreferences() {
-  const {
-    userProfile,
-    loading: profileLoading,
-    error: profileError,
-    fetchedProfile,
-  } = useUserProfile();
+  const { userProfile, loading: profileLoading, error: profileError } = useUserProfile();
   const hasHydratedRef = useRef(false);
 
   const [preferences, setPreferences] = useState<DiningPreferences>(DEFAULT_PREFERENCES);
@@ -58,7 +53,7 @@ export function usePreferences() {
     if (hasHydratedRef.current) return;
     hasHydratedRef.current = true;
 
-    if (fetchedProfile) {
+    if (userProfile) {
       setPreferences({
         diningHalls: userProfile.diningHalls,
         dietaryRestrictions: userProfile.dietaryRestrictions,
@@ -71,11 +66,11 @@ export function usePreferences() {
     } else {
       setPreferences(DEFAULT_PREFERENCES);
     }
-  }, [fetchedProfile, profileLoading, profileError, hasHydratedRef, userProfile]);
+  }, [profileLoading, profileError, hasHydratedRef, userProfile]);
 
   // save the preferences to the backend or local storage
   const savePreferences = async (preferences: DiningPreferences) => {
-    if (fetchedProfile) {
+    if (userProfile) {
       const postData = toSnakeCase(preferences);
       const { error } = await api.post(UPDATE_PREFERENCES_URL, postData);
       if (error) console.error('Failed to save preferences:', error);

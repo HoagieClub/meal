@@ -1,6 +1,6 @@
-type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
+export type MealType = 'Breakfast' | 'Lunch' | 'Dinner';
 
-interface Nutrients {
+export interface Nutrients {
   calories: number;
   protein: number;
   fat: number;
@@ -19,7 +19,7 @@ interface Nutrients {
   zinc: number;
 }
 
-interface FoodItem {
+export interface FoodItem {
   apiId: number;
   name: string;
   location: string;
@@ -28,15 +28,15 @@ interface FoodItem {
   nutrition: Nutrients;
 }
 
-interface DailyPlan {
+export interface DailyPlan {
   date: Date | string;
   meals: { Breakfast: FoodItem[]; Lunch: FoodItem[]; Dinner: FoodItem[] };
   totals: Nutrients;
 }
 
-type WeeklyPlan = DailyPlan[];
+export type WeeklyPlan = DailyPlan[];
 
-interface PlanSettings {
+export interface PlanSettings {
   preset: string;
   calories: number;
   protein: number;
@@ -46,27 +46,16 @@ interface PlanSettings {
   preferredHall: string;
 }
 
-interface SavedPlansManagerProps {
+export interface SavedPlansManagerProps {
   savedPlans: Record<string, WeeklyPlan>;
   setSavedPlans: (value: Record<string, WeeklyPlan>) => void;
   setCurrentDate: (value: string) => void;
   setStoredPlan: (value: WeeklyPlan | null) => void;
 }
 
-interface NutrientProgressBarProps {
+export interface NutrientProgressBarProps {
   label: string;
   value: number;
   target: number;
   unit: string;
 }
-
-export type {
-  MealType,
-  Nutrients,
-  FoodItem,
-  DailyPlan,
-  WeeklyPlan,
-  PlanSettings,
-  SavedPlansManagerProps,
-  NutrientProgressBarProps,
-};

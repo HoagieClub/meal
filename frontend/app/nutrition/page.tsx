@@ -30,12 +30,16 @@ import { Separator } from '@/components/ui/separator';
 import { useSearchParams } from 'next/navigation';
 import NutritionTable from './components/nutrition-table';
 import { StarIcon, ArrowUpIcon } from 'evergreen-ui';
-import { MenuItemDetails } from '@/data';
+import { MenuItem, MenuItemDetails } from '@/data';
 import { api } from '@/hooks/use-next-api';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { MenusForDateMealAndLocations } from '@/types/dining';
 
 const GET_MENU_ITEM_DETAILS_URL = '/api/menu-items/details/';
 const GET_MENU_ITEM_RATINGS_URL = '/api/menu-items/ratings/';
 const FAVORITE_MENU_ITEM_URL = '/api/menu-items/favorite/';
+
+const MENU_CACHE_KEY = 'menuCache';
 
 /**
  * Nutrition label page component.
@@ -43,104 +47,105 @@ const FAVORITE_MENU_ITEM_URL = '/api/menu-items/favorite/';
  * @returns The nutrition label page component.
  */
 const NutritionLabelPage = () => {
-  const [data, setData] = useState<MenuItemDetails | null>(null);
-  const [loading, setLoading] = useState({
-    details: true,
-    ratings: true,
-    favorite: true,
-  });
-  const [error, setError] = useState<string | null>(null);
-  const [ratings, setRatings] = useState<any>(null);
-  const [personalRating, setPersonalRating] = useState<number | null>(null);
-  const [favorite, setFavorite] = useState<boolean | null>(null);
-
   const theme = useTheme();
   const searchParams = useSearchParams();
   const menuItemApiId = searchParams.get('id');
 
-  // fetch menu item details from backend
-  const getMenuItemDetails = async () => {
-    const { data, error } = await api.get(`${GET_MENU_ITEM_DETAILS_URL}${menuItemApiId}`);
-
-    if (error) {
-      console.error('Error fetching menu item:', error);
-      setError(error.message || 'Failed to load menu item');
-      setData(null);
-    } else {
-      setData(data as any);
-      console.log('Fetched menu item data:', data);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [menuItem, setMenuItem] = useState<MenuItem | null>(null);
+  const [menuCache, setMenuCache, menuCacheLoading] = useLocalStorage<MenusForDateMealAndLocations>(
+    {
+      key: MENU_CACHE_KEY,
+      initialValue: {},
     }
+  );
 
-    setLoading(false);
-  };
+  //   // fetch menu item upvotes and bookmarks from backend
+  //   const getMenuItemRatings = async () => {
+  //     setLoading((prev) => ({ ...prev, upvotesBookmarks: false }));
+  //     return;
+  //     const { data, error } = await api.get(`${GET_MENU_ITEM_RATINGS_URL}${menuItemApiId}`);
 
-  // fetch menu item upvotes and bookmarks from backend
-  const getMenuItemRatings = async () => {
-    setLoading((prev) => ({ ...prev, upvotesBookmarks: false }));
-    return;
-    const { data, error } = await api.get(`${GET_MENU_ITEM_RATINGS_URL}${menuItemApiId}`);
+  //     if (error) {
+  //       console.error('Error fetching menu item ratings:', error);
+  //       setError(error.message || 'Failed to load menu item ratings');
+  //       setUpvotes(0);
+  //       setUpvoted(false);
+  //       setBookmarked(false);
+  //     } else {
+  //       console.log('Menu item ratings data:', data);
+  //     }
 
-    if (error) {
-      console.error('Error fetching menu item ratings:', error);
-      setError(error.message || 'Failed to load menu item ratings');
-      setUpvotes(0);
-      setUpvoted(false);
-      setBookmarked(false);
-    } else {
-      console.log('Menu item ratings data:', data);
-    }
+  //     if (error) {
+  //       console.error('Error fetching upvotes and bookmarks:', error);
+  //       setError(error.message || 'Failed to load upvotes and bookmarks');
+  //       setUpvotes(0);
+  //       setUpvoted(false);
+  //       setBookmarked(false);
+  //     } else {
+  //       console.log('Upvotes and bookmarks data:', data);
 
-    if (error) {
-      console.error('Error fetching upvotes and bookmarks:', error);
-      setError(error.message || 'Failed to load upvotes and bookmarks');
-      setUpvotes(0);
-      setUpvoted(false);
-      setBookmarked(false);
-    } else {
-      console.log('Upvotes and bookmarks data:', data);
+  //       const { upvotes, bookmarks, hasUserUpvoted, hasUserBookmarked }: any = data;
 
-      const { upvotes, bookmarks, hasUserUpvoted, hasUserBookmarked }: any = data;
+  //       setUpvotes(upvotes);
+  //       setUpvoted(hasUserUpvoted);
+  //       setBookmarked(hasUserBookmarked);
+  //     }
 
-      setUpvotes(upvotes);
-      setUpvoted(hasUserUpvoted);
-      setBookmarked(hasUserBookmarked);
-    }
+  //     setLoading((prev) => ({ ...prev, upvotesBookmarks: false }));
+  //   };
 
-    setLoading((prev) => ({ ...prev, upvotesBookmarks: false }));
-  };
+  //   // post menu item upvotes and bookmarks to backend
+  //   const postMenuItemUpvotesBookmarks = async ({ action }: { action: 'upvote' | 'bookmark' }) => {
+  //     return;
+  //     const { error, data } = await api.post(
+  //       `${GET_MENU_ITEM_UPVOTES_BOOKMARKS_URL}${menuItemApiId}`,
+  //       {
+  //         action,
+  //       }
+  //     );
 
-  // post menu item upvotes and bookmarks to backend
-  const postMenuItemUpvotesBookmarks = async ({ action }: { action: 'upvote' | 'bookmark' }) => {
-    return;
-    const { error, data } = await api.post(
-      `${GET_MENU_ITEM_UPVOTES_BOOKMARKS_URL}${menuItemApiId}`,
-      {
-        action,
-      }
-    );
-
-    if (error) {
-      console.error('Error posting upvotes and bookmarks:', error);
-    } else {
-      console.log('Upvotes and bookmarks updated:', data);
-    }
-  };
+  //     if (error) {
+  //       console.error('Error posting upvotes and bookmarks:', error);
+  //     } else {
+  //       console.log('Upvotes and bookmarks updated:', data);
+  //     }
+  //   };
 
   // fetch menu item details when component mounts
   useEffect(() => {
     if (!menuItemApiId) {
-      setError('No menu item ID provided');
-      setLoading({ ...loading, details: false, upvotesBookmarks: false });
+      setPageError('No menu item ID provided');
+      setPageLoading(false);
       return;
     }
-    setLoading((prev) => ({ ...prev, details: true, upvotesBookmarks: true }));
-    setError(null);
+    if (menuCacheLoading) return;
+
+    // Check cache first
+    const cachedMenus = menuCache[dateKey];
+
+
+    const getMenuItemDetails = async () => {
+      const { data, error } = await api.get(`${GET_MENU_ITEM_DETAILS_URL}${menuItemApiId}`);
+
+      if (error) {
+        console.error('Error fetching menu item:', error);
+        setError(error.message || 'Failed to load menu item');
+        setData(null);
+      } else {
+        setData(data as any);
+        console.log('Fetched menu item data:', data);
+      }
+
+      setLoading(false);
+    };
+
     getMenuItemDetails();
-    getMenuItemUpvotesBookmarks();
-  }, [menuItemApiId]);
+  }, [menuItemApiId, menuCacheLoading]);
 
   // display loading spinner if data is still loading
-  if (loading.details || loading.upvotesBookmarks) {
+  if (loading) {
     return (
       <Pane display='flex' alignItems='center' justifyContent='center' height='300'>
         <Spinner />
@@ -300,18 +305,18 @@ const NutritionLabelPage = () => {
               gap={minorScale(2)}
               cursor='pointer'
               onClick={() => {
-                setUpvotes((upvotes) => (upvoted ? upvotes - 1 : upvotes + 1));
-                setUpvoted(!upvoted);
-                postMenuItemUpvotesBookmarks({ action: 'upvote' });
+                // setUpvotes((upvotes) => (upvoted ? upvotes - 1 : upvotes + 1));
+                // setUpvoted(!upvoted);
+                // postMenuItemUpvotesBookmarks({ action: 'upvote' });
               }}
             >
-              <ArrowUpIcon
+              {/* <ArrowUpIcon
                 color={upvoted ? theme.colors.orange500 : theme.colors.green700}
                 size={16}
               />
               <Text fontWeight={600} color={theme.colors.green700} fontSize={14}>
                 {upvotes}
-              </Text>
+              </Text> */}
             </Pane>
 
             <Pane
@@ -321,17 +326,17 @@ const NutritionLabelPage = () => {
               paddingX={majorScale(3)}
               cursor='pointer'
               onClick={() => {
-                setBookmarked(!bookmarked);
-                postMenuItemUpvotesBookmarks({ action: 'bookmark' });
+                // setBookmarked(!bookmarked);
+                // postMenuItemUpvotesBookmarks({ action: 'bookmark' });
               }}
             >
-              <StarIcon
-                color={bookmarked ? theme.colors.orange500 : theme.colors.green700}
+              {/* <StarIcon
+                color={theme.colors.green700}
                 size={16}
               />
               <Text fontWeight={600} color={theme.colors.green700} fontSize={14}>
-                {bookmarked ? 'Favorited' : 'Favorite'}
-              </Text>
+                {bookmarks}
+              </Text> */}
             </Pane>
           </Pane>
         </Pane>
