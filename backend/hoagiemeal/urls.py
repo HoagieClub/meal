@@ -19,53 +19,35 @@ from django.contrib import admin
 from django.urls import path
 from hoagiemeal.api.locations import get_dining_locations, get_all_dining_locations
 from hoagiemeal.api.menu import (
-    get_dining_menu,
-    get_dining_menu_item_nutrition_info,
-    get_dining_menu_with_menu_item_nutrition_info,
-    get_dining_menu_with_menu_item_nutrition_info_for_locations,
-    get_dining_menu_with_menu_item_nutrition_info_for_locations_and_day,
-    clear_cache,
+    get_dining_menu_item,
+    get_dining_menu_with_menu_items,
+    get_dining_menus_with_menu_items_for_locations,
+    get_dining_menus_with_menu_items_for_locations_and_day,
+    clear_dining_menus_cache,
 )
 from hoagiemeal.api.user import (
-    get_user,
-    get_user_profile,
-    verify_and_get_or_create_user_and_profile,
-    update_user_profile,
+    verify_and_get_or_create_user,
 )
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/dining/menus/clear-cache/", clear_dining_menus_cache, name="clear-dining-menus-cache"),
     # Location API Endpoints
     path("api/dining/locations/", get_dining_locations, name="dining-locations"),
     path("api/dining/locations/all/", get_all_dining_locations, name="all-dining-locations"),
     # Menu API Endpoints
-    path("api/dining/menu/", get_dining_menu, name="dining-menu"),
+    path("api/dining/menu/item/", get_dining_menu_item, name="dining-menu-item"),
+    path("api/dining/menu/", get_dining_menu_with_menu_items, name="dining-menu-with-menu-items"),
     path(
-        "api/dining/menu/item/nutrition-info/",
-        get_dining_menu_item_nutrition_info,
-        name="dining-menu-item-nutrition-info",
+        "api/dining/menus/all-locations/",
+        get_dining_menus_with_menu_items_for_locations,
+        name="dining-menus-with-menu-items-for-locations",
     ),
     path(
-        "api/dining/menu/with-nutrition/",
-        get_dining_menu_with_menu_item_nutrition_info,
-        name="dining-menu-with-nutrition",
-    ),
-    path(
-        "api/dining/menu/with-nutrition/all-locations/",
-        get_dining_menu_with_menu_item_nutrition_info_for_locations,
-        name="dining-menu-with-nutrition-for-all-locations",
-    ),
-    path(
-        "api/dining/menu/with-nutrition/all-locations/day/",
-        get_dining_menu_with_menu_item_nutrition_info_for_locations_and_day,
-        name="dining-menu-with-nutrition-for-all-locations-and-day",
+        "api/dining/menus/all-locations/day/",
+        get_dining_menus_with_menu_items_for_locations_and_day,
+        name="dining-menus-with-menu-items-for-locations-and-day",
     ),
     # User API Endpoints
-    path("api/user/", get_user, name="user"),
-    path("api/user/profile/", get_user_profile, name="user-profile"),
-    path(
-        "api/user/verify/", verify_and_get_or_create_user_and_profile, name="verify-and-get-or-create-user-and-profile"
-    ),
-    path("api/user/update/", update_user_profile, name="update-user-profile"),
-    path("api/clear-cache/", clear_cache, name="clear-cache"),
+    path("api/user/verify/", verify_and_get_or_create_user, name="verify-and-get-or-create-user"),
 ]

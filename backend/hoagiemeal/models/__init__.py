@@ -17,15 +17,13 @@ This software is provided "as-is", without warranty of any kind.
 
 from .user import CustomUser
 from .dining import DiningVenue
-from .menu import Menu, MenuItem, MenuItemNutrient
-from .engagement import MenuItemLike, MenuItemFavorite
+from .menu import Menu, MenuItem, MenuItemInteraction, MenuItemMetrics
 
 __all__ = [
     "CustomUser",
     "DiningVenue",
     "Menu",
     "MenuItem",
-    "MenuItemNutrient",
-    "MenuItemLike",
-    "MenuItemFavorite",
+    "MenuItemInteraction",
+    "MenuItemMetrics",
 ]

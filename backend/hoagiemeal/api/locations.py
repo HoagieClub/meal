@@ -249,10 +249,10 @@ def get_dining_locations(request):
         category_ids = request.GET.getlist("category_id", ["2"])
         logger.info(f"Getting or caching dining locations for categories: {', '.join(category_ids)}")
         locations = locations_service.get_or_cache_locations(category_ids)
-        return Response(locations)
+        return Response({"data": locations, "message": "Dining locations fetched successfully."}, status=200)
     except Exception as e:
         logger.error(f"Error in get_or_cache_dining_locations view: {e}")
-        return Response({"error": str(e)}, status=500)
+        return Response({"message": f"Error fetching dining locations: {str(e)}"}, status=500)
 
 
 @api_view(["GET"])
@@ -271,10 +271,10 @@ def get_all_dining_locations(request):
     try:
         all_category_ids = ["2", "3"]
         locations = locations_service.get_or_cache_locations(all_category_ids)
-        return Response(locations)
+        return Response({"data": locations, "message": "Dining locations fetched successfully."}, status=200)
     except Exception as e:
         logger.error(f"Error in get_all_dining_locations view: {e}")
-        return Response({"error": str(e)}, status=500)
+        return Response({"message": f"Error fetching all dining locations: {str(e)}"}, status=500)
 
 
 #################### Utility functions for working with locations data #########################

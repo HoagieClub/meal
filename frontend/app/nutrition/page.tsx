@@ -111,7 +111,7 @@ const NutritionLabelPage = () => {
   //     } else {
   //       console.log('Upvotes and bookmarks updated:', data);
   //     }
-  //   };
+//   };
 
   // fetch menu item details when component mounts
   useEffect(() => {

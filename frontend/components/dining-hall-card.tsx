@@ -21,6 +21,7 @@ interface DiningHallCardProps {
   showNutrition: boolean;
   isPinned: boolean;
   onPinToggle: () => void;
+  menuId: string;
 }
 
 const DiningHallCard: React.FC<DiningHallCardProps> = ({
@@ -29,6 +30,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
   showNutrition,
   isPinned,
   onPinToggle,
+  menuId,
 }) => {
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
@@ -103,6 +105,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           items={mainEntreeMenuItems}
           showNutrition={showNutrition}
           limitItems={true}
+          menuId={menuId}
         />
       )}
       {veganEntreeMenuItems.length > 0 && (
@@ -111,6 +114,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           items={veganEntreeMenuItems}
           showNutrition={showNutrition}
           limitItems={true}
+          menuId={menuId}
         />
       )}
 

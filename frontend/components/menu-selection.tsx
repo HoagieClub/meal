@@ -10,9 +10,16 @@ interface MenuSectionProps {
   items: any[];
   showNutrition?: boolean;
   limitItems?: boolean;
+  menuId: string;
 }
 
-const MenuSection: React.FC<MenuSectionProps> = ({ label, items, showNutrition, limitItems }) => {
+const MenuSection: React.FC<MenuSectionProps> = ({
+  label,
+  items,
+  showNutrition,
+  limitItems,
+  menuId,
+}) => {
   const theme = useTheme();
   const displayItems = limitItems ? items.slice(0, 2).reverse() : items;
 
@@ -58,7 +65,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({ label, items, showNutrition, 
       ? `${item?.nutrition?.totalCarbohydrates} g`
       : '';
     const apiId = item?.apiId;
-    const nutritionLink = `/nutrition?id=${apiId}`;
+    const nutritionLink = `/nutrition?id=${apiId}&menuId=${menuId}`;
 
     return (
       <React.Fragment key={apiId}>

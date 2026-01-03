@@ -111,6 +111,7 @@ export function usePreferences() {
     preferences,
     setPreferences: savePreferences,
     setShowNutrition: setShowNutritionWithSave,
+    showNutrition: preferences.showNutrition,
     setDiningHalls: setDiningHallsWithSave,
     setDietaryRestrictions: setDietaryRestrictionsWithSave,
     setAllergens: setAllergensWithSave,

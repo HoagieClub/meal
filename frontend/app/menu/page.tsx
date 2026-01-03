@@ -240,6 +240,7 @@ export default function MenuPage() {
       initialValue: {},
     }
   );
+  const menuId = `${meal}-${dateKey}`;
 
   const {
     setAllergens,
@@ -249,6 +250,7 @@ export default function MenuPage() {
     setDiningHalls,
     setDietaryRestrictions,
     setShowNutrition,
+    showNutrition,
   } = usePreferences();
   const [modalHall, setModalHall] = useState<DiningVenue | null>(null);
   const { pinnedHalls, togglePin } = usePinnedHalls();
@@ -389,14 +391,17 @@ export default function MenuPage() {
         className='h-full no-scrollbar'
       >
         {displayMenusForLocations.map((diningHall) => {
+          const isPinned = pinnedHalls.has(diningHall.name as DiningHallType);
+          const onPinToggle = () => togglePin(diningHall.name as DiningHallType);
           return (
             <DiningHallCard
               key={diningHall.name}
               diningHall={diningHall}
               setModalHall={setModalHall}
-              showNutrition={preferences.showNutrition ?? true}
-              isPinned={pinnedHalls.has(diningHall.name as DiningHallType)}
-              onPinToggle={() => togglePin(diningHall.name as DiningHallType)}
+              showNutrition={showNutrition}
+              isPinned={isPinned}
+              onPinToggle={onPinToggle}
+              menuId={menuId}
             />
           );
         })}
