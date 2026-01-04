@@ -95,8 +95,8 @@ export const DIET_LABEL_MAP: Record<DietaryTagType, string> = {
 export const MEAL_COLOR_MAP = (theme: Theme): Record<MealType, string> => ({
   Breakfast: theme.colors.green100 as string,
   Lunch: theme.colors.green200 as string,
-  Dinner: theme.colors.green400 as string,
-  Brunch: theme.colors.green300 as string,
+  Dinner: theme.colors.green300 as string,
+  Brunch: theme.colors.green200 as string,
 });
 
 export const DIET_STYLE_MAP = (theme: Theme): Record<DietaryTagType, any> => ({

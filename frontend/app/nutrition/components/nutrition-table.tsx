@@ -15,19 +15,21 @@
 import { majorScale, minorScale, Pane, Text } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
 import { MacronutrientRow, MicronutrientRow } from './nutrient-rows';
-import { NutrientInfo } from '@/data';
+import { MenuItem } from '@/types/dining';
 import { MACRONUTRIENTS, MICRONUTRIENTS } from '../actions';
 
 /**
  * Nutrition table component.
  *
- * @param nutrient - The nutrient to display.
+ * @param menuItem - The menu item to display.
  * @returns The nutrition table component.
  */
-export default function NutritionTable({ nutrient }: { nutrient: NutrientInfo }) {
-  const macronutrients = MACRONUTRIENTS(nutrient);
-  const micronutrients = MICRONUTRIENTS(nutrient);
+export default function NutritionTable({ menuItem }: { menuItem: MenuItem }) {
+  // Get the macronutrients and micronutrients for the menu item
+  const macronutrients = MACRONUTRIENTS(menuItem);
+  const micronutrients = MICRONUTRIENTS(menuItem);
 
+  // Render the nutrition table
   return (
     <Pane className='col-span-2'>
       <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' fontWeight={600}>
@@ -39,21 +41,25 @@ export default function NutritionTable({ nutrient }: { nutrient: NutrientInfo })
       </Pane>
       <Separator height='3px' />
 
+      {/* Render the macronutrients if they exist */}
       <Pane
         marginTop={minorScale(1)}
         paddingTop={minorScale(1)}
         display='grid'
         rowGap={minorScale(2)}
       >
-        {macronutrients.map((nutrient) => (
-          <MacronutrientRow
-            key={nutrient.label}
-            label={nutrient.label}
-            amount={nutrient.amount}
-            unit={nutrient.unit}
-            dvPercent={nutrient.dvPercent}
-          />
-        ))}
+        {/* Map over and render every macronutrient in its own row */}
+        {macronutrients &&
+          macronutrients.length > 0 &&
+          macronutrients.map((nutrient) => (
+            <MacronutrientRow
+              key={nutrient.label}
+              label={nutrient.label}
+              amount={nutrient.amount}
+              unit={nutrient.unit}
+              dvPercent={nutrient.dvPercent}
+            />
+          ))}
       </Pane>
 
       <Pane display='grid' gridTemplateColumns='2fr 1fr' fontWeight={600} marginTop={majorScale(3)}>
@@ -64,19 +70,23 @@ export default function NutritionTable({ nutrient }: { nutrient: NutrientInfo })
       </Pane>
       <Separator height='3px' />
 
+      {/* Render the micronutrients if they exist */}
       <Pane
         marginTop={minorScale(1)}
         paddingTop={minorScale(1)}
         display='grid'
         rowGap={minorScale(2)}
       >
-        {micronutrients.map((nutrient) => (
-          <MicronutrientRow
-            key={nutrient.label}
-            label={nutrient.label}
-            dvPercent={nutrient.dvPercent}
-          />
-        ))}
+        {/* Map over and render every micronutrient in its own row */}
+        {micronutrients &&
+          micronutrients.length > 0 &&
+          micronutrients.map((nutrient) => (
+            <MicronutrientRow
+              key={nutrient.label}
+              label={nutrient.label}
+              dvPercent={nutrient.dvPercent}
+            />
+          ))}
       </Pane>
     </Pane>
   );

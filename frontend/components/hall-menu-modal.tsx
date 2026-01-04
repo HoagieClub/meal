@@ -1,29 +1,59 @@
+/**
+ * @overview Hall menu modal component.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this tree or at
+ *
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
+
 'use client';
 
 import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
 import React from 'react';
 import MenuSection from './menu-selection';
 import { Separator } from './ui/separator';
+import { DiningVenue } from '@/types/dining';
+import { filterMenuItems } from '@/app/menu/actions';
 
-const HallMenuModal: React.FC<{
-  modalHall: any | null;
-  setModalHall: (hall: any | null) => void;
+/**
+ * Props for the HallMenuModal component.
+ *
+ * @param modalHall - The dining venue to display the menu for.
+ * @param setModalHall - The function to set the modal hall.
+ * @param showNutrition - Whether to show nutrition information.
+ * @param menuId - The menu ID to use for the menu section.
+ */
+interface HallMenuModalProps {
+  modalHall: DiningVenue | null;
+  setModalHall: (hall: DiningVenue | null) => void;
   showNutrition: boolean;
-}> = ({ modalHall, setModalHall, showNutrition }) => {
+  menuId: string;
+}
+
+/**
+ * Hall menu modal component.
+ *
+ * @param modalHall - The dining venue to display the menu for.
+ * @param setModalHall - The function to set the modal hall.
+ * @param showNutrition - Whether to show nutrition information.
+ * @param menuId - The menu ID to use for the menu section.
+ */
+const HallMenuModal: React.FC<HallMenuModalProps> = ({
+  modalHall,
+  setModalHall,
+  showNutrition,
+  menuId,
+}) => {
   if (!modalHall) return null;
 
-  const menuItems = modalHall?.menu ?? [];
-  const mainEntreeMenuItems = [];
-  const veganEntreeMenuItems = [];
-  for (const menuItem of menuItems) {
-    const dietaryFlags = menuItem?.nutrition?.dietaryFlags ?? [];
-    const dietaryFlagsLower = dietaryFlags.map((flag: string) => flag.toLowerCase());
-    if (dietaryFlagsLower.includes('vegetarian') || dietaryFlagsLower.includes('vegan')) {
-      veganEntreeMenuItems.push(menuItem);
-    } else {
-      mainEntreeMenuItems.push(menuItem);
-    }
-  }
+  // Separate the menu items into main entrée and vegan entrée.
+  const { mainEntreeMenuItems, veganEntreeMenuItems } = filterMenuItems(modalHall.menu ?? []);
 
   return (
     <Dialog
@@ -35,20 +65,24 @@ const HallMenuModal: React.FC<{
     >
       <Pane display='flex' flexDirection='column' paddingBottom={majorScale(5)} gap={minorScale(3)}>
         <Separator height='1.5px' marginTop={0} />
-        <MenuSection
-          label='Main Entrée'
-          items={mainEntreeMenuItems}
-          showNutrition={showNutrition}
-          limitItems={false}
-        />
-
-        <Separator height='1.5px' />
-        <MenuSection
-          label='Vegan Entrée'
-          items={veganEntreeMenuItems}
-          showNutrition={showNutrition}
-          limitItems={false}
-        />
+        {mainEntreeMenuItems.length > 0 && (
+          <MenuSection
+            label='Main Entrée'
+            items={mainEntreeMenuItems}
+            showNutrition={showNutrition}
+            limitItems={false}
+            menuId={menuId}
+          />
+        )}
+        {veganEntreeMenuItems.length > 0 && (
+          <MenuSection
+            label='Vegan Entrée'
+            items={veganEntreeMenuItems}
+            showNutrition={showNutrition}
+            limitItems={false}
+            menuId={menuId}
+          />
+        )}
       </Pane>
     </Dialog>
   );

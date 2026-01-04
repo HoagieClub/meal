@@ -48,6 +48,7 @@ export default function TeamMemberCard({ member }: { member: TeamMember }) {
         {member.role}
       </Text>
 
+      {/* Render the social icons */}
       <Pane display='flex' justifyContent='center' gap={minorScale(2)}>
         {Object.entries(member.socials).map(([key, url]) => {
           if (!url) return null;

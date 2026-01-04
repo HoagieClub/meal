@@ -11,13 +11,13 @@ import {
 } from 'evergreen-ui';
 import React from 'react';
 import MenuSection from './menu-selection';
-
-import { UIVenue } from '@/data';
+import { filterMenuItems } from '@/app/menu/actions';
+import { DiningVenue } from '@/types/dining';
 import { HALL_BANNER_MAP } from '@/styles';
 
 interface DiningHallCardProps {
-  diningHall: UIVenue;
-  setModalHall: (hall: UIVenue | null) => void;
+  diningHall: DiningVenue;
+  setModalHall: (hall: DiningVenue | null) => void;
   showNutrition: boolean;
   isPinned: boolean;
   onPinToggle: () => void;
@@ -34,20 +34,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
 }) => {
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
-
-  // Divide items into main entrees and vegan entrees
-  const menuItems = diningHall?.menu ?? [];
-  const mainEntreeMenuItems = [];
-  const veganEntreeMenuItems = [];
-  for (const menuItem of menuItems) {
-    const dietaryFlags = menuItem?.nutrition?.dietaryFlags ?? [];
-    const dietaryFlagsLower = dietaryFlags.map((flag: string) => flag.toLowerCase());
-    if (dietaryFlagsLower.includes('vegetarian') || dietaryFlagsLower.includes('vegan')) {
-      veganEntreeMenuItems.push(menuItem);
-    } else {
-      mainEntreeMenuItems.push(menuItem);
-    }
-  }
+  const { mainEntreeMenuItems, veganEntreeMenuItems } = filterMenuItems(diningHall.menu ?? []);
 
   return (
     <Pane

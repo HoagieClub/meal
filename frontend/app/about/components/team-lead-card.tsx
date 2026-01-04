@@ -65,6 +65,7 @@ export default function TeamLeadCard({ lead }: { lead: TeamMember }) {
           {lead.bio}
         </Paragraph>
         
+        {/* Render the social icons */}
         <Pane
           display='flex'
           gap={minorScale(2)}

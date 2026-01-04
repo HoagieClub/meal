@@ -40,17 +40,7 @@ import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skele
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useDate } from '@/hooks/use-date';
 import { usePinnedHalls } from '@/hooks/use-pinned-halls';
-import { usePreferences } from '@/hooks/use-preferences';
-import {
-  DINING_HALLS,
-  DiningHallType,
-  MealType,
-  MEAL_RANGES,
-  ALLERGENS,
-  DIETARY_TAGS,
-  AllergenType,
-  DietaryTagType,
-} from '@/data';
+import { DINING_HALLS, MEAL_RANGES, ALLERGENS, DIETARY_TAGS, MEALS } from '@/data';
 import {
   MEAL_COLOR_MAP,
   ALLERGEN_EMOJI,
@@ -59,7 +49,6 @@ import {
   ALLERGEN_STYLE_MAP,
   DIET_STYLE_MAP,
 } from '@/styles';
-import { DEFAULT_PREFERENCES } from '@/hooks/use-preferences';
 import { api } from '@/hooks/use-next-api';
 import {
   DiningVenue,
@@ -67,150 +56,22 @@ import {
   MenusForDateMealAndLocations,
   MenusForLocations,
   MenusForMealAndLocations,
+  DiningHall,
+  DietaryTag,
+  Allergen,
 } from '@/types/dining';
+import { buildDisplayData } from './actions';
+import { formatMenuId } from '@/utils/dining';
+import { DiningPreferences } from '@/types/dining';
 
 const MENU_CACHE_KEY = 'menuCache';
-const FETCH_MENU_DATA_URL = '/api/dining/menu';
-
-/**
- * Build display data props.
- *
- * @param menusForLocations - The menus for locations.
- * @param appliedDiningHalls - The applied dining halls.
- * @param appliedDietaryRestrictions - The applied dietary restrictions.
- * @param appliedAllergens - The applied allergens.
- * @param searchTerm - The search term.
- * @param pinnedHalls - The pinned halls.
- */
-interface BuildDisplayDataProps {
-  menusForLocations: MenusForLocations;
-  appliedDiningHalls: DiningHallType[];
-  appliedDietaryRestrictions: DietaryTagType[];
-  appliedAllergens: AllergenType[];
-  searchTerm: string;
-  pinnedHalls: Set<DiningHallType>;
-}
-
-/**
- * Build display data for the menu page.
- *
- * @param props - The build display data props.
- * @returns The display data.
- */
-const buildDisplayData = (props: BuildDisplayDataProps): MenusForLocations => {
-  console.log('Build display data props:', props);
-  const {
-    menusForLocations,
-    appliedDiningHalls,
-    appliedDietaryRestrictions,
-    appliedAllergens,
-    searchTerm,
-    pinnedHalls,
-  } = props;
-
-  // Normalize search term, dietary restrictions, allergens, and dietary flags
-  const searchTermLower = searchTerm.trim().toLowerCase();
-  const appliedDietaryRestrictionsLower =
-    appliedDietaryRestrictions && appliedDietaryRestrictions.length > 0
-      ? appliedDietaryRestrictions.map((dietaryRestriction) => dietaryRestriction.toLowerCase())
-      : [];
-  const appliedAllergensLower =
-    appliedAllergens && appliedAllergens.length > 0
-      ? appliedAllergens.map((allergen) => allergen.toLowerCase())
-      : [];
-  const appliedDiningHallsLower =
-    appliedDiningHalls && appliedDiningHalls.length > 0
-      ? appliedDiningHalls.map((diningHall) => diningHall.toLowerCase())
-      : [];
-
-  // Check if any filters are applied
-  const hasSearch = searchTermLower.length > 0;
-  const hasDietaryRestrictionFilter = appliedDietaryRestrictionsLower.length > 0;
-  const hasAllergenFilter = appliedAllergensLower.length > 0;
-
-  // Filter dining venues by applied dining halls
-  let filteredMenusForLocations = menusForLocations.filter((diningVenue) => {
-    const diningVenueLower = diningVenue.name.toLowerCase();
-    const isDiningHallApplied = appliedDiningHallsLower.includes(diningVenueLower);
-    return isDiningHallApplied;
-  });
-
-  // Filter menu items by applied filters
-  filteredMenusForLocations = filteredMenusForLocations.map((diningVenue) => {
-    const menuItems = diningVenue.menu && diningVenue.menu.length > 0 ? diningVenue.menu : [];
-
-    const filteredMenuItems = menuItems.filter((menuItem) => {
-      // Normalize menu item allergens, ingredients, and dietary flags
-      const menuItemAllergensLower =
-        menuItem.nutrition?.allergens && menuItem.nutrition?.allergens.length > 0
-          ? menuItem.nutrition?.allergens.map((allergen) => allergen.toLowerCase())
-          : [];
-      const menuItemIngredientsLower =
-        menuItem.nutrition?.ingredients && menuItem.nutrition?.ingredients.length > 0
-          ? menuItem.nutrition?.ingredients.map((ingredient) => ingredient.toLowerCase())
-          : [];
-      const menuItemDietaryFlagsLower =
-        menuItem.nutrition?.dietary_flags && menuItem.nutrition?.dietary_flags.length > 0
-          ? menuItem.nutrition?.dietary_flags.map((dietaryFlag) => dietaryFlag.toLowerCase())
-          : [];
-      const menuItemNameLower = menuItem.name.toLowerCase();
-
-      const combinedText =
-        `${menuItemNameLower} ${menuItemIngredientsLower.join(' ')} ${menuItemAllergensLower.join(' ')} ${menuItemDietaryFlagsLower.join(' ')}`.toLowerCase();
-
-      // Check if search term is in combined text
-      if (hasSearch) {
-        const includesSearch = combinedText.includes(searchTermLower);
-        if (!includesSearch) {
-          return false;
-        }
-      }
-
-      // Check if dietary flag filter is in menu item dietary flags
-      if (hasDietaryRestrictionFilter) {
-        const includesDietFilter = appliedDietaryRestrictionsLower.some((dietaryRestriction) =>
-          menuItemDietaryFlagsLower.includes(dietaryRestriction)
-        );
-        if (!includesDietFilter) {
-          return false;
-        }
-      }
-
-      // Check if allergen filter is in menu item allergens or ingredients
-      if (hasAllergenFilter) {
-        const includesAllergen = appliedAllergensLower.some(
-          (allergen) =>
-            menuItemAllergensLower.includes(allergen) || menuItemIngredientsLower.includes(allergen)
-        );
-        if (!includesAllergen) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    // Return the dining venue with the filtered menu items
-    return {
-      ...diningVenue,
-      menu: filteredMenuItems,
-    };
-  });
-
-  // Filter dining venues with no filtered menu items
-  filteredMenusForLocations = filteredMenusForLocations.filter((diningVenue) => {
-    const hasMenuItems = diningVenue.menu && diningVenue.menu.length > 0;
-    return hasMenuItems;
-  });
-
-  // Sort dining venues by pin status
-  filteredMenusForLocations = filteredMenusForLocations.sort((a, b) => {
-    const aIsPinned = pinnedHalls.has(a.name as DiningHallType);
-    const bIsPinned = pinnedHalls.has(b.name as DiningHallType);
-    return aIsPinned ? -1 : bIsPinned ? 1 : 0;
-  });
-
-  return filteredMenusForLocations;
+const FETCH_MENU_DATA_URL = '/api/dining/menu/locations/day';
+const PREFERENCES_KEY = 'diningPreferences';
+const DEFAULT_PREFERENCES: DiningPreferences = {
+  diningHalls: DINING_HALLS,
+  dietaryRestrictions: [],
+  allergens: [],
+  showNutrition: true,
 };
 
 /**
@@ -222,6 +83,7 @@ export default function MenuPage() {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
 
+  // Date logic from the useDate hook
   const {
     selectedDate,
     currentMeal,
@@ -230,31 +92,25 @@ export default function MenuPage() {
     goToPreviousDay,
     goToNextDay,
   } = useDate();
+
+  // State for currently selected meal, menus, menu cache, and current menu ID
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
-  const [menusForMealAndLocations, setMenusForMealAndLocations] =
-    useState<MenusForMealAndLocations>({});
   const [menusForLocations, setMenusForLocations] = useState<MenusForLocations>([]);
   const [menuCache, setMenuCache, menuCacheLoading] = useLocalStorage<MenusForDateMealAndLocations>(
-    {
-      key: MENU_CACHE_KEY,
-      initialValue: {},
-    }
+    { key: MENU_CACHE_KEY, initialValue: {} }
   );
-  const menuId = `${meal}-${dateKey}`;
+  const menuId = formatMenuId(selectedDate, meal);
 
-  const {
-    setAllergens,
-    preferences,
-    loading: preferencesLoading,
-    setPreferences,
-    setDiningHalls,
-    setDietaryRestrictions,
-    setShowNutrition,
-    showNutrition,
-  } = usePreferences();
+  // Local storage state for dining preferences
+  const [preferences, setPreferences, preferencesLoading] = useLocalStorage<DiningPreferences>({
+    key: PREFERENCES_KEY,
+    initialValue: DEFAULT_PREFERENCES,
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Controls pinned halls, modal, and filter open state
   const [modalHall, setModalHall] = useState<DiningVenue | null>(null);
   const { pinnedHalls, togglePin } = usePinnedHalls();
-  const [searchTerm, setSearchTerm] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Fetch menu data for the selected date
@@ -265,10 +121,9 @@ export default function MenuPage() {
     // Check cache first
     const cachedMenus = menuCache[dateKey];
     if (cachedMenus) {
-      setMenusForMealAndLocations(cachedMenus);
       setMenusForLocations(cachedMenus[meal] ?? []);
       setLoading(false);
-      console.log('Cached menus for date:', dateKey, cachedMenus);
+      console.log('Found menus in cache for date:', dateKey, cachedMenus);
       return;
     }
 
@@ -276,24 +131,24 @@ export default function MenuPage() {
     async function fetchMenuData() {
       try {
         const menusRoute = `${FETCH_MENU_DATA_URL}?menu_date=${dateKey}`;
-        const { data, error }: any = await api.get(menusRoute);
+        const { data, error } = await api.get<MenusForMealAndLocations>(menusRoute);
         if (error) throw new Error(error);
+        if (!data) throw new Error('No data received');
         const menuData = data.data || data;
         if (!menuData || (typeof menuData === 'object' && Object.keys(menuData).length === 0)) {
           throw new Error('No menu data found');
         }
 
         console.log('Fetched menus for date:', dateKey, menuData);
-        setMenusForMealAndLocations(menuData as MenusForMealAndLocations);
-        setMenusForLocations(menuData[meal] ?? []);
-        setMenuCache({ ...menuCache, [dateKey]: menuData as MenusForDateMealAndLocations });
+        const menusData = menuData as MenusForMealAndLocations;
+        setMenusForLocations(menusData[meal] ?? []);
+        setMenuCache({ ...menuCache, [dateKey]: menusData as MenusForDateMealAndLocations });
         setLoading(false);
         return;
       } catch (error) {
         console.error(`Error fetching menu data for ${dateKey}:`, error);
         setLoading(false);
         setMenusForLocations([]);
-        setMenusForMealAndLocations({});
         return;
       } finally {
         setLoading(false);
@@ -354,7 +209,7 @@ export default function MenuPage() {
     );
   };
 
-  // Render empty state
+  // Render empty state if no menu items are found
   const NoMenusFoundCard = () => (
     <Pane
       display='flex'
@@ -391,14 +246,14 @@ export default function MenuPage() {
         className='h-full no-scrollbar'
       >
         {displayMenusForLocations.map((diningHall) => {
-          const isPinned = pinnedHalls.has(diningHall.name as DiningHallType);
-          const onPinToggle = () => togglePin(diningHall.name as DiningHallType);
+          const isPinned = pinnedHalls.has(diningHall.name as DiningHall);
+          const onPinToggle = () => togglePin(diningHall.name as DiningHall);
           return (
             <DiningHallCard
               key={diningHall.name}
               diningHall={diningHall}
               setModalHall={setModalHall}
-              showNutrition={showNutrition}
+              showNutrition={preferences.showNutrition}
               isPinned={isPinned}
               onPinToggle={onPinToggle}
               menuId={menuId}
@@ -436,6 +291,7 @@ export default function MenuPage() {
             borderBottom={`1px solid ${theme.colors.gray200}`}
             className='relative flex flex-col p-4'
           >
+            {/* Reset Filters button */}
             <Pane
               display='flex'
               alignItems='center'
@@ -454,6 +310,8 @@ export default function MenuPage() {
             </Pane>
 
             <Pane borderBottom={`1px solid ${theme.colors.gray200}`} marginBottom={minorScale(2)} />
+
+            {/* Search Food input */}
             <Text
               size={300}
               fontWeight={600}
@@ -482,13 +340,16 @@ export default function MenuPage() {
               </Text>
               <Switch
                 checked={preferences.showNutrition}
-                onChange={() => setShowNutrition(!preferences.showNutrition)}
+                onChange={() =>
+                  setPreferences((prev) => ({ ...prev, showNutrition: !prev.showNutrition }))
+                }
               />
             </Pane>
             <Pane borderBottom={`1px solid ${theme.colors.gray200}`} />
           </Pane>
 
           <Pane className='p-4' overflowY='auto' height='100%'>
+            {/* Open and hide filters */}
             <Pane
               display='flex'
               alignItems='center'
@@ -514,7 +375,7 @@ export default function MenuPage() {
 
             {filtersOpen && (
               <Pane>
-                {/* Dining Halls */}
+                {/* Control which dining halls are displayed */}
                 <Text
                   size={300}
                   fontWeight={600}
@@ -524,23 +385,21 @@ export default function MenuPage() {
                   Dining Halls
                 </Text>
                 <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                  {DINING_HALLS.map((diningHall: DiningHallType) => {
+                  {DINING_HALLS.map((diningHall: DiningHall) => {
                     const diningHallText = diningHall.replace(' College', '');
                     const checked = preferences.diningHalls.includes(diningHall);
+                    const onChange = () => {
+                      setPreferences((prev) => ({
+                        ...prev,
+                        diningHalls: prev.diningHalls.includes(diningHall)
+                          ? prev.diningHalls.filter((h: DiningHall) => h !== diningHall)
+                          : [...prev.diningHalls, diningHall],
+                      }));
+                    };
+
                     return (
                       <Pane key={diningHall} display='flex' alignItems='center' marginBottom='2px'>
-                        <Checkbox
-                          checked={checked}
-                          onChange={() => {
-                            setDiningHalls(
-                              preferences.diningHalls.includes(diningHall)
-                                ? preferences.diningHalls.filter(
-                                    (h: DiningHallType) => h !== diningHall
-                                  )
-                                : [...preferences.diningHalls, diningHall]
-                            );
-                          }}
-                        />
+                        <Checkbox checked={checked} onChange={onChange} />
                         <Pane marginX={minorScale(2)}>
                           <img
                             src={HALL_ICON_MAP[diningHall]}
@@ -562,7 +421,7 @@ export default function MenuPage() {
                   marginBottom={minorScale(2)}
                 />
 
-                {/* Dietary Tags */}
+                {/* Control which dietary tags are displayed */}
                 <Text
                   size={300}
                   fontWeight={600}
@@ -572,9 +431,18 @@ export default function MenuPage() {
                   Dietary Tags
                 </Text>
                 <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                  {DIETARY_TAGS.map((dietKey: DietaryTagType) => {
-                    const style = DIET_STYLE_MAP(theme)[dietKey];
+                  {DIETARY_TAGS.map((dietKey: DietaryTag) => {
+                    const style = DIET_STYLE_MAP(theme)[dietKey as DietaryTag];
                     const checked = preferences.dietaryRestrictions.includes(dietKey);
+                    const onChange = () => {
+                      setPreferences((prev) => ({
+                        ...prev,
+                        dietaryRestrictions: prev.dietaryRestrictions.includes(dietKey)
+                          ? prev.dietaryRestrictions.filter((d: DietaryTag) => d !== dietKey)
+                          : [...prev.dietaryRestrictions, dietKey],
+                      }));
+                    };
+
                     return (
                       <Pane
                         key={dietKey}
@@ -582,18 +450,7 @@ export default function MenuPage() {
                         alignItems='center'
                         marginBottom={minorScale(1)}
                       >
-                        <Checkbox
-                          checked={checked}
-                          onChange={() => {
-                            setDietaryRestrictions(
-                              preferences.dietaryRestrictions.includes(dietKey)
-                                ? preferences.dietaryRestrictions.filter(
-                                    (d: DietaryTagType) => d !== dietKey
-                                  )
-                                : [...preferences.dietaryRestrictions, dietKey]
-                            );
-                          }}
-                        />
+                        <Checkbox checked={checked} onChange={onChange} />
                         <Pane
                           width={20}
                           height={20}
@@ -622,7 +479,7 @@ export default function MenuPage() {
                   marginBottom={minorScale(2)}
                 />
 
-                {/* Allergen Tags */}
+                {/* Control which allergens are not displayed */}
                 <Text
                   size={300}
                   fontWeight={600}
@@ -632,10 +489,19 @@ export default function MenuPage() {
                   Allergen Tags
                 </Text>
                 <Pane display='flex' flexDirection='column'>
-                  {ALLERGENS.map((allergen: AllergenType) => {
-                    const style = ALLERGEN_STYLE_MAP(theme)[allergen];
+                  {ALLERGENS.map((allergen: Allergen) => {
+                    const style = ALLERGEN_STYLE_MAP(theme)[allergen as Allergen];
                     const checked = preferences.allergens.includes(allergen);
-                    const emoji = ALLERGEN_EMOJI[allergen];
+                    const emoji = ALLERGEN_EMOJI[allergen as Allergen];
+                    const onChange = () => {
+                      setPreferences((prev) => ({
+                        ...prev,
+                        allergens: prev.allergens.includes(allergen)
+                          ? prev.allergens.filter((a: Allergen) => a !== allergen)
+                          : [...prev.allergens, allergen],
+                      }));
+                    };
+
                     return (
                       <Pane
                         key={allergen}
@@ -643,16 +509,7 @@ export default function MenuPage() {
                         alignItems='center'
                         marginBottom={minorScale(1)}
                       >
-                        <Checkbox
-                          checked={checked}
-                          onChange={() => {
-                            setAllergens(
-                              preferences.allergens.includes(allergen)
-                                ? preferences.allergens.filter((a: AllergenType) => a !== allergen)
-                                : [...preferences.allergens, allergen]
-                            );
-                          }}
-                        />
+                        <Checkbox checked={checked} onChange={onChange} />
                         <Pane
                           width={20}
                           height={20}
@@ -681,160 +538,173 @@ export default function MenuPage() {
       </Pane>
 
       <Pane flex={1} className='overflow-x-hidden h-full no-scrollbar px-4'>
-        {/*  Header for the menu page */}
-        <Pane
-          display='flex'
-          alignItems='center'
-          justifyContent='space-between'
-          marginY={majorScale(3)}
-          className='flex-col sm:flex-row text-center sm:text-left'
-        >
-          <Pane width={240}>
-            <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
-              {meal.toUpperCase()}
-            </Heading>
-            <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
-              {MEAL_RANGES[meal as MealType as keyof typeof MEAL_RANGES]}
-            </Text>
-          </Pane>
-
-          <Pane display='flex' gap={minorScale(2)} className='flex-col flex justify-center my-4'>
-            <Pane display='flex' alignItems='center' gap={minorScale(2)}>
-              <Button
-                background='white'
-                border={`1px solid ${theme.colors.green700}`}
-                borderRadius={999}
-                padding={minorScale(1)}
-                appearance='minimal'
-                onClick={goToPreviousDay}
-              >
-                <ChevronLeftIcon size={20} />
-              </Button>
-
-              <Text
-                className='text-2xl text-center w-[14rem] truncate'
-                color={theme.colors.green700}
-              >
-                {formattedDateForDisplay}
+        {/* Header for the menu page */}
+        <Pane>
+          <Pane
+            display='flex'
+            alignItems='center'
+            justifyContent='space-between'
+            marginY={majorScale(3)}
+            className='flex-col sm:flex-row text-center sm:text-left'
+          >
+            <Pane width={240}>
+              <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
+                {meal.toUpperCase()}
+              </Heading>
+              <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
+                {MEAL_RANGES[meal as Meal as keyof typeof MEAL_RANGES]}
               </Text>
-
-              <Button
-                background='white'
-                border={`1px solid ${theme.colors.green700}`}
-                borderRadius={999}
-                padding={minorScale(1)}
-                appearance='minimal'
-                onClick={goToNextDay}
-              >
-                <ChevronRightIcon size={20} />
-              </Button>
             </Pane>
 
-            <Pane
-              display='flex'
-              borderRadius={999}
-              background={theme.colors.green25}
-              overflow='hidden'
-            >
-              {['Breakfast', 'Lunch', 'Dinner'].map((mealOption: string) => {
-                const isSelectedMeal = meal === mealOption;
-                const backgroundColor = isSelectedMeal ? theme.colors.green700 : 'transparent';
-                const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
-                return (
-                  <Pane
-                    key={mealOption}
-                    flex={1}
-                    textAlign='center'
-                    paddingY={minorScale(1)}
-                    cursor='pointer'
-                    background={backgroundColor}
-                    color={textColor}
-                    className='text-xs px-4'
-                    fontWeight={300}
-                    onClick={() => setMeal(mealOption as Meal)}
-                  >
-                    {mealOption}
-                  </Pane>
-                );
-              })}
-            </Pane>
-          </Pane>
-          <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240} />
-        </Pane>
-
-        {loading ? (
-          <DiningHallSkeletonCards />
-        ) : displayMenusForLocations.length === 0 ? (
-          <NoMenusFoundCard />
-        ) : (
-          <DiningHallCards />
-        )}
-      </Pane>
-
-      {/* Allergen sidebar */}
-      <Pane
-        className='hidden sm:flex'
-        flexDirection='column'
-        width={200}
-        padding={majorScale(3)}
-        overflowY='auto'
-        zIndex={2}
-      >
-        <Heading size={600} color={theme.colors.green900}>
-          Allergens to Avoid
-        </Heading>
-        <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
-          {ALLERGENS.map((allergen: AllergenType) => {
-            const selected = preferences.allergens ?? [];
-            const isSelected = selected.includes(allergen);
-            const emojiForAllergen = ALLERGEN_EMOJI[allergen as AllergenType];
-            const backgroundColor = isSelected ? theme.colors.red100 : theme.colors.gray100;
-            const title = isSelected
-              ? `Hiding items containing ${allergen}`
-              : `Click to hide items containing ${allergen}`;
-
-            return (
-              <Pane
-                key={allergen}
-                display='flex'
-                alignItems='center'
-                cursor='pointer'
-                opacity={isSelected ? 1.0 : 0.6}
-                onClick={() => {
-                  setAllergens(
-                    (preferences.allergens ?? []).includes(allergen as AllergenType)
-                      ? (preferences.allergens ?? []).filter((a: AllergenType) => a !== allergen)
-                      : [...(preferences.allergens ?? []), allergen]
-                  );
-                }}
-                title={title}
-              >
-                <Pane
-                  width={28}
-                  height={28}
-                  display='inline-flex'
-                  alignItems='center'
-                  justifyContent='center'
-                  borderRadius={14}
-                  background={backgroundColor}
-                  marginRight={minorScale(1)}
+            <Pane display='flex' gap={minorScale(2)} className='flex-col flex justify-center my-4'>
+              {/* Date and meal selector */}
+              <Pane display='flex' alignItems='center' gap={minorScale(2)}>
+                <Button
+                  background='white'
+                  border={`1px solid ${theme.colors.green700}`}
+                  borderRadius={999}
+                  padding={minorScale(1)}
+                  appearance='minimal'
+                  onClick={goToPreviousDay}
                 >
-                  <Text size={200}>{emojiForAllergen}</Text>
-                </Pane>
-                <Text size={400} color={theme.colors.green900} fontWeight={isSelected ? 600 : 400}>
-                  {allergen}
-                </Text>
-              </Pane>
-            );
-          })}
-        </Pane>
-      </Pane>
+                  <ChevronLeftIcon size={20} />
+                </Button>
 
-      <HallMenuModal
-        modalHall={modalHall}
-        setModalHall={setModalHall}
-        showNutrition={preferences.showNutrition ?? true}
-      />
+                <Text
+                  className='text-2xl text-center w-[14rem] truncate'
+                  color={theme.colors.green700}
+                >
+                  {formattedDateForDisplay}
+                </Text>
+
+                <Button
+                  background='white'
+                  border={`1px solid ${theme.colors.green700}`}
+                  borderRadius={999}
+                  padding={minorScale(1)}
+                  appearance='minimal'
+                  onClick={goToNextDay}
+                >
+                  <ChevronRightIcon size={20} />
+                </Button>
+              </Pane>
+
+              {/* Control which meal is displayed */}
+              <Pane
+                display='flex'
+                borderRadius={999}
+                background={theme.colors.green25}
+                overflow='hidden'
+              >
+                {MEALS.map((mealOption: Meal) => {
+                  const isSelectedMeal = meal === mealOption;
+                  const backgroundColor = isSelectedMeal ? theme.colors.green700 : 'transparent';
+                  const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
+
+                  return (
+                    <Pane
+                      key={mealOption}
+                      flex={1}
+                      textAlign='center'
+                      paddingY={minorScale(1)}
+                      cursor='pointer'
+                      background={backgroundColor}
+                      color={textColor}
+                      className='text-xs px-4'
+                      fontWeight={300}
+                      onClick={() => setMeal(mealOption as Meal)}
+                    >
+                      {mealOption}
+                    </Pane>
+                  );
+                })}
+              </Pane>
+            </Pane>
+            <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240} />
+          </Pane>
+
+          {/* Render the appropriate content based on the loading state and the number of menu items */}
+          {loading ? (
+            <DiningHallSkeletonCards />
+          ) : displayMenusForLocations.length === 0 ? (
+            <NoMenusFoundCard />
+          ) : (
+            <DiningHallCards />
+          )}
+        </Pane>
+
+        {/* Allergens sidebar for filtering by allergens */}
+        <Pane
+          className='hidden sm:flex'
+          flexDirection='column'
+          width={200}
+          padding={majorScale(3)}
+          overflowY='auto'
+          zIndex={2}
+        >
+          <Heading size={600} color={theme.colors.green900}>
+            Allergens to Avoid
+          </Heading>
+          <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
+            {ALLERGENS.map((allergen: Allergen) => {
+              const selected = preferences.allergens;
+              const isSelected = selected.includes(allergen);
+              const emojiForAllergen = ALLERGEN_EMOJI[allergen as Allergen];
+              const backgroundColor = isSelected ? theme.colors.red100 : theme.colors.gray100;
+              const title = isSelected
+                ? `Hiding items containing ${allergen}`
+                : `Click to hide items containing ${allergen}`;
+              const onChange = () => {
+                setPreferences((prev) => ({
+                  ...prev,
+                  allergens: prev.allergens.includes(allergen as Allergen)
+                    ? prev.allergens.filter((a: Allergen) => a !== allergen)
+                    : [...prev.allergens, allergen],
+                }));
+              };
+
+              return (
+                <Pane
+                  key={allergen}
+                  display='flex'
+                  alignItems='center'
+                  cursor='pointer'
+                  opacity={isSelected ? 1.0 : 0.6}
+                  onClick={onChange}
+                  title={title}
+                >
+                  <Pane
+                    width={28}
+                    height={28}
+                    display='inline-flex'
+                    alignItems='center'
+                    justifyContent='center'
+                    borderRadius={14}
+                    background={backgroundColor}
+                    marginRight={minorScale(1)}
+                  >
+                    <Text size={200}>{emojiForAllergen}</Text>
+                  </Pane>
+                  <Text
+                    size={400}
+                    color={theme.colors.green900}
+                    fontWeight={isSelected ? 600 : 400}
+                  >
+                    {allergen}
+                  </Text>
+                </Pane>
+              );
+            })}
+          </Pane>
+        </Pane>
+
+        <HallMenuModal
+          modalHall={modalHall}
+          setModalHall={setModalHall}
+          showNutrition={preferences.showNutrition}
+          menuId={menuId}
+        />
+      </Pane>
     </Pane>
   );
 }

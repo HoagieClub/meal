@@ -17,6 +17,15 @@
 import { Pane, Text, Tooltip } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
 
+/**
+ * Macronutrient row props.
+ *
+ * @param label - The label of the nutrient.
+ * @param amount - The amount of the nutrient.
+ * @param unit - The unit of the nutrient.
+ * @param dvPercent - The dv percent of the nutrient.
+ * @returns The macronutrient row props.
+ */
 export interface MacronutrientRowProps {
   label: string;
   amount: number | string | null;
@@ -36,6 +45,7 @@ export interface MacronutrientRowProps {
 export const MacronutrientRow = ({ label, amount, unit, dvPercent }: MacronutrientRowProps) => {
   if (amount === null || amount === undefined) return null;
 
+  // Determine the color of the dv percent based on the dv percent
   let color = 'green';
   if (dvPercent !== null) {
     if (dvPercent >= 20) {
@@ -45,6 +55,7 @@ export const MacronutrientRow = ({ label, amount, unit, dvPercent }: Macronutrie
     }
   }
 
+  // Render the dv percent
   const dvInfo = (
     <Tooltip content='Approximate % Daily Value'>
       <Text textAlign='right' fontWeight={600} color={color}>
@@ -53,6 +64,7 @@ export const MacronutrientRow = ({ label, amount, unit, dvPercent }: Macronutrie
     </Tooltip>
   );
 
+  // Render the macronutrient row
   return (
     <>
       <Pane display='grid' gridTemplateColumns='2fr 1fr 1fr' alignItems='center'>
@@ -68,6 +80,13 @@ export const MacronutrientRow = ({ label, amount, unit, dvPercent }: Macronutrie
   );
 };
 
+/**
+ * Micronutrient row props.
+ *
+ * @param label - The label of the nutrient.
+ * @param dvPercent - The dv percent of the nutrient.
+ * @returns The micronutrient row props.
+ */
 export interface MicronutrientRowProps {
   label: string;
   dvPercent?: string | null;

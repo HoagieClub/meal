@@ -1,24 +1,20 @@
 /**
  * @overview Data for the About page.
- * 
+ *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
- * 
+ *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/meal/LICENSE.
- * 
+ *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
 import { TeamMember } from '@/types/team';
-import {
-  LinkedinIcon,
-  GithubIcon,
-  WebsiteIcon,
-  TwitterIcon,
-} from '@/app/about/components/icons';
+import { LinkedinIcon, GithubIcon, WebsiteIcon, TwitterIcon } from '@/app/about/components/icons';
 
-const TEAM_LEADS: TeamMember[] = [
+// Team leads data.
+export const TEAM_LEADS: TeamMember[] = [
   {
     name: 'Kevin Liu',
     role: 'Team Lead & Full-Stack Developer',
@@ -44,7 +40,8 @@ const TEAM_LEADS: TeamMember[] = [
   },
 ];
 
-const TEAM_MEMBERS: TeamMember[] = [
+// Team members data.
+export const TEAM_MEMBERS: TeamMember[] = [
   {
     name: 'Malachi Noel',
     role: 'Contributor',
@@ -130,11 +127,10 @@ const TEAM_MEMBERS: TeamMember[] = [
   },
 ];
 
-const SOCIAL_ICONS = {
+// Social icons data.
+export const SOCIAL_ICONS = {
   linkedin: { icon: LinkedinIcon, label: 'LinkedIn' },
   github: { icon: GithubIcon, label: 'GitHub' },
   website: { icon: WebsiteIcon, label: 'Website' },
   twitter: { icon: TwitterIcon, label: 'Twitter' },
 };
-
-export { TEAM_LEADS, TEAM_MEMBERS, SOCIAL_ICONS };

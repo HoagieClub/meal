@@ -39,6 +39,7 @@ export default function About() {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [isMounted, setIsMounted] = useState(false);
 
+  // Return spinner until the component is mounted
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -46,6 +47,7 @@ export default function About() {
     return <Spinner />;
   }
 
+  // Define the grid template columns for the team leads and team members
   const gridTemplateColumns = isMobile ? '1fr' : 'repeat(auto-fit, minmax(400px, 1fr))';
   const gridTemplateColumnsMembers = isMobile
     ? 'repeat(auto-fill, minmax(150px, 1fr))'
@@ -53,6 +55,7 @@ export default function About() {
   const paddingX = isMobile ? majorScale(2) : majorScale(4);
   const paddingY = isMobile ? majorScale(4) : majorScale(6);
 
+  // Render the about page
   return (
     <Pane minHeight='100vh'>
       <Pane maxWidth={1200} marginX='auto' paddingX={paddingX} paddingY={paddingY}>
@@ -85,6 +88,7 @@ export default function About() {
           </Paragraph>
         </Pane>
 
+        {/* Render the team leads */}
         <Pane is='section' marginBottom={majorScale(6)}>
           <Heading
             is='h2'
@@ -103,6 +107,7 @@ export default function About() {
           </Pane>
         </Pane>
 
+        {/* Render the team members */}
         <Pane is='section' marginBottom={majorScale(6)}>
           <Heading
             is='h2'

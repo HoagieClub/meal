@@ -1,29 +1,57 @@
+/**
+ * @overview Menu section component.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this tree or at
+ *
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
+
 'use client';
 
 import React from 'react';
 import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
 import { ALLERGENS } from '@/data';
 import { ALLERGEN_EMOJI } from '@/styles';
+import { MenuItem } from '@/types/dining';
 
+/**
+ * Props for the MenuSection component.
+ *
+ * @param label - The label for the menu section.
+ * @param items - The items to display in the menu section.
+ * @param showNutrition - Whether to show nutrition information.
+ * @param limitItems - Whether to limit the number of items displayed.
+ * @param menuId - The menu ID to use for the menu section.
+ */
 interface MenuSectionProps {
   label: string;
-  items: any[];
+  items: MenuItem[];
   showNutrition?: boolean;
   limitItems?: boolean;
   menuId: string;
 }
 
-const MenuSection: React.FC<MenuSectionProps> = ({
-  label,
-  items,
-  showNutrition,
-  limitItems,
-  menuId,
-}) => {
+/**
+ * Menu section component.
+ *
+ * @param label - The label for the menu section.
+ * @param items - The items to display in the menu section.
+ * @param showNutrition - Whether to show nutrition information.
+ * @param limitItems - Whether to limit the number of items displayed.
+ * @param menuId - The menu ID to use for the menu section.
+ */
+const MenuSection = ({ label, items, showNutrition, limitItems, menuId }: MenuSectionProps) => {
   const theme = useTheme();
   const displayItems = limitItems ? items.slice(0, 2).reverse() : items;
 
-  const showAllergens = (item: any) => {
+  // Show allergens if they are present in the menu item
+  const showAllergens = (item: MenuItem) => {
     let itemAllergens = item?.allergens || [];
     if (itemAllergens.length === 0) {
       itemAllergens = Array.from(ALLERGENS).filter((a) =>
@@ -31,6 +59,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
       );
     }
 
+    // Display "No allergens" if there are no allergens
     if (itemAllergens.length === 0) {
       return (
         <Text color='muted' fontStyle='italic'>
@@ -39,6 +68,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
       );
     }
 
+    // Map over all allergens and display them as emojis
     return itemAllergens.map((allergen: string) => (
       <Pane
         key={allergen}
@@ -56,17 +86,18 @@ const MenuSection: React.FC<MenuSectionProps> = ({
     ));
   };
 
-  const MenuItemRow = ({ item }: { item: any }) => {
-    const calories = item?.nutrition?.calories ?? '';
-    const protein = item?.nutrition?.protein ? `${item?.nutrition?.protein} g` : '';
-    const sodium = item?.nutrition?.sodium ? `${item?.nutrition?.sodium} mg` : '';
-    const totalFat = item?.nutrition?.totalFat ? `${item?.nutrition?.totalFat} g` : '';
-    const totalCarbs = item?.nutrition?.totalCarbohydrates
-      ? `${item?.nutrition?.totalCarbohydrates} g`
-      : '';
+  // Component to display a menu item row
+  const MenuItemRow = ({ item }: { item: MenuItem }) => {
+    // Get the macronutrients for the menu item
+    const calories = item?.calories ?? '';
+    const protein = item?.protein ? `${item?.protein} g` : '';
+    const sodium = item?.sodium ? `${item?.sodium} mg` : '';
+    const totalFat = item?.totalFat ? `${item?.totalFat} g` : '';
+    const totalCarbs = item?.totalCarbohydrates ? `${item?.totalCarbohydrates} g` : '';
     const apiId = item?.apiId;
-    const nutritionLink = `/nutrition?id=${apiId}&menuId=${menuId}`;
+    const nutritionLink = `/nutrition?apiId=${apiId}&menuId=${menuId}`;
 
+    // Render the menu item row
     return (
       <React.Fragment key={apiId}>
         <Pane
@@ -88,6 +119,8 @@ const MenuSection: React.FC<MenuSectionProps> = ({
               {showAllergens(item)}
             </Pane>
           </Pane>
+
+          {/* Show the macronutrients if the nutrition is enabled */}
           {showNutrition && (
             <>
               <Text size={300} textAlign='right' marginY={majorScale(1)}>
@@ -116,6 +149,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
     );
   };
 
+  // Render the menu section
   return (
     <Pane marginBottom={majorScale(3)}>
       {/* Section header */}
@@ -130,6 +164,8 @@ const MenuSection: React.FC<MenuSectionProps> = ({
         <Text fontSize={14} fontWeight={600} className='my-auto'>
           {label}
         </Text>
+
+        {/* Show the macronutrients header if the nutrition is enabled */}
         {showNutrition && (
           <>
             <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
@@ -155,7 +191,7 @@ const MenuSection: React.FC<MenuSectionProps> = ({
         )}
       </Pane>
 
-      {/* Items */}
+      {/* Display the menu items */}
       {displayItems.length === 0 ? (
         <Text size={300} color='muted' fontStyle='italic' marginTop={minorScale(1)}>
           Nothing available

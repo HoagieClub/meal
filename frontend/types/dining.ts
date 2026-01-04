@@ -1,45 +1,42 @@
 export interface DiningVenue {
-  database_id: number;
+  databaseId: number;
   name: string;
-  map_name: string;
+  mapName: string;
   latitude: string;
   longitude: string;
-  building_name: string;
+  buildingName: string;
   amenities: string[];
-  is_active: boolean;
-  category_id: number;
+  isActive: boolean;
+  categoryId: number;
   menu?: MenuItem[];
 }
 
 export interface MenuItem {
-  api_id: number;
+  apiId: number;
+  apiUrl?: string;
   name: string;
   description: string;
-  link: string;
-  nutrition?: MenuItemNutrition;
-}
-
-export interface MenuItemNutrition {
-  serving_size: string | number | null;
-  serving_unit: string | null;
-  calories: string | number | null;
-  calories_from_fat: string | number | null;
-  total_fat: string | number | null;
-  saturated_fat: string | number | null;
-  trans_fat: string | number | null;
-  cholesterol: string | number | null;
-  sodium: string | number | null;
-  total_carbohydrates: string | number | null;
-  dietary_fiber: string | number | null;
-  sugars: string | number | null;
-  protein: string | number | null;
-  vitamin_d: string | number | null;
-  potassium: string | number | null;
-  calcium: string | number | null;
-  iron: string | number | null;
-  allergens: string[] | null;
-  ingredients: string[] | null;
-  dietary_flags: string[] | null;
+  link?: string;
+  servingSize?: string | number | null;
+  servingUnit?: string | null;
+  calories?: string | number | null;
+  caloriesFromFat?: string | number | null;
+  totalFat?: string | number | null;
+  saturatedFat?: string | number | null;
+  transFat?: string | number | null;
+  cholesterol?: string | number | null;
+  sodium?: string | number | null;
+  totalCarbohydrates?: string | number | null;
+  dietaryFiber?: string | number | null;
+  sugars?: string | number | null;
+  protein?: string | number | null;
+  vitaminD?: string | number | null;
+  potassium?: string | number | null;
+  calcium?: string | number | null;
+  iron?: string | number | null;
+  allergens?: string[] | null;
+  ingredients?: string[] | null;
+  dietaryFlags?: string[] | null;
 }
 
 export type Meal = 'Breakfast' | 'Lunch' | 'Dinner';
@@ -55,3 +52,41 @@ export type MenusForMealAndLocations = {
 export type MenusForDateMealAndLocations = {
   [key: string]: MenusForMealAndLocations;
 };
+
+export type Allergen =
+  | 'Peanut'
+  | 'Coconut'
+  | 'Eggs'
+  | 'Milk'
+  | 'Wheat'
+  | 'Soybeans'
+  | 'Crustacean'
+  | 'Alcohol'
+  | 'Gluten'
+  | 'Fish'
+  | 'Sesame';
+
+export type DiningHall =
+  | 'Forbes College'
+  | 'Mathey College'
+  | 'Rockefeller College'
+  | 'Whitman & Butler Colleges'
+  | 'Yeh College & NCW'
+  | 'Center for Jewish Life'
+  | 'Graduate College'
+  | 'Frist Grill';
+
+export type DietaryTag = 'Vegetarian' | 'Vegan' | 'Halal' | 'Kosher';
+
+export type DisplayMeal = 'Breakfast' | 'Lunch' | 'Dinner' | 'Brunch';
+
+export type MenuCategory = 'Main Entrée' | 'Vegan Entrée' | 'Soups';
+
+export type MealIcon = '🍂' | '🥜' | '🥚' | '🥛' | '🌱' | '🥜';
+
+export interface DiningPreferences {
+  diningHalls: DiningHall[];
+  dietaryRestrictions: DietaryTag[];
+  allergens: Allergen[];
+  showNutrition: boolean;
+}
