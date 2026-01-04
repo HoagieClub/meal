@@ -17,7 +17,7 @@ import type { NextRequest } from 'next/server';
 
 // As an example, we will use middleware to implement protected routes.
 // Docs: https://nextjs.org/docs/app/building-your-application/authentication#defining-protected-routes
-const protectedRoutes = ['/goals'];
+const protectedRoutes: string[] = [];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

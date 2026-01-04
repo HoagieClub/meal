@@ -632,79 +632,75 @@ export default function MenuPage() {
             <DiningHallCards />
           )}
         </Pane>
-
-        {/* Allergens sidebar for filtering by allergens */}
-        <Pane
-          className='hidden sm:flex'
-          flexDirection='column'
-          width={200}
-          padding={majorScale(3)}
-          overflowY='auto'
-          zIndex={2}
-        >
-          <Heading size={600} color={theme.colors.green900}>
-            Allergens to Avoid
-          </Heading>
-          <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
-            {ALLERGENS.map((allergen: Allergen) => {
-              const selected = preferences.allergens;
-              const isSelected = selected.includes(allergen);
-              const emojiForAllergen = ALLERGEN_EMOJI[allergen as Allergen];
-              const backgroundColor = isSelected ? theme.colors.red100 : theme.colors.gray100;
-              const title = isSelected
-                ? `Hiding items containing ${allergen}`
-                : `Click to hide items containing ${allergen}`;
-              const onChange = () => {
-                setPreferences((prev) => ({
-                  ...prev,
-                  allergens: prev.allergens.includes(allergen as Allergen)
-                    ? prev.allergens.filter((a: Allergen) => a !== allergen)
-                    : [...prev.allergens, allergen],
-                }));
-              };
-
-              return (
-                <Pane
-                  key={allergen}
-                  display='flex'
-                  alignItems='center'
-                  cursor='pointer'
-                  opacity={isSelected ? 1.0 : 0.6}
-                  onClick={onChange}
-                  title={title}
-                >
-                  <Pane
-                    width={28}
-                    height={28}
-                    display='inline-flex'
-                    alignItems='center'
-                    justifyContent='center'
-                    borderRadius={14}
-                    background={backgroundColor}
-                    marginRight={minorScale(1)}
-                  >
-                    <Text size={200}>{emojiForAllergen}</Text>
-                  </Pane>
-                  <Text
-                    size={400}
-                    color={theme.colors.green900}
-                    fontWeight={isSelected ? 600 : 400}
-                  >
-                    {allergen}
-                  </Text>
-                </Pane>
-              );
-            })}
-          </Pane>
-        </Pane>
-
-        <HallMenuModal
-          modalHall={modalHall}
-          setModalHall={setModalHall}
-          showNutrition={preferences.showNutrition}
-          menuId={menuId}
-        />
       </Pane>
+
+      {/* Allergens sidebar for filtering by allergens */}
+      <Pane
+        className='hidden sm:flex'
+        flexDirection='column'
+        width={200}
+        padding={majorScale(3)}
+        overflowY='auto'
+        zIndex={2}
+      >
+        <Heading size={600} color={theme.colors.green900}>
+          Allergens to Avoid
+        </Heading>
+        <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
+          {ALLERGENS.map((allergen: Allergen) => {
+            const selected = preferences.allergens;
+            const isSelected = selected.includes(allergen);
+            const emojiForAllergen = ALLERGEN_EMOJI[allergen as Allergen];
+            const backgroundColor = isSelected ? theme.colors.red100 : theme.colors.gray100;
+            const title = isSelected
+              ? `Hiding items containing ${allergen}`
+              : `Click to hide items containing ${allergen}`;
+            const onChange = () => {
+              setPreferences((prev) => ({
+                ...prev,
+                allergens: prev.allergens.includes(allergen as Allergen)
+                  ? prev.allergens.filter((a: Allergen) => a !== allergen)
+                  : [...prev.allergens, allergen],
+              }));
+            };
+
+            return (
+              <Pane
+                key={allergen}
+                display='flex'
+                alignItems='center'
+                cursor='pointer'
+                opacity={isSelected ? 1.0 : 0.6}
+                onClick={onChange}
+                title={title}
+              >
+                <Pane
+                  width={28}
+                  height={28}
+                  display='inline-flex'
+                  alignItems='center'
+                  justifyContent='center'
+                  borderRadius={14}
+                  background={backgroundColor}
+                  marginRight={minorScale(1)}
+                >
+                  <Text size={200}>{emojiForAllergen}</Text>
+                </Pane>
+                <Text size={400} color={theme.colors.green900} fontWeight={isSelected ? 600 : 400}>
+                  {allergen}
+                </Text>
+              </Pane>
+            );
+          })}
+        </Pane>
+      </Pane>
+
+      <HallMenuModal
+        modalHall={modalHall}
+        setModalHall={setModalHall}
+        showNutrition={preferences.showNutrition}
+        menuId={menuId}
+      />
     </Pane>
   );
 }

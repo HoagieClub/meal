@@ -47,20 +47,54 @@ import {
 } from 'evergreen-ui';
 import { toast } from 'sonner';
 import NutrientProgressBar from '@/app/goals/components/nutrient-progress-bar';
-import { Nutrients, PlanSettings, WeeklyPlan, DailyPlan, MealType } from './types';
+import { Nutrients, PlanSettings, WeeklyPlan, DailyPlan } from './types';
+import { Meal } from '@/types/dining';
 import MicronutrientPopover from '@/app/goals/components/micronutrient-popover';
 import { SkeletonWeeklySummary, SkeletonDayPlanCard } from '@/app/goals/components/skeletons';
 import SavedPlansManager from '@/app/goals/components/saved-plans-manager';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import {
-  DEFAULT_NUTRIENTS,
-  DIET_PRESETS,
-  HALL_NAME_BY_ID,
-  DINING_HALLS,
-  ALLERGENS_LIST,
-} from './data';
+import { DEFAULT_NUTRIENTS, DIET_PRESETS } from './data';
+import { DINING_HALLS, ALLERGENS } from '@/data';
+import { DiningHall } from '@/types/dining';
 import { generateDayPlan, handleGeneratePlan } from './actions';
+import { MenuItem, MenusForDateMealAndLocations } from '@/types/dining';
+
+const MENU_CACHE_KEY = 'menuCache';
+
+/**
+ * Helper to convert string/number to number.
+ */
+const toNumber = (value: string | number | null | undefined): number => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  const parsed = parseFloat(String(value));
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+/**
+ * Converts MenuItem to Nutrients for display purposes.
+ */
+const menuItemToNutrients = (item: MenuItem): Nutrients => {
+  return {
+    calories: toNumber(item.calories),
+    protein: toNumber(item.protein),
+    fat: toNumber(item.totalFat),
+    carbohydrates: toNumber(item.totalCarbohydrates),
+    fiber: toNumber(item.dietaryFiber),
+    sugar: toNumber(item.sugars),
+    sodium: toNumber(item.sodium),
+    cholesterol: toNumber(item.cholesterol),
+    calcium: toNumber(item.calcium),
+    iron: toNumber(item.iron),
+    potassium: toNumber(item.potassium),
+    vitaminD: toNumber(item.vitaminD),
+    vitaminA: 0, // Not available in MenuItem
+    vitaminC: 0, // Not available in MenuItem
+    magnesium: 0, // Not available in MenuItem
+    zinc: 0, // Not available in MenuItem
+  };
+};
 
 // --- UI COMPONENTS ---
 // These are the reusable building blocks for our UI, like progress bars and popovers.
@@ -137,7 +171,7 @@ const DayPlanCard = ({
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
 
   // Set the order of meals to display
-  const MEALS_ORDER: MealType[] = isWeekend
+  const MEALS_ORDER: Meal[] = isWeekend
     ? ['Lunch', 'Dinner'] // On weekends, only show Lunch (as Brunch) and Dinner
     : ['Breakfast', 'Lunch', 'Dinner']; // On weekdays, show all three
 
@@ -231,41 +265,40 @@ const DayPlanCard = ({
               </Heading>
               {day.meals[mealType]?.length > 0 ? (
                 <Pane display='flex' flexDirection='column' gap={majorScale(2)}>
-                  {day.meals[mealType].map((item, index) => (
-                    <Pane key={`${item.name}-${index}`}>
-                      <Link
-                        // Use the apiId to link to the nutrition page
-                        href={`/nutrition?id=${item.apiId}`}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        size={400}
-                        color='neutral'
-                        fontWeight={600}
-                      >
-                        {item.name}
-                      </Link>
-                      <Text display='block' size={300} color='#64748B' marginTop={minorScale(1)}>
-                        at {HALL_NAME_BY_ID[Number(item.location)] || 'Unknown Hall'}{' '}
-                      </Text>
-                      <Pane
-                        display='flex'
-                        gap={minorScale(1)}
-                        marginTop={majorScale(1)}
-                        flexWrap='wrap'
-                        alignItems='center'
-                      >
-                        <Badge color='neutral'>{`${Math.round(
-                          item.nutrition.calories
-                        )} cal`}</Badge>
-                        <Badge color='teal'>{`${Math.round(item.nutrition.protein)}g P`}</Badge>
-                        <Badge color='orange'>{`${Math.round(item.nutrition.fat)}g F`}</Badge>
-                        <Badge color='red'>{`${Math.round(
-                          item.nutrition.carbohydrates
-                        )}g C`}</Badge>
-                        <MicronutrientPopover nutrition={item.nutrition} />
+                  {day.meals[mealType].map((item, index) => {
+                    const nutrition = menuItemToNutrients(item);
+                    const venueName = day.venueMap[item.apiId.toString()];
+                    return (
+                      <Pane key={`${item.apiId}-${index}`}>
+                        <Link
+                          href={`/nutrition?apiId=${item.apiId}`}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          size={400}
+                          color='neutral'
+                          fontWeight={600}
+                        >
+                          {item.name}
+                        </Link>
+                        <Text display='block' size={300} color='#64748B' marginTop={minorScale(1)}>
+                          at {venueName || 'Unknown Hall'}{' '}
+                        </Text>
+                        <Pane
+                          display='flex'
+                          gap={minorScale(1)}
+                          marginTop={majorScale(1)}
+                          flexWrap='wrap'
+                          alignItems='center'
+                        >
+                          <Badge color='neutral'>{`${Math.round(nutrition.calories)} cal`}</Badge>
+                          <Badge color='teal'>{`${Math.round(nutrition.protein)}g P`}</Badge>
+                          <Badge color='orange'>{`${Math.round(nutrition.fat)}g F`}</Badge>
+                          <Badge color='red'>{`${Math.round(nutrition.carbohydrates)}g C`}</Badge>
+                          <MicronutrientPopover nutrition={nutrition} />
+                        </Pane>
                       </Pane>
-                    </Pane>
-                  ))}
+                    );
+                  })}
                 </Pane>
               ) : (
                 <Text color='#64748B' className='h-full w-full flex items-center justify-center'>
@@ -317,6 +350,12 @@ export default function DietPlanner() {
   // State for multiple saved plans
   const [savedPlans, setSavedPlans] = useLocalStorage<Record<string, WeeklyPlan>>({
     key: 'dietPlannerSavedPlans',
+    initialValue: {},
+  });
+
+  // Menu cache for fetching menu data
+  const [menuCache, setMenuCache] = useLocalStorage<MenusForDateMealAndLocations>({
+    key: MENU_CACHE_KEY,
     initialValue: {},
   });
 
@@ -387,7 +426,12 @@ export default function DietPlanner() {
       })}...`
     );
     try {
-      const regeneratedDay = await generateDayPlan(dateToRegenerate, settings);
+      const regeneratedDay = await generateDayPlan(
+        dateToRegenerate,
+        settings,
+        menuCache,
+        setMenuCache
+      );
       setStoredPlan((plan) => {
         const updatedPlan = [...(plan || [])];
         updatedPlan[dayIndex] = regeneratedDay;
@@ -457,7 +501,15 @@ export default function DietPlanner() {
         boxShadow='0px 10px 15px -3px rgba(0,0,0,0.07), 0px 4px 6px -2px rgba(0,0,0,0.05)'
         onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
-          handleGeneratePlan(currentDateObj, settings, setFormError, setLoading, setStoredPlan);
+          handleGeneratePlan(
+            currentDateObj,
+            settings,
+            setFormError,
+            setLoading,
+            setStoredPlan,
+            menuCache,
+            setMenuCache
+          );
         }}
       >
         <Heading
@@ -499,9 +551,15 @@ export default function DietPlanner() {
           <SelectField
             label='Preferred Dining Hall'
             value={settings.preferredHall}
-            onChange={(e) => handleSettingsChange('preferredHall', e.target.value)}
+            onChange={(e) =>
+              handleSettingsChange(
+                'preferredHall',
+                e.target.value as DiningHall | 'Any Available Hall'
+              )
+            }
           >
-            {Object.keys(DINING_HALLS).map((hallName) => (
+            <option value='Any Available Hall'>Any Available Hall</option>
+            {DINING_HALLS.map((hallName) => (
               <option key={hallName} value={hallName}>
                 {hallName}
               </option>
@@ -514,7 +572,7 @@ export default function DietPlanner() {
           >
             <Heading size={400}>Avoid Allergens</Heading>
             <Pane display='grid' className='grid-cols-2 gap-1'>
-              {ALLERGENS_LIST.map((allergen) => (
+              {ALLERGENS.map((allergen) => (
                 <Checkbox
                   key={allergen}
                   label={allergen}

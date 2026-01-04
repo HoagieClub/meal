@@ -1,5 +1,11 @@
 import { Pane, useTheme, Text, minorScale } from 'evergreen-ui';
-import { NutrientProgressBarProps } from '../types';
+
+export interface NutrientProgressBarProps {
+  label: string;
+  value: number;
+  target: number;
+  unit: string;
+}
 
 export default function NutrientProgressBar({
   label,
