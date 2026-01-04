@@ -94,7 +94,6 @@ class MenuItem(models.Model):
     api_id = models.PositiveIntegerField(primary_key=True, help_text=_("Original menu item ID from the API"))
     api_url = models.URLField(max_length=500, blank=True)
     name = models.CharField(max_length=255, db_index=True)
-    description = models.TextField(blank=True)
 
     serving_size = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     serving_unit = models.CharField(max_length=20, blank=True)

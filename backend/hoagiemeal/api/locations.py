@@ -30,7 +30,8 @@ from hoagiemeal.api.schemas import Schemas
 from hoagiemeal.models.dining import DiningVenue
 from django.db import transaction
 from hoagiemeal.serializers import DiningVenueSerializer
-from hoagiemeal.data import DINING_HALLS, DINING_CAFES
+
+DISABLE_CACHE = False
 
 
 class LocationsAPI(StudentApp):
@@ -142,6 +143,10 @@ class LocationsCache:
             list: A list of dining venue data.
 
         """
+        if DISABLE_CACHE:
+            logger.info("Cache is disabled, returning empty list.")
+            return []
+
         logger.info(f"Getting cached dining locations for categories: {', '.join(category_ids)}")
         if not all(category_id in ["2", "3"] for category_id in category_ids):
             logger.error(f"Invalid category IDs: {category_ids}.")
@@ -150,6 +155,13 @@ class LocationsCache:
         locations = DiningVenue.objects.filter(category_id__in=category_ids)
         if len(locations) == 0:
             logger.error(f"No cached locations found for categories: {', '.join(category_ids)}.")
+            return []
+
+        num_unique_categories = len(set(location.category_id for location in locations))
+        if num_unique_categories != len(category_ids):
+            logger.error(
+                f"Number of unique categories: {num_unique_categories} does not match number of categories: {len(category_ids)}."
+            )
             return []
 
         serializer = DiningVenueSerializer(locations, many=True)
@@ -166,6 +178,10 @@ class LocationsCache:
             bool: True if locations were cached successfully, False otherwise.
 
         """
+        if DISABLE_CACHE:
+            logger.info("Cache is disabled, returning False.")
+            return False
+
         logger.info(f"Caching {len(locations)} dining locations.")
 
         dining_venues = []

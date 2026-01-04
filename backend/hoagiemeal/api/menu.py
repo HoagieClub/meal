@@ -37,12 +37,10 @@ from django.db import models, transaction
 from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.student_app import StudentApp
 from hoagiemeal.api.schemas import Schemas
-from hoagiemeal.models.menu import MenuItem, Menu, MenuItemNutrient
+from hoagiemeal.models.menu import MenuItem, Menu
 from hoagiemeal.models.dining import DiningVenue
 from hoagiemeal.serializers import (
-    FullMenuItemSerializer,
     MenuItemSerializer,
-    MenuItemNutrientSerializer,
 )
 from hoagiemeal.utils.scraper import Scraper
 from hoagiemeal.api.locations import LocationsService
@@ -58,6 +56,7 @@ from hoagiemeal.data import (
 )
 
 USE_SAMPLE_MENUS = True
+DISABLE_CACHE = False
 DEBUG = settings.DEBUG
 
 
@@ -120,7 +119,7 @@ class MenuAPI(StudentApp):
             dict: The menu item data.
 
         """
-        logger.info(msg=f"Fetching menu item from API ID for api_id: {api_id}.")
+        logger.info(msg=f"Fetching menu item from API for api_id: {api_id}.")
         try:
             # Scrape API URL data from API URL using Scraper class
             api_url = f"https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort={api_id}"
@@ -134,6 +133,11 @@ class MenuAPI(StudentApp):
             menu_item = parsed_scraped_api_url_data
             menu_item["api_id"] = api_id
             menu_item["api_url"] = api_url
+            menu_item["dietary_flags"] = classify_by_dietary_flags(
+                ingredients=menu_item.get("ingredients", []),
+                allergens=menu_item.get("allergens", []),
+                name=menu_item.get("name", ""),
+            )
             return menu_item
         except Exception as e:
             logger.error(f"Error fetching menu item for api_id: {api_id}: {e}")
@@ -163,7 +167,7 @@ class MenuAPI(StudentApp):
         for menu_item in menu:
             menu_item_full = self.get_menu_item(menu_item.get("api_id"))
             if not menu_item_full:
-                logger.error(f"No menu item full data found for api_id: {menu_item.get('api_id')}.")
+                logger.error(f"No full menu item data found for api_id: {menu_item.get('api_id')}.")
                 continue
             menu_items_full.append(menu_item_full)
 
@@ -262,6 +266,10 @@ class MenuCache:
             list: List of cached menu with menu items.
 
         """
+        if DISABLE_CACHE:
+            logger.info("Cache is disabled, returning empty list.")
+            return []
+
         logger.info(f"Checking cache for location_id: {location_id}, menu_id: {menu_id}.")
 
         # Parse menu ID into date and meal code
@@ -281,7 +289,7 @@ class MenuCache:
             return []
 
         logger.info(f"Returning cached menu for location_id: {location_id}, menu_id: {menu_id}.")
-        return MenuItemSerializer(cached_menu.menu_items.all(), many=True).data
+        return cached_menu.menu_items.all()
 
     def get_cached_menu_item(self, api_id: int) -> dict:
         """Get cached menu item from database.
@@ -293,11 +301,15 @@ class MenuCache:
             dict: The cached menu item.
 
         """
+        if DISABLE_CACHE:
+            logger.info("Cache is disabled, returning empty dictionary.")
+            return {}
+
         logger.info(f"Checking cache for menu item with api_id: {api_id}.")
         try:
             menu_item = MenuItem.objects.get(api_id=api_id)
             logger.info(f"Returning cached menu item for api_id: {api_id}.")
-            return MenuItemSerializer(menu_item).data
+            return menu_item
         except Exception as e:
             logger.error(f"Error getting cached menu item for api_id: {api_id}: {e}")
             return {}
@@ -312,6 +324,10 @@ class MenuCache:
             bool: True if menu item was cached successfully, False otherwise.
 
         """
+        if DISABLE_CACHE:
+            logger.info("Cache is disabled, returning False.")
+            return False
+
         logger.info(f"Caching menu item for api_id: {menu_item_data.get('api_id')}.")
 
         # Check if menu item already exists in database
@@ -342,6 +358,10 @@ class MenuCache:
             bool: True if menu with menu items was cached successfully, False otherwise.
 
         """
+        if DISABLE_CACHE:
+            logger.info("Cache is disabled, returning False.")
+            return False
+
         logger.info(f"Caching menu with menu items for location_id: {location_id}, menu_id: {menu_id}.")
 
         # Make sure locations are cached
@@ -491,7 +511,7 @@ class MenuService:
         for location in locations:
             location_id = location.get("database_id")
             menu_with_menu_items = self.get_or_cache_menu_with_menu_items(location_id, menu_id)
-            location["menu"] = menu_with_menu_items
+            location["menu"] = MenuItemSerializer(menu_with_menu_items, many=True).data
             locations_with_menu.append(location)
 
         logger.info(f"Returning cached menus with menu items for all locations for menu_id: {menu_id}.")
@@ -551,7 +571,10 @@ def get_dining_menu_item(request):
 
         menu_item = menu_service.get_or_cache_menu_item(api_id)
         logger.info(f"Returning dining menu item for api_id: {api_id}.")
-        return Response({"data": menu_item, "message": "Dining menu item fetched successfully."}, status=200)
+        return Response(
+            {"data": MenuItemSerializer(menu_item).data, "message": "Dining menu item fetched successfully."},
+            status=200,
+        )
     except Exception as e:
         logger.error(f"Error in get_dining_menu_item view: {e}")
         return Response({"message": f"Error fetching dining menu item: {str(e)}"}, status=500)
@@ -581,7 +604,13 @@ def get_dining_menu_with_menu_items(request):
 
         menu = menu_service.get_or_cache_menu_with_menu_items(location_id, menu_id)
         logger.info(f"Returning dining menu with menu items for location_id: {location_id}, menu_id: {menu_id}.")
-        return Response({"data": menu, "message": "Dining menu with menu items fetched successfully."}, status=200)
+        return Response(
+            {
+                "data": MenuItemSerializer(menu, many=True).data,
+                "message": "Dining menu with menu items fetched successfully.",
+            },
+            status=200,
+        )
     except Exception as e:
         logger.error(f"Error in get_dining_menu_with_menu_items view: {e}")
         return Response({"message": f"Error fetching dining menu with menu items: {str(e)}"}, status=500)
@@ -609,7 +638,13 @@ def get_dining_menus_with_menu_items_for_locations(request):
 
         menus = menu_service.get_or_cache_menus_with_menu_items_for_locations(menu_id)
         logger.info(f"Returning dining menus with menu items for all locations for menu_id: {menu_id}.")
-        return Response({"data": menus, "message": "Dining menus with menu items fetched successfully."}, status=200)
+        return Response(
+            {
+                "data": menus,
+                "message": "Dining menus with menu items fetched successfully.",
+            },
+            status=200,
+        )
     except Exception as e:
         logger.error(f"Error in get_dining_menus_with_menu_items_for_locations view: {e}")
         return Response({"message": f"Error fetching dining menus with menu items: {str(e)}"}, status=500)
@@ -637,58 +672,19 @@ def get_dining_menus_with_menu_items_for_locations_and_day(request):
 
         menus = menu_service.get_or_cache_menus_with_menu_items_for_locations_and_day(menu_date)
         logger.info(f"Returning dining menus with menu items for all locations and day: {menu_date}.")
-        return Response({"data": menus, "message": "Dining menus with menu items fetched successfully."}, status=200)
+        return Response(
+            {
+                "data": menus,
+                "message": "Dining menus with menu items fetched successfully.",
+            },
+            status=200,
+        )
     except Exception as e:
         logger.error(f"Error in get_dining_menus_with_menu_items_for_locations_and_day view: {e}")
         return Response({"message": f"Error fetching dining menus with menu items: {str(e)}"}, status=500)
 
 
-@cache_page(60 * 5)
-@api_view(["GET"])
-def clear_dining_menus_cache(request):
-    """Django view function to clear the database cache for dining_venues, dining menus, and menu items.
-
-    Args:
-        request (Request): The HTTP request object.
-
-    Returns:
-        Response: The HTTP response object.
-
-    """
-    logger.info(f"Clearing database cache for dining_venues, dining menus, and menu items for request: {request}")
-    if not DEBUG:
-        logger.info("Debug mode is disabled, cache not cleared.")
-        return Response({"message": "Debug mode is disabled, cache not cleared."}, status=200)
-
-    try:
-        clear_menu_cache()
-        logger.info("Database cache cleared successfully.")
-        return Response({"message": "Database cache cleared successfully."}, status=200)
-    except Exception as e:
-        logger.error(f"Error in clear_dining_menus_cache view: {e}")
-        return Response({"message": f"Error clearing database cache: {str(e)}"}, status=500)
-
-
 #################### Utility functions for working with menu data #########################
-
-
-def clear_menu_cache():
-    """Clear the database cache for dining_venues, dining menus, and menu items.
-
-    Returns:
-        bool: True if database cache was cleared successfully, False otherwise.
-
-    """
-    logger.info("Clearing database cache for dining_venues, dining menus, and menu items.")
-    try:
-        with transaction.atomic():
-            DiningVenue.objects.all().delete()
-            Menu.objects.all().delete()
-            MenuItem.objects.all().delete()
-    except Exception as e:
-        logger.error(f"Error clearing database cache: {e}")
-        return False
-    return True
 
 
 def parse_menu_id(menu_id: str) -> Tuple[Optional[datetime.date], Optional[str]]:

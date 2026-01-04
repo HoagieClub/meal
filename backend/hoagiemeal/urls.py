@@ -23,7 +23,12 @@ from hoagiemeal.api.menu import (
     get_dining_menu_with_menu_items,
     get_dining_menus_with_menu_items_for_locations,
     get_dining_menus_with_menu_items_for_locations_and_day,
-    clear_dining_menus_cache,
+)
+from hoagiemeal.api.interactions import (
+    get_user_menu_item_interaction,
+    record_user_menu_item_view,
+    update_user_menu_item_interaction,
+    get_menu_item_metrics,
 )
 from hoagiemeal.api.user import (
     verify_and_get_or_create_user,
@@ -31,7 +36,6 @@ from hoagiemeal.api.user import (
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/dining/menus/clear-cache/", clear_dining_menus_cache, name="clear-dining-menus-cache"),
     # Location API Endpoints
     path("api/dining/locations/", get_dining_locations, name="dining-locations"),
     path("api/dining/locations/all/", get_all_dining_locations, name="all-dining-locations"),
@@ -48,6 +52,15 @@ urlpatterns = [
         get_dining_menus_with_menu_items_for_locations_and_day,
         name="dining-menus-with-menu-items-for-locations-and-day",
     ),
+    # Interaction API Endpoints
+    path("api/interactions/user/menu-item/", get_user_menu_item_interaction, name="get-user-menu-item-interaction"),
+    path("api/interactions/user/menu-item/view/", record_user_menu_item_view, name="record-user-menu-item-view"),
+    path(
+        "api/interactions/user/menu-item/update/",
+        update_user_menu_item_interaction,
+        name="update-user-menu-item-interaction",
+    ),
+    path("api/interactions/menu-item/metrics/", get_menu_item_metrics, name="get-menu-item-metrics"),
     # User API Endpoints
     path("api/user/verify/", verify_and_get_or_create_user, name="verify-and-get-or-create-user"),
 ]
