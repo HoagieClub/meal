@@ -29,16 +29,20 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const fmt = searchParams.get('fmt') ?? 'xml';
+    const categoryId = searchParams.get('category_id') ?? '2';
 
-    const res = await request.get<any>()(ROUTE, { arg: { category_id: '2', fmt } });
+    // Build query string for GET request
+    const queryParams = new URLSearchParams({
+      category_id: categoryId,
+      ...(fmt && { fmt }),
+    });
+    const urlWithParams = `${ROUTE}?${queryParams.toString()}`;
+
+    const res = await request.get<any>()(urlWithParams, {});
     DEBUG && console.log('Backend response:', res);
 
-    const locations =
-      fmt === 'xml'
-        ? (res.data?.locations?.location ?? [])
-        : Array.isArray(res.data)
-          ? res.data
-          : (res.data?.data ?? []);
+    // Django backend returns: {"data": locations, "message": "..."}
+    const locations = res.data || [];
 
     if (!locations?.length)
       return NextResponse.json(

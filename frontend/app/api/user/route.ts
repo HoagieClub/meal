@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch dining menu with menu items for a specific location.
+ * @overview Next.js Route Handler to verify and get or create user.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -12,53 +12,39 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
+import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
 
-const ROUTE = '/api/dining/menu';
+const ROUTE = '/api/user/verify';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches dining menu with menu items for a specific location.
+ * Verifies user authentication and gets or creates the user.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the menu data.
+ * @returns A NextResponse object with the user data.
  */
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const locationId = searchParams.get('location_id');
-    const menuId = searchParams.get('menu_id');
-
-    if (!locationId || !menuId) {
-      return NextResponse.json(
-        { error: 'Missing location_id or menu_id parameter' },
-        { status: 400 }
-      );
+    const { accessToken } = await getAccessToken();
+    if (!accessToken) {
+      return NextResponse.json({ error: 'No access token available' }, { status: 401 });
     }
 
-    const queryParams = new URLSearchParams({
-      location_id: locationId,
-      menu_id: menuId,
-    });
-    const urlWithParams = `${ROUTE}?${queryParams.toString()}`;
+    const res = await request.postAuth(accessToken)(ROUTE, { arg: {} });
 
-    const res = await request.get<any>()(urlWithParams, {});
-
-    // Django backend returns: {"data": menu, "message": "..."}
+    // Django backend returns: {"data": user, "message": "..."}
     const data = res.data || res;
 
     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
-      return NextResponse.json(
-        { error: `No menu found for location_id ${locationId} and menu_id ${menuId}` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
     return NextResponse.json({
       data: toCamelCase(data),
-      message: `Successfully fetched menu for location_id ${locationId} and menu_id ${menuId}`,
+      message: 'Successfully verified user',
       status: 200,
     });
   } catch (error: unknown) {
@@ -66,7 +52,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       {
-        error: 'Failed to fetch menu',
+        error: 'Failed to verify user',
         message: error instanceof Error ? error.message : 'Unexpected error',
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
@@ -78,3 +64,4 @@ export async function GET(req: Request) {
     );
   }
 }
+
