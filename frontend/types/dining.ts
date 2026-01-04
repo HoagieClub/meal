@@ -90,3 +90,28 @@ export interface DiningPreferences {
   allergens: Allergen[];
   showNutrition: boolean;
 }
+
+export interface MenuItemMetrics {
+  viewCount: number;
+  uniqueViewCount: number;
+  likeCount: number;
+  dislikeCount: number;
+  averageLikeScore: number;
+  favoriteCount: number;
+  savedForLaterCount: number;
+  wouldEatAgainYes: number;
+  wouldEatAgainNo: number;
+  wouldEatAgainMaybe: number;
+  averageWouldEatAgainScore: number;
+}
+
+export interface MenuItemInteraction {
+  viewed: boolean;
+  viewCount: number;
+  firstViewedAt: string;
+  lastViewedAt: string;
+  liked: boolean;
+  favorited: boolean;
+  savedForLater: boolean;
+  wouldEatAgain: string;
+}

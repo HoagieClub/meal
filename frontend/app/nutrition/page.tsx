@@ -29,6 +29,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useSearchParams } from 'next/navigation';
 import NutritionTable from './components/nutrition-table';
+import LikeDislikeButtons from './components/like-dislike-buttons';
 import { api } from '@/hooks/use-next-api';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { MenusForDateMealAndLocations, MenuItem } from '@/types/dining';
@@ -194,6 +195,10 @@ const NutritionLabelPage = () => {
                 {menuItem.description}
               </Text>
             )}
+            {/* Like/Dislike buttons */}
+            <Pane marginTop={majorScale(2)}>
+              <LikeDislikeButtons menuItemApiId={Number(menuItem.apiId)} />
+            </Pane>
           </Pane>
 
           <Separator height='3px' />

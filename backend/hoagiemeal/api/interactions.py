@@ -34,6 +34,8 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+MISSING = object()
+
 DEFAULT_MENU_ITEM_INTERACTION = {
     "viewed": False,
     "view_count": 0,
@@ -78,7 +80,7 @@ class MenuItemInteractionsService:
                 logger.info(
                     f"Found existing user interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}."
                 )
-            return MenuItemInteractionSerializer(interaction).data
+            return interaction
         except Exception as e:
             logger.error(
                 f"Error getting or creating user interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}: {e}"
@@ -103,7 +105,7 @@ class MenuItemInteractionsService:
                 logger.info(f"Created metrics for menu_item_api_id: {menu_item_api_id}.")
             else:
                 logger.info(f"Found existing metrics for menu_item_api_id: {menu_item_api_id}.")
-            return MenuItemMetricsSerializer(metrics).data
+            return metrics
         except Exception as e:
             logger.error(f"Error getting or creating metrics for menu_item_api_id: {menu_item_api_id}: {e}")
             return None
@@ -215,7 +217,7 @@ class MenuItemInteractionsService:
         favorited: Optional[bool] = None,
         saved_for_later: Optional[bool] = None,
         would_eat_again: Optional[str] = None,
-    ) -> Optional[Dict]:
+    ) -> bool:
         """Update user interaction for a menu item.
 
         Args:
@@ -227,18 +229,18 @@ class MenuItemInteractionsService:
             would_eat_again (Optional[str]): Whether the menu item would be eaten again (Y/N/M).
 
         Returns:
-            Optional[Dict]: The updated interaction data.
+            bool: True if the interaction was updated successfully, False otherwise.
 
         """
         logger.info(f"Updating interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
         try:
             interaction = self.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
             if not interaction:
-                return None
+                return False
 
             # Update menu item interaction
             with transaction.atomic():
-                if liked is not None:
+                if liked is not MISSING:
                     interaction.liked = liked
                 if favorited is not None:
                     interaction.favorited = favorited
@@ -253,12 +255,12 @@ class MenuItemInteractionsService:
             logger.info(
                 f"Updated user menu item interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}."
             )
-            return MenuItemInteractionSerializer(interaction).data
+            return True
         except Exception as e:
             logger.error(
                 f"Error updating interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}: {e}"
             )
-            return None
+            return False
 
 
 #################### Exposed endpoints #########################
@@ -267,7 +269,6 @@ class MenuItemInteractionsService:
 interactions_service = MenuItemInteractionsService()
 
 
-@cache_page(60 * 5)
 @api_view(["GET"])
 def get_user_menu_item_interaction(request):
     """Django view function to get user menu item interaction for a menu item.
@@ -283,8 +284,11 @@ def get_user_menu_item_interaction(request):
     """
     logger.info(f"Getting user menu item interaction for request: {request}")
     try:
-        user = get_user_from_request(request)
-        if not user:
+        user = None
+        try:
+            user = get_user_from_request(request)
+        except Exception as e:
+            logger.error(f"Error getting user from request: {e}")
             return Response({"message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
         menu_item_api_id = request.GET.get("menu_item_api_id")
@@ -292,11 +296,11 @@ def get_user_menu_item_interaction(request):
             return Response({"message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         interaction = interactions_service.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
-        if interaction is None:
+        if not interaction:
             return Response({"message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND)
 
         logger.info(
-            f"Returning user menu item interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}."
+            f"Returning user menu item interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}."  # type: ignore
         )
         return Response(
             {
@@ -377,7 +381,7 @@ def update_user_menu_item_interaction(request):
         if not menu_item_api_id:
             return Response({"message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        liked = request.data.get("liked")
+        liked = request.data.get("liked", MISSING)
         favorited = request.data.get("favorited")
         saved_for_later = request.data.get("saved_for_later")
         would_eat_again = request.data.get("would_eat_again")
@@ -387,8 +391,11 @@ def update_user_menu_item_interaction(request):
             return Response({"message": "would_eat_again must be Y, N, or M"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Convert boolean strings to booleans
-        if liked is not None:
-            liked = str(liked).lower() == "true" if isinstance(liked, str) else bool(liked)
+        if liked is not MISSING:
+            if liked is None:
+                liked = None
+            else:
+                liked = str(liked).lower() == "true" if isinstance(liked, str) else bool(liked)
         if favorited is not None:
             favorited = str(favorited).lower() == "true" if isinstance(favorited, str) else bool(favorited)
         if saved_for_later is not None:
@@ -396,14 +403,18 @@ def update_user_menu_item_interaction(request):
                 str(saved_for_later).lower() == "true" if isinstance(saved_for_later, str) else bool(saved_for_later)
             )
 
-        interaction = interactions_service.update_user_menu_item_interaction(
+        cached_user_menu_item_interaction = interactions_service.update_user_menu_item_interaction(
             user, menu_item_api_id, liked, favorited, saved_for_later, would_eat_again
         )
-        if interaction is None:
+        if not cached_user_menu_item_interaction:
             return Response(
                 {"message": "Failed to update user menu item interaction"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+        interaction = interactions_service.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
+        if not interaction:
+            return Response({"message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND)
 
         logger.info(
             f"Updated user menu item interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}."

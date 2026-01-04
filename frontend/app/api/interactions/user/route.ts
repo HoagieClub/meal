@@ -17,7 +17,7 @@ import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
 
-const ROUTE = '/api/interactions/user/menu-item';
+const ROUTE = '/api/interactions/user/menu-item/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**

@@ -18,14 +18,15 @@ import { handleAuth, handleCallback } from '@auth0/nextjs-auth0';
 import { NextRequest } from 'next/server';
 import { request } from '@/lib/http';
 
-const VERIFY_ROUTE = '/api/auth/verify';
+const VERIFY_ROUTE = '/api/user/verify/';
 
 const afterCallback = async (req: NextRequest, session: any) => {
   if (session.accessToken) {
     try {
-      await request.getAuth(session.accessToken)(VERIFY_ROUTE, {});
+      await request.postAuth(session.accessToken)(VERIFY_ROUTE, {});
     } catch (error) {
-      console.log('error', error);
+      console.error('Error verifying user:', error);
+      return null;
     }
   }
   return session;

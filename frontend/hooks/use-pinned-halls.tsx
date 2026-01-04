@@ -16,7 +16,7 @@
 
 import { useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { DiningHallType } from '@/data';
+import { DiningHall } from '@/types/dining';
 
 const PINNED_HALLS_KEY = 'diningPinnedHalls';
 
@@ -25,19 +25,19 @@ const PINNED_HALLS_KEY = 'diningPinnedHalls';
  * @returns An object relating to the pinned dining halls functionality.
  */
 export function usePinnedHalls() {
-  const [pinnedArray, setPinnedArray] = useLocalStorage<DiningHallType[]>({
+  const [pinnedArray, setPinnedArray] = useLocalStorage<DiningHall[]>({
     key: PINNED_HALLS_KEY,
     initialValue: [],
   });
-  const pinnedHalls = useMemo(() => new Set<DiningHallType>(pinnedArray), [pinnedArray]);
+  const pinnedHalls = useMemo(() => new Set<DiningHall>(pinnedArray), [pinnedArray]);
 
   // check if a dining hall is pinned
-  const isPinned = (diningHall: DiningHallType): boolean => {
+  const isPinned = (diningHall: DiningHall): boolean => {
     return pinnedHalls.has(diningHall);
   };
 
   // toggle a dining hall's pin status
-  const togglePin = (diningHall: DiningHallType) => {
+  const togglePin = (diningHall: DiningHall) => {
     setPinnedArray((prevArray) => {
       const prevSet = new Set(prevArray);
       if (prevSet.has(diningHall)) {
@@ -50,7 +50,7 @@ export function usePinnedHalls() {
   };
 
   // add a dining hall to the pinned list
-  const addPin = (diningHall: DiningHallType) => {
+  const addPin = (diningHall: DiningHall) => {
     setPinnedArray((prevArray) => {
       const prevSet = new Set(prevArray);
       prevSet.add(diningHall);
@@ -59,7 +59,7 @@ export function usePinnedHalls() {
   };
 
   // remove a dining hall from the pinned list
-  const removePin = (diningHall: DiningHallType) => {
+  const removePin = (diningHall: DiningHall) => {
     setPinnedArray((prevArray) => {
       const prevSet = new Set(prevArray);
       prevSet.delete(diningHall);

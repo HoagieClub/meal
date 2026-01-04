@@ -70,7 +70,7 @@ class MenuItemInteractionSerializer(serializers.ModelSerializer):
 
         model = MenuItemInteraction
         fields = "__all__"
-        read_only_fields = ["id", "user", "menu_item", "created_at", "updated_at"]
+        read_only_fields = ["user", "menu_item", "created_at", "updated_at"]
 
 
 class MenuItemMetricsSerializer(serializers.ModelSerializer):
@@ -81,7 +81,7 @@ class MenuItemMetricsSerializer(serializers.ModelSerializer):
 
         model = MenuItemMetrics
         fields = "__all__"
-        read_only_fields = ["id", "menu_item", "created_at", "updated_at"]
+        read_only_fields = ["menu_item", "created_at", "updated_at"]
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
