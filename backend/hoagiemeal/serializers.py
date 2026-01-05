@@ -18,7 +18,7 @@ This software is provided "as-is", without warranty of any kind.
 from rest_framework import serializers
 from django.db import models
 from hoagiemeal.models.user import CustomUser
-from hoagiemeal.models.menu import MenuItem, MenuItemInteraction, MenuItemMetrics
+from hoagiemeal.models.menu import MenuItem, MenuItemInteraction, MenuItemMetrics, MenuItemNutrition
 from hoagiemeal.models.dining import DiningVenue
 from django.contrib.auth import get_user_model
 
@@ -69,8 +69,8 @@ class MenuItemInteractionSerializer(serializers.ModelSerializer):
         """Meta class for the MenuItemInteractionSerializer."""
 
         model = MenuItemInteraction
-        fields = "__all__"
-        read_only_fields = ["user", "menu_item", "created_at", "updated_at"]
+        exclude = ["created_at", "updated_at"]
+        read_only_fields = ["user", "menu_item"]
 
 
 class MenuItemMetricsSerializer(serializers.ModelSerializer):
@@ -80,29 +80,28 @@ class MenuItemMetricsSerializer(serializers.ModelSerializer):
         """Meta class for the MenuItemMetricsSerializer."""
 
         model = MenuItemMetrics
-        fields = "__all__"
-        read_only_fields = ["menu_item", "created_at", "updated_at"]
+        exclude = ["created_at", "updated_at"]
+        read_only_fields = ["menu_item"]
+
+
+class MenuItemNutritionSerializer(serializers.ModelSerializer):
+    """Serializer for the MenuItemNutrition model."""
+
+    class Meta:
+        """Meta class for the MenuItemNutritionSerializer."""
+
+        model = MenuItemNutrition
+        exclude = ["created_at", "updated_at"]
+        read_only_fields = ["menu_item"]
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
     """Serializer for the MenuItem model."""
 
+    nutrition = MenuItemNutritionSerializer(read_only=True)
+
     class Meta:
         """Meta class for the MenuItemSerializer."""
-
-        model = MenuItem
-        exclude = ["created_at", "updated_at"]
-        read_only_fields = ["api_id"]
-
-
-class FullMenuItemSerializer(serializers.ModelSerializer):
-    """Serializer for a MenuItem with all details including interactions and metrics."""
-
-    interactions = MenuItemInteractionSerializer(many=True, read_only=True)
-    metrics = MenuItemMetricsSerializer(read_only=True)
-
-    class Meta:
-        """Meta class for the FullMenuItemSerializer."""
 
         model = MenuItem
         exclude = ["created_at", "updated_at"]

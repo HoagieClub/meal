@@ -68,7 +68,7 @@ class Scraper:
         "iron": {"amount": None, "dv": None, "unit": None},
     }
 
-    def scrape_api_url(self, api_url: str) -> dict:
+    def scrape_api_url(self, api_url: str) -> Optional[dict]:
         """Fetch HTML and extract menu item information in one call."""
         response = requests.get(api_url, timeout=10)
         response.raise_for_status()
@@ -108,6 +108,10 @@ class Scraper:
             unit_match = re.search(r"[\d\.]+\s*([a-zA-Zµ%]+)", raw_value)
             unit_value = unit_match.group(1) if unit_match else None
             return numeric_value, unit_value
+
+        page_text = soup.get_text()
+        if "Nutritional information is not available for this recipe" in page_text:
+            return {}
 
         ingredients_element = soup.find(class_=self.INGREDIENTS_CLASS)
         allergens_element = soup.find(class_=self.ALLERGENS_CLASS)

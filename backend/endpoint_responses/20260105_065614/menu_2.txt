@@ -1,0 +1,35 @@
+http://localhost:8000/api/dining/menu/?location_id=5&menu_id=2026-01-16-Lunch
+================================================================================
+
+Status Code: 200
+Headers:
+{
+  "Date": "Mon, 05 Jan 2026 11:56:40 GMT",
+  "Server": "WSGIServer/0.2 CPython/3.12.7",
+  "Content-Type": "application/json",
+  "Vary": "Accept, origin, Cookie",
+  "Allow": "OPTIONS, GET",
+  "Expires": "Mon, 05 Jan 2026 12:01:40 GMT",
+  "Cache-Control": "max-age=300",
+  "X-Frame-Options": "DENY",
+  "Content-Length": "112",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "same-origin",
+  "Cross-Origin-Opener-Policy": "same-origin"
+}
+
+================================================================================
+
+{
+  "data": [
+    532034,
+    560708,
+    161064,
+    559913,
+    510189,
+    560784,
+    560785,
+    560150
+  ],
+  "message": "Dining menu fetched successfully."
+}

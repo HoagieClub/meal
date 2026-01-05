@@ -1,0 +1,67 @@
+http://localhost:8000/api/dining/menu/item/?api_id=560112
+================================================================================
+
+Status Code: 200
+Headers:
+{
+  "Date": "Mon, 05 Jan 2026 11:56:24 GMT",
+  "Server": "WSGIServer/0.2 CPython/3.12.7",
+  "Content-Type": "application/json",
+  "Vary": "Accept, origin, Cookie",
+  "Allow": "OPTIONS, GET",
+  "Expires": "Mon, 05 Jan 2026 12:01:24 GMT",
+  "Cache-Control": "max-age=300",
+  "X-Frame-Options": "DENY",
+  "Content-Length": "855",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "same-origin",
+  "Cross-Origin-Opener-Policy": "same-origin"
+}
+
+================================================================================
+
+{
+  "data": {
+    "api_id": 560112,
+    "nutrition": {
+      "menu_item": 560112,
+      "serving_size": "1.00",
+      "serving_unit": "each",
+      "calories": 152,
+      "calories_from_fat": null,
+      "total_fat": "11.20",
+      "saturated_fat": "5.10",
+      "trans_fat": "0.00",
+      "cholesterol": "81.50",
+      "sodium": "496.80",
+      "total_carbohydrates": "2.90",
+      "dietary_fiber": "1.00",
+      "sugars": "1.40",
+      "protein": "10.30",
+      "vitamin_d": "0.00",
+      "potassium": "1.00",
+      "calcium": "11.00",
+      "iron": "4.00",
+      "created_at": "2026-01-05T11:56:24.468101Z",
+      "updated_at": "2026-01-05T11:56:24.468101Z"
+    },
+    "api_url": "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=560112",
+    "name": "European Style Breakfast Station",
+    "allergens": [
+      "Milk",
+      "Eggs"
+    ],
+    "ingredients": [
+      "Hard boiled egg",
+      "Tomatoes",
+      "Pea shoots",
+      "Provolone cheese",
+      "Feta cheese",
+      "Cooked ham",
+      "Genoa salami",
+      "Avocado"
+    ],
+    "dietary_flags": []
+  },
+  "message": "Dining menu item fetched successfully."
+}

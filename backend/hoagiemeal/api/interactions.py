@@ -68,18 +68,14 @@ class MenuItemInteractionsService:
             f"Getting or creating user interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}."
         )
         try:
+            # Get or create menu item interaction
             menu_item = MenuItem.objects.get(api_id=menu_item_api_id)
-            interaction, created = MenuItemInteraction.objects.get_or_create(
+            interaction, _ = MenuItemInteraction.objects.get_or_create(
                 user=user,
                 menu_item=menu_item,
                 defaults=DEFAULT_MENU_ITEM_INTERACTION,
             )
-            if created:
-                logger.info(f"Created user interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
-            else:
-                logger.info(
-                    f"Found existing user interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}."
-                )
+            logger.info(f"User interaction fetched for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
             return interaction
         except Exception as e:
             logger.error(
@@ -99,55 +95,44 @@ class MenuItemInteractionsService:
         """
         logger.info(f"Getting or creating metrics for menu_item_api_id: {menu_item_api_id}.")
         try:
+            # Get or create metrics for menu item
             menu_item = MenuItem.objects.get(api_id=menu_item_api_id)
-            metrics, created = MenuItemMetrics.objects.get_or_create(menu_item=menu_item)
-            if created:
-                logger.info(f"Created metrics for menu_item_api_id: {menu_item_api_id}.")
-            else:
-                logger.info(f"Found existing metrics for menu_item_api_id: {menu_item_api_id}.")
+            metrics, _ = MenuItemMetrics.objects.get_or_create(menu_item=menu_item)
+            logger.info(f"Metrics fetched for menu_item_api_id: {menu_item_api_id}.")
             return metrics
         except Exception as e:
             logger.error(f"Error getting or creating metrics for menu_item_api_id: {menu_item_api_id}: {e}")
             return None
 
-    def get_menu_items_metrics(self, menu_item_api_ids: List[int]) -> Dict[int, Optional[Dict]]:
-        """Get metrics for multiple menu items.
+    def get_or_create_menu_items_metrics(self, menu_item_api_ids: List[int]) -> Dict[int, Optional[Dict]]:
+        """Get or create metrics for multiple menu items.
 
         Args:
             menu_item_api_ids (list[int]): List of menu item API IDs.
 
         Returns:
             Dict[int, Optional[Dict]]: Dictionary mapping menu_item_api_id to metrics data.
-                Returns None for menu items that don't exist or have errors.
 
         """
         logger.info(f"Getting metrics for {len(menu_item_api_ids)} menu items.")
-        result: Dict[int, Optional[Dict]] = {}
         try:
-            menu_items = MenuItem.objects.filter(api_id__in=menu_item_api_ids)
-            menu_item_ids_map = {item.api_id: item for item in menu_items}
-
             # Get or create metrics for all menu items
+            metrics_dict = {}
             for menu_item_api_id in menu_item_api_ids:
-                try:
-                    if menu_item_api_id in menu_item_ids_map:
-                        menu_item = menu_item_ids_map[menu_item_api_id]
-                        metrics, created = MenuItemMetrics.objects.get_or_create(menu_item=menu_item)
-                        result[menu_item_api_id] = metrics
-                    else:
-                        logger.warning(f"Menu item with api_id {menu_item_api_id} not found.")
-                        result[menu_item_api_id] = None
-                except Exception as e:
-                    logger.error(f"Error getting metrics for menu_item_api_id: {menu_item_api_id}: {e}")
-                    result[menu_item_api_id] = None
+                metrics = self.get_or_create_menu_item_metrics(menu_item_api_id)
+                if not metrics:
+                    logger.error(f"Error getting metrics for menu_item_api_id: {menu_item_api_id}.")
+                    continue
 
-            logger.info(
-                f"Successfully retrieved metrics for {sum(1 for v in result.values() if v is not None)} menu items."
-            )
-            return result
+                # Add metrics to dictionary
+                metrics_dict[menu_item_api_id] = metrics
+
+            metrics_dict_length = len(list(metrics_dict.keys()))
+            logger.info(f"Successfully retrieved metrics for {metrics_dict_length} menu items.")
+            return metrics_dict
         except Exception as e:
             logger.error(f"Error getting metrics for multiple menu items: {e}")
-            return {menu_item_api_id: None for menu_item_api_id in menu_item_api_ids}
+            return {}
 
     def update_menu_item_metrics(self, menu_item_api_id: int) -> bool:
         """Update aggregated metrics for a menu item.
@@ -161,6 +146,7 @@ class MenuItemInteractionsService:
         """
         logger.info(f"Updating metrics for menu_item_api_id: {menu_item_api_id}.")
         try:
+            # Get metrics and all interactions for menu item
             menu_item = MenuItem.objects.get(api_id=menu_item_api_id)
             interactions = MenuItemInteraction.objects.filter(menu_item=menu_item)
             metrics, _ = MenuItemMetrics.objects.get_or_create(menu_item=menu_item)
@@ -177,8 +163,9 @@ class MenuItemInteractionsService:
                 dislike_count = interactions.filter(liked=False).count()
                 metrics.like_count = like_count
                 metrics.dislike_count = dislike_count
-                total_likes = like_count + dislike_count
-                metrics.average_like_score = (like_count / total_likes * 100) if total_likes > 0 else None
+                total_likes = like_count - dislike_count
+                total_selected = like_count + dislike_count
+                metrics.average_like_score = (total_likes / total_selected * 100) if total_selected > 0 else None
 
                 # Aggregate favorite and saved for later data
                 favorite_count = interactions.filter(favorited=True).count()
@@ -224,8 +211,10 @@ class MenuItemInteractionsService:
         """
         logger.info(f"Recording user menu item view for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
         try:
+            # Get or create user menu item interaction
             interaction = self.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
             if not interaction:
+                logger.error(f"No interaction found for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
                 return False
 
             # Update menu item interaction
@@ -273,8 +262,10 @@ class MenuItemInteractionsService:
         """
         logger.info(f"Updating interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
         try:
+            # Get or create user menu item interaction
             interaction = self.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
             if not interaction:
+                logger.error(f"No interaction found for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
                 return False
 
             # Update menu item interaction
@@ -323,21 +314,22 @@ def get_user_menu_item_interaction(request):
     """
     logger.info(f"Getting user menu item interaction for request: {request}")
     try:
-        user = None
-        try:
-            user = get_user_from_request(request)
-        except Exception as e:
-            logger.error(f"Error getting user from request: {e}")
+        # Authenticate user
+        user = get_user_from_request(request)
+        if not user:
             return Response({"message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
+        # Get menu item API ID
         menu_item_api_id = request.GET.get("menu_item_api_id")
         if not menu_item_api_id:
             return Response({"message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Get or create user menu item interaction
         interaction = interactions_service.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
         if not interaction:
             return Response({"message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Return serialized user menu item interaction data
         logger.info(
             f"Returning user menu item interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}."  # type: ignore
         )
@@ -370,22 +362,37 @@ def record_user_menu_item_view(request):
     """
     logger.info(f"Recording view for request: {request}")
     try:
+        # Authenticate user
         user = get_user_from_request(request)
         if not user:
             return Response({"message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
+        # Get menu item API ID
         menu_item_api_id = request.data.get("menu_item_api_id")
         if not menu_item_api_id:
             return Response({"message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Record user menu item view
         success = interactions_service.record_user_menu_item_view(user, menu_item_api_id)
         if not success:
             return Response(
                 {"message": "Failed to record user menu item view"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+        # Get user menu item interaction
+        interaction = interactions_service.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
+        if not interaction:
+            return Response({"message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Return serialized user menu item interaction data
         logger.info(f"Recorded user menu item view for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
-        return Response({"message": "User menu item view recorded successfully."}, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "data": MenuItemInteractionSerializer(interaction).data,
+                "message": "User menu item view recorded successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
     except Exception as e:
         logger.error(f"Error in record_user_menu_item_view view: {e}")
         return Response(
@@ -412,20 +419,23 @@ def update_user_menu_item_interaction(request):
     """
     logger.info(f"Updating user menu item interaction for request: {request}")
     try:
+        # Authenticate user
         user = get_user_from_request(request)
         if not user:
             return Response({"message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
+        # Get menu item API ID
         menu_item_api_id = request.data.get("menu_item_api_id")
         if not menu_item_api_id:
             return Response({"message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Get interaction data
         liked = request.data.get("liked", MISSING)
         favorited = request.data.get("favorited")
         saved_for_later = request.data.get("saved_for_later")
         would_eat_again = request.data.get("would_eat_again")
 
-        # Validate would_eat_again if provided
+        # Validate would_eat_again
         if would_eat_again is not None and would_eat_again not in ["Y", "N", "M"]:
             return Response({"message": "would_eat_again must be Y, N, or M"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -442,6 +452,7 @@ def update_user_menu_item_interaction(request):
                 str(saved_for_later).lower() == "true" if isinstance(saved_for_later, str) else bool(saved_for_later)
             )
 
+        # Update user menu item interaction
         cached_user_menu_item_interaction = interactions_service.update_user_menu_item_interaction(
             user, menu_item_api_id, liked, favorited, saved_for_later, would_eat_again
         )
@@ -451,10 +462,12 @@ def update_user_menu_item_interaction(request):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+        # Get user menu item interaction
         interaction = interactions_service.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
         if not interaction:
             return Response({"message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Return serialized user menu item interaction data
         logger.info(
             f"Updated user menu item interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}."
         )
@@ -488,34 +501,25 @@ def get_menu_items_metrics(request):
     """
     logger.info(f"Getting menu items metrics for request: {request}")
     try:
+        # Get menu item API IDs
         menu_item_api_ids = request.data.get("menu_item_api_ids")
         if not menu_item_api_ids:
             return Response({"message": "menu_item_api_ids is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not isinstance(menu_item_api_ids, list):
-            return Response({"message": "menu_item_api_ids must be a list"}, status=status.HTTP_400_BAD_REQUEST)
+        # Parse menu item API IDs
+        menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids.split(",")]
 
-        # Convert to integers
-        try:
-            menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids]
-        except (ValueError, TypeError):
-            return Response(
-                {"message": "menu_item_api_ids must be a list of integers"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        # Get metrics for menu items
+        metrics_dict = interactions_service.get_or_create_menu_items_metrics(menu_item_api_ids)
 
-        metrics_dict = interactions_service.get_menu_items_metrics(menu_item_api_ids)
-
-        # Serialize metrics and structure response
-        result = {}
-        for menu_item_api_id, metrics in metrics_dict.items():
-            if metrics is not None:
-                result[str(menu_item_api_id)] = MenuItemMetricsSerializer(metrics).data
-            else:
-                result[str(menu_item_api_id)] = None
-
+        # Return serialized metrics data
+        metrics_dict = {
+            menu_item_api_id: MenuItemMetricsSerializer(metric).data
+            for menu_item_api_id, metric in metrics_dict.items()
+        }
         logger.info(f"Returning metrics for {len(menu_item_api_ids)} menu items.")
         return Response(
-            {"data": result, "message": "Menu items metrics fetched successfully."},
+            {"data": metrics_dict, "message": "Menu items metrics fetched successfully."},
             status=status.HTTP_200_OK,
         )
     except Exception as e:
@@ -541,14 +545,17 @@ def get_menu_item_metrics(request):
     """
     logger.info(f"Getting menu item metrics for request: {request}")
     try:
+        # Get menu item API ID
         menu_item_api_id = request.GET.get("menu_item_api_id")
         if not menu_item_api_id:
             return Response({"message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Get metrics for menu item
         metrics = interactions_service.get_or_create_menu_item_metrics(menu_item_api_id)
-        if metrics is None:
+        if not metrics:
             return Response({"message": "No metrics found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Return serialized metrics data
         logger.info(f"Returning metrics for menu_item_api_id: {menu_item_api_id}.")
         return Response(
             {"data": MenuItemMetricsSerializer(metrics).data, "message": "Menu item metrics fetched successfully."},

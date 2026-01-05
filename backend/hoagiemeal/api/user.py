@@ -118,6 +118,7 @@ def verify_and_get_or_create_user(request):
     """
     logger.info(f"Verifying and getting or creating user by Auth0 token from request: {request}")
     try:
+        print(request.headers)
         auth0_claims = decode_auth0_token(request)
         if not auth0_claims:
             return Response({"message": "Failed to decode Auth0 token"}, status=401)
@@ -179,15 +180,20 @@ def get_user_from_request(request: HttpRequest) -> Optional[Any]:
         Optional[Any]: The user if authenticated, None otherwise.
 
     """
-    logger.info(f"Getting user from request: {request}")
-    auth0_claims = decode_auth0_token(request)
-    if not auth0_claims:
-        logger.error(f"Failed to decode Auth0 token from request: {request}.")
-        return None
+    print(request.headers)
+    try:
+        auth0_claims = decode_auth0_token(request)
+        if not auth0_claims:
+            logger.error(f"Failed to decode Auth0 token from request: {request}.")
+            return None
 
-    user = user_api.get_or_create_user(auth0_claims)
-    if not user:
-        logger.error(f"Failed to get or create user from request: {request}.")
+        user = user_api.get_or_create_user(auth0_claims)
+        if not user:
+            logger.error(f"Failed to get or create user from request: {request}.")
+            return None
+
+        logger.info(f"User fetched from request: {request}.")
+        return user
+    except Exception as e:
+        logger.error(f"Error getting user from request: {request}: {e}")
         return None
-    logger.info(f"User fetched from request: {request}.")
-    return user

@@ -20,9 +20,11 @@ from django.urls import path
 from hoagiemeal.api.locations import get_dining_locations, get_all_dining_locations
 from hoagiemeal.api.menu import (
     get_dining_menu_item,
-    get_dining_menu_with_menu_items,
-    get_dining_menus_with_menu_items_for_locations,
-    get_dining_menus_with_menu_items_for_locations_and_day,
+    get_dining_menu_items,
+    get_dining_menu,
+    get_dining_menus_for_locations,
+    get_dining_menus_for_locations_and_day,
+    get_dining_menus_for_locations_and_days,
 )
 from hoagiemeal.api.interactions import (
     get_user_menu_item_interaction,
@@ -42,16 +44,22 @@ urlpatterns = [
     path("api/dining/locations/all/", get_all_dining_locations, name="all-dining-locations"),
     # Menu API Endpoints
     path("api/dining/menu/item/", get_dining_menu_item, name="dining-menu-item"),
-    path("api/dining/menu/", get_dining_menu_with_menu_items, name="dining-menu-with-menu-items"),
+    path("api/dining/menu/items/", get_dining_menu_items, name="dining-menu-items"),
+    path("api/dining/menu/", get_dining_menu, name="dining-menu"),
     path(
-        "api/dining/menus/all-locations/",
-        get_dining_menus_with_menu_items_for_locations,
+        "api/dining/menus/locations/",
+        get_dining_menus_for_locations,
         name="dining-menus-with-menu-items-for-locations",
     ),
     path(
-        "api/dining/menus/all-locations/day/",
-        get_dining_menus_with_menu_items_for_locations_and_day,
+        "api/dining/menus/locations/day/",
+        get_dining_menus_for_locations_and_day,
         name="dining-menus-with-menu-items-for-locations-and-day",
+    ),
+    path(
+        "api/dining/menus/locations/days/",
+        get_dining_menus_for_locations_and_days,
+        name="dining-menus-with-menu-items-for-locations-and-days",
     ),
     # Interaction API Endpoints
     path("api/interactions/user/menu-item/", get_user_menu_item_interaction, name="get-user-menu-item-interaction"),

@@ -1,0 +1,38 @@
+GET http://localhost:8000/api/interactions/menu-item/metrics/?menu_item_api_id=560112
+================================================================================
+
+Status Code: 200
+Headers:
+{
+  "Date": "Mon, 05 Jan 2026 13:12:36 GMT",
+  "Server": "WSGIServer/0.2 CPython/3.12.7",
+  "Content-Type": "application/json",
+  "Vary": "Accept, origin, Cookie",
+  "Allow": "OPTIONS, GET",
+  "X-Frame-Options": "DENY",
+  "Content-Length": "339",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "same-origin",
+  "Cross-Origin-Opener-Policy": "same-origin"
+}
+
+================================================================================
+
+{
+  "data": {
+    "id": 8,
+    "view_count": 0,
+    "unique_view_count": 0,
+    "like_count": 0,
+    "dislike_count": 0,
+    "average_like_score": null,
+    "favorite_count": 0,
+    "saved_for_later_count": 0,
+    "would_eat_again_yes": 0,
+    "would_eat_again_no": 0,
+    "would_eat_again_maybe": 0,
+    "average_would_eat_again_score": null,
+    "menu_item": 560112
+  },
+  "message": "Menu item metrics fetched successfully."
+}

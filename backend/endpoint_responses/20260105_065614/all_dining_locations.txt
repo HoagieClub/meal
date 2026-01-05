@@ -1,0 +1,336 @@
+http://localhost:8000/api/dining/locations/all/
+================================================================================
+
+Status Code: 200
+Headers:
+{
+  "Date": "Mon, 05 Jan 2026 11:56:22 GMT",
+  "Server": "WSGIServer/0.2 CPython/3.12.7",
+  "Content-Type": "application/json",
+  "Vary": "Accept, origin, Cookie",
+  "Allow": "OPTIONS, GET",
+  "X-Frame-Options": "DENY",
+  "Content-Length": "6783",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "same-origin",
+  "Cross-Origin-Opener-Policy": "same-origin"
+}
+
+================================================================================
+
+{
+  "data": {
+    "7": {
+      "database_id": 7,
+      "name": "Center for Jewish Life",
+      "map_name": "Center for Jewish Life",
+      "latitude": "40.346671",
+      "longitude": "-74.653615",
+      "building_name": "Center for Jewish Life",
+      "amenities": [
+        "Open to: Faculty, Staff, Students",
+        "Payment: Meal Plan, PawPoints"
+      ],
+      "is_active": true,
+      "category_id": 2
+    },
+    "5": {
+      "database_id": 5,
+      "name": "Forbes College",
+      "map_name": "Forbes College",
+      "latitude": "40.342146",
+      "longitude": "-74.661155",
+      "building_name": "Forbes Main",
+      "amenities": [
+        "College: Forbes",
+        "Open to: Faculty, Staff, Students",
+        "Payment: Meal Plan, PawPoints, Student Charge, Tower Card"
+      ],
+      "is_active": true,
+      "category_id": 2
+    },
+    "8": {
+      "database_id": 8,
+      "name": "Graduate College",
+      "map_name": "Graduate College",
+      "latitude": "40.340838",
+      "longitude": "-74.665214",
+      "building_name": "Old Graduate College",
+      "amenities": [
+        "Open to: Faculty, Staff, Students",
+        "Payment: Meal Plan, Paw Points, Tower Card"
+      ],
+      "is_active": true,
+      "category_id": 2
+    },
+    "4": {
+      "database_id": 4,
+      "name": "Mathey & Rockefeller Colleges",
+      "map_name": "Mathey & Rockefeller Colleges",
+      "latitude": "40.348149",
+      "longitude": "-74.662190",
+      "building_name": "Hamilton Hall",
+      "amenities": [
+        "College: Mathey",
+        "Open to: Faculty, Staff, Students",
+        "Payment: Meal Plan, Paw Points, Student Charge, Tower Charge"
+      ],
+      "is_active": true,
+      "category_id": 2
+    },
+    "6": {
+      "database_id": 6,
+      "name": "Whitman & Butler Colleges",
+      "map_name": "Whitman & Butler Colleges",
+      "latitude": "40.344184",
+      "longitude": "-74.657647",
+      "building_name": "Community Hall",
+      "amenities": [
+        "Capacity: 168",
+        "College: Whitman",
+        "Open to: Faculty, Staff, Students",
+        "Payment: Meal Plan, Paw Points, Student Charge, Tower Card"
+      ],
+      "is_active": true,
+      "category_id": 2
+    },
+    "1088": {
+      "database_id": 1088,
+      "name": "Yeh College & NCW",
+      "map_name": "Yeh College & NCW",
+      "latitude": "40.341816",
+      "longitude": "-74.654022",
+      "building_name": "Grousbeck Hall",
+      "amenities": [
+        "College: Yeh & New College West"
+      ],
+      "is_active": true,
+      "category_id": 2
+    },
+    "1007": {
+      "database_id": 1007,
+      "name": "Atrium Cafe",
+      "map_name": "Atrium Cafe",
+      "latitude": "40.349267",
+      "longitude": "-74.654863",
+      "building_name": "Louis A. Simpson International Building",
+      "amenities": [
+        "Open To: Students, faculty and staff",
+        "Payment: Credit Card, Dining Points, Paw Points, Student Charge, Tower Cards"
+      ],
+      "is_active": false,
+      "category_id": 3
+    },
+    "175": {
+      "database_id": 175,
+      "name": "Cafe 701",
+      "map_name": "Cafe 701",
+      "latitude": "40.323761",
+      "longitude": "-74.649213",
+      "building_name": "701 Carnegie Center",
+      "amenities": [
+        "Payment: Cash, Credit Card, Paw Points, Tower Cards"
+      ],
+      "is_active": false,
+      "category_id": 3
+    },
+    "11": {
+      "database_id": 11,
+      "name": "Cafe Vivian",
+      "map_name": "Cafe Vivian",
+      "latitude": "40.346734",
+      "longitude": "-74.655155",
+      "building_name": "Frist Campus Center",
+      "amenities": [
+        "Payment: Credit Cards, PawPoints, Student Change, Apple & Google Pay, Meal Plan, Tower Card"
+      ],
+      "is_active": false,
+      "category_id": 3
+    },
+    "18": {
+      "database_id": 18,
+      "name": "Chancellor Green Cafe",
+      "map_name": "Chancellor Green Cafe",
+      "latitude": "40.349078",
+      "longitude": "-74.658599",
+      "building_name": "Chancellor Green",
+      "amenities": [
+        "Open to: Students, faculty and staff",
+        "Payment: Credit Card, Dining Points, PawPoints, Student Charge, Tower Cards"
+      ],
+      "is_active": false,
+      "category_id": 3
+    },
+    "406": {
+      "database_id": 406,
+      "name": "Chemistry CaFe",
+      "map_name": "Chemistry CaFe",
+      "latitude": "40.344016",
+      "longitude": "-74.650691",
+      "building_name": "Frick Chemistry Laboratory",
+      "amenities": [
+        "Open to: Students, faculty and staff",
+        "Payment: Credit Card, Dining Points, Paw Points"
+      ],
+      "is_active": true,
+      "category_id": 3
+    },
+    "174": {
+      "database_id": 174,
+      "name": "EQuad Cafe",
+      "map_name": "EQuad Cafe",
+      "latitude": "40.350450",
+      "longitude": "-74.651383",
+      "building_name": "Engineering Quad C Wing",
+      "amenities": [
+        "Open to: Students, faculty and staff",
+        "Payment: Credit Card, Paw Points, Tower Cards",
+        "Payments: Dining Points, Student Charge"
+      ],
+      "is_active": true,
+      "category_id": 3
+    },
+    "9": {
+      "database_id": 9,
+      "name": "Frist Gallery",
+      "map_name": "Frist Gallery",
+      "latitude": "40.346734",
+      "longitude": "-74.655155",
+      "building_name": "Frist Campus Center",
+      "amenities": [
+        "Open to: Students, faculty and staff",
+        "Payment: Cash, Credit Card, Dining Points, Late Meal (except during breaks), Paw Points, Student Cha"
+      ],
+      "is_active": true,
+      "category_id": 3
+    },
+    "171": {
+      "database_id": 171,
+      "name": "Garden Room",
+      "map_name": "Garden Room",
+      "latitude": "40.347080",
+      "longitude": "-74.656578",
+      "building_name": "Prospect House",
+      "amenities": [
+        "Open to : Staff",
+        "Open to: Faculty",
+        "Payment: Visa, Mastercard, Discover, Amex and Tower Cards"
+      ],
+      "is_active": false,
+      "category_id": 3
+    },
+    "173": {
+      "database_id": 173,
+      "name": "Genomics Cafe",
+      "map_name": "Genomics Cafe",
+      "latitude": "40.344375",
+      "longitude": "-74.653271",
+      "building_name": "Icahn Laboratory",
+      "amenities": [
+        "Open to: Students, faculty and staff",
+        "Payment: Credit Card, Dining Points, Paw Points, Student Charge, Tower Cards"
+      ],
+      "is_active": true,
+      "category_id": 3
+    },
+    "1168": {
+      "database_id": 1168,
+      "name": "Meadows Cafe",
+      "map_name": "Meadows Cafe",
+      "latitude": "40.348703",
+      "longitude": "-74.659271",
+      "building_name": "Nassau Hall",
+      "amenities": [
+        "Open To: Students, Faculty, Staff, Public",
+        "Payment: Credit Card, Paw Points, Student Charge"
+      ],
+      "is_active": false,
+      "category_id": 3
+    },
+    "1188": {
+      "database_id": 1188,
+      "name": "Mosaic Restaurant",
+      "map_name": "Mosaic Restaurant",
+      "latitude": "40.346995",
+      "longitude": "-74.657624",
+      "building_name": "Art Museum",
+      "amenities": [
+        "Open to : Public, Students",
+        "Open to: Faculty, Staff",
+        "Payment: Credit Cards, Paw, Tower Cards"
+      ],
+      "is_active": true,
+      "category_id": 3
+    },
+    "172": {
+      "database_id": 172,
+      "name": "Sally Frank Cafe at Prospect House",
+      "map_name": "Sally Frank Cafe at Prospect House",
+      "latitude": "40.347080",
+      "longitude": "-74.656578",
+      "building_name": "Prospect House",
+      "amenities": [
+        "Open to: Faculty, Staff",
+        "Payment: Credit Cards, Paw Points"
+      ],
+      "is_active": true,
+      "category_id": 3
+    },
+    "1068": {
+      "database_id": 1068,
+      "name": "Shultz Cafe",
+      "map_name": "Shultz Cafe",
+      "latitude": "40.348411",
+      "longitude": "-74.654723",
+      "building_name": "Robertson Hall",
+      "amenities": [
+        "Open to: Students, faculty and staff"
+      ],
+      "is_active": true,
+      "category_id": 3
+    },
+    "17": {
+      "database_id": 17,
+      "name": "Studio 34",
+      "map_name": "Studio 34",
+      "latitude": "40.344555",
+      "longitude": "-74.655525",
+      "building_name": "1976 Hall",
+      "amenities": [
+        "Open to: Students, faculty and staff",
+        "Payment: Credit Card, PawPoints"
+      ],
+      "is_active": true,
+      "category_id": 3
+    },
+    "1047": {
+      "database_id": 1047,
+      "name": "Tiger Tea Room",
+      "map_name": "Tiger Tea Room",
+      "latitude": "40.349614",
+      "longitude": "-74.657349",
+      "building_name": "Firestone Library",
+      "amenities": [
+        "Open to: Students, faculty and staff",
+        "Payment: Student Charge, Tower Cards"
+      ],
+      "is_active": true,
+      "category_id": 3
+    },
+    "10": {
+      "database_id": 10,
+      "name": "Witherspoon's",
+      "map_name": "Witherspoon's",
+      "latitude": "40.346734",
+      "longitude": "-74.655155",
+      "building_name": "Frist Campus Center",
+      "amenities": [
+        "Open to : Students, faculty and staff",
+        "Payment: Credit Cards, PawPoints, Student Change, Apple & Google Pay"
+      ],
+      "is_active": true,
+      "category_id": 3
+    }
+  },
+  "message": "Dining locations fetched successfully."
+}

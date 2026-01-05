@@ -60,9 +60,54 @@ class MenuItem(models.Model):
 
     Attributes:
         api_id (int): Primary key. Unique original menu item ID from the external API.
+        
         name (str): Name of the menu item.
         description (str): Description of the dish.
         api_url (str): URL linking to more details about the dish.
+        allergens (ArrayField): The allergens of the menu item.
+        ingredients (ArrayField): The ingredients of the menu item.
+        dietary_flags (ArrayField): The dietary flags of the menu item.
+
+        created_at (datetime): Timestamp when the record was created.
+        updated_at (datetime): Timestamp when the record was last updated.
+
+    """
+
+    api_id = models.PositiveIntegerField(primary_key=True, help_text=_("Original menu item ID from the API"))
+    
+    api_url = models.URLField(max_length=500, blank=True)
+    name = models.CharField(max_length=255, db_index=True)
+    allergens = ArrayField(models.CharField(max_length=100), blank=True, default=list)
+    ingredients = ArrayField(models.CharField(max_length=255), blank=True, default=list)
+    dietary_flags = ArrayField(
+        models.CharField(max_length=50),
+        blank=True,
+        default=list,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        """Meta class for the MenuItem model."""
+
+        db_table = "menu_items"
+        indexes = [
+            models.Index(fields=["api_id"]),
+            models.Index(fields=["name"]),
+            models.Index(fields=["api_url"]),
+        ]
+
+    def __str__(self):
+        """Return the string representation of the MenuItem instance."""
+        return f"{self.name} ({self.api_id})"
+
+
+class MenuItemNutrition(models.Model):
+    """Represents the nutrition information for a menu item.
+
+    Attributes:
+        menu_item (MenuItem): The menu item that the nutrition information is for.
 
         serving_size (DecimalField): The serving size of the menu item.
         serving_unit (CharField): The serving unit of the menu item.
@@ -82,22 +127,21 @@ class MenuItem(models.Model):
         calcium (DecimalField): The calcium of the menu item.
         iron (DecimalField): The iron of the menu item.
 
-        allergens (ArrayField): The allergens of the menu item.
-        ingredients (ArrayField): The ingredients of the menu item.
-        dietary_flags (ArrayField): The dietary flags of the menu item.
-
         created_at (datetime): Timestamp when the record was created.
         updated_at (datetime): Timestamp when the record was last updated.
 
     """
 
-    api_id = models.PositiveIntegerField(primary_key=True, help_text=_("Original menu item ID from the API"))
-    api_url = models.URLField(max_length=500, blank=True)
-    name = models.CharField(max_length=255, db_index=True)
+    menu_item = models.OneToOneField(
+        "MenuItem",
+        on_delete=models.CASCADE,
+        related_name="nutrition",
+        primary_key=True,
+    )
 
     serving_size = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     serving_unit = models.CharField(max_length=20, blank=True)
-    calories = models.PositiveSmallIntegerField(null=True, blank=True, db_index=True)
+    calories = models.PositiveSmallIntegerField(null=True, blank=True)
     calories_from_fat = models.PositiveSmallIntegerField(null=True, blank=True)
     total_fat = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     saturated_fat = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
@@ -107,40 +151,27 @@ class MenuItem(models.Model):
     total_carbohydrates = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     dietary_fiber = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     sugars = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    protein = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, db_index=True)
+    protein = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     vitamin_d = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     potassium = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     calcium = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     iron = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
 
-    allergens = ArrayField(models.CharField(max_length=100), blank=True, default=list)
-    ingredients = ArrayField(models.CharField(max_length=255), blank=True, default=list)
-    dietary_flags = ArrayField(
-        models.CharField(max_length=50),
-        blank=True,
-        default=list,
-        help_text=_("Raw dietary flags from source (e.g., icons on nutrition page)"),
-    )
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        """Meta class for the MenuItem model."""
+        """Meta class for the MenuItemNutrition model."""
 
-        db_table = "menu_items"
+        db_table = "menu_item_nutrition"
+        unique_together = ["menu_item"]
         indexes = [
-            models.Index(fields=["calories"]),
-            models.Index(fields=["protein"]),
-            models.Index(fields=["sodium"]),
-            models.Index(fields=["api_id"]),
-            models.Index(fields=["name"]),
-            models.Index(fields=["api_url"]),
+            models.Index(fields=["menu_item"]),
         ]
 
     def __str__(self):
-        """Return the string representation of the MenuItem instance."""
-        return f"{self.name} ({self.api_id})"
+        """Return the string representation of the MenuItemNutrition instance."""
+        return f"Nutrition for menu item {self.menu_item.name}"
 
 
 class MenuItemInteraction(models.Model):
@@ -220,7 +251,7 @@ class MenuItemMetrics(models.Model):
 
     Attributes:
         menu_item (MenuItem): The menu item that the metrics are for.
-        
+
         view_count (int): The number of times the menu item was viewed.
         unique_view_count (int): The number of unique users who viewed the menu item.
         like_count (int): The number of times the menu item was liked.
@@ -232,7 +263,7 @@ class MenuItemMetrics(models.Model):
         would_eat_again_no (int): The number of times the menu item was would eat again no.
         would_eat_again_maybe (int): The number of times the menu item was would eat again maybe.
         average_would_eat_again_score (float): The average score of the menu item's would eat again.
-        
+
         updated_at (datetime): The date and time the metrics were last updated.
         created_at (datetime): The date and time the metrics were created.
 
