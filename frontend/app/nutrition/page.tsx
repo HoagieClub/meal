@@ -30,11 +30,13 @@ import { Separator } from '@/components/ui/separator';
 import { useSearchParams } from 'next/navigation';
 import NutritionTable from './components/nutrition-table';
 import LikeDislikeButtons from './components/like-dislike-buttons';
+import FavoriteBookmarkButtons from './components/favorite-bookmark-buttons';
 import { api } from '@/hooks/use-next-api';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { MenusForDateMealAndLocations, MenuItem } from '@/types/dining';
 
-const GET_MENU_ITEM_DETAILS_URL = '/api/dining/menu/item';
+const GET_MENU_ITEM_DETAILS_URL = '/api/dining/menu/item/';
+const RECORD_VIEW_URL = '/api/interactions/user/view/';
 const MENU_CACHE_KEY = 'menuCache';
 
 /**
@@ -124,6 +126,23 @@ const NutritionLabelPage = () => {
     getMenuItemDetails();
   }, [menuItemApiId, menuCacheLoading, dateKey, meal]);
 
+  // Record view count when menu item is loaded
+  useEffect(() => {
+    if (!menuItem || !menuItemApiId) return;
+
+    const recordView = async () => {
+      try {
+        await api.post(RECORD_VIEW_URL, {
+          menu_item_api_id: Number(menuItem.apiId),
+        });
+      } catch (error) {
+        console.error('Error recording view:', error);
+      }
+    };
+
+    recordView();
+  }, [menuItem, menuItemApiId]);
+
   // Display loading spinner if data is still loading
   if (pageLoading) {
     return (
@@ -195,9 +214,10 @@ const NutritionLabelPage = () => {
                 {menuItem.description}
               </Text>
             )}
-            {/* Like/Dislike buttons */}
-            <Pane marginTop={majorScale(2)}>
+            {/* Like/Dislike and Favorite/Bookmark buttons */}
+            <Pane marginTop={majorScale(2)} display='flex' alignItems='center' gap={majorScale(2)}>
               <LikeDislikeButtons menuItemApiId={Number(menuItem.apiId)} />
+              <FavoriteBookmarkButtons menuItemApiId={Number(menuItem.apiId)} />
             </Pane>
           </Pane>
 

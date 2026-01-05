@@ -16,7 +16,7 @@ import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
 import { request } from '@/lib/http';
 
-const ROUTE = '/api/interactions/user/menu-item/view';
+const ROUTE = '/api/interactions/user/menu-item/view/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**

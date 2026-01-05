@@ -38,7 +38,7 @@ const GET_METRICS_URL = '/api/interactions/metrics/';
  */
 interface LikeDislikeButtonProps {
   icon: React.ComponentType<{ size: number; color: string }>;
-  count: number;
+  count: number | string;
   isActive: boolean;
   onClick: () => void;
   title: string;
@@ -108,6 +108,7 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
+  // Fetch interaction and metrics from the API
   const fetchInteractionAndMetrics = async () => {
     setLoading(true);
     try {
@@ -133,13 +134,14 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
     }
   };
 
-  // Fetch user interaction and metrics
+  // Fetch interaction and metrics when the component mounts
   useEffect(() => {
     if (menuItemApiId) {
       fetchInteractionAndMetrics();
     }
   }, [menuItemApiId]);
 
+  // Handle when user clicks like button
   const handleLikeInteraction = async () => {
     if (updating) return;
     setUpdating(true);
@@ -148,6 +150,7 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
     let optimisticLikeCount;
     let optimisticDislikeCount;
 
+    // Update like status and optimistic counts
     if (userLiked === true) {
       newLikeStatus = null;
       optimisticLikeCount = likeCount - 1;
@@ -162,14 +165,17 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
       optimisticDislikeCount = dislikeCount;
     }
 
+    // Backup previous values
     const previousLikedBackup = userLiked;
     const previousLikeCountBackup = likeCount;
     const previousDislikeCountBackup = dislikeCount;
 
+    // Update state
     setUserLiked(newLikeStatus);
     setLikeCount(optimisticLikeCount);
     setDislikeCount(optimisticDislikeCount);
 
+    // Update interaction in the API
     try {
       const { data, error } = await api.patch(UPDATE_INTERACTION_URL, {
         menu_item_api_id: menuItemApiId,
@@ -177,6 +183,7 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
       });
       if (error) throw new Error(error);
     } catch (error) {
+      // Rollback state if error occurs
       console.error('Error updating like interaction:', error);
       setUserLiked(previousLikedBackup);
       setLikeCount(previousLikeCountBackup);
@@ -186,6 +193,7 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
     }
   };
 
+  // Handle when user clicks dislike button
   const handleDislikeInteraction = async () => {
     if (updating) return;
     setUpdating(true);
@@ -194,6 +202,7 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
     let optimisticLikeCount;
     let optimisticDislikeCount;
 
+    // Update like status and optimistic counts
     if (userLiked === false) {
       newLikeStatus = null;
       optimisticLikeCount = likeCount;
@@ -208,14 +217,17 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
       optimisticDislikeCount = dislikeCount + 1;
     }
 
+    // Backup previous values
     const previousLikedBackup = userLiked;
     const previousLikeCountBackup = likeCount;
     const previousDislikeCountBackup = dislikeCount;
 
+    // Update state
     setUserLiked(newLikeStatus);
     setLikeCount(optimisticLikeCount);
     setDislikeCount(optimisticDislikeCount);
 
+    // Update interaction in the API
     try {
       const { data, error } = await api.patch(UPDATE_INTERACTION_URL, {
         menu_item_api_id: menuItemApiId,
@@ -223,6 +235,7 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
       });
       if (error) throw new Error(error);
     } catch (error) {
+      // Rollback state if error occurs
       console.error('Error updating dislike interaction:', error);
       setUserLiked(previousLikedBackup);
       setLikeCount(previousLikeCountBackup);
@@ -232,21 +245,21 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
     }
   };
 
+  // Render the like/dislike buttons
   return (
     <Pane display='flex' alignItems='center' gap={majorScale(2)}>
       <LikeDislikeButton
         icon={ThumbsUp}
-        count={likeCount}
+        count={loading ? '-' : likeCount}
         isActive={userLiked === true}
         onClick={handleLikeInteraction}
         title='Like this item'
         activeColor={theme.colors.green700}
         activeBgColor={theme.colors.green200}
       />
-
       <LikeDislikeButton
         icon={ThumbsDown}
-        count={dislikeCount}
+        count={loading ? '-' : dislikeCount}
         isActive={userLiked === false}
         onClick={handleDislikeInteraction}
         title='Dislike this item'

@@ -17,7 +17,7 @@ import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
 import type { Place, PlacesResponse } from '@/types/places';
 
-const ROUTE = '/places/open';
+const ROUTE = '/places/open/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
