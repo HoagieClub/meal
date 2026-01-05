@@ -16,8 +16,7 @@ export const ALLERGENS: Allergen[] = [
 
 export const DINING_HALLS: DiningHall[] = [
   'Forbes College',
-  'Mathey College',
-  'Rockefeller College',
+  'Mathey & Rockefeller Colleges',
   'Whitman & Butler Colleges',
   'Yeh College & NCW',
   'Center for Jewish Life',

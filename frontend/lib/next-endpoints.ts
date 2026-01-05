@@ -108,3 +108,16 @@ export const getMenuItemMetrics = (params: { menu_item_api_id: number | string }
   const url = `/api/interactions/metrics/?menu_item_api_id=${params.menu_item_api_id}`;
   return api.get<MenuItemMetrics>(url);
 };
+
+/**
+ * Gets metrics for multiple menu items.
+ *
+ * @param params - Request body (menu_item_api_ids - array of integers)
+ * @returns API response with metrics data dictionary
+ */
+export const getMenuItemsMetrics = (params: { menu_item_api_ids: number[] }) => {
+  const url = '/api/interactions/metrics/batch/';
+  return api.post<Record<string, MenuItemMetrics | null>>(url, {
+    menu_item_api_ids: params.menu_item_api_ids,
+  });
+};

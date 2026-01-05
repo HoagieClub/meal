@@ -129,8 +129,7 @@ export default function MenuPage() {
     // Otherwise, fetch from API
     async function fetchMenuData() {
       try {
-        const menusRoute = `${FETCH_MENU_DATA_URL}?menu_date=${dateKey}`;
-        const { data, error } = await api.get<MenusForMealAndLocations>(menusRoute);
+        const { data, error } = await getDiningMenusForDay({ menu_date: dateKey });
         if (error) throw new Error(error);
         if (!data) throw new Error('No data received');
         const menuData = data.data || data;
@@ -385,7 +384,9 @@ export default function MenuPage() {
                 </Text>
                 <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
                   {DINING_HALLS.map((diningHall: DiningHall) => {
-                    const diningHallText = diningHall.replace(' College', '');
+                    const diningHallText = diningHall
+                      .replace(' Colleges', '')
+                      .replace(' College', '');
                     const checked = preferences.diningHalls.includes(diningHall);
                     const onChange = () => {
                       setPreferences((prev) => ({

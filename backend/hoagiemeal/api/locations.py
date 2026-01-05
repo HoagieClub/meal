@@ -30,6 +30,7 @@ from hoagiemeal.api.schemas import Schemas
 from hoagiemeal.models.dining import DiningVenue
 from django.db import transaction
 from hoagiemeal.serializers import DiningVenueSerializer
+from typing import Optional
 
 DISABLE_CACHE = False
 
@@ -121,6 +122,7 @@ class LocationsAPI(StudentApp):
 
             logger.info(f"Found {len(category_locations)} locations for category {category_id}.")
             category_locations = [parse_location_data(location, category_id) for location in category_locations]
+            category_locations = [location for location in category_locations if location is not None]
             locations.extend(category_locations)
 
         if len(locations) == 0:
@@ -296,7 +298,7 @@ def get_all_dining_locations(request):
 #################### Utility functions for working with locations data #########################
 
 
-def parse_location_data(location: dict, category_id: str) -> dict:
+def parse_location_data(location: dict, category_id: str) -> Optional[dict]:
     """Parse dining location data to a format that can be used to create a dining location instance.
 
     Args:
@@ -349,6 +351,18 @@ def parse_location_data(location: dict, category_id: str) -> dict:
         name = name[: -len(remove_suffix)].rstrip()
     if map_name.endswith(remove_suffix):
         map_name = map_name[: -len(remove_suffix)].rstrip()
+
+    if name == "Yeh College & New College West":
+        name = "Yeh College & NCW"
+    if map_name == "Yeh College & New College West":
+        map_name = "Yeh College & NCW"
+
+    if map_name == "Rockefeller College" or name == "Rockefeller College":
+        return None
+    if map_name == "Mathey College":
+        map_name = "Mathey & Rockefeller Colleges"
+    if name == "Mathey College":
+        name = "Mathey & Rockefeller Colleges"
 
     return {
         "name": name,

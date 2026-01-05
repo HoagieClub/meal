@@ -44,7 +44,6 @@ interface BuildDisplayDataProps {
  * @returns The display data.
  */
 export const buildDisplayData = (props: BuildDisplayDataProps): MenusForLocations => {
-  console.log('Build display data props:', props);
   const {
     menusForLocations,
     appliedDiningHalls,
@@ -68,7 +67,9 @@ export const buildDisplayData = (props: BuildDisplayDataProps): MenusForLocation
   // Filter dining venues by applied dining halls
   let filteredMenusForLocations = menusForLocations.filter((diningVenue) => {
     const diningVenueNameLower = diningVenue.name.toLowerCase();
-    const isDiningHallApplied = appliedDiningHallsLower.includes(diningVenueNameLower);
+    const isDiningHallApplied = appliedDiningHallsLower.some((hallName) => {
+      if (hallName === diningVenueNameLower) return true;
+    });
     return isDiningHallApplied;
   });
 

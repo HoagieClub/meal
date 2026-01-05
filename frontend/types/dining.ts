@@ -68,8 +68,7 @@ export type Allergen =
 
 export type DiningHall =
   | 'Forbes College'
-  | 'Mathey College'
-  | 'Rockefeller College'
+  | 'Mathey & Rockefeller Colleges'
   | 'Whitman & Butler Colleges'
   | 'Yeh College & NCW'
   | 'Center for Jewish Life'

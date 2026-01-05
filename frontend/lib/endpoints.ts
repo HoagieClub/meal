@@ -215,6 +215,19 @@ export const getMenuItemMetrics = (params: { menu_item_api_id: string }) => {
 };
 
 /**
+ * Gets metrics for multiple menu items.
+ *
+ * @param params - Request body (menu_item_api_ids - array of integers)
+ * @returns API response with metrics data dictionary
+ */
+export const getMenuItemsMetrics = (params: { menu_item_api_ids: number[] }) => {
+  const url = '/api/interactions/menu-items/metrics/';
+  return request.post<any>()(url, {
+    arg: { menu_item_api_ids: params.menu_item_api_ids },
+  });
+};
+
+/**
  * User API Endpoints
  */
 

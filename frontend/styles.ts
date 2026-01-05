@@ -12,17 +12,16 @@ import matheyBanner from '@/public/images/banners/rockybanner.png';
 import rockyBanner from '@/public/images/banners/rockybanner.png';
 import whitmanBanner from '@/public/images/banners/whitmanbanner.png';
 import yehBanner from '@/public/images/banners/yehbanner.png';
-import { Meal as MealType } from '@/app/menu/types';
+import { Meal, Allergen, DietaryTag, DiningHall } from '@/types/dining';
 import { Theme } from 'evergreen-ui';
 import { StaticImageData } from 'next/image';
-import { AllergenType, DietaryTagType, DiningHallType } from './data';
 
 export const HALL_EMOJI_STYLE = (theme: Theme) => ({
   bg: theme.colors.gray100,
   color: theme.colors.gray700,
 });
 
-export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<AllergenType, any> => ({
+export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<Allergen, any> => ({
   Peanut: {
     bg: theme.colors.yellow100,
     color: theme.colors.yellow900,
@@ -63,43 +62,40 @@ export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<AllergenType, any> => (
   },
 });
 
-export const HALL_ICON_MAP: Record<DiningHallType, string> = {
+export const HALL_ICON_MAP: Record<DiningHall, string> = {
   'Center for Jewish Life': cjlIcon.src,
   'Forbes College': forbesIcon.src,
   'Graduate College': gradIcon.src,
   'Whitman & Butler Colleges': whitmanIcon.src,
   'Yeh College & NCW': yehIcon.src,
-  'Rockefeller College': rockyIcon.src,
-  'Mathey College': defaultIcon.src,
+  'Mathey & Rockefeller Colleges': rockyIcon.src,
   'Frist Grill': defaultIcon.src,
 };
 
 // @ts-ignore
-export const HALL_BANNER_MAP: Record<DiningHallType, StaticImageData> = {
-  'Rockefeller College': rockyBanner,
+export const HALL_BANNER_MAP: Record<DiningHall, StaticImageData> = {
   'Forbes College': forbesBanner,
-  'Mathey College': matheyBanner,
+  'Mathey & Rockefeller Colleges': matheyBanner,
   'Whitman & Butler Colleges': whitmanBanner,
   'Yeh College & NCW': yehBanner,
   'Center for Jewish Life': cjlBanner,
   'Graduate College': gradBanner,
 };
 
-export const DIET_LABEL_MAP: Record<DietaryTagType, string> = {
+export const DIET_LABEL_MAP: Record<DietaryTag, string> = {
   Vegetarian: 'V',
   Vegan: 'VG',
   Halal: 'H',
   Kosher: 'K',
 };
 
-export const MEAL_COLOR_MAP = (theme: Theme): Record<MealType, string> => ({
+export const MEAL_COLOR_MAP = (theme: Theme): Record<Meal, string> => ({
   Breakfast: theme.colors.green100 as string,
   Lunch: theme.colors.green200 as string,
   Dinner: theme.colors.green300 as string,
-  Brunch: theme.colors.green200 as string,
 });
 
-export const DIET_STYLE_MAP = (theme: Theme): Record<DietaryTagType, any> => ({
+export const DIET_STYLE_MAP = (theme: Theme): Record<DietaryTag, any> => ({
   Vegetarian: {
     bg: theme.colors.green100,
     color: theme.colors.green900,
@@ -112,7 +108,7 @@ export const DIET_STYLE_MAP = (theme: Theme): Record<DietaryTagType, any> => ({
   },
 });
 
-export const ALLERGEN_EMOJI: Record<AllergenType, string> = {
+export const ALLERGEN_EMOJI: Record<Allergen, string> = {
   Peanut: '🥜',
   Coconut: '🌰',
   Eggs: '🥚',

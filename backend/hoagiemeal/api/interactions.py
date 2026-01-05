@@ -19,7 +19,7 @@ furnished to do so, subject to the following conditions:
 This software is provided "as-is", without warranty of any kind.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from django.utils import timezone
 from django.db import transaction
 from rest_framework.decorators import api_view
@@ -109,6 +109,45 @@ class MenuItemInteractionsService:
         except Exception as e:
             logger.error(f"Error getting or creating metrics for menu_item_api_id: {menu_item_api_id}: {e}")
             return None
+
+    def get_menu_items_metrics(self, menu_item_api_ids: List[int]) -> Dict[int, Optional[Dict]]:
+        """Get metrics for multiple menu items.
+
+        Args:
+            menu_item_api_ids (list[int]): List of menu item API IDs.
+
+        Returns:
+            Dict[int, Optional[Dict]]: Dictionary mapping menu_item_api_id to metrics data.
+                Returns None for menu items that don't exist or have errors.
+
+        """
+        logger.info(f"Getting metrics for {len(menu_item_api_ids)} menu items.")
+        result: Dict[int, Optional[Dict]] = {}
+        try:
+            menu_items = MenuItem.objects.filter(api_id__in=menu_item_api_ids)
+            menu_item_ids_map = {item.api_id: item for item in menu_items}
+
+            # Get or create metrics for all menu items
+            for menu_item_api_id in menu_item_api_ids:
+                try:
+                    if menu_item_api_id in menu_item_ids_map:
+                        menu_item = menu_item_ids_map[menu_item_api_id]
+                        metrics, created = MenuItemMetrics.objects.get_or_create(menu_item=menu_item)
+                        result[menu_item_api_id] = metrics
+                    else:
+                        logger.warning(f"Menu item with api_id {menu_item_api_id} not found.")
+                        result[menu_item_api_id] = None
+                except Exception as e:
+                    logger.error(f"Error getting metrics for menu_item_api_id: {menu_item_api_id}: {e}")
+                    result[menu_item_api_id] = None
+
+            logger.info(
+                f"Successfully retrieved metrics for {sum(1 for v in result.values() if v is not None)} menu items."
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Error getting metrics for multiple menu items: {e}")
+            return {menu_item_api_id: None for menu_item_api_id in menu_item_api_ids}
 
     def update_menu_item_metrics(self, menu_item_api_id: int) -> bool:
         """Update aggregated metrics for a menu item.
@@ -430,6 +469,59 @@ def update_user_menu_item_interaction(request):
         logger.error(f"Error in update_user_menu_item_interaction view: {e}")
         return Response(
             {"message": f"Error updating user menu item interaction: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["POST"])
+def get_menu_items_metrics(request):
+    """Django view function to get metrics for multiple menu items.
+
+    Args:
+        request (Request): The HTTP request object.
+        menu_item_api_ids (list[int]): List of menu item API IDs.
+
+    Returns:
+        Response: The HTTP response object.
+        metrics (dict): Dictionary mapping menu_item_api_id to metrics data.
+
+    """
+    logger.info(f"Getting menu items metrics for request: {request}")
+    try:
+        menu_item_api_ids = request.data.get("menu_item_api_ids")
+        if not menu_item_api_ids:
+            return Response({"message": "menu_item_api_ids is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not isinstance(menu_item_api_ids, list):
+            return Response({"message": "menu_item_api_ids must be a list"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Convert to integers
+        try:
+            menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids]
+        except (ValueError, TypeError):
+            return Response(
+                {"message": "menu_item_api_ids must be a list of integers"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        metrics_dict = interactions_service.get_menu_items_metrics(menu_item_api_ids)
+
+        # Serialize metrics and structure response
+        result = {}
+        for menu_item_api_id, metrics in metrics_dict.items():
+            if metrics is not None:
+                result[str(menu_item_api_id)] = MenuItemMetricsSerializer(metrics).data
+            else:
+                result[str(menu_item_api_id)] = None
+
+        logger.info(f"Returning metrics for {len(menu_item_api_ids)} menu items.")
+        return Response(
+            {"data": result, "message": "Menu items metrics fetched successfully."},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        logger.error(f"Error in get_menu_items_metrics view: {e}")
+        return Response(
+            {"message": f"Error fetching menu items metrics: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 

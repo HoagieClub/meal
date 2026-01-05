@@ -29,6 +29,7 @@ from hoagiemeal.api.interactions import (
     record_user_menu_item_view,
     update_user_menu_item_interaction,
     get_menu_item_metrics,
+    get_menu_items_metrics,
 )
 from hoagiemeal.api.user import (
     verify_and_get_or_create_user,
@@ -61,6 +62,7 @@ urlpatterns = [
         name="update-user-menu-item-interaction",
     ),
     path("api/interactions/menu-item/metrics/", get_menu_item_metrics, name="get-menu-item-metrics"),
+    path("api/interactions/menu-items/metrics/", get_menu_items_metrics, name="get-menu-items-metrics"),
     # User API Endpoints
     path("api/user/verify/", verify_and_get_or_create_user, name="verify-and-get-or-create-user"),
 ]
