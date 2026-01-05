@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch dining menus with menu items for all locations and a given day.
+ * @overview Next.js Route Handler to fetch dining menus for all locations for a date range.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -14,12 +14,12 @@
 
 import { NextResponse } from 'next/server';
 import { toCamelCase } from '@/utils/toCamelCase';
-import { getDiningMenusAllLocationsDay } from '@/lib/endpoints';
+import { getDiningMenusForLocationsAndDays } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches dining menus with menu items for all locations and a given day.
+ * Fetches dining menus for all locations for a date range.
  *
  * @param req - The HTTP request object.
  * @returns A NextResponse object with the menus data.
@@ -27,24 +27,40 @@ const DEBUG = process.env.NODE_ENV === 'development';
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const menuDate = searchParams.get('menu_date');
+    const startDate = searchParams.get('start_date');
+    const endDate = searchParams.get('end_date');
 
-    if (!menuDate) {
-      return NextResponse.json({ error: 'Missing menu_date parameter' }, { status: 400 });
+    if (!startDate || !endDate) {
+      return NextResponse.json(
+        { error: 'Missing start_date or end_date parameter' },
+        { status: 400 }
+      );
     }
 
-    const res = await getDiningMenusAllLocationsDay({ menu_date: menuDate });
+    const res = await getDiningMenusForLocationsAndDays({
+      start_date: startDate,
+      end_date: endDate,
+    });
 
     // Django backend returns: {"data": menus, "message": "..."}
-    const data = res.data || res;
+    const data = res.data || {};
 
     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
-      return NextResponse.json({ error: `No menus found for date ${menuDate}` }, { status: 404 });
+      return NextResponse.json(
+        { error: `No menus found for date range ${startDate} to ${endDate}` },
+        { status: 404 }
+      );
+    }
+
+    // Convert dictionary values to camelCase
+    const processedData: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      processedData[key] = value ? toCamelCase(value) : null;
     }
 
     return NextResponse.json({
-      data: toCamelCase(data),
-      message: `Successfully fetched menus for ${menuDate}`,
+      data: processedData,
+      message: `Successfully fetched menus for date range ${startDate} to ${endDate}`,
       status: 200,
     });
   } catch (error: unknown) {

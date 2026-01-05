@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to verify and get or create user.
+ * @overview Next.js Route Handler to fetch dining menus for all locations.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -12,38 +12,48 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
 import { toCamelCase } from '@/utils/toCamelCase';
-import { verifyUser } from '@/lib/endpoints';
+import { getDiningMenusForLocations } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Verifies user authentication and gets or creates the user.
+ * Fetches dining menus for all locations for a specific menu ID.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the user data.
+ * @returns A NextResponse object with the menus data.
  */
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
-    const { accessToken } = await getAccessToken();
-    if (!accessToken) {
-      return NextResponse.json({ error: 'No access token available' }, { status: 401 });
+    const { searchParams } = new URL(req.url);
+    const menuId = searchParams.get('menu_id');
+
+    if (!menuId) {
+      return NextResponse.json({ error: 'Missing menu_id parameter' }, { status: 400 });
     }
 
-    const res = await verifyUser(accessToken);
+    const res = await getDiningMenusForLocations({ menu_id: menuId });
 
-    // Django backend returns: {"data": user, "message": "..."}
-    const data = res.data || res;
+    // Django backend returns: {"data": menus, "message": "..."}
+    const data = res.data || {};
 
     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
-      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+      return NextResponse.json(
+        { error: `No menus found for menu_id ${menuId}` },
+        { status: 404 }
+      );
+    }
+
+    // Convert dictionary values to camelCase
+    const processedData: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      processedData[key] = value ? toCamelCase(value) : null;
     }
 
     return NextResponse.json({
-      data: toCamelCase(data),
-      message: 'Successfully verified user',
+      data: processedData,
+      message: `Successfully fetched menus for menu_id ${menuId}`,
       status: 200,
     });
   } catch (error: unknown) {
@@ -51,7 +61,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        error: 'Failed to verify user',
+        error: 'Failed to fetch menus',
         message: error instanceof Error ? error.message : 'Unexpected error',
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
@@ -63,3 +73,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

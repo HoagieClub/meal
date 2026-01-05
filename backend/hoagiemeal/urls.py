@@ -42,10 +42,9 @@ urlpatterns = [
     # Location API Endpoints
     path("api/dining/locations/", get_dining_locations, name="dining-locations"),
     path("api/dining/locations/all/", get_all_dining_locations, name="all-dining-locations"),
-    # Menu API Endpoints
-    path("api/dining/menu/item/", get_dining_menu_item, name="dining-menu-item"),
-    path("api/dining/menu/items/", get_dining_menu_items, name="dining-menu-items"),
-    path("api/dining/menu/", get_dining_menu, name="dining-menu"),
+    # Menu API Endpoints - Grouped by functionality
+    # Menu fetching endpoints (menus)
+    path("api/dining/menus/", get_dining_menu, name="dining-menu"),
     path(
         "api/dining/menus/locations/",
         get_dining_menus_for_locations,
@@ -61,6 +60,9 @@ urlpatterns = [
         get_dining_menus_for_locations_and_days,
         name="dining-menus-with-menu-items-for-locations-and-days",
     ),
+    # Menu items fetching endpoints
+    path("api/dining/menu-items/", get_dining_menu_item, name="dining-menu-item"),
+    path("api/dining/menu-items/batch/", get_dining_menu_items, name="dining-menu-items"),
     # Interaction API Endpoints
     path("api/interactions/user/menu-item/", get_user_menu_item_interaction, name="get-user-menu-item-interaction"),
     path("api/interactions/user/menu-item/view/", record_user_menu_item_view, name="record-user-menu-item-view"),

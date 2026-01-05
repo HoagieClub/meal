@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch dining locations data.
+ * @overview Next.js Route Handler to fetch multiple dining menu items.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -14,31 +14,46 @@
 
 import { NextResponse } from 'next/server';
 import { toCamelCase } from '@/utils/toCamelCase';
-import type { DiningEvent } from '@/types/dining';
-import { getDiningEvents } from '@/lib/endpoints';
+import { getDiningMenuItems } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches dining events for a given place ID.
+ * Fetches multiple dining menu items by API IDs.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the dining events data.
+ * @returns A NextResponse object with the menu items data.
  */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const placeId = searchParams.get('placeId') || '1007';
+    const apiIds = searchParams.get('api_ids');
 
-    const res = await getDiningEvents({ place_id: placeId });
+    if (!apiIds) {
+      return NextResponse.json({ error: 'Missing api_ids parameter' }, { status: 400 });
+    }
 
-    if (!res.data || res.data.length === 0) {
-      return NextResponse.json({ error: `No events found for place ${placeId}` }, { status: 404 });
+    const res = await getDiningMenuItems({ api_ids: apiIds });
+
+    // Django backend returns: {"data": menu_items, "message": "..."}
+    const data = res.data || {};
+
+    if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+      return NextResponse.json(
+        { error: `No menu items found for api_ids ${apiIds}` },
+        { status: 404 }
+      );
+    }
+
+    // Convert dictionary values to camelCase
+    const processedData: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      processedData[key] = value ? toCamelCase(value) : null;
     }
 
     return NextResponse.json({
-      data: toCamelCase(res.data),
-      message: 'Successfully fetched dining events',
+      data: processedData,
+      message: `Successfully fetched menu items for api_ids ${apiIds}`,
       status: 200,
     });
   } catch (error: unknown) {
@@ -46,7 +61,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       {
-        error: 'Failed to fetch dining events',
+        error: 'Failed to fetch menu items',
         message: error instanceof Error ? error.message : 'Unexpected error',
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
@@ -58,3 +73,4 @@ export async function GET(req: Request) {
     );
   }
 }
+

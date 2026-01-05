@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to get user menu item interaction.
+ * @overview Next.js Route Handler to record a user menu item view.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -15,45 +15,41 @@
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
 import { toCamelCase } from '@/utils/toCamelCase';
-import { getUserMenuItemInteraction } from '@/lib/endpoints';
+import { recordUserMenuItemView } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Gets user menu item interaction for a menu item.
+ * Records a user menu item view.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the interaction data.
+ * @returns A NextResponse object.
  */
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   try {
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
       return NextResponse.json({ error: 'No access token available' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const menuItemApiId = searchParams.get('menu_item_api_id');
+    const body = await req.json();
+    const menuItemApiId = body.menu_item_api_id;
 
     if (!menuItemApiId) {
-      return NextResponse.json({ error: 'Missing menu_item_api_id parameter' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing menu_item_api_id in request body' },
+        { status: 400 }
+      );
     }
 
-    const res = await getUserMenuItemInteraction(accessToken, { menu_item_api_id: menuItemApiId });
+    const res = await recordUserMenuItemView(accessToken, { menu_item_api_id: menuItemApiId });
 
     // Django backend returns: {"data": interaction, "message": "..."}
     const data = res.data || res;
 
-    if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
-      return NextResponse.json(
-        { error: `No interaction found for menu_item_api_id ${menuItemApiId}` },
-        { status: 404 }
-      );
-    }
-
     return NextResponse.json({
-      data: toCamelCase(data),
-      message: `Successfully fetched interaction for menu_item_api_id ${menuItemApiId}`,
+      data: data ? toCamelCase(data) : res,
+      message: 'Successfully recorded menu item view',
       status: 200,
     });
   } catch (error: unknown) {
@@ -61,7 +57,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       {
-        error: 'Failed to fetch interaction',
+        error: 'Failed to record menu item view',
         message: error instanceof Error ? error.message : 'Unexpected error',
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
@@ -73,3 +69,4 @@ export async function GET(req: Request) {
     );
   }
 }
+

@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch dining menu with menu items for a specific location.
+ * @overview Next.js Route Handler to fetch a single dining menu item.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -14,44 +14,40 @@
 
 import { NextResponse } from 'next/server';
 import { toCamelCase } from '@/utils/toCamelCase';
-import { getDiningMenu } from '@/lib/endpoints';
+import { getDiningMenuItem } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches dining menu with menu items for a specific location.
+ * Fetches a single dining menu item by API ID.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the menu data.
+ * @returns A NextResponse object with the menu item data.
  */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const locationId = searchParams.get('location_id');
-    const menuId = searchParams.get('menu_id');
+    const apiId = searchParams.get('api_id');
 
-    if (!locationId || !menuId) {
-      return NextResponse.json(
-        { error: 'Missing location_id or menu_id parameter' },
-        { status: 400 }
-      );
+    if (!apiId) {
+      return NextResponse.json({ error: 'Missing api_id parameter' }, { status: 400 });
     }
 
-    const res = await getDiningMenu({ location_id: locationId, menu_id: menuId });
+    const res = await getDiningMenuItem({ api_id: apiId });
 
-    // Django backend returns: {"data": menu, "message": "..."}
+    // Django backend returns: {"data": menu_item, "message": "..."}
     const data = res.data || res;
 
     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
       return NextResponse.json(
-        { error: `No menu found for location_id ${locationId} and menu_id ${menuId}` },
+        { error: `No menu item found for api_id ${apiId}` },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       data: toCamelCase(data),
-      message: `Successfully fetched menu for location_id ${locationId} and menu_id ${menuId}`,
+      message: `Successfully fetched menu item for api_id ${apiId}`,
       status: 200,
     });
   } catch (error: unknown) {
@@ -59,7 +55,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       {
-        error: 'Failed to fetch menu',
+        error: 'Failed to fetch menu item',
         message: error instanceof Error ? error.message : 'Unexpected error',
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
@@ -71,3 +67,4 @@ export async function GET(req: Request) {
     );
   }
 }
+

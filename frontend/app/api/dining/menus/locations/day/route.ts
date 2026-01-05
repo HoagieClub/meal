@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to get metrics for multiple menu items.
+ * @overview Next.js Route Handler to fetch dining menus for all locations for a specific day.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -14,45 +14,38 @@
 
 import { NextResponse } from 'next/server';
 import { toCamelCase } from '@/utils/toCamelCase';
-import { getMenuItemsMetrics } from '@/lib/endpoints';
+import { getDiningMenusForLocationsAndDay } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Gets metrics for multiple menu items.
+ * Fetches dining menus for all locations for a specific day.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the metrics data.
+ * @returns A NextResponse object with the menus data.
  */
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
-    const body = await req.json();
-    const menuItemApiIds = body.menu_item_api_ids;
+    const { searchParams } = new URL(req.url);
+    const menuDate = searchParams.get('menu_date');
 
-    if (!menuItemApiIds) {
-      return NextResponse.json(
-        { error: 'Missing menu_item_api_ids in request body' },
-        { status: 400 }
-      );
+    if (!menuDate) {
+      return NextResponse.json({ error: 'Missing menu_date parameter' }, { status: 400 });
     }
 
-    if (!Array.isArray(menuItemApiIds)) {
-      return NextResponse.json({ error: 'menu_item_api_ids must be an array' }, { status: 400 });
-    }
+    const res = await getDiningMenusForLocationsAndDay({ menu_date: menuDate });
 
-    const res = await getMenuItemsMetrics({ menu_item_api_ids: menuItemApiIds });
-
-    // Django backend returns: {"data": {api_id: metrics, ...}, "message": "..."}
-    const data = res.data || res;
+    // Django backend returns: {"data": menus, "message": "..."}
+    const data = res.data || {};
 
     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
       return NextResponse.json(
-        { error: 'No metrics found for the provided menu item API IDs' },
+        { error: `No menus found for date ${menuDate}` },
         { status: 404 }
       );
     }
 
-    // Convert keys to camelCase if needed
+    // Convert dictionary values to camelCase
     const processedData: Record<string, any> = {};
     for (const [key, value] of Object.entries(data)) {
       processedData[key] = value ? toCamelCase(value) : null;
@@ -60,7 +53,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       data: processedData,
-      message: 'Successfully fetched metrics for menu items',
+      message: `Successfully fetched menus for ${menuDate}`,
       status: 200,
     });
   } catch (error: unknown) {
@@ -68,7 +61,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       {
-        error: 'Failed to fetch menu items metrics',
+        error: 'Failed to fetch menus',
         message: error instanceof Error ? error.message : 'Unexpected error',
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
@@ -80,3 +73,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

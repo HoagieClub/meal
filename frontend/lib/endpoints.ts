@@ -14,11 +14,6 @@
  */
 
 import { request } from '@/lib/http';
-import { ApiResponse } from '@/types/http';
-
-/**
- * Dining API Endpoints
- */
 
 /**
  * Gets dining locations.
@@ -36,6 +31,16 @@ export const getDiningLocations = (params: { category_id?: string; fmt?: string 
 };
 
 /**
+ * Gets all dining locations.
+ *
+ * @returns API response with all dining locations
+ */
+export const getAllDiningLocations = () => {
+  const url = '/api/dining/locations/all/';
+  return request.get<any>()(url, {});
+};
+
+/**
  * Gets dining menu for a specific location and menu ID.
  *
  * @param params - Query parameters (location_id, menu_id)
@@ -46,7 +51,7 @@ export const getDiningMenu = (params: { location_id: string; menu_id: string }) 
     location_id: params.location_id,
     menu_id: params.menu_id,
   });
-  const url = `/api/dining/menu/?${queryParams.toString()}`;
+  const url = `/api/dining/menus/?${queryParams.toString()}`;
   return request.get<any>()(url, {});
 };
 
@@ -58,58 +63,63 @@ export const getDiningMenu = (params: { location_id: string; menu_id: string }) 
  */
 export const getDiningMenuItem = (params: { api_id: string }) => {
   const queryParams = new URLSearchParams({ api_id: params.api_id });
-  const url = `/api/dining/menu/item/?${queryParams.toString()}`;
+  const url = `/api/dining/menu-items/?${queryParams.toString()}`;
   return request.get<any>()(url, {});
 };
 
 /**
- * Gets dining menus for all locations.
+ * Gets multiple dining menu items by API IDs.
+ *
+ * @param params - Query parameters (api_ids - comma-separated string of integers)
+ * @returns API response with menu items data
+ */
+export const getDiningMenuItems = (params: { api_ids: string }) => {
+  const queryParams = new URLSearchParams({ api_ids: params.api_ids });
+  const url = `/api/dining/menu-items/batch/?${queryParams.toString()}`;
+  return request.get<any>()(url, {});
+};
+
+/**
+ * Gets dining menus for all locations for a specific menu ID.
  *
  * @param params - Query parameters (menu_id)
  * @returns API response with menus data
  */
-export const getDiningMenusAllLocations = (params: { menu_id: string }) => {
+export const getDiningMenusForLocations = (params: { menu_id: string }) => {
   const queryParams = new URLSearchParams({ menu_id: params.menu_id });
-  const url = `/api/dining/menus/all-locations?${queryParams.toString()}`;
+  const url = `/api/dining/menus/locations/?${queryParams.toString()}`;
   return request.get<any>()(url, {});
 };
 
 /**
  * Gets dining menus for all locations for a specific day.
  *
- * @param params - Query parameters (menu_date)
+ * @param params - Query parameters (menu_date - YYYY-MM-DD format)
  * @returns API response with menus data
  */
-export const getDiningMenusAllLocationsDay = (params: { menu_date: string }) => {
+export const getDiningMenusForLocationsAndDay = (params: { menu_date: string }) => {
   const queryParams = new URLSearchParams({ menu_date: params.menu_date });
-  const url = `/api/dining/menus/all-locations/day?${queryParams.toString()}`;
+  const url = `/api/dining/menus/locations/day/?${queryParams.toString()}`;
   return request.get<any>()(url, {});
 };
 
 /**
- * Gets dining events.
+ * Gets dining menus for all locations for a date range.
  *
- * @param params - Request body (place_id)
- * @returns API response with events data
+ * @param params - Query parameters (start_date, end_date - YYYY-MM-DD format)
+ * @returns API response with menus data
  */
-export const getDiningEvents = (params: { place_id: string }) => {
-  const url = '/api/dining/events/';
-  return request.get<any>()(url, { arg: { place_id: params.place_id } });
-};
-
-/**
- * Gets places that are open.
- *
- * @returns API response with places data
- */
-export const getPlacesOpen = () => {
-  const url = '/places/open/';
+export const getDiningMenusForLocationsAndDays = (params: {
+  start_date: string;
+  end_date: string;
+}) => {
+  const queryParams = new URLSearchParams({
+    start_date: params.start_date,
+    end_date: params.end_date,
+  });
+  const url = `/api/dining/menus/locations/days/?${queryParams.toString()}`;
   return request.get<any>()(url, {});
 };
-
-/**
- * Interactions API Endpoints
- */
 
 /**
  * Gets user menu item interaction.
@@ -226,10 +236,6 @@ export const getMenuItemsMetrics = (params: { menu_item_api_ids: number[] }) => 
     arg: { menu_item_api_ids: params.menu_item_api_ids },
   });
 };
-
-/**
- * User API Endpoints
- */
 
 /**
  * Verifies user authentication and gets or creates the user.

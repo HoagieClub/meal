@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch a single dining menu item.
+ * @overview Next.js Route Handler to get metrics for multiple menu items.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -14,40 +14,53 @@
 
 import { NextResponse } from 'next/server';
 import { toCamelCase } from '@/utils/toCamelCase';
-import { getDiningMenuItem } from '@/lib/endpoints';
+import { getMenuItemsMetrics } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches a single dining menu item by API ID.
+ * Gets metrics for multiple menu items.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the menu item data.
+ * @returns A NextResponse object with the metrics data.
  */
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const apiId = searchParams.get('api_id');
+    const body = await req.json();
+    const menuItemApiIds = body.menu_item_api_ids;
 
-    if (!apiId) {
-      return NextResponse.json({ error: 'Missing api_id parameter' }, { status: 400 });
+    if (!menuItemApiIds) {
+      return NextResponse.json(
+        { error: 'Missing menu_item_api_ids in request body' },
+        { status: 400 }
+      );
     }
 
-    const res = await getDiningMenuItem({ api_id: apiId });
+    if (!Array.isArray(menuItemApiIds)) {
+      return NextResponse.json({ error: 'menu_item_api_ids must be an array' }, { status: 400 });
+    }
 
-    // Django backend returns: {"data": menu_item, "message": "..."}
+    const res = await getMenuItemsMetrics({ menu_item_api_ids: menuItemApiIds });
+
+    // Django backend returns: {"data": {api_id: metrics, ...}, "message": "..."}
     const data = res.data || res;
 
     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
       return NextResponse.json(
-        { error: `No menu item found for api_id ${apiId}` },
+        { error: 'No metrics found for the provided menu item API IDs' },
         { status: 404 }
       );
     }
 
+    // Convert keys to camelCase if needed
+    const processedData: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      processedData[key] = value ? toCamelCase(value) : null;
+    }
+
     return NextResponse.json({
-      data: toCamelCase(data),
-      message: `Successfully fetched menu item for api_id ${apiId}`,
+      data: processedData,
+      message: 'Successfully fetched metrics for menu items',
       status: 200,
     });
   } catch (error: unknown) {
@@ -55,7 +68,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(
       {
-        error: 'Failed to fetch menu item',
+        error: 'Failed to fetch menu items metrics',
         message: error instanceof Error ? error.message : 'Unexpected error',
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
@@ -67,3 +80,4 @@ export async function GET(req: Request) {
     );
   }
 }
+
