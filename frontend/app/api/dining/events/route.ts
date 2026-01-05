@@ -13,11 +13,10 @@
  */
 
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
 import type { DiningEvent } from '@/types/dining';
+import { getDiningEvents } from '@/lib/endpoints';
 
-const ROUTE = '/api/dining/events/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
@@ -31,9 +30,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const placeId = searchParams.get('placeId') || '1007';
 
-    const res = await request.get<DiningEvent[]>()(ROUTE, {
-      arg: { place_id: placeId },
-    });
+    const res = await getDiningEvents({ place_id: placeId });
 
     if (!res.data || res.data.length === 0) {
       return NextResponse.json({ error: `No events found for place ${placeId}` }, { status: 404 });

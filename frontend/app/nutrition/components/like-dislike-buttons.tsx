@@ -18,11 +18,11 @@ import React, { useEffect, useState } from 'react';
 import { Pane, Text, useTheme, minorScale, majorScale, Spinner } from 'evergreen-ui';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { MenuItemInteraction, MenuItemMetrics } from '@/types/dining';
-import { api } from '@/hooks/use-next-api';
-
-const GET_USER_INTERACTION_URL = '/api/interactions/user/';
-const UPDATE_INTERACTION_URL = '/api/interactions/user/update/';
-const GET_METRICS_URL = '/api/interactions/metrics/';
+import {
+  getUserMenuItemInteraction,
+  updateUserMenuItemInteraction,
+  getMenuItemMetrics,
+} from '@/lib/next-endpoints';
 
 /**
  * Like/Dislike button props.
@@ -112,12 +112,12 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
   const fetchInteractionAndMetrics = async () => {
     setLoading(true);
     try {
-      const interactionRes = await api
-        .get<MenuItemInteraction>(`${GET_USER_INTERACTION_URL}?menu_item_api_id=${menuItemApiId}`)
-        .catch(() => null);
-      const metricsRes = await api
-        .get<MenuItemMetrics>(`${GET_METRICS_URL}?menu_item_api_id=${menuItemApiId}`)
-        .catch(() => null);
+      const interactionRes = await getUserMenuItemInteraction({
+        menu_item_api_id: menuItemApiId,
+      }).catch(() => null);
+      const metricsRes = await getMenuItemMetrics({ menu_item_api_id: menuItemApiId }).catch(
+        () => null
+      );
 
       if (interactionRes?.data?.data) {
         setUserLiked(interactionRes.data.data.liked);
@@ -177,7 +177,7 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
 
     // Update interaction in the API
     try {
-      const { data, error } = await api.patch(UPDATE_INTERACTION_URL, {
+      const { data, error } = await updateUserMenuItemInteraction({
         menu_item_api_id: menuItemApiId,
         liked: newLikeStatus,
       });
@@ -229,7 +229,7 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
 
     // Update interaction in the API
     try {
-      const { data, error } = await api.patch(UPDATE_INTERACTION_URL, {
+      const { data, error } = await updateUserMenuItemInteraction({
         menu_item_api_id: menuItemApiId,
         liked: newLikeStatus,
       });

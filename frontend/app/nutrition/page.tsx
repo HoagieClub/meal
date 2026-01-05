@@ -31,12 +31,10 @@ import { useSearchParams } from 'next/navigation';
 import NutritionTable from './components/nutrition-table';
 import LikeDislikeButtons from './components/like-dislike-buttons';
 import FavoriteBookmarkButtons from './components/favorite-bookmark-buttons';
-import { api } from '@/hooks/use-next-api';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { MenusForDateMealAndLocations, MenuItem } from '@/types/dining';
+import { getDiningMenuItem, recordUserMenuItemView } from '@/lib/next-endpoints';
 
-const GET_MENU_ITEM_DETAILS_URL = '/api/dining/menu/item/';
-const RECORD_VIEW_URL = '/api/interactions/user/view/';
 const MENU_CACHE_KEY = 'menuCache';
 
 /**
@@ -96,9 +94,7 @@ const NutritionLabelPage = () => {
     // If not in cache, fetch from API
     const getMenuItemDetails = async () => {
       try {
-        const { data, error } = await api.get(
-          `${GET_MENU_ITEM_DETAILS_URL}?api_id=${menuItemApiId}`
-        );
+        const { data, error } = await getDiningMenuItem({ api_id: menuItemApiId });
 
         if (error) {
           console.error('Error fetching menu item:', error);
@@ -132,7 +128,7 @@ const NutritionLabelPage = () => {
 
     const recordView = async () => {
       try {
-        await api.post(RECORD_VIEW_URL, {
+        await recordUserMenuItemView({
           menu_item_api_id: Number(menuItem.apiId),
         });
       } catch (error) {

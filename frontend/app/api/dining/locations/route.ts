@@ -13,10 +13,9 @@
  */
 
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
+import { getDiningLocations } from '@/lib/endpoints';
 
-const ROUTE = '/api/dining/locations/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
@@ -31,14 +30,7 @@ export async function GET(req: Request) {
     const fmt = searchParams.get('fmt') ?? 'xml';
     const categoryId = searchParams.get('category_id') ?? '2';
 
-    // Build query string for GET request
-    const queryParams = new URLSearchParams({
-      category_id: categoryId,
-      ...(fmt && { fmt }),
-    });
-    const urlWithParams = `${ROUTE}?${queryParams.toString()}`;
-
-    const res = await request.get<any>()(urlWithParams, {});
+    const res = await getDiningLocations({ category_id: categoryId, fmt });
     DEBUG && console.log('Backend response:', res);
 
     // Django backend returns: {"data": locations, "message": "..."}

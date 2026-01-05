@@ -14,10 +14,9 @@
 
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
+import { updateUserMenuItemInteraction, patchUserMenuItemInteraction } from '@/lib/endpoints';
 
-const ROUTE = '/api/interactions/user/menu-item/update/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
@@ -43,14 +42,12 @@ export async function PUT(req: Request) {
       );
     }
 
-    const res = await request.putAuth(accessToken)(ROUTE, {
-      arg: {
-        menu_item_api_id: menuItemApiId,
-        liked: body.liked,
-        favorited: body.favorited,
-        saved_for_later: body.saved_for_later,
-        would_eat_again: body.would_eat_again,
-      },
+    const res = await updateUserMenuItemInteraction(accessToken, {
+      menu_item_api_id: menuItemApiId,
+      liked: body.liked,
+      favorited: body.favorited,
+      saved_for_later: body.saved_for_later,
+      would_eat_again: body.would_eat_again,
     });
 
     // Django backend returns: {"data": interaction, "message": "..."}
@@ -99,14 +96,12 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const res = await request.patchAuth(accessToken)(ROUTE, {
-      arg: {
-        menu_item_api_id: menuItemApiId,
-        liked: body.liked,
-        favorited: body.favorited,
-        saved_for_later: body.saved_for_later,
-        would_eat_again: body.would_eat_again,
-      },
+    const res = await patchUserMenuItemInteraction(accessToken, {
+      menu_item_api_id: menuItemApiId,
+      liked: body.liked,
+      favorited: body.favorited,
+      saved_for_later: body.saved_for_later,
+      would_eat_again: body.would_eat_again,
     });
 
     // Django backend returns: {"data": interaction, "message": "..."}

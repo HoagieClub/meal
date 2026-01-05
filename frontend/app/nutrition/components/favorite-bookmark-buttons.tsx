@@ -18,10 +18,7 @@ import React, { useEffect, useState } from 'react';
 import { Pane, Text, useTheme, minorScale, majorScale } from 'evergreen-ui';
 import { Heart, Bookmark } from 'lucide-react';
 import { MenuItemInteraction } from '@/types/dining';
-import { api } from '@/hooks/use-next-api';
-
-const GET_USER_INTERACTION_URL = '/api/interactions/user/';
-const UPDATE_INTERACTION_URL = '/api/interactions/user/update/';
+import { getUserMenuItemInteraction, updateUserMenuItemInteraction } from '@/lib/next-endpoints';
 
 /**
  * Favorite/Bookmark button props.
@@ -101,9 +98,9 @@ export default function FavoriteBookmarkButtons({ menuItemApiId }: { menuItemApi
   const fetchInteraction = async () => {
     setLoading(true);
     try {
-      const interactionRes = await api
-        .get<MenuItemInteraction>(`${GET_USER_INTERACTION_URL}?menu_item_api_id=${menuItemApiId}`)
-        .catch(() => null);
+      const interactionRes = await getUserMenuItemInteraction({
+        menu_item_api_id: menuItemApiId,
+      }).catch(() => null);
 
       if (interactionRes?.data?.data) {
         setFavorited(interactionRes.data.data.favorited || false);
@@ -138,7 +135,7 @@ export default function FavoriteBookmarkButtons({ menuItemApiId }: { menuItemApi
 
     // Update interaction in the API
     try {
-      const { data, error } = await api.patch(UPDATE_INTERACTION_URL, {
+      const { data, error } = await updateUserMenuItemInteraction({
         menu_item_api_id: menuItemApiId,
         favorited: newFavoritedStatus,
       });
@@ -167,7 +164,7 @@ export default function FavoriteBookmarkButtons({ menuItemApiId }: { menuItemApi
 
     // Update interaction in the API
     try {
-      const { data, error } = await api.patch(UPDATE_INTERACTION_URL, {
+      const { data, error } = await updateUserMenuItemInteraction({
         menu_item_api_id: menuItemApiId,
         saved_for_later: newSavedForLaterStatus,
       });

@@ -13,10 +13,9 @@
  */
 
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
+import { getDiningMenuItem } from '@/lib/endpoints';
 
-const ROUTE = '/api/dining/menu/item/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
@@ -34,10 +33,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Missing api_id parameter' }, { status: 400 });
     }
 
-    const queryParams = new URLSearchParams({ api_id: apiId });
-    const urlWithParams = `${ROUTE}?${queryParams.toString()}`;
-
-    const res = await request.get<any>()(urlWithParams, {});
+    const res = await getDiningMenuItem({ api_id: apiId });
 
     // Django backend returns: {"data": menu_item, "message": "..."}
     const data = res.data || res;

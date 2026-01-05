@@ -13,10 +13,9 @@
  */
 
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
+import { getMenuItemMetrics } from '@/lib/endpoints';
 
-const ROUTE = '/api/interactions/menu-item/metrics/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
@@ -34,10 +33,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Missing menu_item_api_id parameter' }, { status: 400 });
     }
 
-    const queryParams = new URLSearchParams({ menu_item_api_id: menuItemApiId });
-    const urlWithParams = `${ROUTE}?${queryParams.toString()}`;
-
-    const res = await request.get<any>()(urlWithParams, {});
+    const res = await getMenuItemMetrics({ menu_item_api_id: menuItemApiId });
 
     // Django backend returns: {"data": metrics, "message": "..."}
     const data = res.data || res;
@@ -71,4 +67,3 @@ export async function GET(req: Request) {
     );
   }
 }
-

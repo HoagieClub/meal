@@ -57,7 +57,6 @@ export interface HoagieRequest {
 }
 
 // SWR-specific options. Read the docs: https://swr.vercel.app/docs/getting-started
-// Goes into the hooks as configuration options for SWR. See @/hooks/use-endpoints
 export interface FetchConfig {
   revalidateOnFocus?: boolean; // Revalidate on window focus
   revalidateOnReconnect?: boolean; // Revalidate on network reconnect

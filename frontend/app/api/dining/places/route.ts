@@ -13,11 +13,16 @@
  */
 
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
-import type { Place, PlacesResponse } from '@/types/places';
+import { getPlacesOpen } from '@/lib/endpoints';
 
-const ROUTE = '/places/open/';
+type Place = any; // TODO: Define proper Place type
+type PlacesResponse = {
+  places: Place[];
+  message: string;
+  status: number;
+};
+
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
@@ -40,7 +45,7 @@ export async function GET(req: Request) {
    */
 
   try {
-    const res = await request.get<Place[]>()(ROUTE, {});
+    const res = await getPlacesOpen();
 
     if (!res.data || res.data.length === 0) {
       return NextResponse.json({ error: 'No open places found' }, { status: 404 });

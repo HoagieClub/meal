@@ -15,10 +15,9 @@ import { DEFAULT_NUTRIENTS } from './data';
 import { DailyPlan, Nutrients, PlanSettings, WeeklyPlan } from './types';
 import { Meal, DiningHall } from '@/types/dining';
 import { MenuItem, MenusForDateMealAndLocations, DiningVenue } from '@/types/dining';
-import { api } from '@/hooks/use-next-api';
+import { getDiningMenusForDay } from '@/lib/next-endpoints';
 
 const MENU_CACHE_KEY = 'menuCache';
-const FETCH_MENU_DATA_URL = '/api/dining/menu/locations/day';
 
 /**
  * Converts string/number to number for calculations.
@@ -182,7 +181,7 @@ export const fetchMenuFor = async (
 
   // Fetch from API
   try {
-    const { data, error } = await api.get(FETCH_MENU_DATA_URL + `?menu_date=${dateKey}`);
+    const { data, error } = await getDiningMenusForDay({ menu_date: dateKey });
     if (error) throw new Error(error);
 
     const menuData = data?.data || data;

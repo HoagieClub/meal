@@ -49,7 +49,6 @@ import {
   ALLERGEN_STYLE_MAP,
   DIET_STYLE_MAP,
 } from '@/styles';
-import { api } from '@/hooks/use-next-api';
 import {
   DiningVenue,
   Meal,
@@ -63,9 +62,9 @@ import {
 import { buildDisplayData } from './actions';
 import { formatMenuId } from '@/utils/dining';
 import { DiningPreferences } from '@/types/dining';
+import { getDiningMenusForDay } from '@/lib/next-endpoints';
 
 const MENU_CACHE_KEY = 'menuCache';
-const FETCH_MENU_DATA_URL = '/api/dining/menu/locations/day';
 const PREFERENCES_KEY = 'diningPreferences';
 const DEFAULT_PREFERENCES: DiningPreferences = {
   diningHalls: DINING_HALLS,

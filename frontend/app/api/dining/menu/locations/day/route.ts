@@ -13,10 +13,9 @@
  */
 
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
+import { getDiningMenusAllLocationsDay } from '@/lib/endpoints';
 
-const ROUTE = '/api/dining/menus/all-locations/day';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
@@ -34,10 +33,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Missing menu_date parameter' }, { status: 400 });
     }
 
-    const queryParams = new URLSearchParams({ menu_date: menuDate });
-    const urlWithParams = `${ROUTE}?${queryParams.toString()}`;
-
-    const res = await request.get<any>()(urlWithParams, {});
+    const res = await getDiningMenusAllLocationsDay({ menu_date: menuDate });
 
     // Django backend returns: {"data": menus, "message": "..."}
     const data = res.data || res;

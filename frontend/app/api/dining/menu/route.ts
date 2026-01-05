@@ -13,10 +13,9 @@
  */
 
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
+import { getDiningMenu } from '@/lib/endpoints';
 
-const ROUTE = '/api/dining/menu/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
@@ -38,13 +37,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const queryParams = new URLSearchParams({
-      location_id: locationId,
-      menu_id: menuId,
-    });
-    const urlWithParams = `${ROUTE}?${queryParams.toString()}`;
-
-    const res = await request.get<any>()(urlWithParams, {});
+    const res = await getDiningMenu({ location_id: locationId, menu_id: menuId });
 
     // Django backend returns: {"data": menu, "message": "..."}
     const data = res.data || res;

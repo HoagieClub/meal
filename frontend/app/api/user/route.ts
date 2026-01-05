@@ -14,10 +14,9 @@
 
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
+import { verifyUser } from '@/lib/endpoints';
 
-const ROUTE = '/api/user/verify/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
@@ -33,7 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No access token available' }, { status: 401 });
     }
 
-    const res = await request.postAuth(accessToken)(ROUTE, { arg: {} });
+    const res = await verifyUser(accessToken);
 
     // Django backend returns: {"data": user, "message": "..."}
     const data = res.data || res;
@@ -64,4 +63,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

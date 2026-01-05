@@ -14,9 +14,8 @@
 
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
+import { recordUserMenuItemView } from '@/lib/endpoints';
 
-const ROUTE = '/api/interactions/user/menu-item/view/';
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
@@ -42,9 +41,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const res = await request.postAuth(accessToken)(ROUTE, {
-      arg: { menu_item_api_id: menuItemApiId },
-    });
+    const res = await recordUserMenuItemView(accessToken, { menu_item_api_id: menuItemApiId });
 
     return NextResponse.json({
       data: res,
