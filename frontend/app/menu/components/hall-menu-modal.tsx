@@ -17,7 +17,7 @@
 import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
 import React from 'react';
 import MenuSection from './menu-selection';
-import { Separator } from './ui/separator';
+import { Separator } from '@/components/ui/separator';
 import { filterMenuItems } from '@/app/menu/actions';
 
 /**
@@ -53,12 +53,19 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
   return (
     <Dialog
       isShown={!!modalHall}
-      title={`${modalHall.name} — Full Menu`}
+      title={`${modalHall.name} - Full Menu`}
       onCloseComplete={() => setModalHall(null)}
       hasFooter={false}
       width='80vw'
+      maxWidth='90vw'
     >
-      <Pane display='flex' flexDirection='column' paddingBottom={majorScale(5)} gap={minorScale(3)}>
+      <Pane
+        display='flex'
+        flexDirection='column'
+        paddingBottom={majorScale(5)}
+        gap={minorScale(3)}
+        className='overflow-x-hidden'
+      >
         <Separator height='1.5px' marginTop={0} />
         {mainEntreeMenuItems.length > 0 && (
           <MenuSection

@@ -1,0 +1,361 @@
+/**
+ * @overview Filter sidebar component for menu page.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this tree or at
+ *
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
+
+'use client';
+
+import React, { useState } from 'react';
+import {
+  Pane,
+  Text,
+  majorScale,
+  minorScale,
+  useTheme,
+  Checkbox,
+  SearchInput,
+  Switch,
+  UndoIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from 'evergreen-ui';
+import { DINING_HALLS, ALLERGENS, DIETARY_TAGS } from '@/data';
+import {
+  ALLERGEN_EMOJI,
+  HALL_ICON_MAP,
+  DIET_LABEL_MAP,
+  ALLERGEN_STYLE_MAP,
+  DIET_STYLE_MAP,
+} from '@/styles';
+import { DiningHall, DietaryTag, Allergen } from '@/types/dining';
+
+interface FilterSidebarProps {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  showNutrition: boolean;
+  toggleShowNutrition: () => void;
+  diningHalls: DiningHall[];
+  dietaryRestrictions: DietaryTag[];
+  allergens: Allergen[];
+  toggleDiningHall: (hall: DiningHall) => void;
+  toggleDietaryRestriction: (tag: DietaryTag) => void;
+  toggleAllergen: (allergen: Allergen) => void;
+  clearPreferences: () => void;
+  variant?: 'sidebar' | 'mobile';
+}
+
+/**
+ * Filter sidebar component for menu filtering.
+ *
+ * @param props - Component props
+ * @returns The filter sidebar component
+ */
+export default function FilterSidebar({
+  searchTerm,
+  setSearchTerm,
+  showNutrition,
+  toggleShowNutrition,
+  diningHalls,
+  dietaryRestrictions,
+  allergens,
+  toggleDiningHall,
+  toggleDietaryRestriction,
+  toggleAllergen,
+  clearPreferences,
+  variant = 'sidebar',
+}: FilterSidebarProps) {
+  const theme = useTheme();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const handleResetFilters = () => {
+    clearPreferences();
+    setSearchTerm('');
+  };
+
+  // Determine container styles based on variant
+  const containerProps =
+    variant === 'sidebar'
+      ? {
+          flexDirection: 'column' as const,
+          width: 280,
+          padding: majorScale(3),
+          className: 'max-w-[100%] hidden sm:inline z-20',
+        }
+      : {};
+
+  const innerContainerProps =
+    variant === 'sidebar'
+      ? {
+          display: 'flex' as const,
+          background: 'white',
+          maxHeight: '100%',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          className: 'fixed sm:relative overflow-hidden flex-col',
+          borderRadius: 12,
+        }
+      : {
+          display: 'flex' as const,
+          background: 'white',
+          className: 'flex-col mb-4',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          marginBottom: majorScale(2),
+          borderRadius: 12,
+        };
+
+  const filtersContainerProps =
+    variant === 'sidebar'
+      ? {
+          className: 'p-4',
+          overflowY: 'auto' as const,
+          height: '100%' as const,
+        }
+      : {
+          className: 'p-4',
+          overflowY: 'auto' as const,
+        };
+
+  return (
+    <Pane {...containerProps}>
+      <Pane {...innerContainerProps}>
+        <Pane
+          borderTopLeftRadius={12}
+          borderTopRightRadius={12}
+          background={theme.colors.gray100}
+          borderBottom={`1px solid ${theme.colors.gray200}`}
+          className='relative flex flex-col p-4 border-radius-12'
+        >
+          {/* Reset Filters button */}
+          <Pane
+            display='flex'
+            alignItems='center'
+            cursor='pointer'
+            onClick={handleResetFilters}
+            background={theme.colors.gray100}
+            marginBottom={minorScale(2)}
+          >
+            <UndoIcon size={14} color={theme.colors.gray700} />
+            <Text marginLeft={minorScale(1)} size={300} color={theme.colors.gray700}>
+              Reset Filters
+            </Text>
+          </Pane>
+
+          <Pane borderBottom={`1px solid ${theme.colors.gray200}`} marginBottom={minorScale(2)} />
+
+          {/* Search Food input */}
+          <Text
+            size={300}
+            fontWeight={600}
+            color={theme.colors.gray800}
+            marginBottom={minorScale(1)}
+          >
+            Search Food
+          </Text>
+          <SearchInput
+            placeholder='Type to filter...'
+            value={searchTerm}
+            onChange={(e: any) => setSearchTerm(e.target.value)}
+          />
+        </Pane>
+
+        {/* Show Nutrition Toggle */}
+        <Pane className='px-4 pt-4'>
+          <Pane
+            display='flex'
+            alignItems='center'
+            justifyContent='space-between'
+            marginBottom={minorScale(3)}
+          >
+            <Text size={300} fontWeight={600} color={theme.colors.gray800}>
+              Show Nutrition
+            </Text>
+            <Switch checked={showNutrition} onChange={toggleShowNutrition} />
+          </Pane>
+          <Pane borderBottom={`1px solid ${theme.colors.gray200}`} />
+        </Pane>
+
+        <Pane {...filtersContainerProps}>
+          {/* Open and hide filters */}
+          <Pane
+            display='flex'
+            alignItems='center'
+            justifyContent='space-between'
+            cursor='pointer'
+            onClick={() => setFiltersOpen((prev) => !prev)}
+            marginBottom={filtersOpen ? minorScale(2) : 0}
+          >
+            <Text size={300} color={theme.colors.gray700}>
+              {filtersOpen ? 'Hide Filters' : 'Filter By'}
+            </Text>
+            {filtersOpen ? (
+              <ChevronUpIcon size={16} color='green600' />
+            ) : (
+              <ChevronDownIcon size={16} color='green600' />
+            )}
+          </Pane>
+
+          <Pane
+            borderBottom={filtersOpen ? `1px solid ${theme.colors.gray200}` : undefined}
+            marginBottom={minorScale(2)}
+          />
+
+          {filtersOpen && (
+            <Pane>
+              {/* Control which dining halls are displayed */}
+              <Text
+                size={300}
+                fontWeight={600}
+                color={theme.colors.gray800}
+                marginBottom={minorScale(1)}
+              >
+                Dining Halls
+              </Text>
+              <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
+                {DINING_HALLS.map((diningHall: DiningHall) => {
+                  const diningHallText = diningHall
+                    .replace(' Colleges', '')
+                    .replace(' College', '');
+                  const checked = diningHalls.includes(diningHall);
+                  const onChange = () => {
+                    toggleDiningHall(diningHall);
+                  };
+
+                  return (
+                    <Pane key={diningHall} display='flex' alignItems='center' marginBottom='2px'>
+                      <Checkbox checked={checked} onChange={onChange} />
+                      <Pane marginX={minorScale(2)}>
+                        <img
+                          src={HALL_ICON_MAP[diningHall]}
+                          alt={diningHall}
+                          width={20}
+                          height={20}
+                        />
+                      </Pane>
+                      <Text size={300} color={theme.colors.gray900}>
+                        {diningHallText}
+                      </Text>
+                    </Pane>
+                  );
+                })}
+              </Pane>
+
+              <Pane
+                borderBottom={`1px solid ${theme.colors.gray200}`}
+                marginBottom={minorScale(2)}
+              />
+
+              {/* Control which dietary tags are displayed */}
+              <Text
+                size={300}
+                fontWeight={600}
+                color={theme.colors.gray800}
+                marginBottom={minorScale(1)}
+              >
+                Dietary Tags
+              </Text>
+              <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
+                {DIETARY_TAGS.map((dietKey: DietaryTag) => {
+                  const style = DIET_STYLE_MAP(theme)[dietKey as DietaryTag];
+                  const checked = dietaryRestrictions.includes(dietKey);
+                  const onChange = () => {
+                    toggleDietaryRestriction(dietKey);
+                  };
+
+                  return (
+                    <Pane
+                      key={dietKey}
+                      display='flex'
+                      alignItems='center'
+                      marginBottom={minorScale(1)}
+                    >
+                      <Checkbox checked={checked} onChange={onChange} />
+                      <Pane
+                        width={20}
+                        height={20}
+                        borderRadius={3}
+                        background={style?.bg}
+                        display='flex'
+                        alignItems='center'
+                        justifyContent='center'
+                        marginX={minorScale(2)}
+                        className='p-1'
+                      >
+                        <Text className='text-xs' color={style?.color} fontWeight={600}>
+                          {DIET_LABEL_MAP[dietKey]}
+                        </Text>
+                      </Pane>
+                      <Text size={300} color={theme.colors.gray900}>
+                        {dietKey}
+                      </Text>
+                    </Pane>
+                  );
+                })}
+              </Pane>
+
+              <Pane
+                borderBottom={`1px solid ${theme.colors.gray200}`}
+                marginBottom={minorScale(2)}
+              />
+
+              {/* Control which allergens are not displayed */}
+              <Text
+                size={300}
+                fontWeight={600}
+                color={theme.colors.gray800}
+                marginBottom={minorScale(1)}
+              >
+                Allergen Tags
+              </Text>
+              <Pane display='flex' flexDirection='column'>
+                {ALLERGENS.map((allergen: Allergen) => {
+                  const style = ALLERGEN_STYLE_MAP(theme)[allergen as Allergen];
+                  const checked = allergens.includes(allergen);
+                  const emoji = ALLERGEN_EMOJI[allergen as Allergen];
+                  const onChange = () => {
+                    toggleAllergen(allergen);
+                  };
+
+                  return (
+                    <Pane
+                      key={allergen}
+                      display='flex'
+                      alignItems='center'
+                      marginBottom={minorScale(1)}
+                    >
+                      <Checkbox checked={checked} onChange={onChange} />
+                      <Pane
+                        width={20}
+                        height={20}
+                        borderRadius={999}
+                        background={style?.bg}
+                        display='flex'
+                        alignItems='center'
+                        justifyContent='center'
+                        marginX={minorScale(2)}
+                      >
+                        <Text className='text-xs' color={style?.color}>
+                          {emoji}
+                        </Text>
+                      </Pane>
+                      <Text size={300} color={theme.colors.gray900}>
+                        {allergen}
+                      </Text>
+                    </Pane>
+                  );
+                })}
+              </Pane>
+            </Pane>
+          )}
+        </Pane>
+      </Pane>
+    </Pane>
+  );
+}

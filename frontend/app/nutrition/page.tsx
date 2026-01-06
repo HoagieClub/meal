@@ -287,7 +287,6 @@ const NutritionLabelPage = () => {
               )}
             </Pane>
           </Pane>
-
           <Separator height='3px' />
 
           {/* Render the calories and serving size */}

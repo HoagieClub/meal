@@ -34,20 +34,22 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from 'evergreen-ui';
-import DiningHallCard from '@/components/dining-hall-card';
-import HallMenuModal from '@/components/hall-menu-modal';
+import DiningHallCard from '@/app/menu/components/dining-hall-card';
+import HallMenuModal from '@/app/menu/components/hall-menu-modal';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
+import FilterSidebar from '@/app/menu/components/filter-sidebar';
+import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
 import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   useLocationsCache,
   useMenuItemsCache,
   useMenuStructureCache,
 } from '@/hooks/use-menu-cache';
-import { DINING_HALLS, MEAL_RANGES, ALLERGENS, DIETARY_TAGS, MEALS } from '@/data';
+import { DINING_HALLS, MEAL_RANGES, DIETARY_TAGS, MEALS } from '@/data';
 import {
   MEAL_COLOR_MAP,
-  ALLERGEN_EMOJI,
   HALL_ICON_MAP,
   DIET_LABEL_MAP,
   ALLERGEN_STYLE_MAP,
@@ -192,7 +194,12 @@ export default function MenuPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [modalHall, setModalHall] = useState<Location | null>(null);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Hide allergen sidebar when screen width is below 1080px
+  const hideSidebar = useMediaQuery('(min-width: 1080px)');
+  // Hide filter sidebar on small screens (below 640px) and show it beneath header instead
+  const isSmallScreen = useMediaQuery('(max-width: 800px)');
+  const stackMenuHeader = useMediaQuery('(max-width: 880px)');
 
   const cacheLoading =
     preferencesLoading ||
@@ -334,7 +341,7 @@ export default function MenuPage() {
         overflowY='auto'
         paddingBottom={majorScale(6)}
         gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
-        gap={majorScale(1)}
+        gap={majorScale(2)}
         className='h-full no-scrollbar'
       >
         {Array(6)
@@ -378,7 +385,7 @@ export default function MenuPage() {
         display='grid'
         overflowY='auto'
         paddingBottom={majorScale(6)}
-        gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
+        gridTemplateColumns='repeat(auto-fill,minmax(400px,1fr))'
         gap={majorScale(2)}
         className='h-full no-scrollbar'
       >
@@ -406,255 +413,30 @@ export default function MenuPage() {
       className='sm:flex-row overflow-hidden min-h-screen flex-col'
       background={MEAL_COLOR_MAP(theme)[meal]}
     >
-      {/* Filter sidebar */}
+      {/* Filter sidebar - hidden on small screens */}
+      {!isSmallScreen && (
+        <FilterSidebar
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          showNutrition={showNutrition}
+          toggleShowNutrition={toggleShowNutrition}
+          diningHalls={diningHalls}
+          dietaryRestrictions={dietaryRestrictions}
+          allergens={allergens}
+          toggleDiningHall={toggleDiningHall}
+          toggleDietaryRestriction={toggleDietaryRestriction}
+          toggleAllergen={toggleAllergen}
+          clearPreferences={clearPreferences}
+          variant='sidebar'
+        />
+      )}
+
       <Pane
-        flexDirection='column'
-        width={280}
-        padding={majorScale(3)}
-        className='max-w-[100%] hidden sm:inline z-20'
+        flex={1}
+        className={`overflow-x-hidden h-full no-scrollbar`}
+        paddingRight={hideSidebar ? 0 : majorScale(3)}
+        paddingLeft={isSmallScreen ? majorScale(3) : 0}
       >
-        <Pane
-          display='flex'
-          background='white'
-          borderRadius={12}
-          maxHeight='100%'
-          boxShadow='0 2px 12px rgba(0,0,0,0.06)'
-          className='fixed sm:relative overflow-hidden flex-col'
-        >
-          <Pane
-            background={theme.colors.gray100}
-            borderBottom={`1px solid ${theme.colors.gray200}`}
-            className='relative flex flex-col p-4'
-          >
-            {/* Reset Filters button */}
-            <Pane
-              display='flex'
-              alignItems='center'
-              cursor='pointer'
-              onClick={() => {
-                clearPreferences();
-                setSearchTerm('');
-              }}
-              background={theme.colors.gray100}
-              marginBottom={minorScale(2)}
-            >
-              <UndoIcon size={14} color={theme.colors.gray700} />
-              <Text marginLeft={minorScale(1)} size={300} color={theme.colors.gray700}>
-                Reset Filters
-              </Text>
-            </Pane>
-
-            <Pane borderBottom={`1px solid ${theme.colors.gray200}`} marginBottom={minorScale(2)} />
-
-            {/* Search Food input */}
-            <Text
-              size={300}
-              fontWeight={600}
-              color={theme.colors.gray800}
-              marginBottom={minorScale(1)}
-            >
-              Search Food
-            </Text>
-            <SearchInput
-              placeholder='Type to filter...'
-              value={searchTerm}
-              onChange={(e: any) => setSearchTerm(e.target.value)}
-            />
-          </Pane>
-
-          {/* Show Nutrition Toggle */}
-          <Pane className='px-4 pt-4'>
-            <Pane
-              display='flex'
-              alignItems='center'
-              justifyContent='space-between'
-              marginBottom={minorScale(3)}
-            >
-              <Text size={300} fontWeight={600} color={theme.colors.gray800}>
-                Show Nutrition
-              </Text>
-              <Switch checked={showNutrition} onChange={toggleShowNutrition} />
-            </Pane>
-            <Pane borderBottom={`1px solid ${theme.colors.gray200}`} />
-          </Pane>
-
-          <Pane className='p-4' overflowY='auto' height='100%'>
-            {/* Open and hide filters */}
-            <Pane
-              display='flex'
-              alignItems='center'
-              justifyContent='space-between'
-              cursor='pointer'
-              onClick={() => setFiltersOpen((prev) => !prev)}
-              marginBottom={filtersOpen ? minorScale(2) : 0}
-            >
-              <Text size={300} color={theme.colors.gray700}>
-                {filtersOpen ? 'Hide Filters' : 'Filter By'}
-              </Text>
-              {filtersOpen ? (
-                <ChevronUpIcon size={16} color='green600' />
-              ) : (
-                <ChevronDownIcon size={16} color='green600' />
-              )}
-            </Pane>
-
-            <Pane
-              borderBottom={filtersOpen ? `1px solid ${theme.colors.gray200}` : undefined}
-              marginBottom={minorScale(2)}
-            />
-
-            {filtersOpen && (
-              <Pane>
-                {/* Control which dining halls are displayed */}
-                <Text
-                  size={300}
-                  fontWeight={600}
-                  color={theme.colors.gray800}
-                  marginBottom={minorScale(1)}
-                >
-                  Dining Halls
-                </Text>
-                <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                  {DINING_HALLS.map((diningHall: DiningHall) => {
-                    const diningHallText = diningHall
-                      .replace(' Colleges', '')
-                      .replace(' College', '');
-                    const checked = diningHalls.includes(diningHall);
-                    const onChange = () => {
-                      toggleDiningHall(diningHall);
-                    };
-
-                    return (
-                      <Pane key={diningHall} display='flex' alignItems='center' marginBottom='2px'>
-                        <Checkbox checked={checked} onChange={onChange} />
-                        <Pane marginX={minorScale(2)}>
-                          <img
-                            src={HALL_ICON_MAP[diningHall]}
-                            alt={diningHall}
-                            width={20}
-                            height={20}
-                          />
-                        </Pane>
-                        <Text size={300} color={theme.colors.gray900}>
-                          {diningHallText}
-                        </Text>
-                      </Pane>
-                    );
-                  })}
-                </Pane>
-
-                <Pane
-                  borderBottom={`1px solid ${theme.colors.gray200}`}
-                  marginBottom={minorScale(2)}
-                />
-
-                {/* Control which dietary tags are displayed */}
-                <Text
-                  size={300}
-                  fontWeight={600}
-                  color={theme.colors.gray800}
-                  marginBottom={minorScale(1)}
-                >
-                  Dietary Tags
-                </Text>
-                <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                  {DIETARY_TAGS.map((dietKey: DietaryTag) => {
-                    const style = DIET_STYLE_MAP(theme)[dietKey as DietaryTag];
-                    const checked = dietaryRestrictions.includes(dietKey);
-                    const onChange = () => {
-                      toggleDietaryRestriction(dietKey);
-                    };
-
-                    return (
-                      <Pane
-                        key={dietKey}
-                        display='flex'
-                        alignItems='center'
-                        marginBottom={minorScale(1)}
-                      >
-                        <Checkbox checked={checked} onChange={onChange} />
-                        <Pane
-                          width={20}
-                          height={20}
-                          borderRadius={3}
-                          background={style?.bg}
-                          display='flex'
-                          alignItems='center'
-                          justifyContent='center'
-                          marginX={minorScale(2)}
-                          className='p-1'
-                        >
-                          <Text className='text-xs' color={style?.color} fontWeight={600}>
-                            {DIET_LABEL_MAP[dietKey]}
-                          </Text>
-                        </Pane>
-                        <Text size={300} color={theme.colors.gray900}>
-                          {dietKey}
-                        </Text>
-                      </Pane>
-                    );
-                  })}
-                </Pane>
-
-                <Pane
-                  borderBottom={`1px solid ${theme.colors.gray200}`}
-                  marginBottom={minorScale(2)}
-                />
-
-                {/* Control which allergens are not displayed */}
-                <Text
-                  size={300}
-                  fontWeight={600}
-                  color={theme.colors.gray800}
-                  marginBottom={minorScale(1)}
-                >
-                  Allergen Tags
-                </Text>
-                <Pane display='flex' flexDirection='column'>
-                  {ALLERGENS.map((allergen: Allergen) => {
-                    const style = ALLERGEN_STYLE_MAP(theme)[allergen as Allergen];
-                    const checked = allergens.includes(allergen);
-                    const emoji = ALLERGEN_EMOJI[allergen as Allergen];
-                    const onChange = () => {
-                      toggleAllergen(allergen);
-                    };
-
-                    return (
-                      <Pane
-                        key={allergen}
-                        display='flex'
-                        alignItems='center'
-                        marginBottom={minorScale(1)}
-                      >
-                        <Checkbox checked={checked} onChange={onChange} />
-                        <Pane
-                          width={20}
-                          height={20}
-                          borderRadius={999}
-                          background={style?.bg}
-                          display='flex'
-                          alignItems='center'
-                          justifyContent='center'
-                          marginX={minorScale(2)}
-                        >
-                          <Text className='text-xs' color={style?.color}>
-                            {emoji}
-                          </Text>
-                        </Pane>
-                        <Text size={300} color={theme.colors.gray900}>
-                          {allergen}
-                        </Text>
-                      </Pane>
-                    );
-                  })}
-                </Pane>
-              </Pane>
-            )}
-          </Pane>
-        </Pane>
-      </Pane>
-
-      <Pane flex={1} className='overflow-x-hidden h-full no-scrollbar px-4'>
         {/* Header for the menu page */}
         <Pane>
           <Pane
@@ -662,7 +444,7 @@ export default function MenuPage() {
             alignItems='center'
             justifyContent='space-between'
             marginY={majorScale(3)}
-            className='flex-col sm:flex-row text-center sm:text-left'
+            className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
           >
             <Pane width={240}>
               <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
@@ -673,9 +455,13 @@ export default function MenuPage() {
               </Text>
             </Pane>
 
-            <Pane display='flex' gap={minorScale(2)} className='flex-col flex justify-center my-4'>
+            <Pane
+              display='flex'
+              gap={minorScale(2)}
+              className='mx-2 flex-col flex justify-center my-4'
+            >
               {/* Date and meal selector */}
-              <Pane display='flex' alignItems='center' gap={minorScale(2)}>
+              <Pane display='flex' alignItems='center' gap={minorScale(2)} marginBottom={majorScale(1)}>
                 <Button
                   background='white'
                   border={`1px solid ${theme.colors.green700}`}
@@ -740,6 +526,25 @@ export default function MenuPage() {
             <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240} />
           </Pane>
 
+          {/* Mobile filter section - shown only on small screens */}
+
+          {isSmallScreen && (
+            <FilterSidebar
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              showNutrition={showNutrition}
+              toggleShowNutrition={toggleShowNutrition}
+              diningHalls={diningHalls}
+              dietaryRestrictions={dietaryRestrictions}
+              allergens={allergens}
+              toggleDiningHall={toggleDiningHall}
+              toggleDietaryRestriction={toggleDietaryRestriction}
+              toggleAllergen={toggleAllergen}
+              clearPreferences={clearPreferences}
+              variant='mobile'
+            />
+          )}
+
           {/* Render the appropriate content based on the loading state and the number of menu items */}
           {loading.menusForLocations || loading.menuItems || loading.locations ? (
             <DiningHallSkeletonCards />
@@ -751,61 +556,7 @@ export default function MenuPage() {
         </Pane>
       </Pane>
 
-      {/* Allergens sidebar for filtering by allergens */}
-      <Pane
-        className='hidden sm:flex'
-        flexDirection='column'
-        width={200}
-        padding={majorScale(3)}
-        overflowY='auto'
-        zIndex={2}
-      >
-        <Heading size={600} color={theme.colors.green900}>
-          Allergens to Avoid
-        </Heading>
-        <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
-          {ALLERGENS.map((allergen: Allergen) => {
-            const selected = allergens;
-            const isSelected = selected.includes(allergen);
-            const emojiForAllergen = ALLERGEN_EMOJI[allergen as Allergen];
-            const backgroundColor = isSelected ? theme.colors.red100 : theme.colors.gray100;
-            const title = isSelected
-              ? `Hiding items containing ${allergen}`
-              : `Click to hide items containing ${allergen}`;
-            const onChange = () => {
-              toggleAllergen(allergen);
-            };
-
-            return (
-              <Pane
-                key={allergen}
-                display='flex'
-                alignItems='center'
-                cursor='pointer'
-                opacity={isSelected ? 1.0 : 0.6}
-                onClick={onChange}
-                title={title}
-              >
-                <Pane
-                  width={28}
-                  height={28}
-                  display='inline-flex'
-                  alignItems='center'
-                  justifyContent='center'
-                  borderRadius={14}
-                  background={backgroundColor}
-                  marginRight={minorScale(1)}
-                >
-                  <Text size={200}>{emojiForAllergen}</Text>
-                </Pane>
-                <Text size={400} color={theme.colors.green900} fontWeight={isSelected ? 600 : 400}>
-                  {allergen}
-                </Text>
-              </Pane>
-            );
-          })}
-        </Pane>
-      </Pane>
+      {hideSidebar && <AllergenSidebar allergens={allergens} toggleAllergen={toggleAllergen} />}
 
       <HallMenuModal
         modalHall={modalHall}
