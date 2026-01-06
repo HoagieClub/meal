@@ -28,6 +28,7 @@ from hoagiemeal.api.menu import (
 )
 from hoagiemeal.api.interactions import (
     get_user_menu_item_interaction,
+    get_user_menu_item_interactions,
     record_user_menu_item_view,
     update_user_menu_item_interaction,
     get_menu_item_metrics,
@@ -65,6 +66,7 @@ urlpatterns = [
     path("api/dining/menu-items/batch/", get_dining_menu_items, name="dining-menu-items"),
     # Interaction API Endpoints
     path("api/interactions/user/menu-item/", get_user_menu_item_interaction, name="get-user-menu-item-interaction"),
+    path("api/interactions/user/menu-items/", get_user_menu_item_interactions, name="get-user-menu-item-interactions"),
     path("api/interactions/user/menu-item/view/", record_user_menu_item_view, name="record-user-menu-item-view"),
     path(
         "api/interactions/user/menu-item/update/",

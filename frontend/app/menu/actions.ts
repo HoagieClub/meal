@@ -12,7 +12,13 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { LocationMap, MenuItemMap, MenusForLocations } from '@/types/dining';
+import {
+  LocationMap,
+  MenuItemInteractionMap,
+  MenuItemMap,
+  MenuItemMetricsMap,
+  MenusForLocations,
+} from '@/types/dining';
 import { DiningHall, DietaryTag, Allergen, MenuItem } from '@/types/dining';
 
 const lowercased = (array: string[] | null | undefined) =>
@@ -28,6 +34,9 @@ const lowercased = (array: string[] | null | undefined) =>
  * @param appliedAllergens - The applied allergens.
  * @param searchTerm - The search term.
  * @param pinnedHalls - The pinned halls.
+ * @param menuItems - The menu items.
+ * @param menuItemMetrics - The menu item metrics.
+ * @param userMenuItemInteractions - The user menu item interactions.
  */
 interface BuildDisplayDataProps {
   menusForLocations: MenusForLocations;
@@ -38,6 +47,8 @@ interface BuildDisplayDataProps {
   searchTerm: string;
   pinnedHalls: DiningHall[];
   menuItems: MenuItemMap;
+  menuItemMetrics: MenuItemMetricsMap;
+  userMenuItemInteractions: MenuItemInteractionMap;
 }
 
 /**
@@ -50,6 +61,8 @@ export const buildDisplayData = (props: BuildDisplayDataProps) => {
   const {
     menusForLocations,
     menuItems,
+    menuItemMetrics,
+    userMenuItemInteractions,
     locationItems,
     appliedDiningHalls,
     appliedDietaryRestrictions,
@@ -58,43 +71,24 @@ export const buildDisplayData = (props: BuildDisplayDataProps) => {
     pinnedHalls,
   } = props;
   // Build display menus for locations using menus and location and menu items maps
-
-  console.log('menusForLocations', menusForLocations);
-  console.log('locationItems', locationItems);
-  console.log('menuItems', menuItems);
-
   const displayMenusForLocations = [];
   for (const locationId of Object.keys(menusForLocations)) {
     const location = locationItems?.[locationId];
-    if (!location) {
-        console.log('location not found for locationId', locationId);
-        continue;
-    }
-
+    if (!location) continue;
     const menu = menusForLocations[locationId];
-    if (!menu) {
-        console.log('menu not found for location', locationId);
-        continue;
-    }
+    if (!menu) continue;
 
     const locationMenuItems: MenuItem[] = [];
     for (const menuItemId of menu) {
       const menuItem: MenuItem = menuItems[menuItemId];
-      if (!menuItem || !menuItem.name) {
-        console.log('menuItem not found for menuItemId', menuItemId);
-        continue;
-      }
+      if (!menuItem || !menuItem.name) continue;
       locationMenuItems.push(menuItem);
     }
-    if (locationMenuItems.length === 0) {
-        console.log('locationMenuItems is empty for location', locationId);
-        continue;
-    }
+    if (locationMenuItems.length === 0) continue;
 
     location.menu = locationMenuItems;
     displayMenusForLocations.push(location);
   }
-  console.log('displayMenusForLocations', displayMenusForLocations);
 
   // Normalize search term, dietary restrictions, allergens, and dietary flags
   const searchTermLower = searchTerm.trim().toLowerCase();
@@ -182,7 +176,6 @@ export const buildDisplayData = (props: BuildDisplayDataProps) => {
     return aIsPinned ? -1 : bIsPinned ? 1 : 0;
   });
 
-  console.log('filteredMenusForLocations', filteredMenusForLocations);
   return filteredMenusForLocations;
 };
 

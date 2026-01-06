@@ -20,6 +20,12 @@ import { ALLERGENS } from '@/data';
 import { ALLERGEN_EMOJI } from '@/styles';
 import { Allergen } from '@/types/dining';
 
+/**
+ * Props for the AllergenSidebar component.
+ *
+ * @param allergens - The allergens to display
+ * @param toggleAllergen - The function to call when an allergen is toggled
+ */
 interface AllergenSidebarProps {
   allergens: Allergen[];
   toggleAllergen: (allergen: Allergen) => void;
@@ -28,7 +34,6 @@ interface AllergenSidebarProps {
 /**
  * Allergen sidebar component for filtering by allergens.
  *
- * @param props - Component props
  * @returns The allergen sidebar component
  */
 export default function AllergenSidebar({
@@ -83,11 +88,7 @@ export default function AllergenSidebar({
               >
                 <Text size={200}>{emojiForAllergen}</Text>
               </Pane>
-              <Text
-                size={400}
-                color={theme.colors.green900}
-                fontWeight={isSelected ? 600 : 400}
-              >
+              <Text size={400} color={theme.colors.green900} fontWeight={isSelected ? 600 : 400}>
                 {allergen}
               </Text>
             </Pane>
@@ -97,4 +98,3 @@ export default function AllergenSidebar({
     </Pane>
   );
 }
-

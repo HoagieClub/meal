@@ -81,6 +81,126 @@ export default function FilterSidebar({
     setSearchTerm('');
   };
 
+  /**
+   * Dining hall row component.
+   *
+   * @param diningHall - The dining hall to display
+   * @param checked - Whether the dining hall is checked
+   * @param onChange - The function to call when the dining hall is changed
+   * @returns The dining hall row component
+   */
+  const DiningHallRow = ({
+    diningHall,
+    checked,
+    onChange,
+  }: {
+    diningHall: DiningHall;
+    checked: boolean;
+    onChange: () => void;
+  }) => {
+    const diningHallText = diningHall.replace(' Colleges', '').replace(' College', '');
+
+    return (
+      <Pane display='flex' alignItems='center' marginBottom='2px'>
+        <Checkbox checked={checked} onChange={onChange} />
+        <Pane marginX={minorScale(2)}>
+          <img src={HALL_ICON_MAP[diningHall]} alt={diningHall} width={20} height={20} />
+        </Pane>
+        <Text size={300} color={theme.colors.gray900}>
+          {diningHallText}
+        </Text>
+      </Pane>
+    );
+  };
+
+  /**
+   * Dietary tag row component.
+   *
+   * @param dietKey - The dietary tag to display
+   * @param checked - Whether the dietary tag is checked
+   * @param onChange - The function to call when the dietary tag is changed
+   * @returns The dietary tag row component
+   */
+  const DietaryTagRow = ({
+    dietKey,
+    checked,
+    onChange,
+  }: {
+    dietKey: DietaryTag;
+    checked: boolean;
+    onChange: () => void;
+  }) => {
+    const style = DIET_STYLE_MAP(theme)[dietKey as DietaryTag];
+
+    return (
+      <Pane display='flex' alignItems='center' marginBottom={minorScale(1)}>
+        <Checkbox checked={checked} onChange={onChange} />
+        <Pane
+          width={20}
+          height={20}
+          borderRadius={3}
+          background={style?.bg}
+          display='flex'
+          alignItems='center'
+          justifyContent='center'
+          marginX={minorScale(2)}
+          className='p-1'
+        >
+          <Text className='text-xs' color={style?.color} fontWeight={600}>
+            {DIET_LABEL_MAP[dietKey]}
+          </Text>
+        </Pane>
+        <Text size={300} color={theme.colors.gray900}>
+          {dietKey}
+        </Text>
+      </Pane>
+    );
+  };
+
+  /**
+   * Allergen row component.
+   *
+   * @param allergen - The allergen to display
+   * @param checked - Whether the allergen is checked
+   * @param onChange - The function to call when the allergen is changed
+   * @returns The allergen row component
+   */
+  const AllergenRow = ({
+    allergen,
+    checked,
+    onChange,
+  }: {
+    allergen: Allergen;
+    checked: boolean;
+    onChange: () => void;
+  }) => {
+    const style = ALLERGEN_STYLE_MAP(theme)[allergen as Allergen];
+    const emoji = ALLERGEN_EMOJI[allergen as Allergen];
+
+    return (
+      <Pane display='flex' alignItems='center' marginBottom={minorScale(1)}>
+        <Checkbox checked={checked} onChange={onChange} />
+        <Pane
+          width={20}
+          height={20}
+          borderRadius={999}
+          background={style?.bg}
+          display='flex'
+          alignItems='center'
+          justifyContent='center'
+          marginX={minorScale(2)}
+        >
+          <Text className='text-xs' color={style?.color}>
+            {emoji}
+          </Text>
+        </Pane>
+        <Text size={300} color={theme.colors.gray900}>
+          {allergen}
+        </Text>
+      </Pane>
+    );
+  };
+
   // Determine container styles based on variant
   const containerProps =
     variant === 'sidebar'
@@ -147,7 +267,6 @@ export default function FilterSidebar({
               Reset Filters
             </Text>
           </Pane>
-
           <Pane borderBottom={`1px solid ${theme.colors.gray200}`} marginBottom={minorScale(2)} />
 
           {/* Search Food input */}
@@ -219,32 +338,14 @@ export default function FilterSidebar({
                 Dining Halls
               </Text>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                {DINING_HALLS.map((diningHall: DiningHall) => {
-                  const diningHallText = diningHall
-                    .replace(' Colleges', '')
-                    .replace(' College', '');
-                  const checked = diningHalls.includes(diningHall);
-                  const onChange = () => {
-                    toggleDiningHall(diningHall);
-                  };
-
-                  return (
-                    <Pane key={diningHall} display='flex' alignItems='center' marginBottom='2px'>
-                      <Checkbox checked={checked} onChange={onChange} />
-                      <Pane marginX={minorScale(2)}>
-                        <img
-                          src={HALL_ICON_MAP[diningHall]}
-                          alt={diningHall}
-                          width={20}
-                          height={20}
-                        />
-                      </Pane>
-                      <Text size={300} color={theme.colors.gray900}>
-                        {diningHallText}
-                      </Text>
-                    </Pane>
-                  );
-                })}
+                {DINING_HALLS.map((diningHall: DiningHall) => (
+                  <DiningHallRow
+                    key={diningHall}
+                    diningHall={diningHall}
+                    checked={diningHalls.includes(diningHall)}
+                    onChange={() => toggleDiningHall(diningHall)}
+                  />
+                ))}
               </Pane>
 
               <Pane
@@ -262,42 +363,14 @@ export default function FilterSidebar({
                 Dietary Tags
               </Text>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                {DIETARY_TAGS.map((dietKey: DietaryTag) => {
-                  const style = DIET_STYLE_MAP(theme)[dietKey as DietaryTag];
-                  const checked = dietaryRestrictions.includes(dietKey);
-                  const onChange = () => {
-                    toggleDietaryRestriction(dietKey);
-                  };
-
-                  return (
-                    <Pane
-                      key={dietKey}
-                      display='flex'
-                      alignItems='center'
-                      marginBottom={minorScale(1)}
-                    >
-                      <Checkbox checked={checked} onChange={onChange} />
-                      <Pane
-                        width={20}
-                        height={20}
-                        borderRadius={3}
-                        background={style?.bg}
-                        display='flex'
-                        alignItems='center'
-                        justifyContent='center'
-                        marginX={minorScale(2)}
-                        className='p-1'
-                      >
-                        <Text className='text-xs' color={style?.color} fontWeight={600}>
-                          {DIET_LABEL_MAP[dietKey]}
-                        </Text>
-                      </Pane>
-                      <Text size={300} color={theme.colors.gray900}>
-                        {dietKey}
-                      </Text>
-                    </Pane>
-                  );
-                })}
+                {DIETARY_TAGS.map((dietKey: DietaryTag) => (
+                  <DietaryTagRow
+                    key={dietKey}
+                    dietKey={dietKey}
+                    checked={dietaryRestrictions.includes(dietKey)}
+                    onChange={() => toggleDietaryRestriction(dietKey)}
+                  />
+                ))}
               </Pane>
 
               <Pane
@@ -315,42 +388,14 @@ export default function FilterSidebar({
                 Allergen Tags
               </Text>
               <Pane display='flex' flexDirection='column'>
-                {ALLERGENS.map((allergen: Allergen) => {
-                  const style = ALLERGEN_STYLE_MAP(theme)[allergen as Allergen];
-                  const checked = allergens.includes(allergen);
-                  const emoji = ALLERGEN_EMOJI[allergen as Allergen];
-                  const onChange = () => {
-                    toggleAllergen(allergen);
-                  };
-
-                  return (
-                    <Pane
-                      key={allergen}
-                      display='flex'
-                      alignItems='center'
-                      marginBottom={minorScale(1)}
-                    >
-                      <Checkbox checked={checked} onChange={onChange} />
-                      <Pane
-                        width={20}
-                        height={20}
-                        borderRadius={999}
-                        background={style?.bg}
-                        display='flex'
-                        alignItems='center'
-                        justifyContent='center'
-                        marginX={minorScale(2)}
-                      >
-                        <Text className='text-xs' color={style?.color}>
-                          {emoji}
-                        </Text>
-                      </Pane>
-                      <Text size={300} color={theme.colors.gray900}>
-                        {allergen}
-                      </Text>
-                    </Pane>
-                  );
-                })}
+                {ALLERGENS.map((allergen: Allergen) => (
+                  <AllergenRow
+                    key={allergen}
+                    allergen={allergen}
+                    checked={allergens.includes(allergen)}
+                    onChange={() => toggleAllergen(allergen)}
+                  />
+                ))}
               </Pane>
             </Pane>
           )}

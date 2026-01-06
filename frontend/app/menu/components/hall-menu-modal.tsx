@@ -36,9 +36,7 @@ interface HallMenuModalProps {
 /**
  * Hall menu modal component.
  *
- * @param modalHall - The dining venue to display the menu for.
- * @param setModalHall - The function to set the modal hall.
- * @param showNutrition - Whether to show nutrition information.
+ * @returns The hall menu modal component
  */
 const HallMenuModal: React.FC<HallMenuModalProps> = ({
   modalHall,
@@ -57,7 +55,6 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
       onCloseComplete={() => setModalHall(null)}
       hasFooter={false}
       width='80vw'
-      maxWidth='90vw'
     >
       <Pane
         display='flex'
@@ -75,6 +72,7 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
             limitItems={false}
           />
         )}
+
         {veganEntreeMenuItems.length > 0 && (
           <MenuSection
             label='Vegan Entrée'

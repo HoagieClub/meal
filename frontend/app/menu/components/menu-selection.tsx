@@ -16,7 +16,6 @@
 
 import React from 'react';
 import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
-import { ALLERGENS } from '@/data';
 import { ALLERGEN_EMOJI } from '@/styles';
 import { MenuItem } from '@/types/dining';
 import { useMediaQuery } from '@/hooks/use-media-query';

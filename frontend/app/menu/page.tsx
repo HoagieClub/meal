@@ -66,12 +66,18 @@ import {
   MenuItemMap,
   ApiId,
   LocationMap,
+  MenuItemMetrics,
+  MenuItemMetricsMap,
+  MenuItemInteractionMap,
 } from '@/types/dining';
 import { buildDisplayData } from './actions';
 import {
   getDiningMenusForLocationsAndDay,
   getDiningMenuItems,
   getAllDiningLocations,
+  getMenuItemsMetrics,
+  getMenuItemMetrics,
+  getUserMenuItemsInteractions,
 } from '@/lib/next-endpoints';
 
 /**
@@ -133,6 +139,49 @@ async function fetchLocationsForMenu(): Promise<LocationMap | null> {
 }
 
 /**
+ * Fetches menu item metrics from the API backend given a list of API IDs.
+ *
+ * @param apiIds - Array of menu item API IDs
+ * @returns Promise resolving to MenuItemMetricsMap or null if error
+ */
+async function fetchMenuItemMetricsByApiIds(apiIds: ApiId[]): Promise<MenuItemMetricsMap | null> {
+  if (!apiIds || apiIds.length === 0) return null;
+  try {
+    const { data } = await getMenuItemsMetrics({ menu_item_api_ids: apiIds.map(Number) });
+    const menuItemMetricsData = data?.data || data;
+    if (!menuItemMetricsData) throw new Error('No data received');
+    return menuItemMetricsData as MenuItemMetricsMap;
+  } catch (error) {
+    console.error(`Error fetching menu item metrics for API IDs ${apiIds.join(',')}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetches user menu item interactions from the API backend given a list of API IDs.
+ *
+ * @param apiIds - Array of menu item API IDs
+ * @returns Promise resolving to MenuItemInteractionMap or null if error
+ */
+async function fetchUserMenuItemInteractionsByApiIds(
+  apiIds: ApiId[]
+): Promise<MenuItemInteractionMap | null> {
+  if (!apiIds || apiIds.length === 0) return null;
+  try {
+    const { data } = await getUserMenuItemsInteractions({ menu_item_api_ids: apiIds.map(Number) });
+    const userMenuItemInteractionsData = data?.data || data;
+    if (!userMenuItemInteractionsData) throw new Error('No data received');
+    return userMenuItemInteractionsData as MenuItemInteractionMap;
+  } catch (error) {
+    console.error(
+      `Error fetching user menu item interactions for API IDs ${apiIds.join(',')}:`,
+      error
+    );
+    return null;
+  }
+}
+
+/**
  * Menu page component.
  *
  * @returns The menu page component.
@@ -143,6 +192,8 @@ export default function MenuPage() {
     menusForLocations: true,
     menuItems: true,
     locations: true,
+    menuItemMetrics: true,
+    userMenuItemInteractions: true,
   });
 
   const {
@@ -189,16 +240,18 @@ export default function MenuPage() {
 
   const [menusForLocationsState, setMenusForLocationsState] = useState<MenusForLocations>({});
   const [menuItemsState, setMenuItemsState] = useState<MenuItemMap>({});
+  const [menuItemMetricsState, setMenuItemMetricsState] = useState<MenuItemMetricsMap>({});
+  const [userMenuItemInteractionsState, setUserMenuItemInteractionsState] =
+    useState<MenuItemInteractionMap>({});
   const [locationsState, setLocationsState] = useState<LocationMap>({});
-  const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
 
+  const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [searchTerm, setSearchTerm] = useState('');
   const [modalHall, setModalHall] = useState<Location | null>(null);
 
-  // Hide allergen sidebar when screen width is below 1080px
+  // Media query flags
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
-  // Hide filter sidebar on small screens (below 640px) and show it beneath header instead
-  const isSmallScreen = useMediaQuery('(max-width: 800px)');
+  const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeader = useMediaQuery('(max-width: 880px)');
 
   const cacheLoading =
@@ -275,7 +328,43 @@ export default function MenuPage() {
     }
 
     fetchMenuItems(menuItems, missingApiIds);
-  }, [cacheLoading, meal, menusForLocationsState]);
+  }, [cacheLoading, menusForLocationsState]);
+
+  // Fetch menu item metrics and user menu item interactions for the found menu
+  useEffect(() => {
+    if (cacheLoading) return;
+    setLoading((prev) => ({ ...prev, menuItemMetrics: true, userMenuItemInteractions: true }));
+
+    // Extract all unique API IDs from the menus for locations
+    const apiIdsSet = new Set<ApiId>(Object.values(menusForLocationsState).flatMap((menu) => menu));
+    const apiIds = Array.from(apiIdsSet);
+    if (apiIds.length === 0) return;
+
+    // Fetch menu item metrics from API
+    async function fetchMenuItemMetrics() {
+      const menuItemMetrics = await fetchMenuItemMetricsByApiIds(apiIds);
+      console.log('menuItemMetrics (API)', menuItemMetrics);
+      if (menuItemMetrics && Object.keys(menuItemMetrics).length > 0) {
+        setMenuItemMetricsState(menuItemMetrics);
+      }
+      setLoading((prev) => ({ ...prev, menuItemMetrics: false }));
+      return;
+    }
+
+    // Fetch user menu item interactions from API
+    async function fetchUserMenuItemInteractions() {
+      const userMenuItemInteractions = await fetchUserMenuItemInteractionsByApiIds(apiIds);
+      console.log('userMenuItemInteractions (API)', userMenuItemInteractions);
+      if (userMenuItemInteractions && Object.keys(userMenuItemInteractions).length > 0) {
+        setUserMenuItemInteractionsState(userMenuItemInteractions);
+      }
+      setLoading((prev) => ({ ...prev, userMenuItemInteractions: false }));
+      return;
+    }
+
+    fetchMenuItemMetrics();
+    fetchUserMenuItemInteractions();
+  }, [cacheLoading, menusForLocationsState]);
 
   // Fetch locations
   useEffect(() => {
@@ -313,6 +402,8 @@ export default function MenuPage() {
         menusForLocations: menusForLocationsState,
         locationItems: locationsState,
         menuItems: menuItemsState,
+        menuItemMetrics: menuItemMetricsState,
+        userMenuItemInteractions: userMenuItemInteractionsState,
         appliedDiningHalls: diningHalls,
         appliedDietaryRestrictions: dietaryRestrictions,
         appliedAllergens: allergens,
@@ -323,6 +414,8 @@ export default function MenuPage() {
       menusForLocationsState,
       locationsState,
       menuItemsState,
+      menuItemMetricsState,
+      userMenuItemInteractionsState,
       diningHalls,
       dietaryRestrictions,
       allergens,
@@ -413,8 +506,8 @@ export default function MenuPage() {
       className='sm:flex-row overflow-hidden min-h-screen flex-col'
       background={MEAL_COLOR_MAP(theme)[meal]}
     >
-      {/* Filter sidebar - hidden on small screens */}
-      {!isSmallScreen && (
+      {/* Filter sidebar for desktop*/}
+      {!hideFilterSidebar && (
         <FilterSidebar
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
@@ -435,7 +528,7 @@ export default function MenuPage() {
         flex={1}
         className={`overflow-x-hidden h-full no-scrollbar`}
         paddingRight={hideSidebar ? 0 : majorScale(3)}
-        paddingLeft={isSmallScreen ? majorScale(3) : 0}
+        paddingLeft={hideFilterSidebar ? majorScale(3) : 0}
       >
         {/* Header for the menu page */}
         <Pane>
@@ -461,7 +554,12 @@ export default function MenuPage() {
               className='mx-2 flex-col flex justify-center my-4'
             >
               {/* Date and meal selector */}
-              <Pane display='flex' alignItems='center' gap={minorScale(2)} marginBottom={majorScale(1)}>
+              <Pane
+                display='flex'
+                alignItems='center'
+                gap={minorScale(2)}
+                marginBottom={majorScale(1)}
+              >
                 <Button
                   background='white'
                   border={`1px solid ${theme.colors.green700}`}
@@ -526,9 +624,8 @@ export default function MenuPage() {
             <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240} />
           </Pane>
 
-          {/* Mobile filter section - shown only on small screens */}
-
-          {isSmallScreen && (
+          {/* Filter sidebar for mobile */}
+          {hideFilterSidebar && (
             <FilterSidebar
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
@@ -545,8 +642,12 @@ export default function MenuPage() {
             />
           )}
 
-          {/* Render the appropriate content based on the loading state and the number of menu items */}
-          {loading.menusForLocations || loading.menuItems || loading.locations ? (
+          {/* Render skeleton cards while loading */}
+          {loading.menusForLocations ||
+          loading.menuItems ||
+          loading.locations ||
+          loading.menuItemMetrics ||
+          loading.userMenuItemInteractions ? (
             <DiningHallSkeletonCards />
           ) : displayMenusForLocations.length === 0 ? (
             <NoMenusFoundCard />

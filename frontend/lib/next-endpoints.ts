@@ -149,6 +149,19 @@ export const getUserMenuItemInteraction = (params: { menu_item_api_id: string | 
 };
 
 /**
+ * Gets user menu item interactions for multiple menu items.
+ *
+ * @param params - Request body (menu_item_api_ids - array of integers)
+ * @returns API response with interactions data dictionary
+ */
+export const getUserMenuItemsInteractions = (params: { menu_item_api_ids: number[] }) => {
+  const url = '/api/interactions/user/menu-items/';
+  return api.post<{ data: Record<string, MenuItemInteraction | null> }>(url, {
+    menu_item_api_ids: params.menu_item_api_ids,
+  });
+};
+
+/**
  * Records a user menu item view.
  *
  * @param params - Request body (menu_item_api_id)

@@ -54,7 +54,7 @@ class MenuItemInteractionsService:
     def get_or_create_user_menu_item_interaction(
         self, user: Any, menu_item_api_id: int
     ) -> Optional[MenuItemInteraction]:
-        """Get or create user interaction for a menu item.
+        """Get or create user menu item interaction for a menu item.
 
         Args:
             user (User): The user.
@@ -75,22 +75,57 @@ class MenuItemInteractionsService:
                 menu_item=menu_item,
                 defaults=DEFAULT_MENU_ITEM_INTERACTION,
             )
+
             logger.info(f"User interaction fetched for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
             return interaction
         except Exception as e:
             logger.error(
                 f"Error getting or creating user interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}: {e}"
             )
-            return None
+            return {}
 
-    def get_or_create_menu_item_metrics(self, menu_item_api_id: int) -> Optional[Dict]:
+    def get_or_create_user_menu_item_interactions(
+        self, user: Any, menu_item_api_ids: List[int]
+    ) -> Dict[int, Optional[Dict]]:
+        """Get or create user menu item interactions for multiple menu items.
+
+        Args:
+            user: The user.
+            menu_item_api_ids: The list of menu item API IDs.
+
+        Returns:
+            Dict[int, Optional[Dict]]: The dictionary of user menu item interactions.
+
+        """
+        logger.info(
+            f"Getting or creating user menu item interactions for user_id: {user.id}, menu_item_api_ids: {menu_item_api_ids}."
+        )
+        try:
+            # Get or create user menu item interactions for all menu items
+            interactions_dict = {}
+            for menu_item_api_id in menu_item_api_ids:
+                interaction = self.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
+                if not interaction:
+                    logger.error(f"No interaction found for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
+                    continue
+                interactions_dict[menu_item_api_id] = MenuItemInteractionSerializer(interaction).data
+
+            logger.info(f"Successfully retrieved user menu item interactions for {len(menu_item_api_ids)} menu items.")
+            return interactions_dict
+        except Exception as e:
+            logger.error(
+                f"Error getting or creating user menu item interactions for user_id: {user.id}, menu_item_api_ids: {menu_item_api_ids}: {e}"
+            )
+            return {}
+
+    def get_or_create_menu_item_metrics(self, menu_item_api_id: int) -> Optional[MenuItemMetrics]:
         """Get metrics for a menu item.
 
         Args:
             menu_item_api_id (int): The menu item API ID.
 
         Returns:
-            Optional[Dict]: The metrics data if they exist, None otherwise.
+            Optional[MenuItemMetrics]: The metrics data if they exist, None otherwise.
 
         """
         logger.info(f"Getting or creating metrics for menu_item_api_id: {menu_item_api_id}.")
@@ -98,11 +133,12 @@ class MenuItemInteractionsService:
             # Get or create metrics for menu item
             menu_item = MenuItem.objects.get(api_id=menu_item_api_id)
             metrics, _ = MenuItemMetrics.objects.get_or_create(menu_item=menu_item)
+
             logger.info(f"Metrics fetched for menu_item_api_id: {menu_item_api_id}.")
             return metrics
         except Exception as e:
             logger.error(f"Error getting or creating metrics for menu_item_api_id: {menu_item_api_id}: {e}")
-            return None
+            return {}
 
     def get_or_create_menu_items_metrics(self, menu_item_api_ids: List[int]) -> Dict[int, Optional[Dict]]:
         """Get or create metrics for multiple menu items.
@@ -123,12 +159,9 @@ class MenuItemInteractionsService:
                 if not metrics:
                     logger.error(f"Error getting metrics for menu_item_api_id: {menu_item_api_id}.")
                     continue
+                metrics_dict[menu_item_api_id] = MenuItemMetricsSerializer(metrics).data
 
-                # Add metrics to dictionary
-                metrics_dict[menu_item_api_id] = metrics
-
-            metrics_dict_length = len(list(metrics_dict.keys()))
-            logger.info(f"Successfully retrieved metrics for {metrics_dict_length} menu items.")
+            logger.info(f"Successfully retrieved metrics for {len(menu_item_api_ids)} menu items.")
             return metrics_dict
         except Exception as e:
             logger.error(f"Error getting metrics for multiple menu items: {e}")
@@ -353,6 +386,57 @@ def get_user_menu_item_interaction(request):
 
 
 @api_view(["POST"])
+def get_user_menu_item_interactions(request):
+    """Django view function to get user menu item interactions for multiple menu items.
+
+    Args:
+        request (Request): The HTTP request object.
+        menu_item_api_ids (list[int]): List of menu item API IDs.
+
+    Returns:
+        Response: The HTTP response object.
+        interactions (dict): Dictionary mapping menu_item_api_id to user menu item interaction data.
+
+    """
+    logger.info(f"Getting user menu item interactions for request: {request}")
+    try:
+        # Authenticate user
+        user = get_user_from_request(request)
+        if not user:
+            return Response({"data": None, "message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Get menu item API IDs
+        menu_item_api_ids = request.data.get("menu_item_api_ids")
+        if not menu_item_api_ids:
+            return Response(
+                {"data": None, "message": "menu_item_api_ids is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Parse menu item API IDs and get user menu item interactions for menu items
+        menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids]
+        interactions = interactions_service.get_or_create_user_menu_item_interactions(user, menu_item_api_ids)
+        if not interactions:
+            return Response(
+                {"data": None, "message": "No user menu item interactions found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Return serialized user menu item interactions data
+        logger.info(
+            f"Returning user menu item interactions for user_id: {user.id}, menu_item_api_ids: {menu_item_api_ids}."
+        )
+        return Response(
+            {"data": interactions, "message": "User menu item interactions fetched successfully."},
+            status=status.HTTP_200_OK,
+        )
+    except Exception as e:
+        logger.error(f"Error in get_user_menu_item_interactions view: {e}")
+        return Response(
+            {"data": None, "message": f"Error fetching user menu item interactions: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["POST"])
 def record_user_menu_item_view(request):
     """Django view function to record a user menu item view.
 
@@ -524,20 +608,15 @@ def get_menu_items_metrics(request):
                 {"data": None, "message": "menu_item_api_ids is required"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Parse menu item API IDs
-        menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids.split(",")]
+        # Parse menu item API IDs and get metrics for menu items
+        menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids]
+        metrics = interactions_service.get_or_create_menu_items_metrics(menu_item_api_ids)
+        if not metrics:
+            return Response({"data": None, "message": "No metrics found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Get metrics for menu items
-        metrics_dict = interactions_service.get_or_create_menu_items_metrics(menu_item_api_ids)
-
-        # Return serialized metrics data
-        metrics_dict = {
-            menu_item_api_id: MenuItemMetricsSerializer(metric).data
-            for menu_item_api_id, metric in metrics_dict.items()
-        }
         logger.info(f"Returning metrics for {len(menu_item_api_ids)} menu items.")
         return Response(
-            {"data": metrics_dict, "message": "Menu items metrics fetched successfully."},
+            {"data": metrics, "message": "Menu items metrics fetched successfully."},
             status=status.HTTP_200_OK,
         )
     except Exception as e:

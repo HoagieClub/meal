@@ -30,6 +30,15 @@ import { filterMenuItems } from '@/app/menu/actions';
 import { Location } from '@/types/dining';
 import { HALL_BANNER_MAP } from '@/styles';
 
+/**
+ * Props for the DiningHallCard component.
+ *
+ * @param diningHall - The dining hall to display
+ * @param setModalHall - The function to set the modal hall
+ * @param showNutrition - Whether to show nutrition information
+ * @param isPinned - Whether the dining hall is pinned
+ * @param onPinToggle - The function to call when the pin is toggled
+ */
 interface DiningHallCardProps {
   diningHall: Location;
   setModalHall: any;
@@ -38,6 +47,11 @@ interface DiningHallCardProps {
   onPinToggle: () => void;
 }
 
+/**
+ * Dining hall card component.
+ *
+ * @returns The dining hall card component
+ */
 const DiningHallCard: React.FC<DiningHallCardProps> = ({
   diningHall,
   setModalHall,
@@ -107,6 +121,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           limitItems={true}
         />
       )}
+
       {veganEntreeMenuItems.length > 0 && (
         <MenuSection
           label='Vegan Entrée'
@@ -131,4 +146,3 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
 };
 
 export default DiningHallCard;
-

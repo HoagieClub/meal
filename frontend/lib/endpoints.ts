@@ -138,6 +138,23 @@ export const getUserMenuItemInteraction = (
 };
 
 /**
+ * Gets user menu item interactions for multiple menu items.
+ *
+ * @param accessToken - Auth0 access token
+ * @param params - Request body (menu_item_api_ids - array of integers)
+ * @returns API response with interactions data dictionary
+ */
+export const getUserMenuItemsInteractions = (
+  accessToken: string,
+  params: { menu_item_api_ids: number[] }
+) => {
+  const url = '/api/interactions/user/menu-items/';
+  return request.postAuth(accessToken)(url, {
+    arg: { menu_item_api_ids: params.menu_item_api_ids },
+  });
+};
+
+/**
  * Records a user menu item view.
  *
  * @param accessToken - Auth0 access token
