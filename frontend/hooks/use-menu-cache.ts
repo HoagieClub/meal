@@ -60,9 +60,9 @@ export function useMenuStructureCache() {
    * @returns Array of API IDs (Menu). Returns empty array if not found.
    * @example
    * // Returns: [123, 456, 789]
-   * getApiIds('2025-01-15', 'Lunch', '5')
+   * getApiIdsForMenu('2025-01-15', 'Lunch', '5')
    */
-  const getApiIds = (date: DateKey, meal: Meal, locationId: LocationId): Menu => {
+  const getApiIdsForMenu = (date: DateKey, meal: Meal, locationId: LocationId): Menu => {
     return menuStructureCache?.[date]?.[meal]?.[String(locationId)] ?? [];
   };
 
@@ -77,7 +77,7 @@ export function useMenuStructureCache() {
    * // Returns: { '5': [123, 456], '6': [789, 101] }
    * getApiIdsForMeal('2025-01-15', 'Lunch')
    */
-  const getApiIdsForMeal = (date: DateKey, meal: Meal) => {
+  const getApiIdsForMenusForLocations = (date: DateKey, meal: Meal) => {
     return menuStructureCache?.[date]?.[meal] ?? {};
   };
 
@@ -91,7 +91,9 @@ export function useMenuStructureCache() {
    * // Returns: { Breakfast: { '5': [123] }, Lunch: { '5': [456], '6': [789] } }
    * getApiIdsForDate('2025-01-15')
    */
-  const getApiIdsForDate = (date: DateKey): MenusForDateMealAndLocations[DateKey] | undefined => {
+  const getApiIdsForMenusForMealsLocations = (
+    date: DateKey
+  ): MenusForDateMealAndLocations[DateKey] | undefined => {
     return menuStructureCache?.[date];
   };
 
@@ -104,7 +106,7 @@ export function useMenuStructureCache() {
    * @returns Boolean indicating if API IDs exist in cache.
    */
   const hasApiIds = (date: DateKey, meal: Meal, locationId: LocationId): boolean => {
-    const apiIds = getApiIds(date, meal, locationId);
+    const apiIds = getApiIdsForMenu(date, meal, locationId);
     return apiIds.length > 0;
   };
 
@@ -117,7 +119,12 @@ export function useMenuStructureCache() {
    * @param apiIds - Array of menu item API IDs to store (Menu)
    * @returns void
    */
-  const setApiIds = (date: DateKey, meal: Meal, locationId: LocationId, apiIds: Menu): void => {
+  const setApiIdsForMenu = (
+    date: DateKey,
+    meal: Meal,
+    locationId: LocationId,
+    apiIds: Menu
+  ): void => {
     setMenuStructureCache((prev) => ({
       ...prev,
       [date]: {
@@ -140,7 +147,7 @@ export function useMenuStructureCache() {
    * @example
    * // Usage: setApiIdsForMeal('2025-01-15', 'Lunch', { '5': [123, 456], '6': [789] })
    */
-  const setApiIdsForMeal = (
+  const setApiIdsForMenusForLocations = (
     date: DateKey,
     meal: Meal,
     apiIdsByLocation: MenusForDateMealAndLocations[DateKey][Meal]
@@ -163,7 +170,7 @@ export function useMenuStructureCache() {
    * @example
    * // Usage: setApiIdsForDate('2025-01-15', { Breakfast: { '5': [123] }, Lunch: { '5': [456], '6': [789] } })
    */
-  const setApiIdsForDate = (
+  const setApiIdsForMenusForMealsLocations = (
     date: DateKey,
     apiIdsByMealAndLocation: MenusForDateMealAndLocations[DateKey]
   ): void => {
@@ -181,7 +188,7 @@ export function useMenuStructureCache() {
    * @param locationId - Location ID
    * @returns void
    */
-  const removeApiIds = (date: DateKey, meal: Meal, locationId: LocationId): void => {
+  const removeApiIdsForMenu = (date: DateKey, meal: Meal, locationId: LocationId): void => {
     setMenuStructureCache((prev) => {
       const updated = { ...prev };
       const locationIdStr = String(locationId);
@@ -226,20 +233,20 @@ export function useMenuStructureCache() {
     menuStructureCache,
 
     // Getters
-    getApiIds,
-    getApiIdsForMeal,
-    getApiIdsForDate,
+    getApiIdsForMenu,
+    getApiIdsForMenusForLocations,
+    getApiIdsForMenusForMealsLocations,
 
     // Checkers
     hasApiIds,
 
     // Setters
-    setApiIds,
-    setApiIdsForMeal,
-    setApiIdsForDate,
+    setApiIdsForMenu,
+    setApiIdsForMenusForLocations,
+    setApiIdsForMenusForMealsLocations,
 
     // Removers
-    removeApiIds,
+    removeApiIdsForMenu,
 
     // Clearers
     clearMenuStructure,

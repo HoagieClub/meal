@@ -48,17 +48,17 @@ urlpatterns = [
     path(
         "api/dining/menus/locations/",
         get_dining_menus_for_locations,
-        name="dining-menus-with-menu-items-for-locations",
+        name="dining-menus-for-locations",
     ),
     path(
         "api/dining/menus/locations/day/",
         get_dining_menus_for_locations_and_day,
-        name="dining-menus-with-menu-items-for-locations-and-day",
+        name="dining-menus-for-locations-and-day",
     ),
     path(
         "api/dining/menus/locations/days/",
         get_dining_menus_for_locations_and_days,
-        name="dining-menus-with-menu-items-for-locations-and-days",
+        name="dining-menus-for-locations-and-days",
     ),
     # Menu items fetching endpoints
     path("api/dining/menu-items/", get_dining_menu_item, name="dining-menu-item"),

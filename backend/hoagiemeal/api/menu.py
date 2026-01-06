@@ -129,7 +129,7 @@ class MenuAPI(StudentApp):
                 menu_item = self.get_menu_item(api_id)
                 if not menu_item:
                     logger.error(f"No menu item found for api_id: {api_id}.")
-                    continue
+                    menu_items[api_id] = {}
                 menu_items[api_id] = menu_item
 
             menu_items_length = len(list(menu_items.keys()))
@@ -296,10 +296,17 @@ class MenuCache:
             # Cache new menu items
             with transaction.atomic():
                 for api_id in api_ids:
-                    cached_menu_item = self.cache_menu_item(menu_items_data[api_id])
-                    if not cached_menu_item:
-                        logger.error(f"Error caching menu item for api_id: {api_id}.")
-                        return False
+                    if not menu_items_data[api_id]:
+                        logger.error(f"No menu item data found for api_id: {api_id}, caching error menu item.")
+                        cached_error_menu_item = self.cache_error_menu_item(api_id)
+                        if not cached_error_menu_item:
+                            logger.error(f"Error caching error menu item for api_id: {api_id}.")
+                            return False
+                    else:
+                        cached_menu_item = self.cache_menu_item(menu_items_data[api_id])
+                        if not cached_menu_item:
+                            logger.error(f"Error caching menu item for api_id: {api_id}.")
+                            return False
 
             logger.info(f"Cached menu items for api_ids: {api_ids}.")
             return True
@@ -307,6 +314,20 @@ class MenuCache:
             logger.error(
                 f"Error caching menu items for api_ids: {api_ids}: {e} in cache_menu_items in cache_menu_items."
             )
+            return False
+
+    def cache_error_menu_item(self, api_id: int) -> bool:
+        """Cache error menu item in the database."""
+        logger.info(f"Caching error menu item for api_id: {api_id}.")
+        try:
+            with transaction.atomic():
+                menu_item_without_nutrition = {
+                    "api_id": api_id,
+                }
+                MenuItem.objects.create(**menu_item_without_nutrition)
+                return True
+        except Exception as e:
+            logger.error(f"Error caching error menu item for api_id: {api_id}: {e} in cache_error_menu_item.")
             return False
 
     def cache_menu_item(self, menu_item_data: dict) -> bool:

@@ -166,8 +166,8 @@ class LocationsCache:
             # Check if the number of unique categories matches the number of categories requested
             unique_categories = len(set(location.category_id for location in locations))
             if unique_categories != len(category_ids):
-                logger.error(
-                    f"Number of unique categories: {unique_categories} does not match number of categories: {len(category_ids)}."
+                logger.info(
+                    f"Number of unique categories: {unique_categories} does not match number of categories: {len(category_ids)}, missing entries from cache."
                 )
                 return {}
 

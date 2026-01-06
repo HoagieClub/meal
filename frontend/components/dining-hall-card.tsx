@@ -12,16 +12,15 @@ import {
 import React from 'react';
 import MenuSection from './menu-selection';
 import { filterMenuItems } from '@/app/menu/actions';
-import { DiningVenue } from '@/types/dining';
+import { Location } from '@/types/dining';
 import { HALL_BANNER_MAP } from '@/styles';
 
 interface DiningHallCardProps {
-  diningHall: DiningVenue;
-  setModalHall: (hall: DiningVenue | null) => void;
+  diningHall: Location;
+  setModalHall: any;
   showNutrition: boolean;
   isPinned: boolean;
   onPinToggle: () => void;
-  menuId: string;
 }
 
 const DiningHallCard: React.FC<DiningHallCardProps> = ({
@@ -30,7 +29,6 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
   showNutrition,
   isPinned,
   onPinToggle,
-  menuId,
 }) => {
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
@@ -92,7 +90,6 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           items={mainEntreeMenuItems}
           showNutrition={showNutrition}
           limitItems={true}
-          menuId={menuId}
         />
       )}
       {veganEntreeMenuItems.length > 0 && (
@@ -101,7 +98,6 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           items={veganEntreeMenuItems}
           showNutrition={showNutrition}
           limitItems={true}
-          menuId={menuId}
         />
       )}
 

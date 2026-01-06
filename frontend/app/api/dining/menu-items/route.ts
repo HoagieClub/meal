@@ -30,7 +30,14 @@ export async function GET(req: Request) {
     const apiId = searchParams.get('api_id');
 
     if (!apiId) {
-      return NextResponse.json({ error: 'Missing api_id parameter' }, { status: 400 });
+      return NextResponse.json(
+        {
+          status: 400,
+          message: 'Missing api_id parameter',
+          data: null,
+        },
+        { status: 400 }
+      );
     }
 
     const res = await getDiningMenuItem({ api_id: apiId });
@@ -40,7 +47,11 @@ export async function GET(req: Request) {
 
     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
       return NextResponse.json(
-        { error: `No menu item found for api_id ${apiId}` },
+        {
+          status: 404,
+          message: `No menu item found for api_id ${apiId}`,
+          data: null,
+        },
         { status: 404 }
       );
     }
@@ -53,18 +64,17 @@ export async function GET(req: Request) {
   } catch (error: unknown) {
     DEBUG && console.error('Error:', error);
 
+    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
     return NextResponse.json(
       {
-        error: 'Failed to fetch menu item',
+        status,
         message: error instanceof Error ? error.message : 'Unexpected error',
+        data: null,
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
         }),
       },
-      {
-        status: error instanceof Error && 'status' in error ? (error as any).status : 500,
-      }
+      { status }
     );
   }
 }
-

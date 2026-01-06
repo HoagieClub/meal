@@ -12,7 +12,7 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { MenuItem } from '@/types/dining';
+import { MenuItemNutrition } from '@/types/dining';
 import { MacronutrientRowProps, MicronutrientRowProps } from './components/nutrient-rows';
 
 /**
@@ -43,56 +43,56 @@ const calculateDVPercentage = (amount: number, dailyValue: number): number | nul
 /**
  * Macronutrients data.
  *
- * @param menuItem - The menu item to display.
+ * @param nutrition - The nutrition to display.
  * @returns The macronutrients data.
  */
-export const MACRONUTRIENTS = (menuItem: MenuItem): MacronutrientRowProps[] => {
+export const MACRONUTRIENTS = (nutrition: MenuItemNutrition): MacronutrientRowProps[] => {
   return [
     {
       label: 'Total Fat',
-      amount: toNumber(menuItem?.totalFat),
+      amount: toNumber(nutrition?.totalFat),
       unit: 'g',
-      dvPercent: calculateDVPercentage(toNumber(menuItem?.totalFat), 78),
+      dvPercent: calculateDVPercentage(toNumber(nutrition?.totalFat), 78),
     },
     {
       label: 'Saturated Fat',
-      amount: toNumber(menuItem?.saturatedFat),
+      amount: toNumber(nutrition?.saturatedFat),
       unit: 'g',
-      dvPercent: calculateDVPercentage(toNumber(menuItem?.saturatedFat), 20),
+      dvPercent: calculateDVPercentage(toNumber(nutrition?.saturatedFat), 20),
     },
     {
       label: 'Cholesterol',
-      amount: toNumber(menuItem?.cholesterol),
+      amount: toNumber(nutrition?.cholesterol),
       unit: 'mg',
-      dvPercent: calculateDVPercentage(toNumber(menuItem?.cholesterol), 300),
+      dvPercent: calculateDVPercentage(toNumber(nutrition?.cholesterol), 300),
     },
     {
       label: 'Sodium',
-      amount: toNumber(menuItem?.sodium),
+      amount: toNumber(nutrition?.sodium),
       unit: 'mg',
-      dvPercent: calculateDVPercentage(toNumber(menuItem?.sodium), 2300),
+      dvPercent: calculateDVPercentage(toNumber(nutrition?.sodium), 2300),
     },
     {
       label: 'Total Carbohydrates',
-      amount: toNumber(menuItem?.totalCarbohydrates),
+      amount: toNumber(nutrition?.totalCarbohydrates),
       unit: 'g',
-      dvPercent: calculateDVPercentage(toNumber(menuItem?.totalCarbohydrates), 275),
+      dvPercent: calculateDVPercentage(toNumber(nutrition?.totalCarbohydrates), 275),
     },
     {
       label: 'Dietary Fiber',
-      amount: toNumber(menuItem?.dietaryFiber),
+      amount: toNumber(nutrition?.dietaryFiber),
       unit: 'g',
-      dvPercent: calculateDVPercentage(toNumber(menuItem?.dietaryFiber), 28),
+      dvPercent: calculateDVPercentage(toNumber(nutrition?.dietaryFiber), 28),
     },
     {
       label: 'Sugars',
-      amount: toNumber(menuItem?.sugars),
+      amount: toNumber(nutrition?.sugars),
       unit: 'g',
       dvPercent: null,
     },
     {
       label: 'Protein',
-      amount: toNumber(menuItem?.protein),
+      amount: toNumber(nutrition?.protein),
       unit: 'g',
       dvPercent: null,
     },
@@ -102,26 +102,26 @@ export const MACRONUTRIENTS = (menuItem: MenuItem): MacronutrientRowProps[] => {
 /**
  * Micronutrients data.
  *
- * @param menuItem - The menu item to display.
+ * @param nutrition - The nutrition to display.
  * @returns The micronutrients data.
  */
-export const MICRONUTRIENTS = (menuItem: MenuItem): MicronutrientRowProps[] => {
+export const MICRONUTRIENTS = (nutrition: MenuItemNutrition): MicronutrientRowProps[] => {
   return [
     {
       label: 'Vitamin D',
-      dvPercent: menuItem?.vitaminD?.toString() || null,
+      dvPercent: nutrition?.vitaminD?.toString() || null,
     },
     {
       label: 'Calcium',
-      dvPercent: menuItem?.calcium?.toString() || null,
+      dvPercent: nutrition?.calcium?.toString() || null,
     },
     {
       label: 'Iron',
-      dvPercent: menuItem?.iron?.toString() || null,
+      dvPercent: nutrition?.iron?.toString() || null,
     },
     {
       label: 'Potassium',
-      dvPercent: menuItem?.potassium?.toString() || null,
+      dvPercent: nutrition?.potassium?.toString() || null,
     },
   ];
 };

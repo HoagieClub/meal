@@ -98,7 +98,7 @@ class MenuItemNutritionSerializer(serializers.ModelSerializer):
 class MenuItemSerializer(serializers.ModelSerializer):
     """Serializer for the MenuItem model."""
 
-    nutrition = MenuItemNutritionSerializer(read_only=True)
+    nutrition = MenuItemNutritionSerializer(read_only=True, allow_null=True, required=False)
 
     class Meta:
         """Meta class for the MenuItemSerializer."""

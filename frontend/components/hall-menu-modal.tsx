@@ -18,7 +18,6 @@ import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
 import React from 'react';
 import MenuSection from './menu-selection';
 import { Separator } from './ui/separator';
-import { DiningVenue } from '@/types/dining';
 import { filterMenuItems } from '@/app/menu/actions';
 
 /**
@@ -27,13 +26,11 @@ import { filterMenuItems } from '@/app/menu/actions';
  * @param modalHall - The dining venue to display the menu for.
  * @param setModalHall - The function to set the modal hall.
  * @param showNutrition - Whether to show nutrition information.
- * @param menuId - The menu ID to use for the menu section.
  */
 interface HallMenuModalProps {
-  modalHall: DiningVenue | null;
-  setModalHall: (hall: DiningVenue | null) => void;
+  modalHall: any;
+  setModalHall: any;
   showNutrition: boolean;
-  menuId: string;
 }
 
 /**
@@ -42,13 +39,11 @@ interface HallMenuModalProps {
  * @param modalHall - The dining venue to display the menu for.
  * @param setModalHall - The function to set the modal hall.
  * @param showNutrition - Whether to show nutrition information.
- * @param menuId - The menu ID to use for the menu section.
  */
 const HallMenuModal: React.FC<HallMenuModalProps> = ({
   modalHall,
   setModalHall,
   showNutrition,
-  menuId,
 }) => {
   if (!modalHall) return null;
 
@@ -71,7 +66,6 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
             items={mainEntreeMenuItems}
             showNutrition={showNutrition}
             limitItems={false}
-            menuId={menuId}
           />
         )}
         {veganEntreeMenuItems.length > 0 && (
@@ -80,7 +74,6 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
             items={veganEntreeMenuItems}
             showNutrition={showNutrition}
             limitItems={false}
-            menuId={menuId}
           />
         )}
       </Pane>

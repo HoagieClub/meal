@@ -11,16 +11,17 @@
 // and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
 
 // Represents a dining venue or location where meals are served.
-export interface DiningVenue {
-  databaseId: number | null;
-  name: string | null;
-  mapName: string | null;
-  latitude: string | null;
-  longitude: string | null;
-  buildingName: string | null;
-  amenities: string[] | null;
-  isActive: boolean | null;
-  categoryId: number | null;
+export interface Location {
+  databaseId: number;
+  name: string;
+  mapName: string;
+  latitude: string;
+  longitude: string;
+  buildingName: string;
+  amenities: string[];
+  isActive: boolean;
+  categoryId: number;
+  menu?: MenuItem[];
 }
 
 // Nutritional information for a menu item. All values are optional and may be null if not available.
@@ -46,13 +47,13 @@ export interface MenuItemNutrition {
 
 // Represents a single menu item (food item) available at a dining location.
 export interface MenuItem {
-  apiId: number | null;
-  apiUrl?: string | null;
-  name: string | null;
-  allergens?: string[] | null;
-  ingredients?: string[] | null;
-  dietaryFlags?: string[] | null;
-  nutrition?: MenuItemNutrition | null;
+  apiId: number;
+  apiUrl?: string;
+  name: string;
+  allergens?: string[];
+  ingredients?: string[];
+  dietaryFlags?: string[];
+  nutrition?: MenuItemNutrition;
 }
 
 // Aggregated metrics for a menu item based on user interactions. Tracks views, likes, favorites, and user feedback.
@@ -127,9 +128,9 @@ export type MenuItemInteractionMap = {
   [apiId in ApiId]: MenuItemInteraction;
 };
 
-// Maps location IDs to their full dining venue data. Structure: { [locationId: string]: DiningVenue }. Keys are strings due to Django serialization.
+// Maps location IDs to their full dining venue data. Structure: { [locationId: string]: Location }. Keys are strings due to Django serialization.
 export type LocationMap = {
-  [locationId in LocationId]: DiningVenue;
+  [locationId in LocationId]: Location;
 };
 
 // Known allergens that may be present in menu items.

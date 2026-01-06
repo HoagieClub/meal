@@ -17,8 +17,62 @@
 import React, { useEffect, useState } from 'react';
 import { Pane, Text, useTheme, minorScale, majorScale } from 'evergreen-ui';
 import { Heart, Bookmark } from 'lucide-react';
-import { MenuItemInteraction } from '@/types/dining';
-import { getUserMenuItemInteraction, updateUserMenuItemInteraction } from '@/lib/next-endpoints';
+import { updateUserMenuItemInteraction } from '@/lib/next-endpoints';
+import { MenuItemInteraction, MenuItemMetrics } from '@/types/dining';
+
+/**
+ * Updates favorite for a menu item.
+ *
+ * @param menuItemApiId - The API ID of the menu item.
+ * @param favorited - The favorited status.
+ * @returns Promise resolving to boolean indicating success.
+ */
+const updateFavoriteForMenuItem = async ({
+  menuItemApiId,
+  favorited,
+}: {
+  menuItemApiId: number;
+  favorited: boolean;
+}): Promise<boolean> => {
+  try {
+    const { status } = await updateUserMenuItemInteraction({
+      menu_item_api_id: menuItemApiId,
+      favorited: favorited,
+    });
+    if (status !== 200) throw new Error('Failed to update interaction');
+    return true;
+  } catch (error) {
+    console.error('Error updating interaction:', error);
+    return false;
+  }
+};
+
+/**
+ * Updates bookmark for a menu item.
+ *
+ * @param menuItemApiId - The API ID of the menu item.
+ * @param savedForLater - The saved for later status.
+ * @returns Promise resolving to boolean indicating success.
+ */
+const updateBookmarkForMenuItem = async ({
+  menuItemApiId,
+  savedForLater,
+}: {
+  menuItemApiId: number;
+  savedForLater: boolean;
+}): Promise<boolean> => {
+  try {
+    const { status } = await updateUserMenuItemInteraction({
+      menu_item_api_id: menuItemApiId,
+      saved_for_later: savedForLater,
+    });
+    if (status !== 200) throw new Error('Failed to update interaction');
+    return true;
+  } catch (error) {
+    console.error('Error updating interaction:', error);
+    return false;
+  }
+};
 
 /**
  * Favorite/Bookmark button props.
@@ -85,68 +139,42 @@ const FavoriteBookmarkButton = ({
  * Favorite/Bookmark buttons component.
  *
  * @param menuItemApiId - The API ID of the menu item.
+ * @param menuItemInteraction - The interaction data for the menu item.
  * @returns A React component.
  */
-export default function FavoriteBookmarkButtons({ menuItemApiId }: { menuItemApiId: number }) {
+export default function FavoriteBookmarkButtons({
+  menuItemApiId,
+  menuItemInteraction,
+}: {    
+  menuItemApiId: number;
+  menuItemInteraction: MenuItemInteraction;
+}) {
   const theme = useTheme();
-  const [favorited, setFavorited] = useState<boolean>(false);
-  const [savedForLater, setSavedForLater] = useState<boolean>(false);
-  const [loading, setLoading] = useState(true);
+  const [favorited, setFavorited] = useState<boolean>(menuItemInteraction.favorited || false);
+  const [savedForLater, setSavedForLater] = useState<boolean>(
+    menuItemInteraction.savedForLater || false
+  );
   const [updating, setUpdating] = useState(false);
-
-  // Fetch interaction from the API
-  const fetchInteraction = async () => {
-    setLoading(true);
-    try {
-      const interactionRes = await getUserMenuItemInteraction({
-        menu_item_api_id: menuItemApiId,
-      }).catch(() => null);
-
-      if (interactionRes?.data?.data) {
-        setFavorited(interactionRes.data.data.favorited || false);
-        setSavedForLater(interactionRes.data.data.savedForLater || false);
-      }
-    } catch (error) {
-      console.error('Error fetching interaction data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch interaction when the component mounts
-  useEffect(() => {
-    if (menuItemApiId) {
-      fetchInteraction();
-    }
-  }, [menuItemApiId]);
 
   // Handle when user clicks favorite button
   const handleFavoriteInteraction = async () => {
     if (updating) return;
     setUpdating(true);
 
+    // Update favorited status and backup previous value
     const newFavoritedStatus = !favorited;
-
-    // Backup previous value
     const previousFavoritedBackup = favorited;
-
-    // Update state
     setFavorited(newFavoritedStatus);
 
     // Update interaction in the API
-    try {
-      const { data, error } = await updateUserMenuItemInteraction({
-        menu_item_api_id: menuItemApiId,
-        favorited: newFavoritedStatus,
-      });
-      if (error) throw new Error(error);
-    } catch (error) {
-      // Rollback state if error occurs
-      console.error('Error updating favorite interaction:', error);
+    const updatedSuccessfully = await updateFavoriteForMenuItem({
+      menuItemApiId,
+      favorited: newFavoritedStatus,
+    });
+    if (!updatedSuccessfully) {
       setFavorited(previousFavoritedBackup);
-    } finally {
-      setUpdating(false);
     }
+    setUpdating(false);
   };
 
   // Handle when user clicks bookmark button
@@ -154,28 +182,20 @@ export default function FavoriteBookmarkButtons({ menuItemApiId }: { menuItemApi
     if (updating) return;
     setUpdating(true);
 
+    // Update saved for later status and backup previous value
     const newSavedForLaterStatus = !savedForLater;
-
-    // Backup previous value
     const previousSavedForLaterBackup = savedForLater;
-
-    // Update state
     setSavedForLater(newSavedForLaterStatus);
 
     // Update interaction in the API
-    try {
-      const { data, error } = await updateUserMenuItemInteraction({
-        menu_item_api_id: menuItemApiId,
-        saved_for_later: newSavedForLaterStatus,
-      });
-      if (error) throw new Error(error);
-    } catch (error) {
-      // Rollback state if error occurs
-      console.error('Error updating bookmark interaction:', error);
+    const updatedSuccessfully = await updateBookmarkForMenuItem({
+      menuItemApiId,
+      savedForLater: newSavedForLaterStatus,
+    });
+    if (!updatedSuccessfully) {
       setSavedForLater(previousSavedForLaterBackup);
-    } finally {
-      setUpdating(false);
     }
+    setUpdating(false);
   };
 
   // Render the favorite/bookmark buttons

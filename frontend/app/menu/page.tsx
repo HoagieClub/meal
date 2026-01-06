@@ -37,9 +37,13 @@ import {
 import DiningHallCard from '@/components/dining-hall-card';
 import HallMenuModal from '@/components/hall-menu-modal';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useDate } from '@/hooks/use-date';
-import { usePinnedHalls } from '@/hooks/use-pinned-halls';
+import { usePreferencesCache } from '@/hooks/use-preferences-cache';
+import {
+  useLocationsCache,
+  useMenuItemsCache,
+  useMenuStructureCache,
+} from '@/hooks/use-menu-cache';
 import { DINING_HALLS, MEAL_RANGES, ALLERGENS, DIETARY_TAGS, MEALS } from '@/data';
 import {
   MEAL_COLOR_MAP,
@@ -50,7 +54,6 @@ import {
   DIET_STYLE_MAP,
 } from '@/styles';
 import {
-  DiningVenue,
   Meal,
   MenusForDateMealAndLocations,
   MenusForLocations,
@@ -58,21 +61,16 @@ import {
   DiningHall,
   DietaryTag,
   Allergen,
-  MenuItem,
+  MenuItemMap,
+  ApiId,
+  LocationMap,
 } from '@/types/dining';
 import { buildDisplayData } from './actions';
-import { formatMenuId } from '@/utils/dining';
-import { DiningPreferences } from '@/types/dining';
-import { getDiningMenusForLocationsAndDay, getDiningMenuItems } from '@/lib/next-endpoints';
-
-const MENU_CACHE_KEY = 'menuCache';
-const PREFERENCES_KEY = 'diningPreferences';
-const DEFAULT_PREFERENCES: DiningPreferences = {
-  diningHalls: DINING_HALLS,
-  dietaryRestrictions: [],
-  allergens: [],
-  showNutrition: true,
-};
+import {
+  getDiningMenusForLocationsAndDay,
+  getDiningMenuItems,
+  getAllDiningLocations,
+} from '@/lib/next-endpoints';
 
 /**
  * Fetches menus for a specific date key from the API.
@@ -81,100 +79,16 @@ const DEFAULT_PREFERENCES: DiningPreferences = {
  * @returns Promise resolving to MenusForMealAndLocations or null
  */
 async function fetchMenusForDateKey(dateKey: string): Promise<MenusForMealAndLocations | null> {
+  if (!dateKey) return null;
   try {
-    const { data, error } = await getDiningMenusForLocationsAndDay({ menu_date: dateKey });
-    if (error) throw new Error(error);
-    if (!data) throw new Error('No data received');
-
-    const menuData = data.data || data;
-    if (!menuData || (typeof menuData === 'object' && Object.keys(menuData).length === 0)) {
-      throw new Error('No menu data found');
-    }
-
-    const menusData = menuData as MenusForMealAndLocations;
-    console.log('Fetched menus for date:', dateKey, menusData);
-
-    return menusData;
+    const { data } = await getDiningMenusForLocationsAndDay({
+      menu_date: dateKey,
+    });
+    const menusData = data?.data || data;
+    if (!menusData) throw new Error('No data received');
+    return menusData as MenusForMealAndLocations;
   } catch (error) {
     console.error(`Error fetching menu data for ${dateKey}:`, error);
-    return null;
-  }
-}
-
-/**
- * Fetches menus for a specific date key from the menu cache hooks.
- * Reconstructs MenusForMealAndLocations from menu structure, menu items, and locations caches.
- *
- * @param dateKey - Date string in YYYY-MM-DD format
- * @param menuStructureCache - Menu structure cache object (date -> meal -> location -> api_ids[])
- * @param menuItemsCache - Menu items cache object (api_id -> MenuItem)
- * @param locationsCache - Locations cache object (location_id -> DiningVenue)
- * @returns MenusForMealAndLocations or null if not found in cache
- */
-function getMenusFromCacheForDateKey(
-  dateKey: string,
-  menuStructureCache: {
-    [date: string]: {
-      [meal in Meal]?: {
-        [locationId: string]: number[];
-      };
-    };
-  },
-  menuItemsCache: {
-    [apiId: number]: MenuItem;
-  },
-  locationsCache: {
-    [locationId: string]: DiningVenue;
-  }
-): MenusForMealAndLocations | null {
-  try {
-    const dateStructure = menuStructureCache?.[dateKey];
-    if (!dateStructure) {
-      return null;
-    }
-
-    const result: MenusForMealAndLocations = {};
-
-    // For each meal in the date structure
-    for (const [meal, locationApiIds] of Object.entries(dateStructure)) {
-      const mealType = meal as Meal;
-      const locations: DiningVenue[] = [];
-
-      // For each location in the meal
-      for (const [locationId, apiIds] of Object.entries(locationApiIds || {})) {
-        // Get the location data
-        const location = locationsCache?.[locationId];
-        if (!location) {
-          continue;
-        }
-
-        // Get menu items for this location
-        const menuItems = apiIds
-          .map((apiId) => menuItemsCache?.[apiId])
-          .filter((item): item is MenuItem => item !== undefined);
-
-        // Create a copy of the location with menu items
-        const locationWithMenu: DiningVenue = {
-          ...location,
-          menu: menuItems,
-        };
-
-        locations.push(locationWithMenu);
-      }
-
-      if (locations.length > 0) {
-        result[mealType] = locations;
-      }
-    }
-
-    if (Object.keys(result).length === 0) {
-      return null;
-    }
-
-    console.log('Found menus in cache for date:', dateKey, result);
-    return result;
-  } catch (error) {
-    console.error(`Error reading menu cache for ${dateKey}:`, error);
     return null;
   }
 }
@@ -185,33 +99,33 @@ function getMenusFromCacheForDateKey(
  * @param apiIds - Array of menu item API IDs
  * @returns Promise resolving to Record<string, MenuItem> (map/dict) or null if error
  */
-async function fetchMenuItemsByApiIds(apiIds: number[]): Promise<Record<string, MenuItem> | null> {
-  if (!apiIds || apiIds.length === 0) {
-    return {};
-  }
-
+async function fetchMenuItemsByApiIds(apiIds: ApiId[]): Promise<MenuItemMap | null> {
+  if (!apiIds || apiIds.length === 0) return null;
   try {
-    // Convert array of numbers to comma-separated string
     const apiIdsString = apiIds.join(',');
-    const { data, error } = await getDiningMenuItems({ api_ids: apiIdsString });
-
-    if (error) throw new Error(error);
-    if (!data) throw new Error('No data received');
-
-    const menuItemsData = data.data || data;
-    if (
-      !menuItemsData ||
-      (typeof menuItemsData === 'object' && Object.keys(menuItemsData).length === 0)
-    ) {
-      throw new Error('No menu items data found');
-    }
-
-    const menuItems = menuItemsData as Record<string, MenuItem>;
-    console.log('Fetched menu items for API IDs:', apiIds, menuItems);
-
-    return menuItems;
+    const { data } = await getDiningMenuItems({ api_ids: apiIdsString });
+    const menuItemsData = data?.data || data;
+    if (!menuItemsData) throw new Error('No data received');
+    return menuItemsData as MenuItemMap;
   } catch (error) {
     console.error(`Error fetching menu items for API IDs ${apiIds.join(',')}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetches locations from the API backend.
+ *
+ * @returns Promise resolving to LocationMap or null if error
+ */
+async function fetchLocationsForMenu(): Promise<LocationMap | null> {
+  try {
+    const { data } = await getAllDiningLocations();
+    const locationsData = data?.data || data;
+    if (!locationsData) throw new Error('No data received');
+    return locationsData as LocationMap;
+  } catch (error) {
+    console.error('Error fetching locations:', error);
     return null;
   }
 }
@@ -223,9 +137,12 @@ async function fetchMenuItemsByApiIds(apiIds: number[]): Promise<Record<string, 
  */
 export default function MenuPage() {
   const theme = useTheme();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState({
+    menusForLocations: true,
+    menuItems: true,
+    locations: true,
+  });
 
-  // Date logic from the useDate hook
   const {
     selectedDate,
     currentMeal,
@@ -235,85 +152,179 @@ export default function MenuPage() {
     goToNextDay,
   } = useDate();
 
-  // State for currently selected meal, menus, menu cache, and current menu ID
+  const {
+    diningHalls,
+    dietaryRestrictions,
+    allergens,
+    pinnedHalls,
+    showNutrition,
+    addDiningHall,
+    addDietaryRestriction,
+    addAllergen,
+    addPinnedHall,
+    removeDiningHall,
+    removeDietaryRestriction,
+    removeAllergen,
+    removePinnedHall,
+    toggleShowNutrition,
+    toggleDiningHall,
+    toggleDietaryRestriction,
+    toggleAllergen,
+    togglePinnedHall,
+    clearAll: clearPreferences,
+    loading: preferencesLoading,
+  } = usePreferencesCache();
+
+  const {
+    menuStructureCacheLoading,
+    getApiIdsForMenusForLocations,
+    setApiIdsForMenusForLocations,
+    setApiIdsForMenusForMealsLocations,
+  } = useMenuStructureCache();
+  const { menuItemsCache, menuItemsCacheLoading, getMenuItems, setMenuItems } = useMenuItemsCache();
+  const { locationsCache, locationsCacheLoading, getAllLocations, setLocations } =
+    useLocationsCache();
+
+  const [menusForLocationsState, setMenusForLocationsState] = useState<MenusForLocations>({});
+  const [menuItemsState, setMenuItemsState] = useState<MenuItemMap>({});
+  const [locationsState, setLocationsState] = useState<LocationMap>({});
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
-  const [menusForLocations, setMenusForLocations] = useState<MenusForLocations>([]);
-  const [menuCache, setMenuCache, menuCacheLoading] = useLocalStorage<MenusForDateMealAndLocations>(
-    { key: MENU_CACHE_KEY, initialValue: {} }
-  );
-  const menuId = formatMenuId(selectedDate, meal);
 
-  // Local storage state for dining preferences
-  const [preferences, setPreferences, preferencesLoading] = useLocalStorage<DiningPreferences>({
-    key: PREFERENCES_KEY,
-    initialValue: DEFAULT_PREFERENCES,
-  });
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Controls pinned halls, modal, and filter open state
-  const [modalHall, setModalHall] = useState<DiningVenue | null>(null);
-  const { pinnedHalls, togglePin } = usePinnedHalls();
+  const [modalHall, setModalHall] = useState<Location | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const cacheLoading =
+    preferencesLoading ||
+    menuStructureCacheLoading ||
+    menuItemsCacheLoading ||
+    locationsCacheLoading;
 
   // Fetch menu data for the selected date
   useEffect(() => {
-    if (preferencesLoading || menuCacheLoading || !selectedDate || !dateKey) return;
-    setLoading(true);
+    if (cacheLoading || !meal || !dateKey) return;
+    setLoading((prev) => ({ ...prev, menusForLocations: true }));
 
     // Check cache first
-    const cachedMenus = menuCache[dateKey];
-    if (cachedMenus) {
-      setMenusForLocations(cachedMenus[meal] ?? []);
-      setLoading(false);
-      console.log('Found menus in cache for date:', dateKey, cachedMenus);
+    const menusForLocations = getApiIdsForMenusForLocations(dateKey, meal);
+    console.log('menusForLocations (cache)', menusForLocations);
+    if (menusForLocations && Object.keys(menusForLocations).length > 0) {
+      setMenusForLocationsState(menusForLocations);
+      setLoading((prev) => ({ ...prev, menusForLocations: false }));
       return;
     }
 
     // Otherwise, fetch from API
     async function fetchMenuData() {
-      const menusData = await fetchMenusForDateKey(dateKey);
-      if (menusData) {
-        setMenusForLocations(menusData[meal] ?? []);
-        setMenuCache({ ...menuCache, [dateKey]: menusData as MenusForDateMealAndLocations });
-      } else {
-        setMenusForLocations([]);
+      const menusForDateMealAndLocations = await fetchMenusForDateKey(dateKey);
+      console.log('menusForDateMealAndLocations (API)', menusForDateMealAndLocations);
+      if (menusForDateMealAndLocations && Object.keys(menusForDateMealAndLocations).length > 0) {
+        setApiIdsForMenusForMealsLocations(dateKey, menusForDateMealAndLocations);
+
+        const menusForLocations = menusForDateMealAndLocations[meal];
+        console.log('menusForLocations (API)', menusForLocations);
+        if (menusForLocations && Object.keys(menusForLocations).length > 0) {
+          setMenusForLocationsState(menusForLocations);
+        }
       }
-      setLoading(false);
+      setLoading((prev) => ({ ...prev, menusForLocations: false }));
+      return;
     }
 
     fetchMenuData();
-  }, [selectedDate, dateKey, preferencesLoading, menuCache]);
+  }, [dateKey, cacheLoading, meal]);
+
+  // Fetch menu items for the found menu
+  useEffect(() => {
+    if (cacheLoading) return;
+    setLoading((prev) => ({ ...prev, menuItems: true }));
+
+    // Extract all unique API IDs from the menus for locations
+    const apiIdsSet = new Set<ApiId>(Object.values(menusForLocationsState).flatMap((menu) => menu));
+    const apiIds = Array.from(apiIdsSet);
+    if (apiIds.length === 0) return;
+
+    // Check cache first
+    const menuItems = getMenuItems(apiIds);
+    console.log('menuItems (cache)', menuItems);
+    const cachedApiIds = Object.keys(menuItems);
+    const missingApiIds = apiIds.filter((apiId) => !cachedApiIds.includes(String(apiId)));
+    if (missingApiIds.length === 0) {
+      setMenuItemsState(menuItems);
+      setLoading((prev) => ({ ...prev, menuItems: false }));
+      return;
+    }
+
+    // Otherwise, fetch from API
+    async function fetchMenuItems(cachedMenuItems: MenuItemMap, missingApiIds: ApiId[]) {
+      const menuItems = await fetchMenuItemsByApiIds(missingApiIds);
+      console.log('menuItems (API)', menuItems);
+      if (menuItems && Object.keys(menuItems).length > 0) {
+        setMenuItems(menuItems);
+        setMenuItemsState({ ...cachedMenuItems, ...menuItems });
+      }
+      setLoading((prev) => ({ ...prev, menuItems: false }));
+      return;
+    }
+
+    fetchMenuItems(menuItems, missingApiIds);
+  }, [cacheLoading, meal, menusForLocationsState]);
+
+  // Fetch locations
+  useEffect(() => {
+    if (cacheLoading) return;
+    setLoading((prev) => ({ ...prev, locations: true }));
+
+    // Check cache first
+    const locations = getAllLocations();
+    console.log('locations (cache)', locations);
+    if (locations && Object.keys(locations).length > 0) {
+      setLocationsState(locations);
+      setLoading((prev) => ({ ...prev, locations: false }));
+      return;
+    }
+
+    // Otherwise, fetch from API
+    async function fetchLocations() {
+      const locations = await fetchLocationsForMenu();
+      console.log('locations (API)', locations);
+      if (locations && Object.keys(locations).length > 0) {
+        setLocations(locations);
+        setLocationsState(locations);
+      }
+      setLoading((prev) => ({ ...prev, locations: false }));
+      return;
+    }
+
+    fetchLocations();
+  }, [cacheLoading]);
 
   // Build display data for the current meal
   const displayMenusForLocations = useMemo(
     () =>
       buildDisplayData({
-        menusForLocations,
-        appliedDiningHalls: preferences.diningHalls ?? DINING_HALLS,
-        appliedDietaryRestrictions: preferences.dietaryRestrictions ?? [],
-        appliedAllergens: preferences.allergens ?? [],
+        menusForLocations: menusForLocationsState,
+        locationItems: locationsState,
+        menuItems: menuItemsState,
+        appliedDiningHalls: diningHalls,
+        appliedDietaryRestrictions: dietaryRestrictions,
+        appliedAllergens: allergens,
         searchTerm,
-        pinnedHalls: pinnedHalls ?? new Set(),
+        pinnedHalls: pinnedHalls,
       }),
     [
-      menusForLocations,
-      meal,
-      preferences.diningHalls,
-      preferences.dietaryRestrictions,
-      preferences.allergens,
+      menusForLocationsState,
+      locationsState,
+      menuItemsState,
+      diningHalls,
+      dietaryRestrictions,
+      allergens,
       searchTerm,
       pinnedHalls,
+      meal,
+      dateKey,
     ]
   );
-
-  // Render loading state
-  if (preferencesLoading) {
-    return (
-      <Pane display='flex' alignItems='center' justifyContent='center' height='300'>
-        <Spinner />
-      </Pane>
-    );
-  }
 
   // Render skeleton cards while loading
   const DiningHallSkeletonCards = () => {
@@ -372,17 +383,15 @@ export default function MenuPage() {
         className='h-full no-scrollbar'
       >
         {displayMenusForLocations.map((diningHall) => {
-          const isPinned = pinnedHalls.has(diningHall.name as DiningHall);
-          const onPinToggle = () => togglePin(diningHall.name as DiningHall);
+          const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
           return (
             <DiningHallCard
               key={diningHall.name}
               diningHall={diningHall}
               setModalHall={setModalHall}
-              showNutrition={preferences.showNutrition}
+              showNutrition={showNutrition}
               isPinned={isPinned}
-              onPinToggle={onPinToggle}
-              menuId={menuId}
+              onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
             />
           );
         })}
@@ -423,7 +432,7 @@ export default function MenuPage() {
               alignItems='center'
               cursor='pointer'
               onClick={() => {
-                setPreferences(DEFAULT_PREFERENCES);
+                clearPreferences();
                 setSearchTerm('');
               }}
               background={theme.colors.gray100}
@@ -464,12 +473,7 @@ export default function MenuPage() {
               <Text size={300} fontWeight={600} color={theme.colors.gray800}>
                 Show Nutrition
               </Text>
-              <Switch
-                checked={preferences.showNutrition}
-                onChange={() =>
-                  setPreferences((prev) => ({ ...prev, showNutrition: !prev.showNutrition }))
-                }
-              />
+              <Switch checked={showNutrition} onChange={toggleShowNutrition} />
             </Pane>
             <Pane borderBottom={`1px solid ${theme.colors.gray200}`} />
           </Pane>
@@ -515,14 +519,9 @@ export default function MenuPage() {
                     const diningHallText = diningHall
                       .replace(' Colleges', '')
                       .replace(' College', '');
-                    const checked = preferences.diningHalls.includes(diningHall);
+                    const checked = diningHalls.includes(diningHall);
                     const onChange = () => {
-                      setPreferences((prev) => ({
-                        ...prev,
-                        diningHalls: prev.diningHalls.includes(diningHall)
-                          ? prev.diningHalls.filter((h: DiningHall) => h !== diningHall)
-                          : [...prev.diningHalls, diningHall],
-                      }));
+                      toggleDiningHall(diningHall);
                     };
 
                     return (
@@ -561,14 +560,9 @@ export default function MenuPage() {
                 <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
                   {DIETARY_TAGS.map((dietKey: DietaryTag) => {
                     const style = DIET_STYLE_MAP(theme)[dietKey as DietaryTag];
-                    const checked = preferences.dietaryRestrictions.includes(dietKey);
+                    const checked = dietaryRestrictions.includes(dietKey);
                     const onChange = () => {
-                      setPreferences((prev) => ({
-                        ...prev,
-                        dietaryRestrictions: prev.dietaryRestrictions.includes(dietKey)
-                          ? prev.dietaryRestrictions.filter((d: DietaryTag) => d !== dietKey)
-                          : [...prev.dietaryRestrictions, dietKey],
-                      }));
+                      toggleDietaryRestriction(dietKey);
                     };
 
                     return (
@@ -619,15 +613,10 @@ export default function MenuPage() {
                 <Pane display='flex' flexDirection='column'>
                   {ALLERGENS.map((allergen: Allergen) => {
                     const style = ALLERGEN_STYLE_MAP(theme)[allergen as Allergen];
-                    const checked = preferences.allergens.includes(allergen);
+                    const checked = allergens.includes(allergen);
                     const emoji = ALLERGEN_EMOJI[allergen as Allergen];
                     const onChange = () => {
-                      setPreferences((prev) => ({
-                        ...prev,
-                        allergens: prev.allergens.includes(allergen)
-                          ? prev.allergens.filter((a: Allergen) => a !== allergen)
-                          : [...prev.allergens, allergen],
-                      }));
+                      toggleAllergen(allergen);
                     };
 
                     return (
@@ -752,7 +741,7 @@ export default function MenuPage() {
           </Pane>
 
           {/* Render the appropriate content based on the loading state and the number of menu items */}
-          {loading ? (
+          {loading.menusForLocations || loading.menuItems || loading.locations ? (
             <DiningHallSkeletonCards />
           ) : displayMenusForLocations.length === 0 ? (
             <NoMenusFoundCard />
@@ -776,7 +765,7 @@ export default function MenuPage() {
         </Heading>
         <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
           {ALLERGENS.map((allergen: Allergen) => {
-            const selected = preferences.allergens;
+            const selected = allergens;
             const isSelected = selected.includes(allergen);
             const emojiForAllergen = ALLERGEN_EMOJI[allergen as Allergen];
             const backgroundColor = isSelected ? theme.colors.red100 : theme.colors.gray100;
@@ -784,12 +773,7 @@ export default function MenuPage() {
               ? `Hiding items containing ${allergen}`
               : `Click to hide items containing ${allergen}`;
             const onChange = () => {
-              setPreferences((prev) => ({
-                ...prev,
-                allergens: prev.allergens.includes(allergen as Allergen)
-                  ? prev.allergens.filter((a: Allergen) => a !== allergen)
-                  : [...prev.allergens, allergen],
-              }));
+              toggleAllergen(allergen);
             };
 
             return (
@@ -826,8 +810,7 @@ export default function MenuPage() {
       <HallMenuModal
         modalHall={modalHall}
         setModalHall={setModalHall}
-        showNutrition={preferences.showNutrition}
-        menuId={menuId}
+        showNutrition={showNutrition}
       />
     </Pane>
   );

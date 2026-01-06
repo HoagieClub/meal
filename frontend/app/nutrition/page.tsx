@@ -14,7 +14,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Pane,
   Link,
@@ -31,11 +31,84 @@ import { useSearchParams } from 'next/navigation';
 import NutritionTable from './components/nutrition-table';
 import LikeDislikeButtons from './components/like-dislike-buttons';
 import FavoriteBookmarkButtons from './components/favorite-bookmark-buttons';
-import { useLocalStorage } from '@/hooks/use-local-storage';
-import { MenusForDateMealAndLocations, MenuItem } from '@/types/dining';
-import { getDiningMenuItem, recordUserMenuItemView } from '@/lib/next-endpoints';
+import { MenuItem, ApiId, MenuItemInteraction, MenuItemMetrics } from '@/types/dining';
+import {
+  getDiningMenuItem,
+  getMenuItemMetrics,
+  getUserMenuItemInteraction,
+  recordUserMenuItemView,
+} from '@/lib/next-endpoints';
+import { useMenuItemsCache } from '@/hooks/use-menu-cache';
 
-const MENU_CACHE_KEY = 'menuCache';
+/**
+ * Fetches a menu item by API ID.
+ *
+ * @param apiId - The API ID of the menu item.
+ * @returns Promise resolving to MenuItem or null if error
+ */
+const fetchMenuItemByApiId = async (apiId: ApiId): Promise<MenuItem | null> => {
+  try {
+    const { data } = await getDiningMenuItem({ api_id: apiId });
+    const menuItemData = data?.data || data;
+    if (!menuItemData) throw new Error('No menu item data received');
+    return menuItemData as MenuItem;
+  } catch (error) {
+    console.error('Error fetching menu item:', error);
+    return null;
+  }
+};
+
+/**
+ * Records a menu item view in the database.
+ *
+ * @param apiId - The API ID of the menu item.
+ * @returns Promise resolving to void.
+ */
+const recordMenuItemView = async (apiId: ApiId): Promise<void> => {
+  try {
+    await recordUserMenuItemView({
+      menu_item_api_id: Number(apiId),
+    });
+  } catch (error) {
+    console.error('Error recording view:', error);
+  }
+};
+
+/**
+ * Fetches menu item metrics.
+ *
+ * @param apiId - The API ID of the menu item.
+ * @returns Promise resolving to MenuItemMetrics or null if error
+ */
+const fetchMenuItemMetrics = async (apiId: ApiId): Promise<MenuItemMetrics | null> => {
+  try {
+    const { data } = await getMenuItemMetrics({ menu_item_api_id: Number(apiId) });
+    const metricsData = data?.data || data;
+    if (!metricsData) throw new Error('No metrics data received');
+    return metricsData as MenuItemMetrics;
+  } catch (error) {
+    console.error('Error fetching menu item metrics:', error);
+    return null;
+  }
+};
+
+/**
+ * Fetches menu item interaction.
+ *
+ * @param apiId - The API ID of the menu item.
+ * @returns Promise resolving to MenuItemInteraction or null if error
+ */
+const fetchMenuItemInteraction = async (apiId: ApiId): Promise<MenuItemInteraction | null> => {
+  try {
+    const { data } = await getUserMenuItemInteraction({ menu_item_api_id: Number(apiId) });
+    const interactionData = data?.data || data;
+    if (!interactionData) throw new Error('No interaction data received');
+    return interactionData as MenuItemInteraction;
+  } catch (error) {
+    console.error('Error fetching menu item interaction:', error);
+    return null;
+  }
+};
 
 /**
  * Nutrition label page component.
@@ -46,19 +119,18 @@ const NutritionLabelPage = () => {
   const theme = useTheme();
   const searchParams = useSearchParams();
   const menuItemApiId = searchParams.get('apiId');
-  const menuId = searchParams.get('menuId');
-  const meal = menuId?.split('-').slice(-1)[0];
-  const dateKey = menuId?.split('-').slice(0, -1).join('-');
 
   const [pageError, setPageError] = useState<string | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
-  const [menuItem, setMenuItem] = useState<MenuItem | null>(null);
-  const [menuCache, setMenuCache, menuCacheLoading] = useLocalStorage<MenusForDateMealAndLocations>(
-    {
-      key: MENU_CACHE_KEY,
-      initialValue: {},
-    }
-  );
+  const [menuItemMetricsState, setMenuItemMetricsState] = useState<MenuItemMetrics | null>(null);
+  const [menuItemInteractionState, setMenuItemInteractionState] =
+    useState<MenuItemInteraction | null>(null);
+  const [menuItemState, setMenuItemState] = useState<MenuItem | null>(null);
+  const { menuItemsCacheLoading, getMenuItem, setMenuItem } = useMenuItemsCache();
+
+  const viewRecorded = useRef(false);
+  const metricsRetrieved = useRef(false);
+  const interactionRetrieved = useRef(false);
 
   // fetch menu item details when component mounts
   useEffect(() => {
@@ -67,77 +139,70 @@ const NutritionLabelPage = () => {
       setPageLoading(false);
       return;
     }
-    if (menuCacheLoading) return;
+    if (menuItemsCacheLoading) return;
+    setPageLoading(true);
 
-    // Check cache first - search through all venues from passed menu ID
-    if (dateKey && meal) {
-      const cachedMenus = menuCache[dateKey] || {};
-      if (cachedMenus) {
-        const mealMenus = cachedMenus?.[meal as keyof typeof cachedMenus];
-        if (mealMenus) {
-          // Search through all venues in the meal
-          for (const venue of mealMenus) {
-            const foundItem = venue.menu?.find(
-              (item: MenuItem) => Number(item.apiId) === Number(menuItemApiId)
-            );
-            if (foundItem) {
-              console.log('Found menu item in cache:', foundItem);
-              setMenuItem(foundItem);
-              setPageLoading(false);
-              return;
-            }
-          }
-        }
-      }
+    // Check cache first
+    const cachedMenuItem = getMenuItem(Number(menuItemApiId));
+    if (cachedMenuItem) {
+      setMenuItemState(cachedMenuItem);
+      setPageLoading(false);
+      return;
     }
 
-    // If not in cache, fetch from API
-    const getMenuItemDetails = async () => {
-      try {
-        const { data, error } = await getDiningMenuItem({ api_id: menuItemApiId });
-
-        if (error) {
-          console.error('Error fetching menu item:', error);
-          setPageError(error.message || 'Failed to load menu item');
-          setMenuItem(null);
-        } else {
-          const itemData = data?.data || data;
-          if (itemData) {
-            setMenuItem(itemData as MenuItem);
-            console.log('Fetched menu item data:', itemData);
-          } else {
-            setPageError('No menu item data received');
-            setMenuItem(null);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching menu item:', err);
+    // Otherwise, fetch from API
+    async function fetchMenuItemDetails() {
+      const menuItem = await fetchMenuItemByApiId(Number(menuItemApiId));
+      if (menuItem) {
+        setMenuItemState(menuItem);
+        setMenuItem(menuItem);
+      } else {
         setPageError('Failed to load menu item');
-        setMenuItem(null);
-      } finally {
-        setPageLoading(false);
       }
-    };
+      setPageLoading(false);
+    }
 
-    getMenuItemDetails();
-  }, [menuItemApiId, menuCacheLoading, dateKey, meal]);
+    fetchMenuItemDetails();
+  }, [menuItemApiId, menuItemsCacheLoading]);
+
+  // fetch menu item metrics and interaction when menu item is loaded
+  useEffect(() => {
+    if (
+      !menuItemState ||
+      !menuItemApiId ||
+      metricsRetrieved.current ||
+      interactionRetrieved.current
+    )
+      return;
+
+    async function fetchMenuItemMetricsAndInteraction() {
+      const metrics = await fetchMenuItemMetrics(Number(menuItemApiId));
+      const interaction = await fetchMenuItemInteraction(Number(menuItemApiId));
+      if (metrics) {
+        setMenuItemMetricsState(metrics);
+      }
+      if (interaction) {
+        setMenuItemInteractionState(interaction);
+      }
+      metricsRetrieved.current = true;
+      interactionRetrieved.current = true;
+      setPageLoading(false);
+    }
+
+    fetchMenuItemMetricsAndInteraction();
+  }, [menuItemState, menuItemApiId]);
 
   // Record view count when menu item is loaded
   useEffect(() => {
-    if (!menuItem || !menuItemApiId) return;
+    if (!menuItemState || !menuItemApiId || pageLoading || viewRecorded.current) return;
 
     const recordView = async () => {
-      try {
-        await recordUserMenuItemView({
-          menu_item_api_id: Number(menuItem.apiId),
-        });
-      } catch (error) {
-        console.error('Error recording view:', error);
-      }
+      await recordMenuItemView(Number(menuItemApiId));
+      viewRecorded.current = true;
     };
 
     recordView();
-  }, [menuItem, menuItemApiId]);
+  }, [menuItemState, menuItemApiId, pageLoading]);
 
   // Display loading spinner if data is still loading
   if (pageLoading) {
@@ -149,7 +214,7 @@ const NutritionLabelPage = () => {
   }
 
   // Display error message if data fails to load
-  if (pageError || !menuItem) {
+  if (pageError || !menuItemState) {
     return (
       <Pane padding={majorScale(4)}>
         <Text color='red' size={500}>
@@ -161,9 +226,9 @@ const NutritionLabelPage = () => {
 
   // Display the serving size
   const servingSizeDisplay =
-    menuItem.servingSize && menuItem.servingUnit
-      ? `${menuItem.servingSize} ${menuItem.servingUnit}`
-      : menuItem.servingSize?.toString() || '—';
+    menuItemState.nutrition?.servingSize && menuItemState.nutrition?.servingUnit
+      ? `${menuItemState.nutrition.servingSize} ${menuItemState.nutrition.servingUnit}`
+      : menuItemState.nutrition?.servingSize?.toString() || '—';
 
   // Render the nutrition label page
   return (
@@ -193,27 +258,33 @@ const NutritionLabelPage = () => {
             <Text fontSize={50} fontWeight={800} color='green800' marginBottom={majorScale(4)}>
               NUTRITION
             </Text>
-            {menuItem.link && (
-              <Link href={menuItem.link} target='_blank'>
+            {menuItemState.apiUrl && (
+              <Link href={menuItemState.apiUrl} target='_blank'>
                 <Text fontSize={20} fontWeight={800} color='green700'>
-                  {menuItem.name.toUpperCase()}
+                  {menuItemState.name.toUpperCase()}
                 </Text>
               </Link>
             )}
-            {!menuItem.link && (
+            {!menuItemState.apiUrl && (
               <Text fontSize={20} fontWeight={800} color='green700'>
-                {menuItem.name.toUpperCase()}
-              </Text>
-            )}
-            {menuItem.description && (
-              <Text fontSize={14} color='gray700' marginTop={minorScale(2)}>
-                {menuItem.description}
+                {menuItemState.name.toUpperCase()}
               </Text>
             )}
             {/* Like/Dislike and Favorite/Bookmark buttons */}
             <Pane marginTop={majorScale(2)} display='flex' alignItems='center' gap={majorScale(2)}>
-              <LikeDislikeButtons menuItemApiId={Number(menuItem.apiId)} />
-              <FavoriteBookmarkButtons menuItemApiId={Number(menuItem.apiId)} />
+              {menuItemMetricsState && menuItemInteractionState && (
+                <LikeDislikeButtons
+                  menuItemApiId={Number(menuItemState.apiId)}
+                  menuItemInteraction={menuItemInteractionState}
+                  menuItemMetrics={menuItemMetricsState}
+                />
+              )}
+              {menuItemInteractionState && (
+                <FavoriteBookmarkButtons
+                  menuItemApiId={Number(menuItemState.apiId)}
+                  menuItemInteraction={menuItemInteractionState}
+                />
+              )}
             </Pane>
           </Pane>
 
@@ -227,7 +298,7 @@ const NutritionLabelPage = () => {
               </Text>
               <Pane paddingTop={minorScale(1)}>
                 <Text fontSize={18} fontWeight={500}>
-                  {menuItem.calories || '—'} Cal
+                  {menuItemState.nutrition?.calories || '—'} Cal
                 </Text>
               </Pane>
             </Pane>
@@ -260,33 +331,33 @@ const NutritionLabelPage = () => {
           <Separator height='3px' marginTop={majorScale(0)} />
 
           {/* Render the ingredients */}
-          {menuItem.ingredients && menuItem.ingredients.length > 0 && (
+          {menuItemState.ingredients && menuItemState.ingredients.length > 0 && (
             <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
               <Text fontWeight={700} color='green700'>
                 Ingredients:
               </Text>
-              <Text fontWeight={300}>{menuItem.ingredients.join(', ')}</Text>
+              <Text fontWeight={300}>{menuItemState.ingredients.join(', ')}</Text>
             </Pane>
           )}
 
           {/* Render the allergens */}
-          {menuItem.allergens && menuItem.allergens.length > 0 && (
+          {menuItemState.allergens && menuItemState.allergens.length > 0 && (
             <Pane marginTop={majorScale(1)} display='flex' flexDirection='column'>
               <Text fontWeight={700} color='green700'>
                 Allergens:
               </Text>
-              <Text fontWeight={300}>{menuItem.allergens.join(', ')}</Text>
+              <Text fontWeight={300}>{menuItemState.allergens.join(', ')}</Text>
             </Pane>
           )}
 
           {/* Render the dietary flags */}
-          {menuItem.dietaryFlags && menuItem.dietaryFlags.length > 0 && (
+          {menuItemState.dietaryFlags && menuItemState.dietaryFlags.length > 0 && (
             <Pane marginTop={majorScale(2)} display='flex' flexDirection='column'>
               <Text fontWeight={700} color='green700'>
                 Dietary Classifications:
               </Text>
               <Pane display='flex' flexWrap='wrap' gap={minorScale(2)} marginTop={minorScale(1)}>
-                {menuItem.dietaryFlags.map((tag) => (
+                {menuItemState.dietaryFlags.map((tag) => (
                   <Badge key={tag} color='green'>
                     {tag}
                   </Badge>
@@ -296,7 +367,8 @@ const NutritionLabelPage = () => {
           )}
           <Separator height='3px' />
         </Pane>
-        <NutritionTable menuItem={menuItem} />
+
+        <NutritionTable nutrition={menuItemState.nutrition || null} />
       </Pane>
     </Pane>
   );

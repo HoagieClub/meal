@@ -15,19 +15,20 @@
 import { majorScale, minorScale, Pane, Text } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
 import { MacronutrientRow, MicronutrientRow } from './nutrient-rows';
-import { MenuItem } from '@/types/dining';
+import { MenuItemNutrition } from '@/types/dining';
 import { MACRONUTRIENTS, MICRONUTRIENTS } from '../actions';
 
 /**
  * Nutrition table component.
  *
- * @param menuItem - The menu item to display.
+ * @param nutrition - The nutrition to display.
  * @returns The nutrition table component.
  */
-export default function NutritionTable({ menuItem }: { menuItem: MenuItem }) {
-  // Get the macronutrients and micronutrients for the menu item
-  const macronutrients = MACRONUTRIENTS(menuItem);
-  const micronutrients = MICRONUTRIENTS(menuItem);
+export default function NutritionTable({ nutrition }: { nutrition: MenuItemNutrition | null }) {
+  if (!nutrition) return null;
+  // Get the macronutrients and micronutrients for the nutrition
+  const macronutrients = MACRONUTRIENTS(nutrition);
+  const micronutrients = MICRONUTRIENTS(nutrition);
 
   // Render the nutrition table
   return (

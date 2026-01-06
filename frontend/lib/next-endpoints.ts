@@ -23,6 +23,7 @@ import {
   MenusForLocations,
   MenusForMealAndLocations,
   MenusForDateMealAndLocations,
+  LocationMap,
 } from '@/types/dining';
 
 /**
@@ -37,7 +38,7 @@ export const getDiningLocations = (params: { category_id?: string; fmt?: string 
     ...(params.fmt && { fmt: params.fmt }),
   });
   const url = `/api/dining/locations/?${queryParams.toString()}`;
-  return api.get<{ data: DiningVenue[] }>(url);
+  return api.get<{ data: LocationMap }>(url);
 };
 
 /**
@@ -47,7 +48,7 @@ export const getDiningLocations = (params: { category_id?: string; fmt?: string 
  */
 export const getAllDiningLocations = () => {
   const url = '/api/dining/locations/all/';
-  return api.get<{ data: DiningVenue[] }>(url);
+  return api.get<{ data: LocationMap }>(url);
 };
 
 /**

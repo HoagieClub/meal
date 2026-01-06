@@ -12,7 +12,7 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { MenusForLocations } from '@/types/dining';
+import { LocationMap, MenuItemMap, MenusForLocations } from '@/types/dining';
 import { DiningHall, DietaryTag, Allergen, MenuItem } from '@/types/dining';
 
 const lowercased = (array: string[] | null | undefined) =>
@@ -22,6 +22,7 @@ const lowercased = (array: string[] | null | undefined) =>
  * Build display data props.
  *
  * @param menusForLocations - The menus for locations.
+ * @param locationItems - The location items.
  * @param appliedDiningHalls - The applied dining halls.
  * @param appliedDietaryRestrictions - The applied dietary restrictions.
  * @param appliedAllergens - The applied allergens.
@@ -30,28 +31,70 @@ const lowercased = (array: string[] | null | undefined) =>
  */
 interface BuildDisplayDataProps {
   menusForLocations: MenusForLocations;
+  locationItems: LocationMap;
   appliedDiningHalls: DiningHall[];
   appliedDietaryRestrictions: DietaryTag[];
   appliedAllergens: Allergen[];
   searchTerm: string;
-  pinnedHalls: Set<DiningHall>;
+  pinnedHalls: DiningHall[];
+  menuItems: MenuItemMap;
 }
 
 /**
  * Build display data for the menu page.
  *
  * @param props - The build display data props.
- * @returns The display data.
+ * @returns The display menus for locations.
  */
-export const buildDisplayData = (props: BuildDisplayDataProps): MenusForLocations => {
+export const buildDisplayData = (props: BuildDisplayDataProps) => {
   const {
     menusForLocations,
+    menuItems,
+    locationItems,
     appliedDiningHalls,
     appliedDietaryRestrictions,
     appliedAllergens,
     searchTerm,
     pinnedHalls,
   } = props;
+  // Build display menus for locations using menus and location and menu items maps
+
+  console.log('menusForLocations', menusForLocations);
+  console.log('locationItems', locationItems);
+  console.log('menuItems', menuItems);
+
+  const displayMenusForLocations = [];
+  for (const locationId of Object.keys(menusForLocations)) {
+    const location = locationItems?.[locationId];
+    if (!location) {
+        console.log('location not found for locationId', locationId);
+        continue;
+    }
+
+    const menu = menusForLocations[locationId];
+    if (!menu) {
+        console.log('menu not found for location', locationId);
+        continue;
+    }
+
+    const locationMenuItems: MenuItem[] = [];
+    for (const menuItemId of menu) {
+      const menuItem: MenuItem = menuItems[menuItemId];
+      if (!menuItem || !menuItem.name) {
+        console.log('menuItem not found for menuItemId', menuItemId);
+        continue;
+      }
+      locationMenuItems.push(menuItem);
+    }
+    if (locationMenuItems.length === 0) {
+        console.log('locationMenuItems is empty for location', locationId);
+        continue;
+    }
+
+    location.menu = locationMenuItems;
+    displayMenusForLocations.push(location);
+  }
+  console.log('displayMenusForLocations', displayMenusForLocations);
 
   // Normalize search term, dietary restrictions, allergens, and dietary flags
   const searchTermLower = searchTerm.trim().toLowerCase();
@@ -64,8 +107,8 @@ export const buildDisplayData = (props: BuildDisplayDataProps): MenusForLocation
   const hasDietaryRestrictionFilter = appliedDietaryRestrictionsLower.length > 0;
   const hasAllergenFilter = appliedAllergensLower.length > 0;
 
-  // Filter dining venues by applied dining halls
-  let filteredMenusForLocations = menusForLocations.filter((diningVenue) => {
+  // Filter  by applied dining halls
+  let filteredMenusForLocations = displayMenusForLocations.filter((diningVenue) => {
     const diningVenueNameLower = diningVenue.name.toLowerCase();
     const isDiningHallApplied = appliedDiningHallsLower.some((hallName) => {
       if (hallName === diningVenueNameLower) return true;
@@ -134,11 +177,12 @@ export const buildDisplayData = (props: BuildDisplayDataProps): MenusForLocation
 
   // Sort dining venues by pin status
   filteredMenusForLocations = filteredMenusForLocations.sort((a, b) => {
-    const aIsPinned = pinnedHalls.has(a.name as DiningHall);
-    const bIsPinned = pinnedHalls.has(b.name as DiningHall);
+    const aIsPinned = pinnedHalls.includes(a.name as DiningHall);
+    const bIsPinned = pinnedHalls.includes(b.name as DiningHall);
     return aIsPinned ? -1 : bIsPinned ? 1 : 0;
   });
 
+  console.log('filteredMenusForLocations', filteredMenusForLocations);
   return filteredMenusForLocations;
 };
 

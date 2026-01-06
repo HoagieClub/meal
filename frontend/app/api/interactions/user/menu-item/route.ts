@@ -29,14 +29,28 @@ export async function GET(req: Request) {
   try {
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
-      return NextResponse.json({ error: 'No access token available' }, { status: 401 });
+      return NextResponse.json(
+        {
+          status: 401,
+          message: 'No access token available',
+          data: null,
+        },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(req.url);
     const menuItemApiId = searchParams.get('menu_item_api_id');
 
     if (!menuItemApiId) {
-      return NextResponse.json({ error: 'Missing menu_item_api_id parameter' }, { status: 400 });
+      return NextResponse.json(
+        {
+          status: 400,
+          message: 'Missing menu_item_api_id parameter',
+          data: null,
+        },
+        { status: 400 }
+      );
     }
 
     const res = await getUserMenuItemInteraction(accessToken, { menu_item_api_id: menuItemApiId });
@@ -46,7 +60,11 @@ export async function GET(req: Request) {
 
     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
       return NextResponse.json(
-        { error: `No interaction found for menu_item_api_id ${menuItemApiId}` },
+        {
+          status: 404,
+          message: `No interaction found for menu_item_api_id ${menuItemApiId}`,
+          data: null,
+        },
         { status: 404 }
       );
     }
@@ -59,18 +77,17 @@ export async function GET(req: Request) {
   } catch (error: unknown) {
     DEBUG && console.error('Error:', error);
 
+    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
     return NextResponse.json(
       {
-        error: 'Failed to fetch interaction',
+        status,
         message: error instanceof Error ? error.message : 'Unexpected error',
+        data: null,
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
         }),
       },
-      {
-        status: error instanceof Error && 'status' in error ? (error as any).status : 500,
-      }
+      { status }
     );
   }
 }
-

@@ -31,13 +31,24 @@ export async function POST(req: Request) {
 
     if (!menuItemApiIds) {
       return NextResponse.json(
-        { error: 'Missing menu_item_api_ids in request body' },
+        {
+          status: 400,
+          message: 'Missing menu_item_api_ids in request body',
+          data: null,
+        },
         { status: 400 }
       );
     }
 
     if (!Array.isArray(menuItemApiIds)) {
-      return NextResponse.json({ error: 'menu_item_api_ids must be an array' }, { status: 400 });
+      return NextResponse.json(
+        {
+          status: 400,
+          message: 'menu_item_api_ids must be an array',
+          data: null,
+        },
+        { status: 400 }
+      );
     }
 
     const res = await getMenuItemsMetrics({ menu_item_api_ids: menuItemApiIds });
@@ -47,7 +58,11 @@ export async function POST(req: Request) {
 
     if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
       return NextResponse.json(
-        { error: 'No metrics found for the provided menu item API IDs' },
+        {
+          status: 404,
+          message: 'No metrics found for the provided menu item API IDs',
+          data: null,
+        },
         { status: 404 }
       );
     }
@@ -66,18 +81,17 @@ export async function POST(req: Request) {
   } catch (error: unknown) {
     DEBUG && console.error('Error:', error);
 
+    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
     return NextResponse.json(
       {
-        error: 'Failed to fetch menu items metrics',
+        status,
         message: error instanceof Error ? error.message : 'Unexpected error',
+        data: null,
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
         }),
       },
-      {
-        status: error instanceof Error && 'status' in error ? (error as any).status : 500,
-      }
+      { status }
     );
   }
 }
-

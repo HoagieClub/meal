@@ -14,7 +14,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Pane, Text, useTheme, minorScale, majorScale, Spinner } from 'evergreen-ui';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { MenuItemInteraction, MenuItemMetrics } from '@/types/dining';
@@ -23,6 +23,30 @@ import {
   updateUserMenuItemInteraction,
   getMenuItemMetrics,
 } from '@/lib/next-endpoints';
+
+/**
+ * Updates interaction for a menu item.
+ *
+ * @param menuItemApiId - The API ID of the menu item.
+ * @param liked - The liked status.
+ * @returns Promise resolving to boolean indicating success.
+ */
+const updateInteractionForMenuItem = async (
+  menuItemApiId: number,
+  liked: boolean | null
+): Promise<boolean> => {
+  try {
+    const { status } = await updateUserMenuItemInteraction({
+      menu_item_api_id: menuItemApiId,
+      liked: liked,
+    });
+    if (status !== 200) throw new Error('Failed to update interaction');
+    return true;
+  } catch (error) {
+    console.error('Error updating interaction data:', error);
+    return false;
+  }
+};
 
 /**
  * Like/Dislike button props.
@@ -49,13 +73,6 @@ interface LikeDislikeButtonProps {
 /**
  * Like/Dislike button component.
  *
- * @param icon - The icon to display.
- * @param count - The count of the interaction.
- * @param isActive - Whether the interaction is active.
- * @param onClick - The function to call when the interaction is clicked.
- * @param title - The title of the interaction.
- * @param activeColor - The color of the active interaction.
- * @param activeBgColor - The background color of the active interaction.
  * @returns A React component.
  */
 const LikeDislikeButton = ({
@@ -98,48 +115,26 @@ const LikeDislikeButton = ({
  * Like/Dislike buttons component.
  *
  * @param menuItemApiId - The API ID of the menu item.
+ * @param menuItemInteraction - The interaction data for the menu item.
+ * @param menuItemMetrics - The metrics data for the menu item.
  * @returns A React component.
  */
-export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: number }) {
+export default function LikeDislikeButtons({
+  menuItemApiId,
+  menuItemInteraction,
+  menuItemMetrics,
+}: {
+  menuItemApiId: number;
+  menuItemInteraction: MenuItemInteraction;
+  menuItemMetrics: MenuItemMetrics;
+}) {
   const theme = useTheme();
-  const [userLiked, setUserLiked] = useState<boolean | null>(null);
-  const [likeCount, setLikeCount] = useState<number>(0);
-  const [dislikeCount, setDislikeCount] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
+  const [userLiked, setUserLiked] = useState<boolean | null>(
+    menuItemInteraction.liked ? true : menuItemInteraction.liked === false ? false : null
+  );
+  const [likeCount, setLikeCount] = useState<number>(menuItemMetrics.likeCount ?? 0);
+  const [dislikeCount, setDislikeCount] = useState<number>(menuItemMetrics.dislikeCount ?? 0);
   const [updating, setUpdating] = useState(false);
-
-  // Fetch interaction and metrics from the API
-  const fetchInteractionAndMetrics = async () => {
-    setLoading(true);
-    try {
-      const interactionRes = await getUserMenuItemInteraction({
-        menu_item_api_id: menuItemApiId,
-      }).catch(() => null);
-      const metricsRes = await getMenuItemMetrics({ menu_item_api_id: menuItemApiId }).catch(
-        () => null
-      );
-
-      if (interactionRes?.data?.data) {
-        setUserLiked(interactionRes.data.data.liked);
-      }
-
-      if (metricsRes?.data?.data) {
-        setLikeCount(metricsRes.data.data.likeCount || 0);
-        setDislikeCount(metricsRes.data.data.dislikeCount || 0);
-      }
-    } catch (error) {
-      console.error('Error fetching interaction data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch interaction and metrics when the component mounts
-  useEffect(() => {
-    if (menuItemApiId) {
-      fetchInteractionAndMetrics();
-    }
-  }, [menuItemApiId]);
 
   // Handle when user clicks like button
   const handleLikeInteraction = async () => {
@@ -176,21 +171,14 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
     setDislikeCount(optimisticDislikeCount);
 
     // Update interaction in the API
-    try {
-      const { data, error } = await updateUserMenuItemInteraction({
-        menu_item_api_id: menuItemApiId,
-        liked: newLikeStatus,
-      });
-      if (error) throw new Error(error);
-    } catch (error) {
+    const updatedSuccessfully = await updateInteractionForMenuItem(menuItemApiId, newLikeStatus);
+    if (!updatedSuccessfully) {
       // Rollback state if error occurs
-      console.error('Error updating like interaction:', error);
       setUserLiked(previousLikedBackup);
       setLikeCount(previousLikeCountBackup);
       setDislikeCount(previousDislikeCountBackup);
-    } finally {
-      setUpdating(false);
     }
+    setUpdating(false);
   };
 
   // Handle when user clicks dislike button
@@ -228,21 +216,14 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
     setDislikeCount(optimisticDislikeCount);
 
     // Update interaction in the API
-    try {
-      const { data, error } = await updateUserMenuItemInteraction({
-        menu_item_api_id: menuItemApiId,
-        liked: newLikeStatus,
-      });
-      if (error) throw new Error(error);
-    } catch (error) {
+    const updatedSuccessfully = await updateInteractionForMenuItem(menuItemApiId, newLikeStatus);
+    if (!updatedSuccessfully) {
       // Rollback state if error occurs
-      console.error('Error updating dislike interaction:', error);
       setUserLiked(previousLikedBackup);
       setLikeCount(previousLikeCountBackup);
       setDislikeCount(previousDislikeCountBackup);
-    } finally {
-      setUpdating(false);
     }
+    setUpdating(false);
   };
 
   // Render the like/dislike buttons
@@ -250,7 +231,7 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
     <Pane display='flex' alignItems='center' gap={majorScale(2)}>
       <LikeDislikeButton
         icon={ThumbsUp}
-        count={loading ? '-' : likeCount}
+        count={likeCount}
         isActive={userLiked === true}
         onClick={handleLikeInteraction}
         title='Like this item'
@@ -259,7 +240,7 @@ export default function LikeDislikeButtons({ menuItemApiId }: { menuItemApiId: n
       />
       <LikeDislikeButton
         icon={ThumbsDown}
-        count={loading ? '-' : dislikeCount}
+        count={dislikeCount}
         isActive={userLiked === false}
         onClick={handleDislikeInteraction}
         title='Dislike this item'

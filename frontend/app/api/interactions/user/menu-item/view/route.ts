@@ -29,7 +29,14 @@ export async function POST(req: Request) {
   try {
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
-      return NextResponse.json({ error: 'No access token available' }, { status: 401 });
+      return NextResponse.json(
+        {
+          status: 401,
+          message: 'No access token available',
+          data: null,
+        },
+        { status: 401 }
+      );
     }
 
     const body = await req.json();
@@ -37,7 +44,11 @@ export async function POST(req: Request) {
 
     if (!menuItemApiId) {
       return NextResponse.json(
-        { error: 'Missing menu_item_api_id in request body' },
+        {
+          status: 400,
+          message: 'Missing menu_item_api_id in request body',
+          data: null,
+        },
         { status: 400 }
       );
     }
@@ -55,18 +66,17 @@ export async function POST(req: Request) {
   } catch (error: unknown) {
     DEBUG && console.error('Error:', error);
 
+    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
     return NextResponse.json(
       {
-        error: 'Failed to record menu item view',
+        status,
         message: error instanceof Error ? error.message : 'Unexpected error',
+        data: null,
         ...(DEBUG && {
           details: error instanceof Error ? error.stack : String(error),
         }),
       },
-      {
-        status: error instanceof Error && 'status' in error ? (error as any).status : 500,
-      }
+      { status }
     );
   }
 }
-

@@ -76,7 +76,7 @@ class MenuItem(models.Model):
     api_id = models.PositiveIntegerField(primary_key=True, help_text=_("Original menu item ID from the API"))
     
     api_url = models.URLField(max_length=500, blank=True)
-    name = models.CharField(max_length=255, db_index=True)
+    name = models.CharField(max_length=255, db_index=True, null=True, blank=True)
     allergens = ArrayField(models.CharField(max_length=100), blank=True, default=list)
     ingredients = ArrayField(models.CharField(max_length=255), blank=True, default=list)
     dietary_flags = ArrayField(

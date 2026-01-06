@@ -20,6 +20,7 @@
 
 'use client';
 
+import { DINING_HALLS } from '@/data';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { DiningHall, Allergen, DietaryTag } from '@/types/dining';
 
@@ -31,6 +32,12 @@ const CACHE_KEYS = {
   SHOW_NUTRITION: 'showNutritionPreference',
 } as const;
 
+const DEFAULT_PINNED_HALLS: DiningHall[] = [];
+const DEFAULT_DINING_HALLS: DiningHall[] = DINING_HALLS;
+const DEFAULT_ALLERGENS: Allergen[] = [];
+const DEFAULT_DIETARY_RESTRICTIONS: DietaryTag[] = [];
+const DEFAULT_SHOW_NUTRITION: boolean = true;
+
 /**
  * Hook for managing user dining preferences cache
  *
@@ -40,19 +47,19 @@ export function usePreferencesCache() {
   // Pinned halls cache
   const [pinnedHalls, setPinnedHalls, pinnedHallsLoading] = useLocalStorage<DiningHall[]>({
     key: CACHE_KEYS.PINNED_HALLS,
-    initialValue: [],
+    initialValue: DEFAULT_PINNED_HALLS,
   });
 
   // Dining halls preferences cache
   const [diningHalls, setDiningHalls, diningHallsLoading] = useLocalStorage<DiningHall[]>({
     key: CACHE_KEYS.DINING_HALLS,
-    initialValue: [],
+    initialValue: DEFAULT_DINING_HALLS,
   });
 
   // Allergens preferences cache
   const [allergens, setAllergens, allergensLoading] = useLocalStorage<Allergen[]>({
     key: CACHE_KEYS.ALLERGENS,
-    initialValue: [],
+    initialValue: DEFAULT_ALLERGENS,
   });
 
   // Dietary restrictions preferences cache
@@ -60,13 +67,13 @@ export function usePreferencesCache() {
     DietaryTag[]
   >({
     key: CACHE_KEYS.DIETARY_RESTRICTIONS,
-    initialValue: [],
+    initialValue: DEFAULT_DIETARY_RESTRICTIONS,
   });
 
   // Show nutrition preference cache
   const [showNutrition, setShowNutrition, showNutritionLoading] = useLocalStorage<boolean>({
     key: CACHE_KEYS.SHOW_NUTRITION,
-    initialValue: true,
+    initialValue: DEFAULT_SHOW_NUTRITION,
   });
 
   // Loading state
@@ -212,7 +219,11 @@ export function usePreferencesCache() {
       if (!prev.includes(diningHall)) {
         return prev;
       }
-      return prev.filter((hall) => hall !== diningHall);
+      const filtered = prev.filter((hall) => hall !== diningHall);
+      if (filtered.length === 0) {
+        return DEFAULT_DINING_HALLS;
+      }
+      return filtered;
     });
   };
 
@@ -317,7 +328,7 @@ export function usePreferencesCache() {
    * @returns void
    */
   const clearPinnedHalls = (): void => {
-    setPinnedHalls([]);
+    setPinnedHalls(DEFAULT_PINNED_HALLS);
   };
 
   /**
@@ -326,7 +337,7 @@ export function usePreferencesCache() {
    * @returns void
    */
   const clearDiningHalls = (): void => {
-    setDiningHalls([]);
+    setDiningHalls(DEFAULT_DINING_HALLS);
   };
 
   /**
@@ -335,7 +346,7 @@ export function usePreferencesCache() {
    * @returns void
    */
   const clearAllergens = (): void => {
-    setAllergens([]);
+    setAllergens(DEFAULT_ALLERGENS);
   };
 
   /**
@@ -344,7 +355,7 @@ export function usePreferencesCache() {
    * @returns void
    */
   const clearDietaryRestrictions = (): void => {
-    setDietaryRestrictions([]);
+    setDietaryRestrictions(DEFAULT_DIETARY_RESTRICTIONS);
   };
 
   /**
@@ -353,7 +364,7 @@ export function usePreferencesCache() {
    * @returns void
    */
   const clearShowNutrition = (): void => {
-    setShowNutrition(true);
+    setShowNutrition(DEFAULT_SHOW_NUTRITION);
   };
 
   /**
@@ -362,10 +373,10 @@ export function usePreferencesCache() {
    * @returns void
    */
   const clearAll = (): void => {
-    setPinnedHalls([]);
-    setDiningHalls([]);
-    setAllergens([]);
-    setDietaryRestrictions([]);
+    clearPinnedHalls();
+    clearDiningHalls();
+    clearAllergens();
+    clearDietaryRestrictions();
     clearShowNutrition();
   };
 
@@ -384,6 +395,18 @@ export function usePreferencesCache() {
     hasAllergen,
     hasDietaryRestriction,
     isShowNutritionEnabled,
+
+    // Adders
+    addPinnedHall,
+    addDiningHall,
+    addAllergen,
+    addDietaryRestriction,
+
+    // Removers
+    removePinnedHall,
+    removeDiningHall,
+    removeAllergen,
+    removeDietaryRestriction,
 
     // Togglers
     togglePinnedHall,

@@ -34,15 +34,14 @@ export async function GET(req: Request) {
     DEBUG && console.log('Backend response:', res);
 
     // Django backend returns: {"data": locations, "message": "..."}
-    const locations = res.data || [];
+    const locations = res.data || {};
 
-    if (!locations?.length)
+    if (!locations || (typeof locations === 'object' && Object.keys(locations).length === 0))
       return NextResponse.json(
         {
-          error: 'No dining locations found',
-          message: 'No dining locations available',
           status: 404,
-          data: [],
+          message: 'No dining locations available',
+          data: null,
         },
         { status: 404 }
       );
@@ -59,8 +58,9 @@ export async function GET(req: Request) {
     const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
     return NextResponse.json(
       {
-        error: 'Failed to fetch dining locations',
+        status,
         message,
+        data: null,
         ...(details && { details }),
       },
       { status }

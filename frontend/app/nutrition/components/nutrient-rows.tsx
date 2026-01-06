@@ -55,15 +55,6 @@ export const MacronutrientRow = ({ label, amount, unit, dvPercent }: Macronutrie
     }
   }
 
-  // Render the dv percent
-  const dvInfo = (
-    <Tooltip content='Approximate % Daily Value'>
-      <Text textAlign='right' fontWeight={600} color={color}>
-        {dvPercent}%
-      </Text>
-    </Tooltip>
-  );
-
   // Render the macronutrient row
   return (
     <>
@@ -73,7 +64,13 @@ export const MacronutrientRow = ({ label, amount, unit, dvPercent }: Macronutrie
           {amount ?? '—'}
           {unit}
         </Text>
-        {dvPercent === null ? <Text textAlign='right'>—</Text> : dvInfo}
+        {dvPercent === null ? (
+          <Text textAlign='right'>—</Text>
+        ) : (
+          <Text textAlign='right' fontWeight={600} color={color}>
+            {dvPercent}%
+          </Text>
+        )}
       </Pane>
       <Separator height='1px' marginTop={0} />
     </>

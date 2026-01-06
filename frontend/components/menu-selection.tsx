@@ -27,14 +27,12 @@ import { MenuItem } from '@/types/dining';
  * @param items - The items to display in the menu section.
  * @param showNutrition - Whether to show nutrition information.
  * @param limitItems - Whether to limit the number of items displayed.
- * @param menuId - The menu ID to use for the menu section.
  */
 interface MenuSectionProps {
   label: string;
   items: MenuItem[];
   showNutrition?: boolean;
   limitItems?: boolean;
-  menuId: string;
 }
 
 /**
@@ -44,20 +42,14 @@ interface MenuSectionProps {
  * @param items - The items to display in the menu section.
  * @param showNutrition - Whether to show nutrition information.
  * @param limitItems - Whether to limit the number of items displayed.
- * @param menuId - The menu ID to use for the menu section.
  */
-const MenuSection = ({ label, items, showNutrition, limitItems, menuId }: MenuSectionProps) => {
+const MenuSection = ({ label, items, showNutrition, limitItems }: MenuSectionProps) => {
   const theme = useTheme();
   const displayItems = limitItems ? items.slice(0, 2).reverse() : items;
 
   // Show allergens if they are present in the menu item
   const showAllergens = (item: MenuItem) => {
     let itemAllergens = item?.allergens || [];
-    if (itemAllergens.length === 0) {
-      itemAllergens = Array.from(ALLERGENS).filter((a) =>
-        item?.description?.toLowerCase().includes(a.toLowerCase())
-      );
-    }
 
     // Display "No allergens" if there are no allergens
     if (itemAllergens.length === 0) {
@@ -89,13 +81,15 @@ const MenuSection = ({ label, items, showNutrition, limitItems, menuId }: MenuSe
   // Component to display a menu item row
   const MenuItemRow = ({ item }: { item: MenuItem }) => {
     // Get the macronutrients for the menu item
-    const calories = item?.calories ?? '';
-    const protein = item?.protein ? `${item?.protein} g` : '';
-    const sodium = item?.sodium ? `${item?.sodium} mg` : '';
-    const totalFat = item?.totalFat ? `${item?.totalFat} g` : '';
-    const totalCarbs = item?.totalCarbohydrates ? `${item?.totalCarbohydrates} g` : '';
+    const calories = item?.nutrition?.calories ?? '';
+    const protein = item?.nutrition?.protein ? `${item?.nutrition?.protein} g` : '';
+    const sodium = item?.nutrition?.sodium ? `${item?.nutrition?.sodium} mg` : '';
+    const totalFat = item?.nutrition?.totalFat ? `${item?.nutrition?.totalFat} g` : '';
+    const totalCarbs = item?.nutrition?.totalCarbohydrates
+      ? `${item?.nutrition?.totalCarbohydrates} g`
+      : '';
     const apiId = item?.apiId;
-    const nutritionLink = `/nutrition?apiId=${apiId}&menuId=${menuId}`;
+    const nutritionLink = `/nutrition?apiId=${apiId}`;
 
     // Render the menu item row
     return (
