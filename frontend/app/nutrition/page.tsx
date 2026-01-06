@@ -25,9 +25,10 @@ import {
   ChevronLeftIcon,
   useTheme,
   Badge,
+  Button,
 } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import NutritionTable from './components/nutrition-table';
 import LikeDislikeButtons from './components/like-dislike-buttons';
 import FavoriteBookmarkButtons from './components/favorite-bookmark-buttons';
@@ -119,7 +120,7 @@ const NutritionLabelPage = () => {
   const theme = useTheme();
   const searchParams = useSearchParams();
   const menuItemApiId = searchParams.get('apiId');
-
+  const router = useRouter();
   const [pageError, setPageError] = useState<string | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [menuItemMetricsState, setMenuItemMetricsState] = useState<MenuItemMetrics | null>(null);
@@ -239,18 +240,21 @@ const NutritionLabelPage = () => {
         padding={majorScale(4)}
         className='sm:grid-cols-3 relative mx-auto max-w-5xl'
       >
-        {/* Render the back button */}
-        <Link
-          href='/menu'
+        <Button
+          background='white'
+          border='none'
+          borderRadius={999}
+          padding={minorScale(1)}
+          appearance='minimal'
+          onClick={() => router.push('/menu')}
           position='absolute'
           top={majorScale(2)}
           left={majorScale(4)}
-          fontWeight={600}
           zIndex={10}
-          className='hover:opacity-80 ml-[-3rem] sm:ml-[-5rem] sm:bg-white p-3 transition-opacity rounded-full'
+          className='ml-[-4rem]'
         >
-          <ChevronLeftIcon className='h-6 w-6' color='green600' />
-        </Link>
+          <ChevronLeftIcon size={20} />
+        </Button>
 
         {/* Render the nutrition information */}
         <Pane>
@@ -270,24 +274,30 @@ const NutritionLabelPage = () => {
                 {menuItemState.name.toUpperCase()}
               </Text>
             )}
-            {/* Like/Dislike and Favorite/Bookmark buttons */}
-            <Pane marginTop={majorScale(2)} display='flex' alignItems='center' gap={majorScale(2)}>
-              {menuItemMetricsState && menuItemInteractionState && (
+          </Pane>
+          <Separator height='3px' />
+
+          {menuItemMetricsState && menuItemInteractionState && (
+            <>
+              <Pane
+                display='flex'
+                alignItems='center'
+                gap={majorScale(1)}
+                marginTop={majorScale(2)}
+              >
                 <LikeDislikeButtons
                   menuItemApiId={Number(menuItemState.apiId)}
                   menuItemInteraction={menuItemInteractionState}
                   menuItemMetrics={menuItemMetricsState}
                 />
-              )}
-              {menuItemInteractionState && (
                 <FavoriteBookmarkButtons
                   menuItemApiId={Number(menuItemState.apiId)}
                   menuItemInteraction={menuItemInteractionState}
                 />
-              )}
-            </Pane>
-          </Pane>
-          <Separator height='3px' />
+              </Pane>
+              <Separator height='3px' marginTop={majorScale(2)} />
+            </>
+          )}
 
           {/* Render the calories and serving size */}
           <Pane display='grid' className='grid grid-cols-2 h-min'>

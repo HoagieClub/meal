@@ -562,7 +562,7 @@ export default function MenuPage() {
               >
                 <Button
                   background='white'
-                  border={`1px solid ${theme.colors.green700}`}
+                  border='none'
                   borderRadius={999}
                   padding={minorScale(1)}
                   appearance='minimal'
@@ -580,7 +580,7 @@ export default function MenuPage() {
 
                 <Button
                   background='white'
-                  border={`1px solid ${theme.colors.green700}`}
+                  border='none'
                   borderRadius={999}
                   padding={minorScale(1)}
                   appearance='minimal'
@@ -596,6 +596,7 @@ export default function MenuPage() {
                 borderRadius={999}
                 background={theme.colors.green25}
                 overflow='hidden'
+                boxShadow='0 2px 8px rgba(0,0,0,0.08)'
               >
                 {MEALS.map((mealOption: Meal) => {
                   const isSelectedMeal = meal === mealOption;

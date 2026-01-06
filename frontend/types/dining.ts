@@ -54,6 +54,8 @@ export interface MenuItem {
   ingredients?: string[];
   dietaryFlags?: string[];
   nutrition?: MenuItemNutrition;
+  metrics?: MenuItemMetrics;
+  userInteraction?: MenuItemInteraction;
 }
 
 // Aggregated metrics for a menu item based on user interactions. Tracks views, likes, favorites, and user feedback.

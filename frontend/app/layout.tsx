@@ -75,7 +75,7 @@ async function Content({ children }: { children: ReactNode }): Promise<React.JSX
  */
 export default function RootLayout({ children }: { children: ReactNode }): React.JSX.Element {
   return (
-    <html lang='en' className={`bg-hoagiemeal-dark-green ${poppins.className}`}>
+    <html lang='en' className={`bg-hoagiemeal-dark-green ${poppins.className}`} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -84,7 +84,7 @@ export default function RootLayout({ children }: { children: ReactNode }): React
         />
       </head>
       <UserProvider>
-        <body className='antialiased'>
+        <body className='antialiased' suppressHydrationWarning>
           <Content>{children}</Content>
           <Analytics />
           <SpeedInsights />

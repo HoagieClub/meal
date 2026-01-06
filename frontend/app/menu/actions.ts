@@ -21,9 +21,6 @@ import {
 } from '@/types/dining';
 import { DiningHall, DietaryTag, Allergen, MenuItem } from '@/types/dining';
 
-const lowercased = (array: string[] | null | undefined) =>
-  array?.map((item) => item.toLowerCase()) ?? [];
-
 /**
  * Build display data props.
  *
@@ -70,113 +67,107 @@ export const buildDisplayData = (props: BuildDisplayDataProps) => {
     searchTerm,
     pinnedHalls,
   } = props;
-  // Build display menus for locations using menus and location and menu items maps
-  const displayMenusForLocations = [];
-  for (const locationId of Object.keys(menusForLocations)) {
-    const location = locationItems?.[locationId];
-    if (!location) continue;
-    const menu = menusForLocations[locationId];
-    if (!menu) continue;
 
-    const locationMenuItems: MenuItem[] = [];
-    for (const menuItemId of menu) {
-      const menuItem: MenuItem = menuItems[menuItemId];
-      if (!menuItem || !menuItem.name) continue;
-      locationMenuItems.push(menuItem);
-    }
-    if (locationMenuItems.length === 0) continue;
+  const appliedDiningHallsReduced = appliedDiningHalls.map((diningHall) =>
+    diningHall.toLowerCase().trim()
+  );
+  const appliedDietaryRestrictionsReduced = appliedDietaryRestrictions.map((dietaryRestriction) =>
+    dietaryRestriction.toLowerCase().trim()
+  );
+  const appliedAllergensReduced = appliedAllergens.map((allergen) => allergen.toLowerCase().trim());
+  const searchTermReduced = searchTerm.toLowerCase().trim();
 
-    location.menu = locationMenuItems;
-    displayMenusForLocations.push(location);
-  }
+  const hasSearchFilter = searchTermReduced.length > 0;
+  const hasDietaryRestrictionFilter = appliedDietaryRestrictionsReduced.length > 0;
+  const hasAllergenFilter = appliedAllergensReduced.length > 0;
 
-  // Normalize search term, dietary restrictions, allergens, and dietary flags
-  const searchTermLower = searchTerm.trim().toLowerCase();
-  const appliedDietaryRestrictionsLower = lowercased(appliedDietaryRestrictions);
-  const appliedAllergensLower = lowercased(appliedAllergens);
-  const appliedDiningHallsLower = lowercased(appliedDiningHalls);
+  const filteredLocationItems = Object.fromEntries(
+    Object.entries(locationItems).filter(([locationId, location]) => {
+      const locationNameReduced = location.name.toLowerCase().trim();
+      const isDiningHallApplied = appliedDiningHallsReduced.includes(locationNameReduced);
+      return isDiningHallApplied;
+    })
+  );
 
-  // Check if any filters are applied
-  const hasSearch = searchTermLower.length > 0;
-  const hasDietaryRestrictionFilter = appliedDietaryRestrictionsLower.length > 0;
-  const hasAllergenFilter = appliedAllergensLower.length > 0;
-
-  // Filter  by applied dining halls
-  let filteredMenusForLocations = displayMenusForLocations.filter((diningVenue) => {
-    const diningVenueNameLower = diningVenue.name.toLowerCase();
-    const isDiningHallApplied = appliedDiningHallsLower.some((hallName) => {
-      if (hallName === diningVenueNameLower) return true;
-    });
-    return isDiningHallApplied;
-  });
-
-  // Filter menu items by applied filters
-  filteredMenusForLocations = filteredMenusForLocations.map((diningVenue) => {
-    const menuItems = diningVenue.menu && diningVenue.menu.length > 0 ? diningVenue.menu : [];
-
-    const filteredMenuItems = menuItems.filter((menuItem) => {
-      // Normalize menu item allergens, ingredients, and dietary flags
-      const menuItemAllergensLower = lowercased(menuItem.allergens);
-      const menuItemIngredientsLower = lowercased(menuItem.ingredients);
-      const menuItemDietaryFlagsLower = lowercased(menuItem.dietaryFlags);
-      const menuItemNameLower = menuItem.name.toLowerCase();
-
-      const combinedText =
-        `${menuItemNameLower} ${menuItemIngredientsLower.join(' ')} ${menuItemAllergensLower.join(' ')} ${menuItemDietaryFlagsLower.join(' ')}`.toLowerCase();
-
-      // Check if search term is in combined text
-      if (hasSearch) {
-        const includesSearch = combinedText.includes(searchTermLower);
-        if (!includesSearch) {
-          return false;
-        }
+  const filteredMenuItems = Object.fromEntries(
+    Object.entries(menuItems).filter(([menuItemId, menuItem]) => {
+      if (!menuItem || !menuItem.name) {
+        return false;
       }
 
-      // Check if dietary flag filter is in menu item dietary flags
-      if (hasDietaryRestrictionFilter) {
-        const includesDietFilter = appliedDietaryRestrictionsLower.some((dietaryRestriction) =>
-          menuItemDietaryFlagsLower.includes(dietaryRestriction)
-        );
-        if (!includesDietFilter) {
-          return false;
-        }
-      }
-
-      // Check if allergen filter is in menu item allergens or ingredients
       if (hasAllergenFilter) {
-        const includesAllergen = appliedAllergensLower.some(
-          (allergen) =>
-            menuItemAllergensLower.includes(allergen) || menuItemIngredientsLower.includes(allergen)
+        const menuItemAllergensReduced = menuItem.allergens?.map((allergen) =>
+          allergen.toLowerCase().trim()
         );
-        if (includesAllergen) {
+        const hasAllergen = menuItemAllergensReduced?.some((menuItemAllergen) =>
+          appliedAllergensReduced.includes(menuItemAllergen)
+        );
+        if (hasAllergen) {
+          return false;
+        }
+      }
+
+      if (hasDietaryRestrictionFilter) {
+        const menuItemDietaryFlagsReduced = menuItem.dietaryFlags?.map((dietaryFlag) =>
+          dietaryFlag.toLowerCase().trim()
+        );
+        const hasDietaryRestriction = menuItemDietaryFlagsReduced?.some((menuItemDietaryFlag) =>
+          appliedDietaryRestrictionsReduced.includes(menuItemDietaryFlag)
+        );
+        if (!hasDietaryRestriction) {
+          return false;
+        }
+      }
+
+      if (hasSearchFilter) {
+        const combinedText = `${menuItem.name} ${menuItem.allergens?.join(' ')} ${menuItem.dietaryFlags?.join(' ')} ${menuItem.ingredients?.join(' ')}`;
+        const hasSearch = combinedText.toLowerCase().includes(searchTermReduced);
+        if (!hasSearch) {
           return false;
         }
       }
 
       return true;
+    })
+  );
+
+  const filteredMenusForLocations = Object.fromEntries(
+    Object.entries(menusForLocations)
+      .filter(([locationId]) => filteredLocationItems[locationId])
+      .map(([locationId, menu]) => [
+        locationId,
+        menu.filter((menuItemId) => filteredMenuItems[menuItemId]),
+      ])
+  );
+
+  const displayMenusForLocations = [];
+  for (const locationId of Object.keys(filteredMenusForLocations)) {
+    const location = filteredLocationItems[locationId];
+    let menuItems = filteredMenusForLocations[locationId].map((menuItemId) => {
+      const menuItem = filteredMenuItems[menuItemId];
+      if (!menuItem || !menuItem.name) {
+        return null;
+      }
+      menuItem.metrics = menuItemMetrics[menuItemId];
+      menuItem.userInteraction = userMenuItemInteractions[menuItemId];
+      return menuItem;
     });
+    menuItems = menuItems.filter((menuItem) => menuItem !== null);
+    if (menuItems.length === 0) {
+      continue;
+    }
+    location.menu = menuItems as MenuItem[];
+    displayMenusForLocations.push(location);
+  }
 
-    // Return the dining venue with the filtered menu items
-    return {
-      ...diningVenue,
-      menu: filteredMenuItems,
-    };
+  const sortedDisplayMenusForLocations = displayMenusForLocations.sort((location1, location2) => {
+    const location1IsPinned = pinnedHalls.includes(location1.name as DiningHall);
+    const location2IsPinned = pinnedHalls.includes(location2.name as DiningHall);
+    return location1IsPinned ? -1 : location2IsPinned ? 1 : 0;
   });
 
-  // Filter dining venues with no filtered menu items
-  filteredMenusForLocations = filteredMenusForLocations.filter((diningVenue) => {
-    const hasMenuItems = diningVenue.menu && diningVenue.menu.length > 0;
-    return hasMenuItems;
-  });
-
-  // Sort dining venues by pin status
-  filteredMenusForLocations = filteredMenusForLocations.sort((a, b) => {
-    const aIsPinned = pinnedHalls.includes(a.name as DiningHall);
-    const bIsPinned = pinnedHalls.includes(b.name as DiningHall);
-    return aIsPinned ? -1 : bIsPinned ? 1 : 0;
-  });
-
-  return filteredMenusForLocations;
+  console.log('sortedDisplayMenusForLocations', sortedDisplayMenusForLocations);
+  return sortedDisplayMenusForLocations;
 };
 
 /**

@@ -19,24 +19,7 @@ import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui
 import { ALLERGEN_EMOJI } from '@/styles';
 import { MenuItem } from '@/types/dining';
 import { useMediaQuery } from '@/hooks/use-media-query';
-
-// Dummy data for likes/dislikes - will be replaced with real data later
-const getDummyLikesDislikes = (apiId: number | null) => {
-  if (!apiId) return { likes: 0, dislikes: 0 };
-  // Generate consistent dummy data based on apiId
-  const seed = apiId % 100;
-  return {
-    likes: Math.floor(seed * 1.5) + 10,
-    dislikes: Math.floor(seed * 0.3) + 2,
-  };
-};
-
-// Dummy function to check if item is favorited - will be replaced with real data later
-const getDummyIsFavorited = (apiId: number | null): boolean => {
-  if (!apiId) return false;
-  // Generate consistent favorite status based on apiId (roughly 30% favorited)
-  return apiId % 10 < 3;
-};
+import { MiniLikeDislikeButtons } from '@/components/mini-like-dislike-button';
 
 /**
  * Props for the MenuSection component.
@@ -64,14 +47,10 @@ interface MenuSectionProps {
 const MenuSection = ({ label, items, showNutrition, limitItems }: MenuSectionProps) => {
   const theme = useTheme();
   const displayItems = limitItems ? items.slice(0, 2).reverse() : items;
-  // Enable horizontal scrolling when width is too small (below 600px)
   const enableScroll = useMediaQuery('(max-width: 800px)');
 
-  // Show allergens if they are present in the menu item
   const showAllergens = (item: MenuItem) => {
     let itemAllergens = item?.allergens || [];
-
-    // Display "No allergens" if there are no allergens
     if (itemAllergens.length === 0) {
       return (
         <Text color='muted' fontStyle='italic'>
@@ -91,7 +70,6 @@ const MenuSection = ({ label, items, showNutrition, limitItems }: MenuSectionPro
         height={24}
         borderRadius={12}
         background={theme.colors.green100}
-        border={`1px solid ${theme.colors.green700}`}
       >
         <Text>{ALLERGEN_EMOJI[allergen as keyof typeof ALLERGEN_EMOJI]}</Text>
       </Pane>
@@ -100,6 +78,8 @@ const MenuSection = ({ label, items, showNutrition, limitItems }: MenuSectionPro
 
   // Component to display a menu item row
   const MenuItemRow = ({ item }: { item: MenuItem }) => {
+    const menuItemApiId = item?.apiId;
+
     // Get the macronutrients for the menu item
     const calories = item?.nutrition?.calories ?? '';
     const protein = item?.nutrition?.protein ? `${item?.nutrition?.protein} g` : '';
@@ -108,18 +88,12 @@ const MenuSection = ({ label, items, showNutrition, limitItems }: MenuSectionPro
     const totalCarbs = item?.nutrition?.totalCarbohydrates
       ? `${item?.nutrition?.totalCarbohydrates} g`
       : '';
-    const apiId = item?.apiId;
-    const nutritionLink = `/nutrition?apiId=${apiId}`;
-
-    // Get dummy likes/dislikes data
-    const { likes, dislikes } = getDummyLikesDislikes(apiId);
-
-    // Get dummy favorite status
-    const isFavorited = getDummyIsFavorited(apiId);
+    const nutritionLink = `/nutrition?apiId=${menuItemApiId}`;
+    const isFavorited = item?.userInteraction?.favorited ?? false;
 
     // Render the menu item row
     return (
-      <React.Fragment key={apiId}>
+      <React.Fragment key={menuItemApiId}>
         <Pane
           display='grid'
           gridTemplateColumns={
@@ -221,14 +195,7 @@ const MenuSection = ({ label, items, showNutrition, limitItems }: MenuSectionPro
                 gap={minorScale(1)}
                 marginY={majorScale(1)}
               >
-                <Pane display='flex' alignItems='center' gap={minorScale(1)}>
-                  <Text size={300}>{likes}</Text>
-                  <Text fontSize={16}>👍</Text>
-                </Pane>
-                <Pane display='flex' alignItems='center' gap={minorScale(1)}>
-                  <Text size={300}>{dislikes}</Text>
-                  <Text fontSize={16}>👎</Text>
-                </Pane>
+                <MiniLikeDislikeButtons item={item} />
               </Pane>
             </>
           )}
