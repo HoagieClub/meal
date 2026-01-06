@@ -18,6 +18,13 @@ import { handleAuth, handleCallback } from '@auth0/nextjs-auth0';
 import { NextRequest } from 'next/server';
 import { verifyUser } from '@/lib/endpoints';
 
+/**
+ * After callback function to verify the user.
+ *
+ * @param req - The request object.
+ * @param session - The session object.
+ * @returns The session object.
+ */
 const afterCallback = async (req: NextRequest, session: any) => {
   if (session.accessToken) {
     try {

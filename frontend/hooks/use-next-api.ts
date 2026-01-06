@@ -17,21 +17,33 @@
 import { ApiResponse, HttpMethod } from '@/types/http';
 
 /**
- * Makes an API request to the Next.js API routes.
+ * Interface for the API request props
  *
- * @param endpoint - The endpoint to make the request to.
- * @param method - The HTTP method to use for the request.
- * @param body - The body of the request.
- * @param headers - The headers to include in the request.
- * @returns The API response with consistent structure.
+ * @param endpoint - The endpoint to make the request to
+ * @param method - The HTTP method to use for the request
+ * @param body - The body of the request
+ * @param headers - The headers to include in the request
  */
-async function apiRequest<T>(
-  endpoint: string,
-  method: HttpMethod,
-  body?: any,
-  headers?: HeadersInit
-): Promise<ApiResponse<T>> {
+interface ApiRequestProps<T> {
+  endpoint: string;
+  method: HttpMethod;
+  body?: any;
+  headers?: HeadersInit;
+}
+
+/**
+ * Makes an API request to the Next.js API routes
+ *
+ * @returns The API response with consistent structure
+ */
+async function apiRequest<T>({
+  endpoint,
+  method,
+  body,
+  headers,
+}: ApiRequestProps<T>): Promise<ApiResponse<T>> {
   try {
+    // Make the API request
     const res = await fetch(endpoint, {
       method,
       headers: {
@@ -57,19 +69,24 @@ async function apiRequest<T>(
   }
 }
 
+/**
+ * API request functions
+ *
+ * @returns The API response with consistent structure
+ */
 export const api = {
   get: <T>(endpoint: string, headers?: HeadersInit) =>
-    apiRequest<T>(endpoint, 'GET', undefined, headers),
+    apiRequest<T>({ endpoint, method: 'GET', headers }),
 
   post: <T>(endpoint: string, body?: any, headers?: HeadersInit) =>
-    apiRequest<T>(endpoint, 'POST', body, headers),
+    apiRequest<T>({ endpoint, method: 'POST', body, headers }),
 
   put: <T>(endpoint: string, body?: any, headers?: HeadersInit) =>
-    apiRequest<T>(endpoint, 'PUT', body, headers),
+    apiRequest<T>({ endpoint, method: 'PUT', body, headers }),
 
   patch: <T>(endpoint: string, body?: any, headers?: HeadersInit) =>
-    apiRequest<T>(endpoint, 'PATCH', body, headers),
+    apiRequest<T>({ endpoint, method: 'PATCH', body, headers }),
 
   delete: <T>(endpoint: string, headers?: HeadersInit) =>
-    apiRequest<T>(endpoint, 'DELETE', undefined, headers),
+    apiRequest<T>({ endpoint, method: 'DELETE', headers }),
 };

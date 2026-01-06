@@ -10,8 +10,29 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { TeamMember } from '@/types/team';
 import { LinkedinIcon, GithubIcon, WebsiteIcon, TwitterIcon } from '@/app/about/components/icons';
+
+/**
+ * Interface for the team member.
+ *
+ * @param name - The name of the team member.
+ * @param role - The role of the team member.
+ * @param bio - The bio of the team member.
+ * @param imgSrc - The image source of the team member.
+ * @param socials - The social links of the team member.
+ */
+export interface TeamMember {
+  name: string;
+  role: string;
+  bio?: string;
+  imgSrc: string;
+  socials: {
+    linkedin?: string;
+    github?: string;
+    website?: string;
+    twitter?: string;
+  };
+}
 
 // Team leads data.
 export const TEAM_LEADS: TeamMember[] = [

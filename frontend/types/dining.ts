@@ -70,9 +70,6 @@ export interface MenuItemMetrics {
   averageWouldEatAgainScore: number | null;
 }
 
-// User's preference for eating a menu item again: 'Y' (Yes), 'N' (No), 'M' (Maybe).
-export type WouldEatAgain = 'Y' | 'N' | 'M';
-
 // Represents a user's interaction history with a specific menu item. Tracks viewing history, likes, favorites, and preferences.
 export interface MenuItemInteraction {
   viewed: boolean | null;
@@ -82,7 +79,7 @@ export interface MenuItemInteraction {
   liked: boolean | null;
   favorited: boolean | null;
   savedForLater: boolean | null;
-  wouldEatAgain: WouldEatAgain | null;
+  wouldEatAgain: 'Y' | 'N' | 'M' | null;
 }
 
 // Unique identifier for a menu item from the API. Can be either a number or string.
@@ -167,35 +164,3 @@ export type MenuCategory = 'Main Entrée' | 'Vegan Entrée';
 
 // Emoji icons used to represent different meal types or dietary information.
 export type MealIcon = '🍂' | '🥜' | '🥚' | '🥛' | '🌱' | '🥜';
-
-// API Response Types
-
-// Base Django backend API response structure. All Django endpoints return this format on success.
-export interface DjangoApiResponse<T> {
-  data: T;
-  message: string;
-}
-
-// Base Next.js API route response structure. All Next.js API routes return this format on success.
-export interface NextApiResponse<T> {
-  data: T;
-  message: string;
-  status: number;
-}
-
-// Next.js API route error response structure.
-export interface NextApiErrorResponse {
-  error: string;
-  message: string;
-  details?: string;
-}
-
-// Next.js API client response structure. Wraps the Next.js API response with error handling.
-export interface NextApiClientResponse<T> {
-  data: NextApiResponse<T> | null;
-  error: {
-    status: number;
-    message: string;
-    data?: any;
-  } | null;
-}

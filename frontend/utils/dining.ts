@@ -12,7 +12,7 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import type { Meal, UIMenuItem } from '@/app/menu/types';
+import type { Meal } from '@/types/dining';
 
 interface TimeRange {
   start: number; // Minutes since midnight

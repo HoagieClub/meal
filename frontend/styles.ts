@@ -1,3 +1,17 @@
+/**
+ * @overview Style constants for the Hoagie Meal app.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree or at
+ *
+ *    https://github.com/hoagieclub/meal/LICENSE.
+ *
+ * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+ */
+
 import cjlIcon from '@/public/images/icons/cjl.png';
 import defaultIcon from '@/public/images/icons/default.png';
 import forbesIcon from '@/public/images/icons/forbes.png';
@@ -16,11 +30,13 @@ import { Meal, Allergen, DietaryTag, DiningHall } from '@/types/dining';
 import { Theme } from 'evergreen-ui';
 import { StaticImageData } from 'next/image';
 
+// Hall emoji style.
 export const HALL_EMOJI_STYLE = (theme: Theme) => ({
   bg: theme.colors.gray100,
   color: theme.colors.gray700,
 });
 
+// Allergen style map.
 export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<Allergen, any> => ({
   Peanut: {
     bg: theme.colors.yellow100,
@@ -62,6 +78,7 @@ export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<Allergen, any> => ({
   },
 });
 
+// Hall icon map.
 export const HALL_ICON_MAP: Record<DiningHall, string> = {
   'Center for Jewish Life': cjlIcon.src,
   'Forbes College': forbesIcon.src,
@@ -72,6 +89,7 @@ export const HALL_ICON_MAP: Record<DiningHall, string> = {
   'Frist Grill': defaultIcon.src,
 };
 
+// Hall banner map.
 // @ts-ignore
 export const HALL_BANNER_MAP: Record<DiningHall, StaticImageData> = {
   'Forbes College': forbesBanner,
@@ -82,6 +100,7 @@ export const HALL_BANNER_MAP: Record<DiningHall, StaticImageData> = {
   'Graduate College': gradBanner,
 };
 
+// Diet label map.
 export const DIET_LABEL_MAP: Record<DietaryTag, string> = {
   Vegetarian: 'V',
   Vegan: 'VG',
@@ -89,12 +108,14 @@ export const DIET_LABEL_MAP: Record<DietaryTag, string> = {
   Kosher: 'K',
 };
 
+// Meal color map.
 export const MEAL_COLOR_MAP = (theme: Theme): Record<Meal, string> => ({
   Breakfast: theme.colors.green100 as string,
   Lunch: theme.colors.green200 as string,
   Dinner: theme.colors.green300 as string,
 });
 
+// Diet style map.
 export const DIET_STYLE_MAP = (theme: Theme): Record<DietaryTag, any> => ({
   Vegetarian: {
     bg: theme.colors.green100,
@@ -108,6 +129,7 @@ export const DIET_STYLE_MAP = (theme: Theme): Record<DietaryTag, any> => ({
   },
 });
 
+// Allergen emoji map.
 export const ALLERGEN_EMOJI: Record<Allergen, string> = {
   Peanut: '🥜',
   Coconut: '🌰',

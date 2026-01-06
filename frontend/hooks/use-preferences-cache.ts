@@ -21,7 +21,6 @@
 'use client';
 
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { useMemo } from 'react';
 import { DiningHall, Allergen, DietaryTag } from '@/types/dining';
 
 const CACHE_KEYS = {
@@ -33,49 +32,44 @@ const CACHE_KEYS = {
 } as const;
 
 /**
- * Hook for managing user dining preferences cache.
+ * Hook for managing user dining preferences cache
  *
- * @returns Object with cache state and functions:
- *   - State: { loading, pinnedHalls, diningHalls, allergens, dietaryRestrictions, showNutrition }
- *   - Getters: { getPinnedHalls, getDiningHalls, getAllergens, getDietaryRestrictions, getShowNutrition, isPinned }
- *   - Checkers: { hasPinnedHall, hasDiningHall, hasAllergen, hasDietaryRestriction }
- *   - Setters: { setPinnedHalls, setDiningHalls, setAllergens, setDietaryRestrictions, setShowNutrition }
- *   - Adders: { addPinnedHall, addDiningHall, addAllergen, addDietaryRestriction }
- *   - Removers: { removePinnedHall, removeDiningHall, removeAllergen, removeDietaryRestriction }
- *   - Togglers: { togglePinnedHall, toggleDiningHall, toggleAllergen, toggleDietaryRestriction }
- *   - Clearers: { clearPinnedHalls, clearDiningHalls, clearAllergens, clearDietaryRestrictions, clearAll }
+ * @returns Object with cache state and functions
  */
 export function usePreferencesCache() {
-  const [pinnedHallsArray, setPinnedHallsArray, pinnedHallsLoading] = useLocalStorage<DiningHall[]>(
-    {
-      key: CACHE_KEYS.PINNED_HALLS,
-      initialValue: [],
-    }
-  );
+  // Pinned halls cache
+  const [pinnedHalls, setPinnedHalls, pinnedHallsLoading] = useLocalStorage<DiningHall[]>({
+    key: CACHE_KEYS.PINNED_HALLS,
+    initialValue: [],
+  });
 
-  const [diningHallsArray, setDiningHallsArray, diningHallsLoading] = useLocalStorage<DiningHall[]>(
-    {
-      key: CACHE_KEYS.DINING_HALLS,
-      initialValue: [],
-    }
-  );
+  // Dining halls preferences cache
+  const [diningHalls, setDiningHalls, diningHallsLoading] = useLocalStorage<DiningHall[]>({
+    key: CACHE_KEYS.DINING_HALLS,
+    initialValue: [],
+  });
 
-  const [allergensArray, setAllergensArray, allergensLoading] = useLocalStorage<Allergen[]>({
+  // Allergens preferences cache
+  const [allergens, setAllergens, allergensLoading] = useLocalStorage<Allergen[]>({
     key: CACHE_KEYS.ALLERGENS,
     initialValue: [],
   });
 
-  const [dietaryRestrictionsArray, setDietaryRestrictionsArray, dietaryRestrictionsLoading] =
-    useLocalStorage<DietaryTag[]>({
-      key: CACHE_KEYS.DIETARY_RESTRICTIONS,
-      initialValue: [],
-    });
+  // Dietary restrictions preferences cache
+  const [dietaryRestrictions, setDietaryRestrictions, dietaryRestrictionsLoading] = useLocalStorage<
+    DietaryTag[]
+  >({
+    key: CACHE_KEYS.DIETARY_RESTRICTIONS,
+    initialValue: [],
+  });
 
-  const [showNutrition, setShowNutritionState, showNutritionLoading] = useLocalStorage<boolean>({
+  // Show nutrition preference cache
+  const [showNutrition, setShowNutrition, showNutritionLoading] = useLocalStorage<boolean>({
     key: CACHE_KEYS.SHOW_NUTRITION,
     initialValue: true,
   });
 
+  // Loading state
   const loading =
     pinnedHallsLoading ||
     diningHallsLoading ||
@@ -83,479 +77,327 @@ export function usePreferencesCache() {
     dietaryRestrictionsLoading ||
     showNutritionLoading;
 
-  // Convert arrays to Sets for efficient lookups
-  const pinnedHalls = useMemo(() => new Set<DiningHall>(pinnedHallsArray), [pinnedHallsArray]);
-  const diningHalls = useMemo(() => new Set<DiningHall>(diningHallsArray), [diningHallsArray]);
-  const allergens = useMemo(() => new Set<Allergen>(allergensArray), [allergensArray]);
-  const dietaryRestrictions = useMemo(
-    () => new Set<DietaryTag>(dietaryRestrictionsArray),
-    [dietaryRestrictionsArray]
-  );
-
   /**
-   * Gets all pinned halls.
-   *
-   * @returns Set of pinned DiningHall values. Structure: Set<DiningHall>
-   */
-  const getPinnedHalls = (): Set<DiningHall> => {
-    return pinnedHalls;
-  };
-
-  /**
-   * Gets all pinned halls as an array.
-   *
-   * @returns Array of pinned DiningHall values. Structure: DiningHall[]
-   */
-  const getPinnedHallsArray = (): DiningHall[] => {
-    return pinnedHallsArray;
-  };
-
-  /**
-   * Gets all dining halls preferences.
-   *
-   * @returns Set of selected DiningHall values. Structure: Set<DiningHall>
-   */
-  const getDiningHalls = (): Set<DiningHall> => {
-    return diningHalls;
-  };
-
-  /**
-   * Gets all dining halls preferences as an array.
-   *
-   * @returns Array of selected DiningHall values. Structure: DiningHall[]
-   */
-  const getDiningHallsArray = (): DiningHall[] => {
-    return diningHallsArray;
-  };
-
-  /**
-   * Gets all allergens preferences.
-   *
-   * @returns Set of selected Allergen values. Structure: Set<Allergen>
-   */
-  const getAllergens = (): Set<Allergen> => {
-    return allergens;
-  };
-
-  /**
-   * Gets all allergens preferences as an array.
-   *
-   * @returns Array of selected Allergen values. Structure: Allergen[]
-   */
-  const getAllergensArray = (): Allergen[] => {
-    return allergensArray;
-  };
-
-  /**
-   * Gets all dietary restrictions preferences.
-   *
-   * @returns Set of selected DietaryTag values. Structure: Set<DietaryTag>
-   */
-  const getDietaryRestrictions = (): Set<DietaryTag> => {
-    return dietaryRestrictions;
-  };
-
-  /**
-   * Gets all dietary restrictions preferences as an array.
-   *
-   * @returns Array of selected DietaryTag values. Structure: DietaryTag[]
-   */
-  const getDietaryRestrictionsArray = (): DietaryTag[] => {
-    return dietaryRestrictionsArray;
-  };
-
-  /**
-   * Gets show nutrition preference.
-   *
-   * @returns Boolean indicating if nutrition should be shown. Structure: boolean
-   */
-  const getShowNutrition = (): boolean => {
-    return showNutrition;
-  };
-
-  /**
-   * Checks if a dining hall is pinned.
+   * Checks if a dining hall is pinned
    *
    * @param diningHall - DiningHall to check
    * @returns Boolean indicating if the dining hall is pinned.
    */
   const isPinned = (diningHall: DiningHall): boolean => {
-    return pinnedHalls.has(diningHall);
+    return pinnedHalls.includes(diningHall);
   };
 
   /**
-   * Checks if a dining hall is in preferences.
+   * Checks if a dining hall is in preferences
    *
    * @param diningHall - DiningHall to check
    * @returns Boolean indicating if the dining hall is selected.
    */
   const hasDiningHall = (diningHall: DiningHall): boolean => {
-    return diningHalls.has(diningHall);
+    return diningHalls.includes(diningHall);
   };
 
   /**
-   * Checks if an allergen is in preferences.
+   * Checks if an allergen is in preferences
    *
    * @param allergen - Allergen to check
    * @returns Boolean indicating if the allergen is selected.
    */
   const hasAllergen = (allergen: Allergen): boolean => {
-    return allergens.has(allergen);
+    return allergens.includes(allergen);
   };
 
   /**
-   * Checks if a dietary restriction is in preferences.
+   * Checks if a dietary restriction is in preferences
    *
    * @param dietaryRestriction - DietaryTag to check
    * @returns Boolean indicating if the dietary restriction is selected.
    */
   const hasDietaryRestriction = (dietaryRestriction: DietaryTag): boolean => {
-    return dietaryRestrictions.has(dietaryRestriction);
+    return dietaryRestrictions.includes(dietaryRestriction);
   };
 
   /**
-   * Sets all pinned halls.
+   * Checks if show nutrition is enabled
    *
-   * @param halls - Array of DiningHall values to set. Structure: DiningHall[]
-   * @returns void
+   * @returns Boolean indicating if show nutrition is enabled.
    */
-  const setPinnedHalls = (halls: DiningHall[]): void => {
-    setPinnedHallsArray(halls);
+  const isShowNutritionEnabled = (): boolean => {
+    return showNutrition;
   };
 
   /**
-   * Sets all dining halls preferences.
-   *
-   * @param halls - Array of DiningHall values to set. Structure: DiningHall[]
-   * @returns void
-   */
-  const setDiningHalls = (halls: DiningHall[]): void => {
-    setDiningHallsArray(halls);
-  };
-
-  /**
-   * Sets all allergens preferences.
-   *
-   * @param allergensList - Array of Allergen values to set. Structure: Allergen[]
-   * @returns void
-   */
-  const setAllergens = (allergensList: Allergen[]): void => {
-    setAllergensArray(allergensList);
-  };
-
-  /**
-   * Sets all dietary restrictions preferences.
-   *
-   * @param restrictions - Array of DietaryTag values to set. Structure: DietaryTag[]
-   * @returns void
-   */
-  const setDietaryRestrictions = (restrictions: DietaryTag[]): void => {
-    setDietaryRestrictionsArray(restrictions);
-  };
-
-  /**
-   * Sets show nutrition preference.
-   *
-   * @param show - Boolean value to set. Structure: boolean
-   * @returns void
-   */
-  const setShowNutrition = (show: boolean): void => {
-    setShowNutritionState(show);
-  };
-
-  /**
-   * Adds a dining hall to pinned halls.
+   * Adds a dining hall to pinned halls
    *
    * @param diningHall - DiningHall to add
    * @returns void
    */
   const addPinnedHall = (diningHall: DiningHall): void => {
-    setPinnedHallsArray((prev) => {
-      const prevSet = new Set(prev);
-      prevSet.add(diningHall);
-      return Array.from(prevSet);
+    setPinnedHalls((prev) => {
+      if (prev.includes(diningHall)) {
+        return prev;
+      }
+      return [...prev, diningHall];
     });
   };
 
   /**
-   * Adds a dining hall to preferences.
+   * Adds a dining hall to preferences
    *
    * @param diningHall - DiningHall to add
    * @returns void
    */
   const addDiningHall = (diningHall: DiningHall): void => {
-    setDiningHallsArray((prev) => {
-      const prevSet = new Set(prev);
-      prevSet.add(diningHall);
-      return Array.from(prevSet);
+    setDiningHalls((prev) => {
+      if (prev.includes(diningHall)) {
+        return prev;
+      }
+      return [...prev, diningHall];
     });
   };
 
   /**
-   * Adds an allergen to preferences.
+   * Adds an allergen to preferences
    *
    * @param allergen - Allergen to add
    * @returns void
    */
   const addAllergen = (allergen: Allergen): void => {
-    setAllergensArray((prev) => {
-      const prevSet = new Set(prev);
-      prevSet.add(allergen);
-      return Array.from(prevSet);
+    setAllergens((prev) => {
+      if (prev.includes(allergen)) {
+        return prev;
+      }
+      return [...prev, allergen];
     });
   };
 
   /**
-   * Adds a dietary restriction to preferences.
+   * Adds a dietary restriction to preferences
    *
    * @param dietaryRestriction - DietaryTag to add
    * @returns void
    */
   const addDietaryRestriction = (dietaryRestriction: DietaryTag): void => {
-    setDietaryRestrictionsArray((prev) => {
-      const prevSet = new Set(prev);
-      prevSet.add(dietaryRestriction);
-      return Array.from(prevSet);
+    setDietaryRestrictions((prev) => {
+      if (prev.includes(dietaryRestriction)) {
+        return prev;
+      }
+      return [...prev, dietaryRestriction];
     });
   };
 
   /**
-   * Removes a dining hall from pinned halls.
+   * Removes a dining hall from pinned halls
    *
    * @param diningHall - DiningHall to remove
    * @returns void
    */
   const removePinnedHall = (diningHall: DiningHall): void => {
-    setPinnedHallsArray((prev) => {
-      const prevSet = new Set(prev);
-      prevSet.delete(diningHall);
-      return Array.from(prevSet);
+    setPinnedHalls((prev) => {
+      if (!prev.includes(diningHall)) {
+        return prev;
+      }
+      return prev.filter((hall) => hall !== diningHall);
     });
   };
 
   /**
-   * Removes a dining hall from preferences.
+   * Removes a dining hall from preferences
    *
    * @param diningHall - DiningHall to remove
    * @returns void
    */
   const removeDiningHall = (diningHall: DiningHall): void => {
-    setDiningHallsArray((prev) => {
-      const prevSet = new Set(prev);
-      prevSet.delete(diningHall);
-      return Array.from(prevSet);
+    setDiningHalls((prev) => {
+      if (!prev.includes(diningHall)) {
+        return prev;
+      }
+      return prev.filter((hall) => hall !== diningHall);
     });
   };
 
   /**
-   * Removes an allergen from preferences.
+   * Removes an allergen from preferences
    *
    * @param allergen - Allergen to remove
    * @returns void
    */
   const removeAllergen = (allergen: Allergen): void => {
-    setAllergensArray((prev) => {
-      const prevSet = new Set(prev);
-      prevSet.delete(allergen);
-      return Array.from(prevSet);
+    setAllergens((prev) => {
+      if (!prev.includes(allergen)) {
+        return prev;
+      }
+      return prev.filter((a) => a !== allergen);
     });
   };
 
   /**
-   * Removes a dietary restriction from preferences.
+   * Removes a dietary restriction from preferences
    *
    * @param dietaryRestriction - DietaryTag to remove
    * @returns void
    */
   const removeDietaryRestriction = (dietaryRestriction: DietaryTag): void => {
-    setDietaryRestrictionsArray((prev) => {
-      const prevSet = new Set(prev);
-      prevSet.delete(dietaryRestriction);
-      return Array.from(prevSet);
+    setDietaryRestrictions((prev) => {
+      if (!prev.includes(dietaryRestriction)) {
+        return prev;
+      }
+      return prev.filter((restriction) => restriction !== dietaryRestriction);
     });
   };
 
   /**
-   * Toggles a dining hall's pinned status.
+   * Toggles a dining hall's pinned status
    *
    * @param diningHall - DiningHall to toggle
    * @returns void
    */
   const togglePinnedHall = (diningHall: DiningHall): void => {
-    setPinnedHallsArray((prev) => {
-      const prevSet = new Set(prev);
-      if (prevSet.has(diningHall)) {
-        prevSet.delete(diningHall);
-      } else {
-        prevSet.add(diningHall);
-      }
-      return Array.from(prevSet);
-    });
+    if (isPinned(diningHall)) {
+      removePinnedHall(diningHall);
+    } else {
+      addPinnedHall(diningHall);
+    }
   };
 
   /**
-   * Toggles a dining hall in preferences.
+   * Toggles a dining hall in preferences
    *
    * @param diningHall - DiningHall to toggle
    * @returns void
    */
   const toggleDiningHall = (diningHall: DiningHall): void => {
-    setDiningHallsArray((prev) => {
-      const prevSet = new Set(prev);
-      if (prevSet.has(diningHall)) {
-        prevSet.delete(diningHall);
-      } else {
-        prevSet.add(diningHall);
-      }
-      return Array.from(prevSet);
-    });
+    if (hasDiningHall(diningHall)) {
+      removeDiningHall(diningHall);
+    } else {
+      addDiningHall(diningHall);
+    }
   };
 
   /**
-   * Toggles an allergen in preferences.
+   * Toggles an allergen in preferences
    *
    * @param allergen - Allergen to toggle
    * @returns void
    */
   const toggleAllergen = (allergen: Allergen): void => {
-    setAllergensArray((prev) => {
-      const prevSet = new Set(prev);
-      if (prevSet.has(allergen)) {
-        prevSet.delete(allergen);
-      } else {
-        prevSet.add(allergen);
-      }
-      return Array.from(prevSet);
-    });
+    if (hasAllergen(allergen)) {
+      removeAllergen(allergen);
+    } else {
+      addAllergen(allergen);
+    }
   };
 
   /**
-   * Toggles a dietary restriction in preferences.
+   * Toggles a dietary restriction in preferences
    *
    * @param dietaryRestriction - DietaryTag to toggle
    * @returns void
    */
   const toggleDietaryRestriction = (dietaryRestriction: DietaryTag): void => {
-    setDietaryRestrictionsArray((prev) => {
-      const prevSet = new Set(prev);
-      if (prevSet.has(dietaryRestriction)) {
-        prevSet.delete(dietaryRestriction);
-      } else {
-        prevSet.add(dietaryRestriction);
-      }
-      return Array.from(prevSet);
-    });
+    if (hasDietaryRestriction(dietaryRestriction)) {
+      removeDietaryRestriction(dietaryRestriction);
+    } else {
+      addDietaryRestriction(dietaryRestriction);
+    }
   };
 
   /**
-   * Clears all pinned halls.
+   * Toggles show nutrition
+   *
+   * @returns void
+   */
+  const toggleShowNutrition = (): void => {
+    setShowNutrition((prev) => !prev);
+  };
+
+  /**
+   * Clears all pinned halls
    *
    * @returns void
    */
   const clearPinnedHalls = (): void => {
-    setPinnedHallsArray([]);
+    setPinnedHalls([]);
   };
 
   /**
-   * Clears all dining halls preferences.
+   * Clears all dining halls preferences
    *
    * @returns void
    */
   const clearDiningHalls = (): void => {
-    setDiningHallsArray([]);
+    setDiningHalls([]);
   };
 
   /**
-   * Clears all allergens preferences.
+   * Clears all allergens preferences
    *
    * @returns void
    */
   const clearAllergens = (): void => {
-    setAllergensArray([]);
+    setAllergens([]);
   };
 
   /**
-   * Clears all dietary restrictions preferences.
+   * Clears all dietary restrictions preferences
    *
    * @returns void
    */
   const clearDietaryRestrictions = (): void => {
-    setDietaryRestrictionsArray([]);
+    setDietaryRestrictions([]);
   };
 
   /**
-   * Clears all preferences.
+   * Clears show nutrition preference
+   *
+   * @returns void
+   */
+  const clearShowNutrition = (): void => {
+    setShowNutrition(true);
+  };
+
+  /**
+   * Clears all preferences
    *
    * @returns void
    */
   const clearAll = (): void => {
-    setPinnedHallsArray([]);
-    setDiningHallsArray([]);
-    setAllergensArray([]);
-    setDietaryRestrictionsArray([]);
-    setShowNutritionState(true);
+    setPinnedHalls([]);
+    setDiningHalls([]);
+    setAllergens([]);
+    setDietaryRestrictions([]);
+    clearShowNutrition();
   };
 
   return {
     // State
     loading,
     pinnedHalls,
-    pinnedHallsArray,
     diningHalls,
-    diningHallsArray,
     allergens,
-    allergensArray,
     dietaryRestrictions,
-    dietaryRestrictionsArray,
     showNutrition,
-
-    // Getters
-    getPinnedHalls,
-    getPinnedHallsArray,
-    getDiningHalls,
-    getDiningHallsArray,
-    getAllergens,
-    getAllergensArray,
-    getDietaryRestrictions,
-    getDietaryRestrictionsArray,
-    getShowNutrition,
 
     // Checkers
     isPinned,
     hasDiningHall,
     hasAllergen,
     hasDietaryRestriction,
-
-    // Setters
-    setPinnedHalls,
-    setDiningHalls,
-    setAllergens,
-    setDietaryRestrictions,
-    setShowNutrition,
-
-    // Adders
-    addPinnedHall,
-    addDiningHall,
-    addAllergen,
-    addDietaryRestriction,
-
-    // Removers
-    removePinnedHall,
-    removeDiningHall,
-    removeAllergen,
-    removeDietaryRestriction,
+    isShowNutritionEnabled,
 
     // Togglers
     togglePinnedHall,
     toggleDiningHall,
     toggleAllergen,
     toggleDietaryRestriction,
+    toggleShowNutrition,
 
     // Clearers
     clearPinnedHalls,
     clearDiningHalls,
     clearAllergens,
     clearDietaryRestrictions,
+    clearShowNutrition,
     clearAll,
   };
 }
