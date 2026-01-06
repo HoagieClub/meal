@@ -282,7 +282,7 @@ const NutritionLabelPage = () => {
               <Pane
                 display='flex'
                 alignItems='center'
-                gap={majorScale(1)}
+                gap={majorScale(2)}
                 marginTop={majorScale(2)}
               >
                 <LikeDislikeButtons

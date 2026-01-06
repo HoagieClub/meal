@@ -56,21 +56,26 @@ const LikeDislikeButton = ({
   activeBgColor,
 }: LikeDislikeButtonProps) => {
   return (
-    <Pane
-      display='flex'
-      alignItems='center'
-      gap={minorScale(1)}
-      background={isActive ? activeBgColor : 'transparent'}
-      height={36}
-      paddingRight={minorScale(2)}
-      borderRadius={6}
-      onClick={onClick}
-      cursor='pointer'
-      title={title}
-    >
-      <Text fontSize={20} lineHeight={1}>
-        {emoji}
-      </Text>
+    <Pane display='flex' alignItems='center' gap={minorScale(1)}>
+      <Pane
+        padding={2}
+        borderRadius={999}
+        onClick={onClick}
+        cursor='pointer'
+        title={title}
+        background={isActive ? activeBgColor : 'transparent'}
+        display='flex'
+        alignItems='center'
+        justifyContent='center'
+        transition='all 0.2s'
+        className='hover:opacity-80'
+        width={32}
+        height={32}
+      >
+        <Text fontSize={18} lineHeight={1}>
+          {emoji}
+        </Text>
+      </Pane>
       <Text size={400} fontWeight={600} color={isActive ? activeColor : 'black'}>
         {count}
       </Text>
@@ -104,7 +109,7 @@ const LikeButton = ({
       onClick={onClick}
       title='Like this item'
       activeColor={theme.colors.green700}
-      activeBgColor={theme.colors.green100}
+      activeBgColor={theme.colors.green200}
     />
   );
 };

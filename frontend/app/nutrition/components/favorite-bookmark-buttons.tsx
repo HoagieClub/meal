@@ -54,8 +54,6 @@ const FavoriteBookmarkButton = ({
   title,
   activeBgColor,
 }: FavoriteBookmarkButtonProps) => {
-  const theme = useTheme();
-
   return (
     <Pane
       onClick={onClick}
@@ -63,13 +61,16 @@ const FavoriteBookmarkButton = ({
       display='flex'
       alignItems='center'
       justifyContent='center'
-      width={36}
-      height={36}
-      borderRadius={6}
+      width={32}
+      height={32}
+      padding={2}
+      borderRadius={999}
       background={isActive ? activeBgColor : 'transparent'}
       title={title}
+      transition='all 0.2s'
+      className='hover:opacity-80'
     >
-      <Text fontSize={20} lineHeight={1}>
+      <Text fontSize={18} lineHeight={1}>
         {emoji}
       </Text>
     </Pane>
@@ -137,7 +138,7 @@ export default function FavoriteBookmarkButtons({
 
   // Render the favorite/bookmark buttons
   return (
-    <Pane display='flex' alignItems='center' gap={majorScale(1)}>
+    <Pane display='flex' alignItems='center' gap={majorScale(2)}>
       <FavoriteButton isActive={favorited} onClick={handleFavorite} />
       <BookmarkButton isActive={savedForLater} onClick={handleBookmark} />
     </Pane>

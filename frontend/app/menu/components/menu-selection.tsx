@@ -66,9 +66,9 @@ const MenuSection = ({ label, items, showNutrition, limitItems }: MenuSectionPro
         display='inline-flex'
         alignItems='center'
         justifyContent='center'
-        width={24}
-        height={24}
-        borderRadius={12}
+        width={26}
+        height={26}
+        borderRadius={999}
         background={theme.colors.green100}
       >
         <Text>{ALLERGEN_EMOJI[allergen as keyof typeof ALLERGEN_EMOJI]}</Text>
