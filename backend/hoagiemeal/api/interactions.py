@@ -317,17 +317,21 @@ def get_user_menu_item_interaction(request):
         # Authenticate user
         user = get_user_from_request(request)
         if not user:
-            return Response({"message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"data": None, "message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Get menu item API ID
         menu_item_api_id = request.GET.get("menu_item_api_id")
         if not menu_item_api_id:
-            return Response({"message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"data": None, "message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Get or create user menu item interaction
         interaction = interactions_service.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
         if not interaction:
-            return Response({"message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"data": None, "message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         # Return serialized user menu item interaction data
         logger.info(
@@ -343,7 +347,7 @@ def get_user_menu_item_interaction(request):
     except Exception as e:
         logger.error(f"Error in get_user_menu_item_interaction view: {e}")
         return Response(
-            {"message": f"Error fetching user menu item interaction: {str(e)}"},
+            {"data": None, "message": f"Error fetching user menu item interaction: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
@@ -365,24 +369,29 @@ def record_user_menu_item_view(request):
         # Authenticate user
         user = get_user_from_request(request)
         if not user:
-            return Response({"message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"data": None, "message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Get menu item API ID
         menu_item_api_id = request.data.get("menu_item_api_id")
         if not menu_item_api_id:
-            return Response({"message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"data": None, "message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Record user menu item view
         success = interactions_service.record_user_menu_item_view(user, menu_item_api_id)
         if not success:
             return Response(
-                {"message": "Failed to record user menu item view"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"data": None, "message": "Failed to record user menu item view"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         # Get user menu item interaction
         interaction = interactions_service.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
         if not interaction:
-            return Response({"message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"data": None, "message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         # Return serialized user menu item interaction data
         logger.info(f"Recorded user menu item view for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
@@ -396,7 +405,8 @@ def record_user_menu_item_view(request):
     except Exception as e:
         logger.error(f"Error in record_user_menu_item_view view: {e}")
         return Response(
-            {"message": f"Error recording user menu item view: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            {"data": None, "message": f"Error recording user menu item view: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -422,12 +432,14 @@ def update_user_menu_item_interaction(request):
         # Authenticate user
         user = get_user_from_request(request)
         if not user:
-            return Response({"message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"data": None, "message": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Get menu item API ID
         menu_item_api_id = request.data.get("menu_item_api_id")
         if not menu_item_api_id:
-            return Response({"message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"data": None, "message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Get interaction data
         liked = request.data.get("liked", MISSING)
@@ -437,7 +449,9 @@ def update_user_menu_item_interaction(request):
 
         # Validate would_eat_again
         if would_eat_again is not None and would_eat_again not in ["Y", "N", "M"]:
-            return Response({"message": "would_eat_again must be Y, N, or M"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"data": None, "message": "would_eat_again must be Y, N, or M"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Convert boolean strings to booleans
         if liked is not MISSING:
@@ -458,14 +472,16 @@ def update_user_menu_item_interaction(request):
         )
         if not cached_user_menu_item_interaction:
             return Response(
-                {"message": "Failed to update user menu item interaction"},
+                {"data": None, "message": "Failed to update user menu item interaction"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         # Get user menu item interaction
         interaction = interactions_service.get_or_create_user_menu_item_interaction(user, menu_item_api_id)
         if not interaction:
-            return Response({"message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"data": None, "message": "No user menu item interaction found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         # Return serialized user menu item interaction data
         logger.info(
@@ -481,7 +497,7 @@ def update_user_menu_item_interaction(request):
     except Exception as e:
         logger.error(f"Error in update_user_menu_item_interaction view: {e}")
         return Response(
-            {"message": f"Error updating user menu item interaction: {str(e)}"},
+            {"data": None, "message": f"Error updating user menu item interaction: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
@@ -504,7 +520,9 @@ def get_menu_items_metrics(request):
         # Get menu item API IDs
         menu_item_api_ids = request.data.get("menu_item_api_ids")
         if not menu_item_api_ids:
-            return Response({"message": "menu_item_api_ids is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"data": None, "message": "menu_item_api_ids is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Parse menu item API IDs
         menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids.split(",")]
@@ -525,7 +543,7 @@ def get_menu_items_metrics(request):
     except Exception as e:
         logger.error(f"Error in get_menu_items_metrics view: {e}")
         return Response(
-            {"message": f"Error fetching menu items metrics: {str(e)}"},
+            {"data": None, "message": f"Error fetching menu items metrics: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
@@ -548,12 +566,14 @@ def get_menu_item_metrics(request):
         # Get menu item API ID
         menu_item_api_id = request.GET.get("menu_item_api_id")
         if not menu_item_api_id:
-            return Response({"message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"data": None, "message": "menu_item_api_id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Get metrics for menu item
         metrics = interactions_service.get_or_create_menu_item_metrics(menu_item_api_id)
         if not metrics:
-            return Response({"message": "No metrics found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"data": None, "message": "No metrics found"}, status=status.HTTP_404_NOT_FOUND)
 
         # Return serialized metrics data
         logger.info(f"Returning metrics for menu_item_api_id: {menu_item_api_id}.")
@@ -564,6 +584,6 @@ def get_menu_item_metrics(request):
     except Exception as e:
         logger.error(f"Error in get_menu_item_metrics view: {e}")
         return Response(
-            {"message": f"Error fetching menu item metrics: {str(e)}"},
+            {"data": None, "message": f"Error fetching menu item metrics: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

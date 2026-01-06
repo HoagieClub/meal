@@ -677,7 +677,7 @@ def get_dining_menu_item(request):
         # Get API ID from request
         api_id = request.GET.get("api_id")
         if not api_id:
-            return Response({"error": "api_id is required"}, status=400)
+            return Response({"data": None, "message": "api_id is required"}, status=400)
 
         # Get menu item from API or cache
         menu_item = menu_service.get_or_cache_menu_item(int(api_id))
@@ -688,7 +688,7 @@ def get_dining_menu_item(request):
         )
     except Exception as e:
         logger.error(f"Error in get_dining_menu_item view: {e}")
-        return Response({"message": f"Error fetching dining menu item: {str(e)}"}, status=500)
+        return Response({"data": None, "message": f"Error fetching dining menu item: {str(e)}"}, status=500)
 
 
 @api_view(["GET"])
@@ -710,7 +710,7 @@ def get_dining_menu_items(request):
         api_ids = request.GET.get("api_ids")
         api_ids = [int(api_id) for api_id in api_ids.split(",")]
         if not api_ids:
-            return Response({"error": "api_ids is required"}, status=400)
+            return Response({"data": None, "message": "api_ids is required"}, status=400)
 
         # Get menu items from API or cache
         menu_items = menu_service.get_or_cache_menu_items(api_ids)
@@ -718,7 +718,7 @@ def get_dining_menu_items(request):
         return Response({"data": menu_items, "message": "Dining menu items fetched successfully."}, status=200)
     except Exception as e:
         logger.error(f"Error in get_dining_menu_items view: {e}")
-        return Response({"message": f"Error fetching dining menu items: {str(e)}"}, status=500)
+        return Response({"data": None, "message": f"Error fetching dining menu items: {str(e)}"}, status=500)
 
 
 @cache_page(60 * 5)
@@ -742,7 +742,7 @@ def get_dining_menu(request):
         location_id = int(request.GET.get("location_id"))
         menu_id = request.GET.get("menu_id")
         if not location_id or not menu_id:
-            return Response({"error": "location_id and menu_id are required"}, status=400)
+            return Response({"data": None, "message": "location_id and menu_id are required"}, status=400)
 
         # Get menu from API or cache
         menu = menu_service.get_or_cache_menu_and_cache_menu_items(location_id, menu_id)
@@ -756,7 +756,7 @@ def get_dining_menu(request):
         )
     except Exception as e:
         logger.error(f"Error in get_dining_menu view: {e}")
-        return Response({"message": f"Error fetching dining menu: {str(e)}"}, status=500)
+        return Response({"data": None, "message": f"Error fetching dining menu: {str(e)}"}, status=500)
 
 
 @cache_page(60 * 5)
@@ -778,7 +778,7 @@ def get_dining_menus_for_locations(request):
         # Get menu ID from request
         menu_id = request.GET.get("menu_id")
         if not menu_id:
-            return Response({"error": "menu_id is required"}, status=400)
+            return Response({"data": None, "message": "menu_id is required"}, status=400)
 
         # Get menus for all locations from API or cache
         menus = menu_service.get_or_cache_menus_and_cache_menu_items_for_locations(menu_id)
@@ -786,7 +786,7 @@ def get_dining_menus_for_locations(request):
         return Response({"data": menus, "message": "Dining menus fetched successfully."}, status=200)
     except Exception as e:
         logger.error(f"Error in get_dining_menus_for_locations view: {e}")
-        return Response({"message": f"Error fetching dining menus: {str(e)}"}, status=500)
+        return Response({"data": None, "message": f"Error fetching dining menus: {str(e)}"}, status=500)
 
 
 @cache_page(60 * 5)
@@ -808,7 +808,7 @@ def get_dining_menus_for_locations_and_day(request):
         # Get menu date from request
         menu_date = request.GET.get("menu_date")
         if not menu_date:
-            return Response({"error": "menu_date is required"}, status=400)
+            return Response({"data": None, "message": "menu_date is required"}, status=400)
 
         # Get menus for all locations on the given day from API or cache
         menus = menu_service.get_or_cache_menus_and_cache_menu_items_for_locations_and_day(menu_date)
@@ -816,7 +816,7 @@ def get_dining_menus_for_locations_and_day(request):
         return Response({"data": menus, "message": "Dining menus fetched successfully."}, status=200)
     except Exception as e:
         logger.error(f"Error in get_dining_menus_for_locations_day view: {e}")
-        return Response({"message": f"Error fetching dining menus: {str(e)}"}, status=500)
+        return Response({"data": None, "message": f"Error fetching dining menus: {str(e)}"}, status=500)
 
 
 @cache_page(60 * 5)
@@ -840,7 +840,7 @@ def get_dining_menus_for_locations_and_days(request):
         start_date = request.GET.get("start_date")
         end_date = request.GET.get("end_date")
         if not start_date or not end_date:
-            return Response({"error": "start_date and end_date are required"}, status=400)
+            return Response({"data": None, "message": "start_date and end_date are required"}, status=400)
 
         # Get menus for all locations for the given date range from API or cache
         menus = menu_service.get_or_cache_menus_and_cache_menu_items_for_locations_and_days(start_date, end_date)
@@ -848,7 +848,7 @@ def get_dining_menus_for_locations_and_days(request):
         return Response({"data": menus, "message": "Dining menus fetched successfully."}, status=200)
     except Exception as e:
         logger.error(f"Error in get_dining_menus_for_locations_days view: {e}")
-        return Response({"message": f"Error fetching dining menus: {str(e)}"}, status=500)
+        return Response({"data": None, "message": f"Error fetching dining menus: {str(e)}"}, status=500)
 
 
 #################### Utility functions for working with menu data #########################

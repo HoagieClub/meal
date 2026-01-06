@@ -118,14 +118,13 @@ def verify_and_get_or_create_user(request):
     """
     logger.info(f"Verifying and getting or creating user by Auth0 token from request: {request}")
     try:
-        print(request.headers)
         auth0_claims = decode_auth0_token(request)
         if not auth0_claims:
-            return Response({"message": "Failed to decode Auth0 token"}, status=401)
+            return Response({"data": None, "message": "Failed to decode Auth0 token"}, status=401)
 
         user = user_api.get_or_create_user(auth0_claims)
         if not user:
-            return Response({"message": "Failed to get or create user"}, status=500)
+            return Response({"data": None, "message": "Failed to get or create user"}, status=500)
 
         return Response(
             {"data": UserSerializer(user).data, "message": "User fetched or created successfully."},
@@ -133,7 +132,7 @@ def verify_and_get_or_create_user(request):
         )
     except Exception as e:
         logger.error(f"Error in verify_and_get_or_create_user view: {e}")
-        return Response({"message": f"Failed to verify and get or create user: {str(e)}"}, status=500)
+        return Response({"data": None, "message": f"Failed to verify and get or create user: {str(e)}"}, status=500)
 
 
 #################### Utility functions for working with user data #########################
@@ -180,7 +179,6 @@ def get_user_from_request(request: HttpRequest) -> Optional[Any]:
         Optional[Any]: The user if authenticated, None otherwise.
 
     """
-    print(request.headers)
     try:
         auth0_claims = decode_auth0_token(request)
         if not auth0_claims:

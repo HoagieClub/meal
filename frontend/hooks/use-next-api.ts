@@ -23,14 +23,14 @@ import { ApiResponse, HttpMethod } from '@/types/http';
  * @param method - The HTTP method to use for the request.
  * @param body - The body of the request.
  * @param headers - The headers to include in the request.
- * @returns The API response, wrapped safely with an error field instead of throwing.
+ * @returns The API response with consistent structure.
  */
 async function apiRequest<T>(
   endpoint: string,
   method: HttpMethod,
   body?: any,
   headers?: HeadersInit
-): Promise<{ data: ApiResponse<T> | null; error: any }> {
+): Promise<ApiResponse<T>> {
   try {
     const res = await fetch(endpoint, {
       method,
@@ -43,26 +43,16 @@ async function apiRequest<T>(
 
     const json = await res.json();
 
-    if (!res.ok) {
-      return {
-        data: null,
-        error: {
-          status: res.status,
-          message: json?.error || json?.message || 'Request failed',
-          data: json,
-        },
-      };
-    }
-
-    return { data: json, error: null };
-  } catch (err: any) {
     return {
+      status: json?.status || res.status,
+      message: json?.message || 'Success',
+      data: json?.data !== undefined ? json.data : null,
+    };
+  } catch (error: any) {
+    return {
+      status: error?.status || 500,
+      message: error?.message || 'Network or unexpected error',
       data: null,
-      error: {
-        status: err?.status || 500,
-        message: err?.message || 'Network or unexpected error',
-        data: err?.data,
-      },
     };
   }
 }

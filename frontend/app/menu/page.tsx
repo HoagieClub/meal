@@ -58,11 +58,12 @@ import {
   DiningHall,
   DietaryTag,
   Allergen,
+  MenuItem,
 } from '@/types/dining';
 import { buildDisplayData } from './actions';
 import { formatMenuId } from '@/utils/dining';
 import { DiningPreferences } from '@/types/dining';
-import { getDiningMenusForDay } from '@/lib/next-endpoints';
+import { getDiningMenusForLocationsAndDay, getDiningMenuItems } from '@/lib/next-endpoints';
 
 const MENU_CACHE_KEY = 'menuCache';
 const PREFERENCES_KEY = 'diningPreferences';
@@ -72,6 +73,148 @@ const DEFAULT_PREFERENCES: DiningPreferences = {
   allergens: [],
   showNutrition: true,
 };
+
+/**
+ * Fetches menus for a specific date key from the API.
+ *
+ * @param dateKey - Date string in YYYY-MM-DD format
+ * @returns Promise resolving to MenusForMealAndLocations or null
+ */
+async function fetchMenusForDateKey(dateKey: string): Promise<MenusForMealAndLocations | null> {
+  try {
+    const { data, error } = await getDiningMenusForLocationsAndDay({ menu_date: dateKey });
+    if (error) throw new Error(error);
+    if (!data) throw new Error('No data received');
+
+    const menuData = data.data || data;
+    if (!menuData || (typeof menuData === 'object' && Object.keys(menuData).length === 0)) {
+      throw new Error('No menu data found');
+    }
+
+    const menusData = menuData as MenusForMealAndLocations;
+    console.log('Fetched menus for date:', dateKey, menusData);
+
+    return menusData;
+  } catch (error) {
+    console.error(`Error fetching menu data for ${dateKey}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetches menus for a specific date key from the menu cache hooks.
+ * Reconstructs MenusForMealAndLocations from menu structure, menu items, and locations caches.
+ *
+ * @param dateKey - Date string in YYYY-MM-DD format
+ * @param menuStructureCache - Menu structure cache object (date -> meal -> location -> api_ids[])
+ * @param menuItemsCache - Menu items cache object (api_id -> MenuItem)
+ * @param locationsCache - Locations cache object (location_id -> DiningVenue)
+ * @returns MenusForMealAndLocations or null if not found in cache
+ */
+function getMenusFromCacheForDateKey(
+  dateKey: string,
+  menuStructureCache: {
+    [date: string]: {
+      [meal in Meal]?: {
+        [locationId: string]: number[];
+      };
+    };
+  },
+  menuItemsCache: {
+    [apiId: number]: MenuItem;
+  },
+  locationsCache: {
+    [locationId: string]: DiningVenue;
+  }
+): MenusForMealAndLocations | null {
+  try {
+    const dateStructure = menuStructureCache?.[dateKey];
+    if (!dateStructure) {
+      return null;
+    }
+
+    const result: MenusForMealAndLocations = {};
+
+    // For each meal in the date structure
+    for (const [meal, locationApiIds] of Object.entries(dateStructure)) {
+      const mealType = meal as Meal;
+      const locations: DiningVenue[] = [];
+
+      // For each location in the meal
+      for (const [locationId, apiIds] of Object.entries(locationApiIds || {})) {
+        // Get the location data
+        const location = locationsCache?.[locationId];
+        if (!location) {
+          continue;
+        }
+
+        // Get menu items for this location
+        const menuItems = apiIds
+          .map((apiId) => menuItemsCache?.[apiId])
+          .filter((item): item is MenuItem => item !== undefined);
+
+        // Create a copy of the location with menu items
+        const locationWithMenu: DiningVenue = {
+          ...location,
+          menu: menuItems,
+        };
+
+        locations.push(locationWithMenu);
+      }
+
+      if (locations.length > 0) {
+        result[mealType] = locations;
+      }
+    }
+
+    if (Object.keys(result).length === 0) {
+      return null;
+    }
+
+    console.log('Found menus in cache for date:', dateKey, result);
+    return result;
+  } catch (error) {
+    console.error(`Error reading menu cache for ${dateKey}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetches menu items from the API backend given a list of API IDs.
+ *
+ * @param apiIds - Array of menu item API IDs
+ * @returns Promise resolving to Record<string, MenuItem> (map/dict) or null if error
+ */
+async function fetchMenuItemsByApiIds(apiIds: number[]): Promise<Record<string, MenuItem> | null> {
+  if (!apiIds || apiIds.length === 0) {
+    return {};
+  }
+
+  try {
+    // Convert array of numbers to comma-separated string
+    const apiIdsString = apiIds.join(',');
+    const { data, error } = await getDiningMenuItems({ api_ids: apiIdsString });
+
+    if (error) throw new Error(error);
+    if (!data) throw new Error('No data received');
+
+    const menuItemsData = data.data || data;
+    if (
+      !menuItemsData ||
+      (typeof menuItemsData === 'object' && Object.keys(menuItemsData).length === 0)
+    ) {
+      throw new Error('No menu items data found');
+    }
+
+    const menuItems = menuItemsData as Record<string, MenuItem>;
+    console.log('Fetched menu items for API IDs:', apiIds, menuItems);
+
+    return menuItems;
+  } catch (error) {
+    console.error(`Error fetching menu items for API IDs ${apiIds.join(',')}:`, error);
+    return null;
+  }
+}
 
 /**
  * Menu page component.
@@ -128,29 +271,14 @@ export default function MenuPage() {
 
     // Otherwise, fetch from API
     async function fetchMenuData() {
-      try {
-        const { data, error } = await getDiningMenusForDay({ menu_date: dateKey });
-        if (error) throw new Error(error);
-        if (!data) throw new Error('No data received');
-        const menuData = data.data || data;
-        if (!menuData || (typeof menuData === 'object' && Object.keys(menuData).length === 0)) {
-          throw new Error('No menu data found');
-        }
-
-        console.log('Fetched menus for date:', dateKey, menuData);
-        const menusData = menuData as MenusForMealAndLocations;
+      const menusData = await fetchMenusForDateKey(dateKey);
+      if (menusData) {
         setMenusForLocations(menusData[meal] ?? []);
         setMenuCache({ ...menuCache, [dateKey]: menusData as MenusForDateMealAndLocations });
-        setLoading(false);
-        return;
-      } catch (error) {
-        console.error(`Error fetching menu data for ${dateKey}:`, error);
-        setLoading(false);
+      } else {
         setMenusForLocations([]);
-        return;
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     }
 
     fetchMenuData();

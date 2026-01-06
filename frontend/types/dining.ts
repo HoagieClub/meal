@@ -1,58 +1,141 @@
+// @overview Type definitions for dining-related data structures.
+//
+// Copyright © 2021-2025 Hoagie Club and affiliates.
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree or at
+//
+//    https://github.com/hoagieclub/meal/LICENSE.
+//
+// Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
+
+// Represents a dining venue or location where meals are served.
 export interface DiningVenue {
-  databaseId: number;
-  name: string;
-  mapName: string;
-  latitude: string;
-  longitude: string;
-  buildingName: string;
-  amenities: string[];
-  isActive: boolean;
-  categoryId: number;
-  menu?: MenuItem[];
+  databaseId: number | null;
+  name: string | null;
+  mapName: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  buildingName: string | null;
+  amenities: string[] | null;
+  isActive: boolean | null;
+  categoryId: number | null;
 }
 
-export interface MenuItem {
-  apiId: number;
-  apiUrl?: string;
-  name: string;
-  description: string;
-  link?: string;
-  servingSize?: string | number | null;
+// Nutritional information for a menu item. All values are optional and may be null if not available.
+export interface MenuItemNutrition {
+  servingSize?: number | null;
   servingUnit?: string | null;
-  calories?: string | number | null;
-  caloriesFromFat?: string | number | null;
-  totalFat?: string | number | null;
-  saturatedFat?: string | number | null;
-  transFat?: string | number | null;
-  cholesterol?: string | number | null;
-  sodium?: string | number | null;
-  totalCarbohydrates?: string | number | null;
-  dietaryFiber?: string | number | null;
-  sugars?: string | number | null;
-  protein?: string | number | null;
-  vitaminD?: string | number | null;
-  potassium?: string | number | null;
-  calcium?: string | number | null;
-  iron?: string | number | null;
+  calories?: number | null;
+  caloriesFromFat?: number | null;
+  totalFat?: number | null;
+  saturatedFat?: number | null;
+  transFat?: number | null;
+  cholesterol?: number | null;
+  sodium?: number | null;
+  totalCarbohydrates?: number | null;
+  dietaryFiber?: number | null;
+  sugars?: number | null;
+  protein?: number | null;
+  vitaminD?: number | null;
+  potassium?: number | null;
+  calcium?: number | null;
+  iron?: number | null;
+}
+
+// Represents a single menu item (food item) available at a dining location.
+export interface MenuItem {
+  apiId: number | null;
+  apiUrl?: string | null;
+  name: string | null;
   allergens?: string[] | null;
   ingredients?: string[] | null;
   dietaryFlags?: string[] | null;
+  nutrition?: MenuItemNutrition | null;
 }
 
+// Aggregated metrics for a menu item based on user interactions. Tracks views, likes, favorites, and user feedback.
+export interface MenuItemMetrics {
+  viewCount: number | null;
+  uniqueViewCount: number | null;
+  likeCount: number | null;
+  dislikeCount: number | null;
+  averageLikeScore: number | null;
+  favoriteCount: number | null;
+  savedForLaterCount: number | null;
+  wouldEatAgainYes: number | null;
+  wouldEatAgainNo: number | null;
+  wouldEatAgainMaybe: number | null;
+  averageWouldEatAgainScore: number | null;
+}
+
+// User's preference for eating a menu item again: 'Y' (Yes), 'N' (No), 'M' (Maybe).
+export type WouldEatAgain = 'Y' | 'N' | 'M';
+
+// Represents a user's interaction history with a specific menu item. Tracks viewing history, likes, favorites, and preferences.
+export interface MenuItemInteraction {
+  viewed: boolean | null;
+  viewCount: number | null;
+  firstViewedAt: string | null;
+  lastViewedAt: string | null;
+  liked: boolean | null;
+  favorited: boolean | null;
+  savedForLater: boolean | null;
+  wouldEatAgain: WouldEatAgain | null;
+}
+
+// Unique identifier for a menu item from the API. Can be either a number or string.
+export type ApiId = number | string;
+
+// Unique identifier for a dining location. Can be either a number or string.
+export type LocationId = number | string;
+
+// Meal period types available at dining locations.
 export type Meal = 'Breakfast' | 'Lunch' | 'Dinner';
 
-export type Menu = MenuItem[];
+// Date key format used for indexing menus by date. Typically in YYYY-MM-DD format.
+export type DateKey = string;
 
-export type MenusForLocations = DiningVenue[];
+// A menu is an array of menu item API IDs. Structure: (string|number)[]
+export type Menu = ApiId[];
 
+// Maps location IDs to their menus. Structure: { [locationId: string]: (string|number)[] }. Keys are strings due to Django serialization.
+export type MenusForLocations = {
+  [locationId in LocationId]: Menu;
+};
+
+// Maps meal types to menus for all locations. Structure: { [meal: string]: { [locationId: string]: (string|number)[] } }. Keys are strings due to Django serialization.
 export type MenusForMealAndLocations = {
-  [M in Meal]?: DiningVenue[];
+  [meal in Meal]: MenusForLocations;
 };
 
+// Maps dates to menus organized by meal and location. Structure: { [dateKey: string]: { [meal: string]: { [locationId: string]: (string|number)[] } } }. Keys are strings due to Django serialization.
 export type MenusForDateMealAndLocations = {
-  [key: string]: MenusForMealAndLocations;
+  [dateKey in DateKey]: MenusForMealAndLocations;
 };
 
+// Maps menu item API IDs to their full menu item data. Structure: { [apiId: string]: MenuItem }. Keys are strings due to Django serialization.
+export type MenuItemMap = {
+  [apiId in ApiId]: MenuItem;
+};
+
+// Maps menu item API IDs to their aggregated metrics. Structure: { [apiId: string]: MenuItemMetrics }. Keys are strings due to Django serialization.
+export type MenuItemMetricsMap = {
+  [apiId in ApiId]: MenuItemMetrics;
+};
+
+// Maps menu item API IDs to user interaction data. Structure: { [apiId: string]: MenuItemInteraction }. Keys are strings due to Django serialization.
+export type MenuItemInteractionMap = {
+  [apiId in ApiId]: MenuItemInteraction;
+};
+
+// Maps location IDs to their full dining venue data. Structure: { [locationId: string]: DiningVenue }. Keys are strings due to Django serialization.
+export type LocationMap = {
+  [locationId in LocationId]: DiningVenue;
+};
+
+// Known allergens that may be present in menu items.
 export type Allergen =
   | 'Peanut'
   | 'Coconut'
@@ -66,6 +149,7 @@ export type Allergen =
   | 'Fish'
   | 'Sesame';
 
+// Available dining halls at the institution.
 export type DiningHall =
   | 'Forbes College'
   | 'Mathey & Rockefeller Colleges'
@@ -75,42 +159,43 @@ export type DiningHall =
   | 'Graduate College'
   | 'Frist Grill';
 
+// Dietary tags that can be applied to menu items or user preferences.
 export type DietaryTag = 'Vegetarian' | 'Vegan' | 'Halal' | 'Kosher';
 
-export type DisplayMeal = 'Breakfast' | 'Lunch' | 'Dinner' | 'Brunch';
+// Categories for organizing menu items within a menu.
+export type MenuCategory = 'Main Entrée' | 'Vegan Entrée';
 
-export type MenuCategory = 'Main Entrée' | 'Vegan Entrée' | 'Soups';
-
+// Emoji icons used to represent different meal types or dietary information.
 export type MealIcon = '🍂' | '🥜' | '🥚' | '🥛' | '🌱' | '🥜';
 
-export interface DiningPreferences {
-  diningHalls: DiningHall[];
-  dietaryRestrictions: DietaryTag[];
-  allergens: Allergen[];
-  showNutrition: boolean;
+// API Response Types
+
+// Base Django backend API response structure. All Django endpoints return this format on success.
+export interface DjangoApiResponse<T> {
+  data: T;
+  message: string;
 }
 
-export interface MenuItemMetrics {
-  viewCount: number;
-  uniqueViewCount: number;
-  likeCount: number;
-  dislikeCount: number;
-  averageLikeScore: number;
-  favoriteCount: number;
-  savedForLaterCount: number;
-  wouldEatAgainYes: number;
-  wouldEatAgainNo: number;
-  wouldEatAgainMaybe: number;
-  averageWouldEatAgainScore: number;
+// Base Next.js API route response structure. All Next.js API routes return this format on success.
+export interface NextApiResponse<T> {
+  data: T;
+  message: string;
+  status: number;
 }
 
-export interface MenuItemInteraction {
-  viewed: boolean;
-  viewCount: number;
-  firstViewedAt: string;
-  lastViewedAt: string;
-  liked: boolean;
-  favorited: boolean;
-  savedForLater: boolean;
-  wouldEatAgain: string;
+// Next.js API route error response structure.
+export interface NextApiErrorResponse {
+  error: string;
+  message: string;
+  details?: string;
+}
+
+// Next.js API client response structure. Wraps the Next.js API response with error handling.
+export interface NextApiClientResponse<T> {
+  data: NextApiResponse<T> | null;
+  error: {
+    status: number;
+    message: string;
+    data?: any;
+  } | null;
 }

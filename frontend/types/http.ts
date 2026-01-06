@@ -24,10 +24,9 @@ type MethodConfig<M extends HttpMethod> = {
 
 // Base response type
 export type ApiResponse<T> = {
-  status?: number;
-  data?: T;
-  message?: string;
-  error?: string;
+  status: number;
+  message: string;
+  data: T | null;
 };
 
 // Prevent body in GET requests

@@ -289,7 +289,7 @@ def get_dining_locations(request):
         return Response({"data": locations, "message": "Dining locations fetched successfully."}, status=200)
     except Exception as e:
         logger.error(f"Error in get_or_cache_dining_locations view: {e}")
-        return Response({"message": f"Error fetching dining locations: {str(e)}"}, status=500)
+        return Response({"data": None, "message": f"Error fetching dining locations: {str(e)}"}, status=500)
 
 
 @api_view(["GET"])
@@ -312,7 +312,7 @@ def get_all_dining_locations(request):
         return Response({"data": locations, "message": "Dining locations fetched successfully."}, status=200)
     except Exception as e:
         logger.error(f"Error in get_all_dining_locations view: {e}")
-        return Response({"message": f"Error fetching all dining locations: {str(e)}"}, status=500)
+        return Response({"data": None, "message": f"Error fetching all dining locations: {str(e)}"}, status=500)
 
 
 #################### Utility functions for working with locations data #########################
