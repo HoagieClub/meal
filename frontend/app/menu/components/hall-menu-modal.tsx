@@ -60,7 +60,32 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
   return (
     <Dialog
       isShown={!!modalHall}
-      title={`${modalHall.name} - Full Menu`}
+      title={
+        <Pane display='flex' alignItems='center' justifyContent='space-between' width='100%'>
+          <Pane>{modalHall.name}</Pane>
+          <Pane display='flex' alignItems='center' justifyContent='flex-end' gap={minorScale(2)}>
+            <Pane
+              display='flex'
+              alignItems='center'
+              justifyContent='flex-end'
+              gap={minorScale(4)}
+              marginRight={minorScale(4)}
+            >
+              <ColumnVisibilityDropdown
+                columnVisibility={columnVisibility}
+                setColumnVisibility={setColumnVisibility}
+              />
+              <Pane width={150}>
+                <SortDropdown
+                  sortOption={sortOption}
+                  setSortOption={setSortOption}
+                  showLabel={false}
+                />
+              </Pane>
+            </Pane>
+          </Pane>
+        </Pane>
+      }
       onCloseComplete={() => setModalHall(null)}
       hasFooter={false}
       width='80vw'
@@ -72,19 +97,6 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
         gap={minorScale(3)}
         className='overflow-x-hidden'
       >
-        <Pane
-          display='flex'
-          alignItems='center'
-          justifyContent='flex-end'
-          gap={minorScale(4)}
-          marginBottom={minorScale(2)}
-        >
-          <ColumnVisibilityDropdown
-            columnVisibility={columnVisibility}
-            setColumnVisibility={setColumnVisibility}
-          />
-          <SortDropdown sortOption={sortOption} setSortOption={setSortOption} showLabel={false} />
-        </Pane>
         <Separator height='1.5px' marginTop={0} />
         <MenuSection
           label='Menu'

@@ -25,8 +25,6 @@ import {
   SearchIcon,
   Spinner,
   Button,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   Checkbox,
   SearchInput,
   Switch,
@@ -37,6 +35,7 @@ import HallMenuModal from '@/app/menu/components/hall-menu-modal';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
 import FilterSidebar from '@/app/menu/components/filter-sidebar';
 import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
+import DateMealSelector from '@/app/menu/components/date-meal-selector';
 import type { MenuSortOption } from '@/app/menu/components/filter-sidebar';
 import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
@@ -550,80 +549,14 @@ export default function MenuPage() {
               </Text>
             </Pane>
 
-            <Pane
-              display='flex'
-              gap={minorScale(2)}
-              className='mx-2 flex-col flex justify-center my-4'
-            >
-              {/* Date and meal selector */}
-              <Pane
-                display='flex'
-                alignItems='center'
-                gap={minorScale(2)}
-                marginBottom={majorScale(1)}
-              >
-                <Button
-                  background='white'
-                  border={`1px solid ${theme.colors.gray300}`}
-                  borderRadius={999}
-                  padding={minorScale(1)}
-                  appearance='minimal'
-                  onClick={goToPreviousDay}
-                >
-                  <ChevronLeftIcon size={20} />
-                </Button>
+            <DateMealSelector
+              meal={meal}
+              setMeal={setMeal}
+              formattedDateForDisplay={formattedDateForDisplay}
+              goToPreviousDay={goToPreviousDay}
+              goToNextDay={goToNextDay}
+            />
 
-                <Text
-                  className='text-2xl text-center w-[14rem] truncate'
-                  color={theme.colors.green700}
-                >
-                  {formattedDateForDisplay}
-                </Text>
-
-                <Button
-                  background='white'
-                  border={`1px solid ${theme.colors.gray300}`}
-                  borderRadius={999}
-                  padding={minorScale(1)}
-                  appearance='minimal'
-                  onClick={goToNextDay}
-                >
-                  <ChevronRightIcon size={20} />
-                </Button>
-              </Pane>
-
-              {/* Control which meal is displayed */}
-              <Pane
-                display='flex'
-                borderRadius={999}
-                background={theme.colors.green25}
-                overflow='hidden'
-                boxShadow='0 2px 8px rgba(0,0,0,0.08)'
-              >
-                {MEALS.map((mealOption: Meal) => {
-                  const isSelectedMeal = meal === mealOption;
-                  const backgroundColor = isSelectedMeal ? theme.colors.green700 : 'transparent';
-                  const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
-
-                  return (
-                    <Pane
-                      key={mealOption}
-                      flex={1}
-                      textAlign='center'
-                      paddingY={minorScale(1)}
-                      cursor='pointer'
-                      background={backgroundColor}
-                      color={textColor}
-                      className='text-xs px-4'
-                      fontWeight={300}
-                      onClick={() => setMeal(mealOption as Meal)}
-                    >
-                      {mealOption}
-                    </Pane>
-                  );
-                })}
-              </Pane>
-            </Pane>
             <Pane
               display='flex'
               flexDirection='column'
