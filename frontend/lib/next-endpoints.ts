@@ -252,8 +252,21 @@ export const getMenuItemsMetrics = (params: { menu_item_api_ids: number[] }) => 
  * @returns API response with ranked menu item API IDs
  */
 export const rankMenuItems = (params: { menu_item_api_ids: number[] }) => {
-  const url = '/api/recommendations/rank-menu-items/';
+  const url = '/api/recommend/menu-items/';
   return api.post<{ data: number[] }>(url, {
     menu_item_api_ids: params.menu_item_api_ids,
+  });
+};
+
+/**
+ * Ranks menu items for multiple locations based on user's interaction history.
+ *
+ * @param params - Request body (menus_for_locations - dictionary mapping location IDs to arrays of menu item API IDs)
+ * @returns API response with ranked menus for locations
+ */
+export const rankMenusForLocations = (params: { menus_for_locations: Record<string, number[]> }) => {
+  const url = '/api/recommend/menu/locations/';
+  return api.post<{ data: Record<string, number[]> }>(url, {
+    menus_for_locations: params.menus_for_locations,
   });
 };

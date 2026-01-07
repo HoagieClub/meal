@@ -265,9 +265,26 @@ export const rankMenuItems = (
   accessToken: string,
   params: { menu_item_api_ids: number[] }
 ) => {
-  const url = '/api/recommendations/rank-menu-items/';
+  const url = '/api/recommend/menu-items/';
   return request.postAuth(accessToken)(url, {
     arg: { menu_item_api_ids: params.menu_item_api_ids },
+  });
+};
+
+/**
+ * Ranks menu items for multiple locations based on user's interaction history.
+ *
+ * @param accessToken - Auth0 access token
+ * @param params - Request body (menus_for_locations - dictionary mapping location IDs to arrays of menu item API IDs)
+ * @returns API response with ranked menus for locations
+ */
+export const rankMenusForLocations = (
+  accessToken: string,
+  params: { menus_for_locations: Record<string, number[]> }
+) => {
+  const url = '/api/recommend/menu/locations/';
+  return request.postAuth(accessToken)(url, {
+    arg: { menus_for_locations: params.menus_for_locations },
   });
 };
 
