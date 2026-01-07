@@ -37,7 +37,7 @@ from hoagiemeal.api.interactions import (
 from hoagiemeal.api.user import (
     verify_and_get_or_create_user,
 )
-from hoagiemeal.api.recommendations import rank_menu_items, rank_menus_for_locations
+from hoagiemeal.api.recommendations import get_menu_item_score, get_menu_items_score
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -77,12 +77,8 @@ urlpatterns = [
     path("api/interactions/menu-item/metrics/", get_menu_item_metrics, name="get-menu-item-metrics"),
     path("api/interactions/menu-items/metrics/", get_menu_items_metrics, name="get-menu-items-metrics"),
     # Recommendation API Endpoints
-    path("api/recommend/menu-items/", rank_menu_items, name="rank-menu-items"),
-    path(
-        "api/recommend/menu/locations/",
-        rank_menus_for_locations,
-        name="rank-menus-for-locations",
-    ),
+    path("api/recommend/menu-item/", get_menu_item_score, name="get-menu-item-score"),
+    path("api/recommend/menu-items/", get_menu_items_score, name="get-menu-items-score"),
     # User API Endpoints
     path("api/user/verify/", verify_and_get_or_create_user, name="verify-and-get-or-create-user"),
 ]

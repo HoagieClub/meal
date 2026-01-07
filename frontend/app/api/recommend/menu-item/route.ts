@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to rank menu items for multiple locations.
+ * @overview Next.js Route Handler to get recommendation score for a single menu item.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -14,15 +14,15 @@
 
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { rankMenusForLocations } from '@/lib/endpoints';
+import { getMenuItemScore } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Ranks menu items for multiple locations based on user's interaction history.
+ * Gets recommendation score for a single menu item.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the ranked menus for locations.
+ * @returns A NextResponse object with the menu item score.
  */
 export async function POST(req: Request) {
   try {
@@ -39,42 +39,31 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const menusForLocations = body.menus_for_locations;
+    const menuItemApiId = body.menu_item_api_id;
 
-    if (!menusForLocations) {
+    if (menuItemApiId === undefined || menuItemApiId === null) {
       return NextResponse.json(
         {
           status: 400,
-          message: 'Missing menus_for_locations in request body',
+          message: 'Missing menu_item_api_id in request body',
           data: null,
         },
         { status: 400 }
       );
     }
 
-    if (typeof menusForLocations !== 'object' || Array.isArray(menusForLocations)) {
-      return NextResponse.json(
-        {
-          status: 400,
-          message: 'menus_for_locations must be a dictionary/object',
-          data: null,
-        },
-        { status: 400 }
-      );
-    }
-
-    const res = await rankMenusForLocations(accessToken, {
-      menus_for_locations: menusForLocations,
+    const res = await getMenuItemScore(accessToken, {
+      menu_item_api_id: Number(menuItemApiId),
     });
 
-    // Django backend returns: {"data": {location_id: [api_id, ...], ...}, "message": "..."}
-    const data = res.data || res;
+    // Django backend returns: {"data": 0.85, "message": "..."}
+    const data = res.data !== undefined ? res.data : res;
 
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    if (typeof data !== 'number') {
       return NextResponse.json(
         {
           status: 404,
-          message: 'No ranked menus for locations returned',
+          message: 'Invalid score returned',
           data: null,
         },
         { status: 404 }
@@ -83,7 +72,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       data,
-      message: 'Successfully ranked menus for locations',
+      message: 'Successfully retrieved menu item score',
       status: 200,
     });
   } catch (error: unknown) {

@@ -255,36 +255,30 @@ export const getMenuItemsMetrics = (params: { menu_item_api_ids: number[] }) => 
 };
 
 /**
- * Ranks menu items for a user based on their interaction history.
+ * Gets recommendation score for a single menu item.
  *
  * @param accessToken - Auth0 access token
- * @param params - Request body (menu_item_api_ids - array of integers)
- * @returns API response with ranked menu item API IDs
+ * @param params - Request body (menu_item_api_id - integer)
+ * @returns API response with menu item score
  */
-export const rankMenuItems = (
-  accessToken: string,
-  params: { menu_item_api_ids: number[] }
-) => {
-  const url = '/api/recommend/menu-items/';
+export const getMenuItemScore = (accessToken: string, params: { menu_item_api_id: number }) => {
+  const url = '/api/recommend/menu-item/';
   return request.postAuth(accessToken)(url, {
-    arg: { menu_item_api_ids: params.menu_item_api_ids },
+    arg: { menu_item_api_id: params.menu_item_api_id },
   });
 };
 
 /**
- * Ranks menu items for multiple locations based on user's interaction history.
+ * Gets recommendation scores for multiple menu items.
  *
  * @param accessToken - Auth0 access token
- * @param params - Request body (menus_for_locations - dictionary mapping location IDs to arrays of menu item API IDs)
- * @returns API response with ranked menus for locations
+ * @param params - Request body (menu_item_api_ids - array of integers)
+ * @returns API response with dictionary mapping menu item API IDs to scores
  */
-export const rankMenusForLocations = (
-  accessToken: string,
-  params: { menus_for_locations: Record<string, number[]> }
-) => {
-  const url = '/api/recommend/menu/locations/';
+export const getMenuItemsScore = (accessToken: string, params: { menu_item_api_ids: number[] }) => {
+  const url = '/api/recommend/menu-items/';
   return request.postAuth(accessToken)(url, {
-    arg: { menus_for_locations: params.menus_for_locations },
+    arg: { menu_item_api_ids: params.menu_item_api_ids },
   });
 };
 

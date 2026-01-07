@@ -37,24 +37,50 @@ from hoagiemeal.models.menu import (
 
 
 class RecommendationService:
-    """Service for ranking menu items for a user."""
+    """Service for scoring menu items for a user."""
 
-    def rank_menu_items_for_user(
+    def _calculate_score(
+        self,
+        menu_item_api_id: int,
+        liked_items: set,
+        disliked_items: set,
+        similarity_map: Dict[int, Dict[int, float]],
+    ) -> float:
+        """Calculate recommendation score for a single menu item.
+
+        Args:
+            menu_item_api_id (int): Menu item API ID to score.
+            liked_items (set): Set of liked menu item API IDs.
+            disliked_items (set): Set of disliked menu item API IDs.
+            similarity_map (dict): Map of item_a -> item_b -> similarity score.
+
+        Returns:
+            float: Recommendation score for the menu item.
+
+        """
+        score = 0.0
+        for liked in liked_items:
+            score += similarity_map.get(liked, {}).get(menu_item_api_id, 0.0)
+        for disliked in disliked_items:
+            score -= similarity_map.get(disliked, {}).get(menu_item_api_id, 0.0)
+        return score
+
+    def get_menu_item_score(
         self,
         user: Any,
-        menu_item_api_ids: List[int],
-    ) -> List[int]:
-        """Rank menu items by likelihood a user will like them.
+        menu_item_api_id: int,
+    ) -> float:
+        """Get recommendation score for a single menu item.
 
         Args:
             user (User): Authenticated user.
-            menu_item_api_ids (list[int]): Menu item API IDs to rank.
+            menu_item_api_id (int): Menu item API ID to score.
 
         Returns:
-            list[int]: Menu item API IDs ordered by recommendation score.
+            float: Recommendation score for the menu item.
 
         """
-        logger.info(f"Ranking {len(menu_item_api_ids)} menu items for user_id={user.id}.")
+        logger.info(f"Getting score for menu item {menu_item_api_id} for user_id={user.id}.")
         try:
             # Get user likes and dislikes
             liked_items = set(
@@ -64,12 +90,59 @@ class RecommendationService:
                 MenuItemInteraction.objects.filter(user=user, liked=False).values_list("menu_item__api_id", flat=True)
             )
 
-            # Cold start: no interactions, return original order
+            # Cold start: no interactions, return 0.0
             if not liked_items and not disliked_items:
-                logger.info(f"No interaction history for user_id={user.id}, returning original order.")
-                return menu_item_api_ids
+                logger.info(f"No interaction history for user_id={user.id}, returning score 0.0.")
+                return 0.0
 
             # Fetch similarity rows for relevant items
+            similarities = MenuItemSimilarity.objects.filter(item_a__api_id__in=liked_items | disliked_items)
+
+            similarity_map = defaultdict(dict)
+            for sim in similarities:
+                similarity_map[sim.item_a.api_id][sim.item_b.api_id] = sim.score
+
+            score = self._calculate_score(menu_item_api_id, liked_items, disliked_items, similarity_map)
+
+            logger.info(
+                f"Successfully calculated score {score} for menu item {menu_item_api_id} for user_id={user.id}."
+            )
+            return score
+        except Exception as e:
+            logger.error(f"Error calculating score for menu item {menu_item_api_id} for user_id={user.id}: {e}")
+            return 0.0
+
+    def get_menu_items_score(
+        self,
+        user: Any,
+        menu_item_api_ids: List[int],
+    ) -> Dict[int, float]:
+        """Get recommendation scores for multiple menu items.
+
+        Args:
+            user (User): Authenticated user.
+            menu_item_api_ids (list[int]): Menu item API IDs to score.
+
+        Returns:
+            dict[int, float]: Dictionary mapping menu item API IDs to their scores.
+
+        """
+        logger.info(f"Getting scores for {len(menu_item_api_ids)} menu items for user_id={user.id}.")
+        try:
+            # Get user likes and dislikes (only fetch once for efficiency)
+            liked_items = set(
+                MenuItemInteraction.objects.filter(user=user, liked=True).values_list("menu_item__api_id", flat=True)
+            )
+            disliked_items = set(
+                MenuItemInteraction.objects.filter(user=user, liked=False).values_list("menu_item__api_id", flat=True)
+            )
+
+            # Cold start: no interactions, return all 0.0
+            if not liked_items and not disliked_items:
+                logger.info(f"No interaction history for user_id={user.id}, returning all scores as 0.0.")
+                return {item_id: 0.0 for item_id in menu_item_api_ids}
+
+            # Fetch similarity rows for relevant items (only fetch once)
             similarities = MenuItemSimilarity.objects.filter(item_a__api_id__in=liked_items | disliked_items)
 
             similarity_map = defaultdict(dict)
@@ -79,65 +152,16 @@ class RecommendationService:
             # Score each menu item
             scores = {}
             for item_id in menu_item_api_ids:
-                score = 0.0
-                for liked in liked_items:
-                    score += similarity_map.get(liked, {}).get(item_id, 0.0)
-                for disliked in disliked_items:
-                    score -= similarity_map.get(disliked, {}).get(item_id, 0.0)
+                score = self._calculate_score(item_id, liked_items, disliked_items, similarity_map)
                 scores[item_id] = score
 
-            # Sort by score (descending)
-            ranked_ids = sorted(
-                menu_item_api_ids,
-                key=lambda item_id: scores[item_id],
-                reverse=True,
+            logger.info(
+                f"Successfully calculated scores for {len(menu_item_api_ids)} menu items for user_id={user.id}."
             )
-
-            logger.info(f"Successfully ranked menu items for user_id={user.id}.")
-            return ranked_ids
+            return scores
         except Exception as e:
-            logger.error(f"Error ranking menu items for user_id={user.id}: {e}")
-            return menu_item_api_ids
-
-    def rank_menus_for_locations(
-        self,
-        user: Any,
-        menus_for_locations: Dict[str, List[int]],
-    ) -> Dict[str, List[int]]:
-        """Rank menu items for each location in a dictionary structure.
-
-        This function uses rank_menu_items_for_user for each location's menu items.
-
-        Args:
-            user (User): Authenticated user.
-            menus_for_locations (dict[str, list[int]]): Dictionary mapping location IDs
-                (as strings) to arrays of menu item API IDs.
-
-        Returns:
-            dict[str, list[int]]: Same dictionary structure with each array sorted by
-                recommendation score (descending).
-
-        Example:
-            Input:  {"5": [123, 456, 789], "6": [101, 202, 303]}
-            Output: {"5": [789, 456, 123], "6": [202, 101, 303]}
-
-        """
-        logger.info(f"Ranking menus for {len(menus_for_locations)} locations for user_id={user.id}.")
-        try:
-            ranked_menus_for_locations = {}
-            for location_id, menu_item_api_ids in menus_for_locations.items():
-                if not menu_item_api_ids:
-                    ranked_menus_for_locations[location_id] = []
-                    continue
-
-                ranked_ids = self.rank_menu_items_for_user(user, menu_item_api_ids)
-                ranked_menus_for_locations[location_id] = ranked_ids
-
-            logger.info(f"Successfully ranked menus for {len(menus_for_locations)} locations for user_id={user.id}.")
-            return ranked_menus_for_locations
-        except Exception as e:
-            logger.error(f"Error ranking menus for locations for user_id={user.id}: {e}")
-            return menus_for_locations
+            logger.error(f"Error calculating scores for menu items for user_id={user.id}: {e}")
+            return {item_id: 0.0 for item_id in menu_item_api_ids}
 
 
 #################### Exposed endpoints #########################
@@ -147,18 +171,62 @@ recommendation_service = RecommendationService()
 
 
 @api_view(["POST"])
-def rank_menu_items(request):
-    """Django view function to rank menu items for a user.
+def get_menu_item_score(request):
+    """Django view function to get recommendation score for a single menu item.
+
+    Args:
+        request (Request): The HTTP request object.
+        menu_item_api_id (int): Menu item API ID.
+
+    Returns:
+        Response: Recommendation score for the menu item.
+
+    """
+    logger.info(f"Getting menu item score for request: {request}")
+
+    try:
+        # Authenticate user
+        user = get_user_from_request(request)
+        if not user:
+            return Response(
+                {"data": None, "message": "Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        menu_item_api_id = request.data.get("menu_item_api_id")
+        if menu_item_api_id is None:
+            return Response(
+                {"data": None, "message": "menu_item_api_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        score = recommendation_service.get_menu_item_score(user, int(menu_item_api_id))
+
+        logger.info(f"Returning score {score} for menu item {menu_item_api_id} for user_id={user.id}.")
+        return Response(
+            {"data": score, "message": "Menu item score retrieved successfully."}, status=status.HTTP_200_OK
+        )
+    except Exception as e:
+        logger.error(f"Error in get_menu_item_score view: {e}")
+        return Response(
+            {"data": None, "message": f"Error getting menu item score: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@api_view(["POST"])
+def get_menu_items_score(request):
+    """Django view function to get recommendation scores for multiple menu items.
 
     Args:
         request (Request): The HTTP request object.
         menu_item_api_ids (list[int]): List of menu item API IDs.
 
     Returns:
-        Response: Ordered menu item API IDs.
+        Response: Dictionary mapping menu item API IDs to their scores.
 
     """
-    logger.info(f"Ranking menu items for request: {request}")
+    logger.info(f"Getting menu items scores for request: {request}")
 
     try:
         # Authenticate user
@@ -177,64 +245,15 @@ def rank_menu_items(request):
             )
 
         menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids]
-        ranked_ids = recommendation_service.rank_menu_items_for_user(
-            user,
-            menu_item_api_ids,
-        )
+        scores = recommendation_service.get_menu_items_score(user, menu_item_api_ids)
 
-        logger.info(f"Returning ranked menu items for user_id={user.id} and menu_item_api_ids: {menu_item_api_ids}.")
-        return Response({"data": ranked_ids, "message": "Menu items ranked successfully."}, status=status.HTTP_200_OK)
-    except Exception as e:
-        logger.error(f"Error in rank_menu_items view: {e}")
+        logger.info(f"Returning scores for {len(scores)} menu items for user_id={user.id}.")
         return Response(
-            {"data": None, "message": f"Error ranking menu items: {str(e)}"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-
-@api_view(["POST"])
-def rank_menus_for_locations(request):
-    """Django view function to rank menu items for multiple locations.
-
-    Args:
-        request (Request): The HTTP request object.
-        menus_for_locations (dict[str, list[int]]): Dictionary mapping location IDs
-            (as strings) to arrays of menu item API IDs.
-
-    Returns:
-        Response: Dictionary with same structure, each array sorted by recommendation score.
-
-    """
-    logger.info(f"Ranking menus for locations for request: {request}")
-
-    try:
-        # Authenticate user
-        user = get_user_from_request(request)
-        if not user:
-            return Response(
-                {"data": None, "message": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        menus_for_locations = request.data.get("menus_for_locations")
-        if not menus_for_locations:
-            return Response(
-                {"data": None, "message": "menus_for_locations is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        ranked_menus = recommendation_service.rank_menus_for_locations(
-            user,
-            menus_for_locations,
-        )
-
-        logger.info(f"Returning ranked menus for {len(ranked_menus)} locations for user_id={user.id}.")
-        return Response(
-            {"data": ranked_menus, "message": "Menus for locations ranked successfully."}, status=status.HTTP_200_OK
+            {"data": scores, "message": "Menu items scores retrieved successfully."}, status=status.HTTP_200_OK
         )
     except Exception as e:
-        logger.error(f"Error in rank_menus_for_locations view: {e}")
+        logger.error(f"Error in get_menu_items_score view: {e}")
         return Response(
-            {"data": None, "message": f"Error ranking menus for locations: {str(e)}"},
+            {"data": None, "message": f"Error getting menu items scores: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

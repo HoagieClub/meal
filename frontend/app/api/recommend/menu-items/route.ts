@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to rank menu items for a user.
+ * @overview Next.js Route Handler to get recommendation scores for multiple menu items.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -14,15 +14,15 @@
 
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { rankMenuItems } from '@/lib/endpoints';
+import { getMenuItemsScore } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Ranks menu items for a user based on their interaction history.
+ * Gets recommendation scores for multiple menu items.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the ranked menu item API IDs.
+ * @returns A NextResponse object with the menu items scores.
  */
 export async function POST(req: Request) {
   try {
@@ -63,18 +63,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const res = await rankMenuItems(accessToken, {
-      menu_item_api_ids: menuItemApiIds,
+    const res = await getMenuItemsScore(accessToken, {
+      menu_item_api_ids: menuItemApiIds.map(Number),
     });
 
-    // Django backend returns: {"data": [api_id, ...], "message": "..."}
+    // Django backend returns: {"data": {api_id: score, ...}, "message": "..."}
     const data = res.data || res;
 
-    if (!data || !Array.isArray(data)) {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
       return NextResponse.json(
         {
           status: 404,
-          message: 'No ranked menu items returned',
+          message: 'No scores returned',
           data: null,
         },
         { status: 404 }
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       data,
-      message: 'Successfully ranked menu items',
+      message: 'Successfully retrieved menu items scores',
       status: 200,
     });
   } catch (error: unknown) {
@@ -103,4 +103,3 @@ export async function POST(req: Request) {
     );
   }
 }
-

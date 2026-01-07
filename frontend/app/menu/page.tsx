@@ -36,7 +36,8 @@ import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skele
 import FilterSidebar from '@/app/menu/components/filter-sidebar';
 import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
 import DateMealSelector from '@/app/menu/components/date-meal-selector';
-import type { MenuSortOption } from '@/app/menu/components/filter-sidebar';
+import type { MenuSortOption } from '@/app/menu/components/sort-dropdown';
+import { rankMenusForLocations } from '@/lib/next-endpoints';
 import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -180,6 +181,27 @@ async function fetchUserMenuItemInteractionsByApiIds(
 }
 
 /**
+ * Ranks menu items for multiple locations based on user's interaction history.
+ *
+ * @param menus_for_locations - Dictionary mapping location IDs to arrays of menu item API IDs
+ * @returns Promise resolving to Record<string, number[]> or null if error
+ */
+async function fetchRankedMenusForLocations(
+  menus_for_locations: Record<string, number[]>
+): Promise<Record<string, number[]> | null> {
+  if (!menus_for_locations || Object.keys(menus_for_locations).length === 0) return null;
+  try {
+    const { data } = await rankMenusForLocations({ menus_for_locations });
+    const rankedMenusForLocationsData = data?.data || data;
+    if (!rankedMenusForLocationsData) throw new Error('No data received');
+    return rankedMenusForLocationsData as Record<string, number[]>;
+  } catch (error) {
+    console.error(`Error ranking menus for locations: ${error}`);
+    return null;
+  }
+}
+
+/**
  * Menu page component.
  *
  * @returns The menu page component.
@@ -242,6 +264,7 @@ export default function MenuPage() {
   const [userMenuItemInteractionsState, setUserMenuItemInteractionsState] =
     useState<MenuItemInteractionMap>({});
   const [locationsState, setLocationsState] = useState<LocationMap>({});
+  
 
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [searchTerm, setSearchTerm] = useState('');
