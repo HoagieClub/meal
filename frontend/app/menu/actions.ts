@@ -169,27 +169,3 @@ export const buildDisplayData = (props: BuildDisplayDataProps) => {
   console.log('sortedDisplayMenusForLocations', sortedDisplayMenusForLocations);
   return sortedDisplayMenusForLocations;
 };
-
-/**
- * Filter menu items into main entrée and vegan entrée.
- *
- * @param menuItems - The menu items.
- * @returns The main entrée and vegan entrée menu items.
- */
-export const filterMenuItems = (menuItems: MenuItem[]) => {
-  const mainEntreeMenuItems = [];
-  const veganEntreeMenuItems = [];
-  for (const menuItem of menuItems) {
-    const dietaryFlags = menuItem?.dietaryFlags ?? [];
-    const dietaryFlagsLower = dietaryFlags.map((flag: string) => flag.toLowerCase());
-    if (dietaryFlagsLower.includes('vegetarian') || dietaryFlagsLower.includes('vegan')) {
-      veganEntreeMenuItems.push(menuItem);
-    } else {
-      mainEntreeMenuItems.push(menuItem);
-    }
-  }
-  return {
-    mainEntreeMenuItems,
-    veganEntreeMenuItems,
-  };
-};

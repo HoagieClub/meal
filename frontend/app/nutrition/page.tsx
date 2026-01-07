@@ -240,21 +240,20 @@ const NutritionLabelPage = () => {
         padding={majorScale(4)}
         className='sm:grid-cols-3 relative mx-auto max-w-5xl'
       >
-        <Button
-          background='white'
-          border='none'
-          borderRadius={999}
-          padding={minorScale(1)}
-          appearance='minimal'
-          onClick={() => router.push('/menu')}
+        <Link
+          href='/menu'
           position='absolute'
+          appearance='minimal'
+          textDecoration='none'
           top={majorScale(2)}
           left={majorScale(4)}
+          fontWeight={600}
           zIndex={10}
-          className='ml-[-4rem]'
+          border={`1px solid ${theme.colors.gray300}`}
+          className='hover:opacity-80 ml-[-3rem] sm:ml-[-5rem] sm:bg-white p-3 transition-opacity rounded-full'
         >
-          <ChevronLeftIcon size={20} />
-        </Button>
+          <ChevronLeftIcon className='h-6 w-6' color='green600' />
+        </Link>
 
         {/* Render the nutrition information */}
         <Pane>

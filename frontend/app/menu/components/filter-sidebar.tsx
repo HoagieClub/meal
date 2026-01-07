@@ -37,12 +37,15 @@ import {
   DIET_STYLE_MAP,
 } from '@/styles';
 import { DiningHall, DietaryTag, Allergen } from '@/types/dining';
+import SortDropdown, { MenuSortOption } from './sort-dropdown';
 
 interface FilterSidebarProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   showNutrition: boolean;
   toggleShowNutrition: () => void;
+  sortOption: MenuSortOption;
+  setSortOption: (sort: MenuSortOption) => void;
   diningHalls: DiningHall[];
   dietaryRestrictions: DietaryTag[];
   allergens: Allergen[];
@@ -64,6 +67,8 @@ export default function FilterSidebar({
   setSearchTerm,
   showNutrition,
   toggleShowNutrition,
+  sortOption,
+  setSortOption,
   diningHalls,
   dietaryRestrictions,
   allergens,
@@ -297,6 +302,11 @@ export default function FilterSidebar({
               Show Nutrition
             </Text>
             <Switch checked={showNutrition} onChange={toggleShowNutrition} />
+          </Pane>
+
+          {/* Sort dropdown */}
+          <Pane marginBottom={minorScale(3)}>
+            <SortDropdown sortOption={sortOption} setSortOption={setSortOption} />
           </Pane>
           <Pane borderBottom={`1px solid ${theme.colors.gray200}`} />
         </Pane>

@@ -46,7 +46,8 @@ interface MenuSectionProps {
  */
 const MenuSection = ({ label, items, showNutrition, limitItems }: MenuSectionProps) => {
   const theme = useTheme();
-  const displayItems = limitItems ? items.slice(0, 2).reverse() : items;
+  const NUMBER_LIMITED_ITEMS = 4;
+  const displayItems = limitItems ? items.slice(0, NUMBER_LIMITED_ITEMS).reverse() : items;
   const enableScroll = useMediaQuery('(max-width: 800px)');
 
   const showAllergens = (item: MenuItem) => {

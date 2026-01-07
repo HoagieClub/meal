@@ -31,14 +31,13 @@ import {
   SearchInput,
   Switch,
   UndoIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
 } from 'evergreen-ui';
 import DiningHallCard from '@/app/menu/components/dining-hall-card';
 import HallMenuModal from '@/app/menu/components/hall-menu-modal';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
 import FilterSidebar from '@/app/menu/components/filter-sidebar';
 import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
+import type { MenuSortOption } from '@/app/menu/components/filter-sidebar';
 import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -248,6 +247,7 @@ export default function MenuPage() {
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [searchTerm, setSearchTerm] = useState('');
   const [modalHall, setModalHall] = useState<Location | null>(null);
+  const [sortOption, setSortOption] = useState<MenuSortOption>('best');
 
   // Media query flags
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
@@ -513,6 +513,8 @@ export default function MenuPage() {
           setSearchTerm={setSearchTerm}
           showNutrition={showNutrition}
           toggleShowNutrition={toggleShowNutrition}
+          sortOption={sortOption}
+          setSortOption={setSortOption}
           diningHalls={diningHalls}
           dietaryRestrictions={dietaryRestrictions}
           allergens={allergens}
@@ -562,7 +564,7 @@ export default function MenuPage() {
               >
                 <Button
                   background='white'
-                  border='none'
+                  border={`1px solid ${theme.colors.gray300}`}
                   borderRadius={999}
                   padding={minorScale(1)}
                   appearance='minimal'
@@ -580,7 +582,7 @@ export default function MenuPage() {
 
                 <Button
                   background='white'
-                  border='none'
+                  border={`1px solid ${theme.colors.gray300}`}
                   borderRadius={999}
                   padding={minorScale(1)}
                   appearance='minimal'
@@ -622,7 +624,14 @@ export default function MenuPage() {
                 })}
               </Pane>
             </Pane>
-            <Pane display='flex' flexDirection='column' gap={majorScale(2)} width={240} />
+            <Pane
+              display='flex'
+              flexDirection='column'
+              gap={majorScale(2)}
+              width={240}
+              alignItems='flex-end'
+              justifyContent='flex-start'
+            ></Pane>
           </Pane>
 
           {/* Filter sidebar for mobile */}
@@ -632,6 +641,8 @@ export default function MenuPage() {
               setSearchTerm={setSearchTerm}
               showNutrition={showNutrition}
               toggleShowNutrition={toggleShowNutrition}
+              sortOption={sortOption}
+              setSortOption={setSortOption}
               diningHalls={diningHalls}
               dietaryRestrictions={dietaryRestrictions}
               allergens={allergens}

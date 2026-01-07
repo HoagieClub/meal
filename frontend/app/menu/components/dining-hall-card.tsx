@@ -26,7 +26,6 @@ import {
 } from 'evergreen-ui';
 import React from 'react';
 import MenuSection from './menu-selection';
-import { filterMenuItems } from '@/app/menu/actions';
 import { Location } from '@/types/dining';
 import { HALL_BANNER_MAP } from '@/styles';
 
@@ -61,7 +60,6 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
 }) => {
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
-  const { mainEntreeMenuItems, veganEntreeMenuItems } = filterMenuItems(diningHall.menu ?? []);
 
   return (
     <Pane
@@ -113,23 +111,12 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         </Pane>
       </Pane>
 
-      {mainEntreeMenuItems.length > 0 && (
-        <MenuSection
-          label='Main Entrée'
-          items={mainEntreeMenuItems}
-          showNutrition={showNutrition}
-          limitItems={true}
-        />
-      )}
-
-      {veganEntreeMenuItems.length > 0 && (
-        <MenuSection
-          label='Vegan Entrée'
-          items={veganEntreeMenuItems}
-          showNutrition={showNutrition}
-          limitItems={true}
-        />
-      )}
+      <MenuSection
+        label='Meal'
+        items={diningHall.menu ?? []}
+        showNutrition={showNutrition}
+        limitItems={true}
+      />
 
       <Pane display='flex' justifyContent='center' className='mt-auto'>
         <Button

@@ -15,10 +15,11 @@
 'use client';
 
 import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
-import React from 'react';
+import React, { useState } from 'react';
 import MenuSection from './menu-selection';
 import { Separator } from '@/components/ui/separator';
-import { filterMenuItems } from '@/app/menu/actions';
+import SortDropdown, { MenuSortOption } from './sort-dropdown';
+import ColumnVisibilityDropdown, { ColumnVisibility } from './column-visibility-dropdown';
 
 /**
  * Props for the HallMenuModal component.
@@ -43,10 +44,18 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
   setModalHall,
   showNutrition,
 }) => {
-  if (!modalHall) return null;
+  const [sortOption, setSortOption] = useState<MenuSortOption>('best');
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
+    calories: true,
+    protein: true,
+    sodium: true,
+    fat: true,
+    carbs: true,
+    ingredients: true,
+    allergens: true,
+  });
 
-  // Separate the menu items into main entrée and vegan entrée.
-  const { mainEntreeMenuItems, veganEntreeMenuItems } = filterMenuItems(modalHall.menu ?? []);
+  if (!modalHall) return null;
 
   return (
     <Dialog
@@ -63,24 +72,26 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
         gap={minorScale(3)}
         className='overflow-x-hidden'
       >
+        <Pane
+          display='flex'
+          alignItems='center'
+          justifyContent='flex-end'
+          gap={minorScale(4)}
+          marginBottom={minorScale(2)}
+        >
+          <ColumnVisibilityDropdown
+            columnVisibility={columnVisibility}
+            setColumnVisibility={setColumnVisibility}
+          />
+          <SortDropdown sortOption={sortOption} setSortOption={setSortOption} showLabel={false} />
+        </Pane>
         <Separator height='1.5px' marginTop={0} />
-        {mainEntreeMenuItems.length > 0 && (
-          <MenuSection
-            label='Main Entrée'
-            items={mainEntreeMenuItems}
-            showNutrition={showNutrition}
-            limitItems={false}
-          />
-        )}
-
-        {veganEntreeMenuItems.length > 0 && (
-          <MenuSection
-            label='Vegan Entrée'
-            items={veganEntreeMenuItems}
-            showNutrition={showNutrition}
-            limitItems={false}
-          />
-        )}
+        <MenuSection
+          label='Menu'
+          items={modalHall.menu ?? []}
+          showNutrition={showNutrition}
+          limitItems={false}
+        />
       </Pane>
     </Dialog>
   );
