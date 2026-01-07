@@ -60,7 +60,7 @@ class MenuItem(models.Model):
 
     Attributes:
         api_id (int): Primary key. Unique original menu item ID from the external API.
-        
+
         name (str): Name of the menu item.
         description (str): Description of the dish.
         api_url (str): URL linking to more details about the dish.
@@ -74,7 +74,7 @@ class MenuItem(models.Model):
     """
 
     api_id = models.PositiveIntegerField(primary_key=True, help_text=_("Original menu item ID from the API"))
-    
+
     api_url = models.URLField(max_length=500, blank=True)
     name = models.CharField(max_length=255, db_index=True, null=True, blank=True)
     allergens = ArrayField(models.CharField(max_length=100), blank=True, default=list)
@@ -301,6 +301,33 @@ class MenuItemMetrics(models.Model):
     def __str__(self):
         """Return the string representation of the MenuItemMetrics instance."""
         return f"Metrics for menu item {self.menu_item.id}"
+
+
+class MenuItemSimilarity(models.Model):
+    """Represents the similarity between two menu items.
+
+    Attributes:
+        item_a (MenuItem): The first menu item.
+        item_b (MenuItem): The second menu item.
+        score (float): The similarity score between the two menu items.
+
+    """
+
+    item_a = models.ForeignKey(MenuItem, on_delete=models.CASCADE, related_name="+")
+    item_b = models.ForeignKey(MenuItem, on_delete=models.CASCADE, related_name="+")
+    score = models.FloatField()
+
+    class Meta:
+        """Meta class for the MenuItemSimilarity model."""
+
+        unique_together = ("item_a", "item_b")
+        indexes = [
+            models.Index(fields=["item_a", "item_b"]),
+        ]
+
+    def __str__(self):
+        """Return the string representation of the MenuItemSimilarity instance."""
+        return f"Similarity between {self.item_a.name} and {self.item_b.name} is {self.score}"
 
 
 # class MenuItemMetrics(models.Model):

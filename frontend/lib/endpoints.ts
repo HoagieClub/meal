@@ -255,6 +255,23 @@ export const getMenuItemsMetrics = (params: { menu_item_api_ids: number[] }) => 
 };
 
 /**
+ * Ranks menu items for a user based on their interaction history.
+ *
+ * @param accessToken - Auth0 access token
+ * @param params - Request body (menu_item_api_ids - array of integers)
+ * @returns API response with ranked menu item API IDs
+ */
+export const rankMenuItems = (
+  accessToken: string,
+  params: { menu_item_api_ids: number[] }
+) => {
+  const url = '/api/recommendations/rank-menu-items/';
+  return request.postAuth(accessToken)(url, {
+    arg: { menu_item_api_ids: params.menu_item_api_ids },
+  });
+};
+
+/**
  * Verifies user authentication and gets or creates the user.
  *
  * @param accessToken - Auth0 access token

@@ -244,3 +244,16 @@ export const getMenuItemsMetrics = (params: { menu_item_api_ids: number[] }) => 
     menu_item_api_ids: params.menu_item_api_ids,
   });
 };
+
+/**
+ * Ranks menu items for a user based on their interaction history.
+ *
+ * @param params - Request body (menu_item_api_ids - array of integers)
+ * @returns API response with ranked menu item API IDs
+ */
+export const rankMenuItems = (params: { menu_item_api_ids: number[] }) => {
+  const url = '/api/recommendations/rank-menu-items/';
+  return api.post<{ data: number[] }>(url, {
+    menu_item_api_ids: params.menu_item_api_ids,
+  });
+};
