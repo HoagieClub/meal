@@ -75,7 +75,7 @@ const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSec
 
   let displayItems = items;
   if (!fullMenu && items.length > 4) {
-    displayItems = displayItems.slice(0, 4).reverse();
+    displayItems = displayItems.slice(0, 4);
   }
 
   const minWidth =

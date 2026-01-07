@@ -85,6 +85,9 @@ export interface MenuItemInteraction {
   wouldEatAgain: 'Y' | 'N' | 'M' | null;
 }
 
+// Represents a recommendation score for a menu item.
+export type MenuItemScore = number;
+
 // Unique identifier for a menu item from the API. Can be either a number or string.
 export type ApiId = number | string;
 
@@ -128,6 +131,11 @@ export type MenuItemMetricsMap = {
 // Maps menu item API IDs to user interaction data. Structure: { [apiId: string]: MenuItemInteraction }. Keys are strings due to Django serialization.
 export type MenuItemInteractionMap = {
   [apiId in ApiId]: MenuItemInteraction;
+};
+
+// Maps menu item API IDs to their recommendation scores. Structure: { [apiId: string]: MenuItemScore }. Keys are strings due to Django serialization.
+export type MenuItemScoreMap = {
+  [apiId in ApiId]: MenuItemScore;
 };
 
 // Maps location IDs to their full dining venue data. Structure: { [locationId: string]: Location }. Keys are strings due to Django serialization.

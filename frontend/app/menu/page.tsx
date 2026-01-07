@@ -37,7 +37,7 @@ import FilterSidebar from '@/app/menu/components/filter-sidebar';
 import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
 import DateMealSelector from '@/app/menu/components/date-meal-selector';
 import type { MenuSortOption } from '@/app/menu/components/sort-dropdown';
-import { rankMenusForLocations } from '@/lib/next-endpoints';
+import { getMenuItemsScore } from '@/lib/next-endpoints';
 import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -64,6 +64,8 @@ import {
   Allergen,
   MenuItemMap,
   ApiId,
+  MenuItemScore,
+  MenuItemScoreMap,
   LocationMap,
   MenuItemMetrics,
   MenuItemMetricsMap,
@@ -186,17 +188,15 @@ async function fetchUserMenuItemInteractionsByApiIds(
  * @param menus_for_locations - Dictionary mapping location IDs to arrays of menu item API IDs
  * @returns Promise resolving to Record<string, number[]> or null if error
  */
-async function fetchRankedMenusForLocations(
-  menus_for_locations: Record<string, number[]>
-): Promise<Record<string, number[]> | null> {
-  if (!menus_for_locations || Object.keys(menus_for_locations).length === 0) return null;
+async function fetchMenuItemsScoresByApiIds(apiIds: ApiId[]): Promise<MenuItemScoreMap | null> {
+  if (!apiIds || apiIds.length === 0) return null;
   try {
-    const { data } = await rankMenusForLocations({ menus_for_locations });
-    const rankedMenusForLocationsData = data?.data || data;
-    if (!rankedMenusForLocationsData) throw new Error('No data received');
-    return rankedMenusForLocationsData as Record<string, number[]>;
+    const { data } = await getMenuItemsScore({ menu_item_api_ids: apiIds.map(Number) });
+    const menuItemsScoresData = data?.data || data;
+    if (!menuItemsScoresData) throw new Error('No data received');
+    return menuItemsScoresData as MenuItemScoreMap;
   } catch (error) {
-    console.error(`Error ranking menus for locations: ${error}`);
+    console.error(`Error fetching menu items scores for API IDs ${apiIds.join(',')}: ${error}`);
     return null;
   }
 }
@@ -214,6 +214,7 @@ export default function MenuPage() {
     locations: true,
     menuItemMetrics: true,
     userMenuItemInteractions: true,
+    menuItemScores: true,
   });
 
   const {
@@ -263,8 +264,8 @@ export default function MenuPage() {
   const [menuItemMetricsState, setMenuItemMetricsState] = useState<MenuItemMetricsMap>({});
   const [userMenuItemInteractionsState, setUserMenuItemInteractionsState] =
     useState<MenuItemInteractionMap>({});
+  const [menuItemScoresState, setMenuItemScoresState] = useState<MenuItemScoreMap>({});
   const [locationsState, setLocationsState] = useState<LocationMap>({});
-  
 
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [searchTerm, setSearchTerm] = useState('');
@@ -352,10 +353,15 @@ export default function MenuPage() {
     fetchMenuItems(menuItems, missingApiIds);
   }, [cacheLoading, menusForLocationsState]);
 
-  // Fetch menu item metrics and user menu item interactions for the found menu
+  // Fetch menu item metrics, user menu item interactions, and menu item scores for the found menu
   useEffect(() => {
     if (cacheLoading) return;
-    setLoading((prev) => ({ ...prev, menuItemMetrics: true, userMenuItemInteractions: true }));
+    setLoading((prev) => ({
+      ...prev,
+      menuItemMetrics: true,
+      userMenuItemInteractions: true,
+      menuItemScores: true,
+    }));
 
     // Extract all unique API IDs from the menus for locations
     const apiIdsSet = new Set<ApiId>(Object.values(menusForLocationsState).flatMap((menu) => menu));
@@ -384,8 +390,20 @@ export default function MenuPage() {
       return;
     }
 
+    // Fetch menu item scores from API
+    async function fetchMenuItemScores() {
+      const menuItemScores = await fetchMenuItemsScoresByApiIds(apiIds);
+      console.log('menuItemScores (API)', menuItemScores);
+      if (menuItemScores && Object.keys(menuItemScores).length > 0) {
+        setMenuItemScoresState(menuItemScores);
+      }
+      setLoading((prev) => ({ ...prev, menuItemScores: false }));
+      return;
+    }
+
     fetchMenuItemMetrics();
     fetchUserMenuItemInteractions();
+    fetchMenuItemScores();
   }, [cacheLoading, menusForLocationsState]);
 
   // Fetch locations
@@ -426,11 +444,13 @@ export default function MenuPage() {
         menuItems: menuItemsState,
         menuItemMetrics: menuItemMetricsState,
         userMenuItemInteractions: userMenuItemInteractionsState,
+        menuItemScores: menuItemScoresState,
         appliedDiningHalls: diningHalls,
         appliedDietaryRestrictions: dietaryRestrictions,
         appliedAllergens: allergens,
         searchTerm,
         pinnedHalls: pinnedHalls,
+        sortOption,
       }),
     [
       menusForLocationsState,
@@ -438,6 +458,7 @@ export default function MenuPage() {
       menuItemsState,
       menuItemMetricsState,
       userMenuItemInteractionsState,
+      menuItemScoresState,
       diningHalls,
       dietaryRestrictions,
       allergens,
@@ -445,6 +466,7 @@ export default function MenuPage() {
       pinnedHalls,
       meal,
       dateKey,
+      sortOption,
     ]
   );
 

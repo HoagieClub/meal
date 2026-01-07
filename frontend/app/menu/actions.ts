@@ -17,9 +17,11 @@ import {
   MenuItemInteractionMap,
   MenuItemMap,
   MenuItemMetricsMap,
+  MenuItemScoreMap,
   MenusForLocations,
 } from '@/types/dining';
 import { DiningHall, DietaryTag, Allergen, MenuItem } from '@/types/dining';
+import { MenuSortOption } from './components/sort-dropdown';
 
 /**
  * Build display data props.
@@ -46,6 +48,8 @@ interface BuildDisplayDataProps {
   menuItems: MenuItemMap;
   menuItemMetrics: MenuItemMetricsMap;
   userMenuItemInteractions: MenuItemInteractionMap;
+  menuItemScores: MenuItemScoreMap;
+  sortOption: MenuSortOption;
 }
 
 /**
@@ -54,20 +58,20 @@ interface BuildDisplayDataProps {
  * @param props - The build display data props.
  * @returns The display menus for locations.
  */
-export const buildDisplayData = (props: BuildDisplayDataProps) => {
-  const {
-    menusForLocations,
-    menuItems,
-    menuItemMetrics,
-    userMenuItemInteractions,
-    locationItems,
-    appliedDiningHalls,
-    appliedDietaryRestrictions,
-    appliedAllergens,
-    searchTerm,
-    pinnedHalls,
-  } = props;
-
+export const buildDisplayData = ({
+  menusForLocations,
+  menuItems,
+  menuItemMetrics,
+  userMenuItemInteractions,
+  locationItems,
+  appliedDiningHalls,
+  appliedDietaryRestrictions,
+  appliedAllergens,
+  searchTerm,
+  pinnedHalls,
+  menuItemScores,
+  sortOption,
+}: BuildDisplayDataProps) => {
   const appliedDiningHallsReduced = appliedDiningHalls.map((diningHall) =>
     diningHall.toLowerCase().trim()
   );
@@ -165,6 +169,46 @@ export const buildDisplayData = (props: BuildDisplayDataProps) => {
     const location2IsPinned = pinnedHalls.includes(location2.name as DiningHall);
     return location1IsPinned ? -1 : location2IsPinned ? 1 : 0;
   });
+
+  if (sortOption === 'recommended') {
+    sortedDisplayMenusForLocations.forEach((location) => {
+      location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
+        const menuItem1Score = menuItemScores[menuItem1.apiId];
+        const menuItem2Score = menuItemScores[menuItem2.apiId];
+        return menuItem2Score - menuItem1Score;
+      });
+    });
+  } else if (sortOption === 'most viewed') {
+    sortedDisplayMenusForLocations.forEach((location) => {
+      location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
+        const menuItem1ViewCount = menuItem1.metrics?.viewCount ?? 0;
+        const menuItem2ViewCount = menuItem2.metrics?.viewCount ?? 0;
+        return menuItem2ViewCount - menuItem1ViewCount;
+      });
+    });
+  } else if (sortOption === 'most liked') {
+    sortedDisplayMenusForLocations.forEach((location) => {
+      location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
+        const menuItem1LikeCount =
+          menuItem1.metrics?.likeCount && menuItem1.metrics?.likeCount > 0
+            ? menuItem1.metrics?.likeCount
+            : -1 * (menuItem1.metrics?.dislikeCount ?? 0);
+        const menuItem2LikeCount =
+          menuItem2.metrics?.likeCount && menuItem2.metrics?.likeCount > 0
+            ? menuItem2.metrics?.likeCount
+            : -1 * (menuItem2.metrics?.dislikeCount ?? 0);
+        return menuItem2LikeCount - menuItem1LikeCount;
+      });
+    });
+  } else if (sortOption === 'best') {
+    sortedDisplayMenusForLocations.forEach((location) => {
+      location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
+        const menuItem1AverageLikeScore = menuItem1.metrics?.averageLikeScore ?? 0;
+        const menuItem2AverageLikeScore = menuItem2.metrics?.averageLikeScore ?? 0;
+        return menuItem2AverageLikeScore - menuItem1AverageLikeScore;
+      });
+    });
+  }
 
   console.log('sortedDisplayMenusForLocations', sortedDisplayMenusForLocations);
   return sortedDisplayMenusForLocations;

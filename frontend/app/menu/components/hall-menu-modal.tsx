@@ -76,7 +76,6 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
               marginRight={minorScale(4)}
             >
               <ColumnVisibilityDropdown
-                showNutrition={showNutrition}
                 toggledColumns={toggledColumns}
                 setToggledColumns={setToggledColumns}
               />
