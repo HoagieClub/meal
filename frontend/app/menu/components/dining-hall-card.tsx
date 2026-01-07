@@ -112,10 +112,9 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
       </Pane>
 
       <MenuSection
-        label='Meal'
         items={diningHall.menu ?? []}
         showNutrition={showNutrition}
-        limitItems={true}
+        fullMenu={false}
       />
 
       <Pane display='flex' justifyContent='center' className='mt-auto'>

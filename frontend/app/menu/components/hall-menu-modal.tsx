@@ -16,11 +16,11 @@
 
 import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
 import React, { useState } from 'react';
-import MenuSection from './menu-selection';
+import MenuSection, { Column } from './menu-selection';
 import { Separator } from '@/components/ui/separator';
 import SortDropdown, { MenuSortOption } from './sort-dropdown';
-import ColumnVisibilityDropdown, { ColumnVisibility } from './column-visibility-dropdown';
-
+import { useMediaQuery } from '@/hooks/use-media-query';
+import ColumnVisibilityDropdown from './column-visibility-dropdown';
 /**
  * Props for the HallMenuModal component.
  *
@@ -45,15 +45,8 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
   showNutrition,
 }) => {
   const [sortOption, setSortOption] = useState<MenuSortOption>('best');
-  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
-    calories: true,
-    protein: true,
-    sodium: true,
-    fat: true,
-    carbs: true,
-    ingredients: true,
-    allergens: true,
-  });
+  const [toggledColumns, setToggledColumns] = useState<Column[]>([]);
+  const foldDropdowns = useMediaQuery('(max-width: 800px)');
 
   if (!modalHall) return null;
 
@@ -66,16 +59,17 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
           <Pane display='flex' alignItems='center' justifyContent='flex-end' gap={minorScale(2)}>
             <Pane
               display='flex'
+              flexDirection={foldDropdowns ? 'column' : 'row'}
               alignItems='center'
               justifyContent='flex-end'
-              gap={minorScale(4)}
+              gap={foldDropdowns ? minorScale(2) : minorScale(4)}
               marginRight={minorScale(4)}
             >
               <ColumnVisibilityDropdown
-                columnVisibility={columnVisibility}
-                setColumnVisibility={setColumnVisibility}
+                toggledColumns={toggledColumns}
+                setToggledColumns={setToggledColumns}
               />
-              <Pane width={150}>
+              <Pane width={130}>
                 <SortDropdown
                   sortOption={sortOption}
                   setSortOption={setSortOption}
@@ -99,10 +93,10 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
       >
         <Separator height='1.5px' marginTop={0} />
         <MenuSection
-          label='Menu'
           items={modalHall.menu ?? []}
           showNutrition={showNutrition}
-          limitItems={false}
+          fullMenu={true}
+          toggledColumns={toggledColumns}
         />
       </Pane>
     </Dialog>

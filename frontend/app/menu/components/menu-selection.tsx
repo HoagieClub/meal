@@ -20,98 +20,99 @@ import { MenuItem } from '@/types/dining';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import MenuItemRow from './menu-item-row';
 
+export type Column =
+  | 'Calories'
+  | 'Protein'
+  | 'Sodium'
+  | 'Fat'
+  | 'Carbs'
+  | 'Ingredients'
+  | 'Allergens';
+
+export const COLUMNS: Column[] = [
+  'Calories',
+  'Protein',
+  'Sodium',
+  'Fat',
+  'Carbs',
+  'Ingredients',
+  'Allergens',
+];
+
 /**
  * Props for the MenuSection component.
  *
- * @param label - The label for the menu section.
  * @param items - The items to display in the menu section.
  * @param showNutrition - Whether to show nutrition information.
- * @param limitItems - Whether to limit the number of items displayed.
+ * @param fullMenu - Whether the menu is a full menu.
+ * @param toggledColumns - The columns to display.
  */
 interface MenuSectionProps {
-  label: string;
   items: MenuItem[];
   showNutrition?: boolean;
-  limitItems?: boolean;
+  fullMenu?: boolean;
+  toggledColumns?: Column[];
 }
 
 /**
  * Menu section component.
  *
- * @param label - The label for the menu section.
- * @param items - The items to display in the menu section.
- * @param showNutrition - Whether to show nutrition information.
- * @param limitItems - Whether to limit the number of items displayed.
+ * @returns The menu section component.
  */
-const MenuSection = ({ label, items, showNutrition, limitItems }: MenuSectionProps) => {
+const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSectionProps) => {
   const theme = useTheme();
-  const NUMBER_LIMITED_ITEMS = 4;
-  const displayItems = limitItems ? items.slice(0, NUMBER_LIMITED_ITEMS).reverse() : items;
-  const enableScroll = useMediaQuery('(max-width: 800px)');
 
-  // Render the menu section
-  const minWidth = enableScroll ? (showNutrition ? (limitItems ? 600 : 800) : 300) : undefined;
+  let columns = COLUMNS;
+  if (!showNutrition) {
+    columns = [];
+  } else if (!fullMenu) {
+    columns = ['Calories', 'Protein', 'Sodium'];
+  } else if (toggledColumns && toggledColumns.length > 0) {
+    columns = toggledColumns;
+  }
 
+  let displayItems = items;
+  if (!fullMenu && items.length > 4) {
+    displayItems = displayItems.slice(0, 4).reverse();
+  }
+
+  let minWidth = 0;
+  columns.forEach((column) => {
+    if (column === 'Ingredients') {
+      minWidth += 300;
+    } else {
+      minWidth += 100;
+    }
+  });
+  minWidth += 200;
+  if (!fullMenu) minWidth = 300;
+  
   return (
     <Pane marginBottom={majorScale(3)}>
-      {/* Scrollable container for small screens */}
-      <Pane
-        className={
-          enableScroll
-            ? 'overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent'
-            : ''
-        }
-        overflowX={enableScroll ? 'auto' : 'hidden'}
-      >
-        {/* Content wrapper with minimum width */}
-        <Pane minWidth={minWidth}>
+      <Pane overflowX='auto'>
+        <Pane minWidth={minWidth} className='overflow-x-auto scrollbar-top'>
           {/* Section header */}
           <Pane
             display='grid'
-            gridTemplateColumns={
-              showNutrition
-                ? limitItems
-                  ? '2fr 1fr 1fr 1fr 1fr'
-                  : '2fr 1fr 1fr 1fr 1fr 1fr 1fr'
-                : '1fr'
-            }
+            gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : '1fr')).join(' ')} 1fr`}
+            columnGap={minorScale(1)}
+            rowGap={minorScale(1)}
             borderBottom={`1px solid ${theme.colors.green300}`}
             paddingBottom={minorScale(1)}
           >
-            <Text fontSize={14} fontWeight={600} className='my-auto'>
-              {label}
+            <Text size={300} fontWeight={500} textAlign='left' className='my-auto'>
+              Meal
             </Text>
-
-            {/* Show the macronutrients header if the nutrition is enabled */}
-            {showNutrition && (
-              <>
-                <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
-                  Calories
-                </Text>
-                <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
-                  Protein
-                </Text>
-                <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
-                  Sodium
-                </Text>
-                {!limitItems && (
-                  <>
-                    <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
-                      Fat
-                    </Text>
-                    <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
-                      Carbs
-                    </Text>
-                  </>
-                )}
-                <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
-                  Likes
-                </Text>
-              </>
-            )}
+            {columns.map((column) => (
+              <Text size={300} fontWeight={500} textAlign='right' className='my-auto' key={column}>
+                {column}
+              </Text>
+            ))}
+            <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
+              Likes
+            </Text>
           </Pane>
 
-          {/* Display the menu items */}
           {displayItems.length === 0 ? (
             <Text size={300} color='muted' fontStyle='italic' marginTop={minorScale(1)}>
               Nothing available
@@ -119,12 +120,7 @@ const MenuSection = ({ label, items, showNutrition, limitItems }: MenuSectionPro
           ) : (
             <Pane marginTop={minorScale(1)}>
               {displayItems.map((item) => (
-                <MenuItemRow
-                  key={item.apiId}
-                  item={item}
-                  showNutrition={showNutrition}
-                  limitItems={limitItems}
-                />
+                <MenuItemRow key={item.apiId} item={item} columns={columns} />
               ))}
             </Pane>
           )}

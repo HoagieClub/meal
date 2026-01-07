@@ -43,7 +43,7 @@ export const MiniLikeDislikeButtons = ({ item }: MiniLikeDislikeButtonsProps) =>
   return (
     <Pane display='flex' flexDirection='column' alignItems='center'>
       {/* Like button */}
-      <Pane display='flex' alignItems='center' gap={minorScale(1)}>
+      <Pane display='flex' alignItems='center' gap={minorScale(2)}>
         <Text size={300}>{likeCount}</Text>
         <Pane
           onClick={handleLike}
@@ -62,7 +62,7 @@ export const MiniLikeDislikeButtons = ({ item }: MiniLikeDislikeButtonsProps) =>
       </Pane>
 
       {/* Dislike button */}
-      <Pane display='flex' alignItems='center' gap={minorScale(1)}>
+      <Pane display='flex' alignItems='center' gap={minorScale(2)}>
         <Text size={300}>{dislikeCount}</Text>
         <Pane
           onClick={handleDislike}
