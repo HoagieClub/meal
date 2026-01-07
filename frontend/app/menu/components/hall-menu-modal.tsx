@@ -15,12 +15,14 @@
 'use client';
 
 import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MenuSection, { Column } from './menu-selection';
 import { Separator } from '@/components/ui/separator';
 import SortDropdown, { MenuSortOption } from './sort-dropdown';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import ColumnVisibilityDropdown from './column-visibility-dropdown';
+import { COLUMNS } from './menu-selection';
+
 /**
  * Props for the HallMenuModal component.
  *
@@ -45,8 +47,16 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
   showNutrition,
 }) => {
   const [sortOption, setSortOption] = useState<MenuSortOption>('best');
-  const [toggledColumns, setToggledColumns] = useState<Column[]>([]);
+  const [toggledColumns, setToggledColumns] = useState<Column[]>(COLUMNS);
   const foldDropdowns = useMediaQuery('(max-width: 800px)');
+
+  useEffect(() => {
+    if (showNutrition) {
+      setToggledColumns(COLUMNS);
+    } else {
+      setToggledColumns(['Ingredients', 'Allergens']);
+    }
+  }, [showNutrition]);
 
   if (!modalHall) return null;
 
@@ -66,6 +76,7 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
               marginRight={minorScale(4)}
             >
               <ColumnVisibilityDropdown
+                showNutrition={showNutrition}
                 toggledColumns={toggledColumns}
                 setToggledColumns={setToggledColumns}
               />

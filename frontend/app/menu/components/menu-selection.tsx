@@ -62,13 +62,15 @@ interface MenuSectionProps {
 const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSectionProps) => {
   const theme = useTheme();
 
-  let columns = COLUMNS;
-  if (!showNutrition) {
-    columns = [];
-  } else if (!fullMenu) {
-    columns = ['Calories', 'Protein', 'Sodium'];
-  } else if (toggledColumns && toggledColumns.length > 0) {
+  let columns: Column[] | undefined;
+  if (fullMenu) {
     columns = toggledColumns;
+  } else {
+    if (showNutrition) {
+      columns = ['Protein', 'Sodium', 'Calories'];
+    } else {
+      columns = [];
+    }
   }
 
   let displayItems = items;
@@ -76,17 +78,17 @@ const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSec
     displayItems = displayItems.slice(0, 4).reverse();
   }
 
-  let minWidth = 0;
-  columns.forEach((column) => {
-    if (column === 'Ingredients') {
-      minWidth += 300;
-    } else {
-      minWidth += 100;
-    }
-  });
-  minWidth += 200;
-  if (!fullMenu) minWidth = 300;
-  
+  const minWidth =
+    columns?.reduce((acc, column) => {
+      if (column === 'Ingredients') {
+        return acc + 300;
+      } else if (column === 'Allergens') {
+        return acc + 200;
+      } else {
+        return acc + 100;
+      }
+    }, 0) ?? 0;
+
   return (
     <Pane marginBottom={majorScale(3)}>
       <Pane overflowX='auto'>
@@ -94,8 +96,8 @@ const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSec
           {/* Section header */}
           <Pane
             display='grid'
-            gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : '1fr')).join(' ')} 1fr`}
-            columnGap={minorScale(1)}
+            gridTemplateColumns={`2fr ${columns?.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} ${fullMenu ? '1fr 1fr' : '1fr'}`}
+            columnGap={minorScale(2)}
             rowGap={minorScale(1)}
             borderBottom={`1px solid ${theme.colors.green300}`}
             paddingBottom={minorScale(1)}
@@ -103,7 +105,7 @@ const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSec
             <Text size={300} fontWeight={500} textAlign='left' className='my-auto'>
               Meal
             </Text>
-            {columns.map((column) => (
+            {columns?.map((column) => (
               <Text size={300} fontWeight={500} textAlign='right' className='my-auto' key={column}>
                 {column}
               </Text>
@@ -111,6 +113,11 @@ const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSec
             <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
               Likes
             </Text>
+            {fullMenu && (
+              <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
+                Views
+              </Text>
+            )}
           </Pane>
 
           {displayItems.length === 0 ? (
@@ -120,7 +127,12 @@ const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSec
           ) : (
             <Pane marginTop={minorScale(1)}>
               {displayItems.map((item) => (
-                <MenuItemRow key={item.apiId} item={item} columns={columns} />
+                <MenuItemRow
+                  key={item.apiId}
+                  item={item}
+                  columns={columns ?? []}
+                  fullMenu={fullMenu}
+                />
               ))}
             </Pane>
           )}

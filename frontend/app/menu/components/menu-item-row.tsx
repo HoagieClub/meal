@@ -30,6 +30,7 @@ import type { Column } from './menu-selection';
 interface MenuItemRowProps {
   item: MenuItem;
   columns: Column[];
+  fullMenu?: boolean;
 }
 
 /**
@@ -72,11 +73,10 @@ const showAllergens = (item: MenuItem, theme: any) => {
  * @param props - Component props
  * @returns The menu item row component
  */
-export default function MenuItemRow({ item, columns }: MenuItemRowProps) {
+export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProps) {
   const theme = useTheme();
+  
   const menuItemApiId = item?.apiId;
-
-  // Get the macronutrients for the menu item
   const calories = item?.nutrition?.calories ?? '';
   const protein = item?.nutrition?.protein ? `${item?.nutrition?.protein} g` : '';
   const sodium = item?.nutrition?.sodium ? `${item?.nutrition?.sodium} mg` : '';
@@ -84,16 +84,23 @@ export default function MenuItemRow({ item, columns }: MenuItemRowProps) {
   const totalCarbs = item?.nutrition?.totalCarbohydrates
     ? `${item?.nutrition?.totalCarbohydrates} g`
     : '';
+  const ingredientCharacterLimit = 120;
   const ingredients =
-    item?.ingredients && item?.ingredients.length > 0 && item?.ingredients.join(', ').length > 75
-      ? item?.ingredients.join(', ').slice(0, 75) + '...'
+    item?.ingredients &&
+    item?.ingredients.length > 0 &&
+    item?.ingredients.join(', ').length > ingredientCharacterLimit
+      ? item?.ingredients.join(', ').slice(0, ingredientCharacterLimit) + '...'
       : item?.ingredients?.join(', ') || 'No ingredients';
+  const allergenCharacterLimit = 80;
   const allergens =
-    item?.allergens && item?.allergens.length > 0 && item?.allergens.join(', ').length > 75
-      ? item?.allergens.join(', ').slice(0, 75) + '...'
+    item?.allergens &&
+    item?.allergens.length > 0 &&
+    item?.allergens.join(', ').length > allergenCharacterLimit
+      ? item?.allergens.join(', ').slice(0, allergenCharacterLimit) + '...'
       : item?.allergens?.join(', ') || 'No allergens';
   const nutritionLink = `/nutrition?apiId=${menuItemApiId}`;
   const isFavorited = item?.userInteraction?.favorited ?? false;
+  const viewCount = item?.metrics?.viewCount ?? 0;
 
   const COLUMN_VALUES_MAP = {
     Calories: calories,
@@ -110,9 +117,9 @@ export default function MenuItemRow({ item, columns }: MenuItemRowProps) {
     <React.Fragment key={menuItemApiId}>
       <Pane
         display='grid'
-        gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : '1fr')).join(' ')} 1fr`}
+        gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} ${fullMenu ? '1fr 1fr' : '1fr'}`}
         rowGap={minorScale(1)}
-        columnGap={minorScale(1)}
+        columnGap={minorScale(2)}
         marginTop={minorScale(1)}
         borderBottom={`0.9px solid ${theme.colors.green300}`}
       >
@@ -161,6 +168,20 @@ export default function MenuItemRow({ item, columns }: MenuItemRowProps) {
         >
           <MiniLikeDislikeButtons item={item} />
         </Pane>
+        {fullMenu && (
+          <Pane
+            display='flex'
+            flexDirection='column'
+            alignItems='flex-end'
+            justifyContent='center'
+            gap={minorScale(1)}
+            marginY={majorScale(1)}
+          >
+            <Text size={300} textAlign='right' className='my-auto'>
+              {viewCount}
+            </Text>
+          </Pane>
+        )}
       </Pane>
     </React.Fragment>
   );
