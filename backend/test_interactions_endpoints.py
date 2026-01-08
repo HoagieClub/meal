@@ -125,6 +125,20 @@ endpoints = [
         "params": {"menu_item_api_id": MENU_ITEM_API_ID},
         "requires_auth": False,
     },
+    {
+        "name": "14_get_user_menu_item_interactions_batch",
+        "method": "POST",
+        "url": f"{BASE_URL}/api/interactions/user/menu-items/",
+        "body": {"menu_item_api_ids": [int(MENU_ITEM_API_ID)]},
+        "requires_auth": True,
+    },
+    {
+        "name": "15_get_menu_items_metrics_batch",
+        "method": "POST",
+        "url": f"{BASE_URL}/api/interactions/menu-items/metrics/",
+        "body": {"menu_item_api_ids": [int(MENU_ITEM_API_ID)]},
+        "requires_auth": False,
+    },
 ]
 
 

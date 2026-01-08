@@ -211,7 +211,7 @@ def get_user_from_request(request: HttpRequest) -> Optional[Any]:
         user = user_api.get_or_create_user(auth0_claims)
         if not user:
             logger.error(f"Failed to get or create user from request: {request}.")
-            return Nonegit stats
+            return None
 
         # Return user
         logger.info(f"User fetched from request: {request}.")
