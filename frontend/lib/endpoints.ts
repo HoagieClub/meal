@@ -14,6 +14,7 @@
  */
 
 import { request } from '@/lib/http';
+import { toCamelCase } from '@/utils/toCamelCase';
 
 /**
  * Gets dining locations.
@@ -27,7 +28,12 @@ export const getDiningLocations = (params: { category_id?: string; fmt?: string 
     ...(params.fmt && { fmt: params.fmt }),
   });
   const url = `/api/dining/locations/?${queryParams.toString()}`;
-  return request.get<any>()(url, {});
+  return request
+    .get<any>()(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -37,7 +43,12 @@ export const getDiningLocations = (params: { category_id?: string; fmt?: string 
  */
 export const getAllDiningLocations = () => {
   const url = '/api/dining/locations/all/';
-  return request.get<any>()(url, {});
+  return request
+    .get<any>()(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -52,7 +63,12 @@ export const getDiningMenu = (params: { location_id: string; menu_id: string }) 
     menu_id: params.menu_id,
   });
   const url = `/api/dining/menus/?${queryParams.toString()}`;
-  return request.get<any>()(url, {});
+  return request
+    .get<any>()(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -64,7 +80,12 @@ export const getDiningMenu = (params: { location_id: string; menu_id: string }) 
 export const getDiningMenuItem = (params: { api_id: string }) => {
   const queryParams = new URLSearchParams({ api_id: params.api_id });
   const url = `/api/dining/menu-items/?${queryParams.toString()}`;
-  return request.get<any>()(url, {});
+  return request
+    .get<any>()(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -75,9 +96,14 @@ export const getDiningMenuItem = (params: { api_id: string }) => {
  */
 export const getDiningMenuItems = (params: { api_ids: number[] }) => {
   const url = '/api/dining/menu-items/batch/';
-  return request.post<any>()(url, {
-    arg: { api_ids: params.api_ids },
-  });
+  return request
+    .post<any>()(url, {
+      arg: { api_ids: params.api_ids },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -89,7 +115,12 @@ export const getDiningMenuItems = (params: { api_ids: number[] }) => {
 export const getDiningMenusForLocations = (params: { menu_id: string }) => {
   const queryParams = new URLSearchParams({ menu_id: params.menu_id });
   const url = `/api/dining/menus/locations/?${queryParams.toString()}`;
-  return request.get<any>()(url, {});
+  return request
+    .get<any>()(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -101,7 +132,12 @@ export const getDiningMenusForLocations = (params: { menu_id: string }) => {
 export const getDiningMenusForLocationsAndDay = (params: { menu_date: string }) => {
   const queryParams = new URLSearchParams({ menu_date: params.menu_date });
   const url = `/api/dining/menus/locations/day/?${queryParams.toString()}`;
-  return request.get<any>()(url, {});
+  return request
+    .get<any>()(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -119,7 +155,12 @@ export const getDiningMenusForLocationsAndDays = (params: {
     end_date: params.end_date,
   });
   const url = `/api/dining/menus/locations/days/?${queryParams.toString()}`;
-  return request.get<any>()(url, {});
+  return request
+    .get<any>()(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -135,7 +176,12 @@ export const getUserMenuItemInteraction = (
 ) => {
   const queryParams = new URLSearchParams({ menu_item_api_id: params.menu_item_api_id });
   const url = `/api/interactions/user/menu-item/?${queryParams.toString()}`;
-  return request.getAuth(accessToken)(url, {});
+  return request
+    .getAuth(accessToken)(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -150,9 +196,14 @@ export const getUserMenuItemsInteractions = (
   params: { menu_item_api_ids: number[] }
 ) => {
   const url = '/api/interactions/user/menu-items/';
-  return request.postAuth(accessToken)(url, {
-    arg: { menu_item_api_ids: params.menu_item_api_ids },
-  });
+  return request
+    .postAuth(accessToken)(url, {
+      arg: { menu_item_api_ids: params.menu_item_api_ids },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -167,9 +218,14 @@ export const recordUserMenuItemView = (
   params: { menu_item_api_id: number }
 ) => {
   const url = '/api/interactions/user/menu-item/view/';
-  return request.postAuth(accessToken)(url, {
-    arg: { menu_item_api_id: params.menu_item_api_id },
-  });
+  return request
+    .postAuth(accessToken)(url, {
+      arg: { menu_item_api_id: params.menu_item_api_id },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -190,15 +246,20 @@ export const updateUserMenuItemInteraction = (
   }
 ) => {
   const url = '/api/interactions/user/menu-item/update/';
-  return request.putAuth(accessToken)(url, {
-    arg: {
-      menu_item_api_id: params.menu_item_api_id,
-      liked: params.liked,
-      favorited: params.favorited,
-      saved_for_later: params.saved_for_later,
-      would_eat_again: params.would_eat_again,
-    },
-  });
+  return request
+    .putAuth(accessToken)(url, {
+      arg: {
+        menu_item_api_id: params.menu_item_api_id,
+        liked: params.liked,
+        favorited: params.favorited,
+        saved_for_later: params.saved_for_later,
+        would_eat_again: params.would_eat_again,
+      },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -219,15 +280,20 @@ export const patchUserMenuItemInteraction = (
   }
 ) => {
   const url = '/api/interactions/user/menu-item/update/';
-  return request.patchAuth(accessToken)(url, {
-    arg: {
-      menu_item_api_id: params.menu_item_api_id,
-      liked: params.liked,
-      favorited: params.favorited,
-      saved_for_later: params.saved_for_later,
-      would_eat_again: params.would_eat_again,
-    },
-  });
+  return request
+    .patchAuth(accessToken)(url, {
+      arg: {
+        menu_item_api_id: params.menu_item_api_id,
+        liked: params.liked,
+        favorited: params.favorited,
+        saved_for_later: params.saved_for_later,
+        would_eat_again: params.would_eat_again,
+      },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -239,7 +305,12 @@ export const patchUserMenuItemInteraction = (
 export const getMenuItemMetrics = (params: { menu_item_api_id: string }) => {
   const queryParams = new URLSearchParams({ menu_item_api_id: params.menu_item_api_id });
   const url = `/api/interactions/menu-item/metrics/?${queryParams.toString()}`;
-  return request.get<any>()(url, {});
+  return request
+    .get<any>()(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -250,9 +321,14 @@ export const getMenuItemMetrics = (params: { menu_item_api_id: string }) => {
  */
 export const getMenuItemsMetrics = (params: { menu_item_api_ids: number[] }) => {
   const url = '/api/interactions/menu-items/metrics/';
-  return request.post<any>()(url, {
-    arg: { menu_item_api_ids: params.menu_item_api_ids },
-  });
+  return request
+    .post<any>()(url, {
+      arg: { menu_item_api_ids: params.menu_item_api_ids },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -264,9 +340,14 @@ export const getMenuItemsMetrics = (params: { menu_item_api_ids: number[] }) => 
  */
 export const getMenuItemScore = (accessToken: string, params: { menu_item_api_id: number }) => {
   const url = '/api/recommend/menu-item/';
-  return request.postAuth(accessToken)(url, {
-    arg: { menu_item_api_id: params.menu_item_api_id },
-  });
+  return request
+    .postAuth(accessToken)(url, {
+      arg: { menu_item_api_id: params.menu_item_api_id },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -278,9 +359,14 @@ export const getMenuItemScore = (accessToken: string, params: { menu_item_api_id
  */
 export const getMenuItemsScore = (accessToken: string, params: { menu_item_api_ids: number[] }) => {
   const url = '/api/recommend/menu-items/';
-  return request.postAuth(accessToken)(url, {
-    arg: { menu_item_api_ids: params.menu_item_api_ids },
-  });
+  return request
+    .postAuth(accessToken)(url, {
+      arg: { menu_item_api_ids: params.menu_item_api_ids },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -291,5 +377,10 @@ export const getMenuItemsScore = (accessToken: string, params: { menu_item_api_i
  */
 export const verifyUser = (accessToken: string) => {
   const url = '/api/user/verify/';
-  return request.postAuth(accessToken)(url, { arg: {} });
+  return request
+    .postAuth(accessToken)(url, { arg: {} })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };

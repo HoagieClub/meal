@@ -12,6 +12,7 @@
 
 import { IconButton } from 'evergreen-ui';
 
+// LinkedIn icon component.
 export const LinkedinIcon = (
   props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>
 ) => (
@@ -33,6 +34,7 @@ export const LinkedinIcon = (
   </svg>
 );
 
+// Twitter icon component.
 export const TwitterIcon = (
   props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>
 ) => (
@@ -52,6 +54,7 @@ export const TwitterIcon = (
   </svg>
 );
 
+// Github icon component.
 export const GithubIcon = (
   props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>
 ) => (
@@ -71,6 +74,7 @@ export const GithubIcon = (
   </svg>
 );
 
+// Website icon component.
 export const WebsiteIcon = (
   props: React.JSX.IntrinsicAttributes & React.SVGProps<SVGSVGElement>
 ) => (
@@ -92,6 +96,15 @@ export const WebsiteIcon = (
   </svg>
 );
 
+/**
+ * Social icon button component.
+ *
+ * @param href - The href of the icon button.
+ * @param label - The label of the icon button.
+ * @param icon - The icon of the icon button.
+ * @param background - The background color of the icon button.
+ * @returns The social icon button component.
+ */
 export const SocialIconButton = ({
   href,
   label,

@@ -26,6 +26,7 @@ const DEBUG = process.env.NODE_ENV === 'development';
  */
 export async function POST(req: Request) {
   try {
+    // Get the access token from the request.
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
       return NextResponse.json(
@@ -38,9 +39,11 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get the request body and extract the menu item API IDs.
     const body = await req.json();
     const menuItemApiIds = body.menu_item_api_ids;
 
+    // If the menu item API IDs are not provided, return a 400 response.
     if (!menuItemApiIds) {
       return NextResponse.json(
         {
@@ -52,53 +55,33 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!Array.isArray(menuItemApiIds)) {
-      return NextResponse.json(
-        {
-          status: 400,
-          message: 'menu_item_api_ids must be an array',
-          data: null,
-        },
-        { status: 400 }
-      );
-    }
-
+    // Get the menu item scores from the backend.
     const res = await getMenuItemsScore(accessToken, {
       menu_item_api_ids: menuItemApiIds.map(Number),
     });
 
-    // Django backend returns: {"data": {api_id: score, ...}, "message": "..."}
-    const data = res.data || res;
-
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    // If no scores are found, return a 404 response.
+    if (!res.data) {
       return NextResponse.json(
-        {
-          status: 404,
-          message: 'No scores returned',
-          data: null,
-        },
+        { status: 404, message: 'No scores found', data: null },
         { status: 404 }
       );
     }
 
+    // Return the response from the backend.
     return NextResponse.json({
-      data,
+      data: res.data,
       message: 'Successfully retrieved menu items scores',
       status: 200,
     });
   } catch (error: unknown) {
+    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
-
-    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
+    const details = error instanceof Error ? error.stack : String(error);
     return NextResponse.json(
-      {
-        status,
-        message: error instanceof Error ? error.message : 'Unexpected error',
-        data: null,
-        ...(DEBUG && {
-          details: error instanceof Error ? error.stack : String(error),
-        }),
-      },
+      { status, message, data: null, ...(DEBUG && { details }) },
       { status }
     );
   }

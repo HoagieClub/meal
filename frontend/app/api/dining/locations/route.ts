@@ -13,7 +13,6 @@
  */
 
 import { NextResponse } from 'next/server';
-import { toCamelCase } from '@/utils/toCamelCase';
 import { getDiningLocations } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -26,10 +25,12 @@ const DEBUG = process.env.NODE_ENV === 'development';
  */
 export async function GET(req: Request) {
   try {
+    // Get the query parameters from the request.
     const { searchParams } = new URL(req.url);
     const fmt = searchParams.get('fmt') ?? 'xml';
     const categoryId = searchParams.get('category_id') ?? '2';
 
+    // If the category_id is not valid, return a 400 response.
     if (!categoryId || !['2', '3'].includes(categoryId)) {
       return NextResponse.json(
         {
@@ -41,38 +42,35 @@ export async function GET(req: Request) {
       );
     }
 
+    // Fetch dining locations data from the backend.
     const res = await getDiningLocations({ category_id: categoryId, fmt });
 
-    // Django backend returns: {"data": locations, "message": "..."}
-    const locations = res.data || {};
-
-    if (!locations || (typeof locations === 'object' && Object.keys(locations).length === 0))
+    // If no locations are found, return a 404 response.
+    if (!res.data) {
       return NextResponse.json(
         {
           status: 404,
-          message: 'No dining locations available',
+          message: `No dining locations found for category_id ${categoryId}`,
           data: null,
         },
         { status: 404 }
       );
+    }
 
+    // Return the response from the backend.
     return NextResponse.json({
-      data: toCamelCase(locations),
-      message: 'Successfully fetched dining locations',
       status: 200,
+      message: 'Successfully fetched dining locations',
+      data: res.data,
     });
   } catch (error: unknown) {
+    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
     const message = error instanceof Error ? error.message : 'Unexpected error';
-    const details = DEBUG ? (error instanceof Error ? error.stack : String(error)) : undefined;
     const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
+    const details = error instanceof Error ? error.stack : String(error);
     return NextResponse.json(
-      {
-        status,
-        message,
-        data: null,
-        ...(details && { details }),
-      },
+      { status, message, data: null, ...(DEBUG && { details }) },
       { status }
     );
   }

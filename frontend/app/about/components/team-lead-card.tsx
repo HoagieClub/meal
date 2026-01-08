@@ -48,7 +48,8 @@ export default function TeamLeadCard({ lead }: { lead: TeamMember }) {
       alignItems={isMobile ? 'center' : 'center'}
       background={theme.colors.green100}
       borderRadius={12}
-    >
+    >   
+      {/* Render the lead avatar */}
       <Avatar
         src={lead.imgSrc}
         name={lead.name}
@@ -56,6 +57,7 @@ export default function TeamLeadCard({ lead }: { lead: TeamMember }) {
         marginBottom={isMobile ? majorScale(2) : 0}
       />
 
+      {/* Render the lead name, role, and bio */}
       <Pane marginLeft={isMobile ? 0 : majorScale(3)} textAlign={isMobile ? 'center' : 'left'}>
         <Heading size={500}>{lead.name}</Heading>
         <Text size={400} color='muted' fontStyle='italic'>
@@ -64,7 +66,7 @@ export default function TeamLeadCard({ lead }: { lead: TeamMember }) {
         <Paragraph size={300} color='default' marginTop={majorScale(1)}>
           {lead.bio}
         </Paragraph>
-        
+
         {/* Render the social icons */}
         <Pane
           display='flex'
@@ -72,6 +74,7 @@ export default function TeamLeadCard({ lead }: { lead: TeamMember }) {
           marginTop={majorScale(2)}
           justifyContent={isMobile ? 'center' : 'flex-start'}
         >
+          {/* Render the social icons */}
           {Object.entries(lead.socials).map(([key, url]) => {
             if (!url) return null;
             const social = SOCIAL_ICONS[key as keyof typeof SOCIAL_ICONS];

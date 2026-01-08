@@ -26,6 +26,7 @@ const DEBUG = process.env.NODE_ENV === 'development';
  */
 export async function POST(req: Request) {
   try {
+    // Get the access token from the request.
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
       return NextResponse.json(
@@ -38,9 +39,11 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get the request body and extract the menu item API ID.
     const body = await req.json();
     const menuItemApiId = body.menu_item_api_id;
 
+    // If the menu item API ID is not provided, return a 400 response.
     if (menuItemApiId === undefined || menuItemApiId === null) {
       return NextResponse.json(
         {
@@ -52,44 +55,34 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get the menu item score from the backend.
     const res = await getMenuItemScore(accessToken, {
       menu_item_api_id: Number(menuItemApiId),
     });
 
-    // Django backend returns: {"data": 0.85, "message": "..."}
-    const data = res.data !== undefined ? res.data : res;
-
-    if (typeof data !== 'number') {
+    // If no score is found, return a 404 response.
+    if (!res.data) {
       return NextResponse.json(
-        {
-          status: 404,
-          message: 'Invalid score returned',
-          data: null,
-        },
+        { status: 404, message: 'No score found', data: null },
         { status: 404 }
       );
     }
 
+    // Return the response from the backend.
     return NextResponse.json({
-      data,
+      data: res.data,
       message: 'Successfully retrieved menu item score',
       status: 200,
     });
   } catch (error: unknown) {
+    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
-
-    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
+    const details = error instanceof Error ? error.stack : String(error);
     return NextResponse.json(
-      {
-        status,
-        message: error instanceof Error ? error.message : 'Unexpected error',
-        data: null,
-        ...(DEBUG && {
-          details: error instanceof Error ? error.stack : String(error),
-        }),
-      },
+      { status, message, data: null, ...(DEBUG && { details }) },
       { status }
     );
   }
 }
-

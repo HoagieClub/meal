@@ -34,6 +34,7 @@ export default function TeamMemberCard({ member }: { member: TeamMember }) {
       background={theme.colors.green200}
       borderRadius={12}
     >
+      {/* Render the member avatar */}
       <Avatar
         src={member.imgSrc}
         name={member.name}
@@ -41,6 +42,8 @@ export default function TeamMemberCard({ member }: { member: TeamMember }) {
         marginX='auto'
         marginBottom={majorScale(2)}
       />
+
+      {/* Render the member name and role */}
       <Heading size={400} marginBottom={minorScale(1)} className='truncate'>
         {member.name}
       </Heading>

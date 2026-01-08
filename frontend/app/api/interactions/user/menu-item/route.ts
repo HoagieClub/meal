@@ -14,7 +14,6 @@
 
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { toCamelCase } from '@/utils/toCamelCase';
 import { getUserMenuItemInteraction } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -27,6 +26,7 @@ const DEBUG = process.env.NODE_ENV === 'development';
  */
 export async function GET(req: Request) {
   try {
+    // Get the access token from the request.
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
       return NextResponse.json(
@@ -39,9 +39,11 @@ export async function GET(req: Request) {
       );
     }
 
+    // Get the query parameters from the request and extract the menu item API ID.
     const { searchParams } = new URL(req.url);
     const menuItemApiId = searchParams.get('menu_item_api_id');
 
+    // If the menu item API ID is not provided, return a 400 response.
     if (!menuItemApiId) {
       return NextResponse.json(
         {
@@ -53,12 +55,11 @@ export async function GET(req: Request) {
       );
     }
 
+    // Get the user menu item interaction from the backend.
     const res = await getUserMenuItemInteraction(accessToken, { menu_item_api_id: menuItemApiId });
 
-    // Django backend returns: {"data": interaction, "message": "..."}
-    const data = res.data || res;
-
-    if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+    // If no interaction is found, return a 404 response.
+    if (!res.data) {
       return NextResponse.json(
         {
           status: 404,
@@ -69,24 +70,20 @@ export async function GET(req: Request) {
       );
     }
 
+    // Return the response from the backend.
     return NextResponse.json({
-      data: toCamelCase(data),
+      data: res.data,
       message: `Successfully fetched interaction for menu_item_api_id ${menuItemApiId}`,
       status: 200,
     });
   } catch (error: unknown) {
+    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
-
-    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
+    const details = error instanceof Error ? error.stack : String(error);
     return NextResponse.json(
-      {
-        status,
-        message: error instanceof Error ? error.message : 'Unexpected error',
-        data: null,
-        ...(DEBUG && {
-          details: error instanceof Error ? error.stack : String(error),
-        }),
-      },
+      { status, message, data: null, ...(DEBUG && { details }) },
       { status }
     );
   }

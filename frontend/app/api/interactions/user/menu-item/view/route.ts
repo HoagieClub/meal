@@ -14,7 +14,6 @@
 
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { toCamelCase } from '@/utils/toCamelCase';
 import { recordUserMenuItemView } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -27,6 +26,7 @@ const DEBUG = process.env.NODE_ENV === 'development';
  */
 export async function POST(req: Request) {
   try {
+    // Get the access token from the request.
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
       return NextResponse.json(
@@ -39,9 +39,11 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get the request body and extract the menu item API ID.
     const body = await req.json();
     const menuItemApiId = body.menu_item_api_id;
 
+    // If the menu item API ID is not provided, return a 400 response.
     if (!menuItemApiId) {
       return NextResponse.json(
         {
@@ -53,29 +55,35 @@ export async function POST(req: Request) {
       );
     }
 
+    // Record the user menu item view.
     const res = await recordUserMenuItemView(accessToken, { menu_item_api_id: menuItemApiId });
 
-    // Django backend returns: {"data": interaction, "message": "..."}
-    const data = res.data || res;
+    // If the view recording failed, return a error response.
+    if (res.status !== 200) {
+      return NextResponse.json(
+        {
+          status: res.status,
+          message: 'View recording failed',
+          data: null,
+        },
+        { status: res.status }
+      );
+    }
 
+    // Return the response from the backend.
     return NextResponse.json({
-      data: data ? toCamelCase(data) : res,
+      data: res.data,
       message: 'Successfully recorded menu item view',
       status: 200,
     });
   } catch (error: unknown) {
+    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
-
-    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
+    const details = error instanceof Error ? error.stack : String(error);
     return NextResponse.json(
-      {
-        status,
-        message: error instanceof Error ? error.message : 'Unexpected error',
-        data: null,
-        ...(DEBUG && {
-          details: error instanceof Error ? error.stack : String(error),
-        }),
-      },
+      { status, message, data: null, ...(DEBUG && { details }) },
       { status }
     );
   }

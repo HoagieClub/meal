@@ -25,6 +25,7 @@ type MethodConfig<M extends HttpMethod> = {
 // Base response type
 export type ApiResponse<T> = {
   status: number;
+  error: string | null;
   message: string;
   data: T | null;
 };

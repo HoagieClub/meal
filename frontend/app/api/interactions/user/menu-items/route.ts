@@ -14,7 +14,6 @@
 
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { toCamelCase } from '@/utils/toCamelCase';
 import { getUserMenuItemsInteractions } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -27,6 +26,7 @@ const DEBUG = process.env.NODE_ENV === 'development';
  */
 export async function POST(req: Request) {
   try {
+    // Get the access token from the request.
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
       return NextResponse.json(
@@ -39,9 +39,11 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get the request body and extract the menu item API IDs.
     const body = await req.json();
     const menuItemApiIds = body.menu_item_api_ids;
 
+    // If the menu item API IDs are not provided, return a 400 response.
     if (!menuItemApiIds) {
       return NextResponse.json(
         {
@@ -53,25 +55,13 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!Array.isArray(menuItemApiIds)) {
-      return NextResponse.json(
-        {
-          status: 400,
-          message: 'menu_item_api_ids must be an array',
-          data: null,
-        },
-        { status: 400 }
-      );
-    }
-
+    // Get the user menu item interactions from the backend.
     const res = await getUserMenuItemsInteractions(accessToken, {
       menu_item_api_ids: menuItemApiIds,
     });
 
-    // Django backend returns: {"data": {api_id: interaction, ...}, "message": "..."}
-    const data = res.data || res;
-
-    if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+    // If no interactions are found, return a 404 response.
+    if (!res.data) {
       return NextResponse.json(
         {
           status: 404,
@@ -82,30 +72,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // Convert dictionary values to camelCase
-    const processedData: Record<string, any> = {};
-    for (const [key, value] of Object.entries(data)) {
-      processedData[key] = value ? toCamelCase(value) : null;
-    }
-
+    // Return the response from the backend.
     return NextResponse.json({
-      data: processedData,
+      data: res.data,
       message: `Successfully fetched user menu item interactions for menu item API IDs ${menuItemApiIds}`,
       status: 200,
     });
   } catch (error: unknown) {
+    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
-
-    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
+    const details = error instanceof Error ? error.stack : String(error);
     return NextResponse.json(
-      {
-        status,
-        message: error instanceof Error ? error.message : 'Unexpected error',
-        data: null,
-        ...(DEBUG && {
-          details: error instanceof Error ? error.stack : String(error),
-        }),
-      },
+      { status, message, data: null, ...(DEBUG && { details }) },
       { status }
     );
   }

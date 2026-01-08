@@ -13,7 +13,6 @@
  */
 
 import { NextResponse } from 'next/server';
-import { toCamelCase } from '@/utils/toCamelCase';
 import { getAllDiningLocations } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -26,38 +25,35 @@ const DEBUG = process.env.NODE_ENV === 'development';
  */
 export async function GET(req: Request) {
   try {
+    // Fetch all dining locations data from the backend.
     const res = await getAllDiningLocations();
 
-    // Django backend returns: {"data": locations, "message": "..."}
-    const locations = res.data || {};
-
-    if (!locations || (typeof locations === 'object' && Object.keys(locations).length === 0))
+    // If no locations are found, return a 404 response.
+    if (!res.data) {
       return NextResponse.json(
         {
           status: 404,
-          message: 'No dining locations available',
+          message: 'No dining locations found',
           data: null,
         },
         { status: 404 }
       );
+    }
 
+    // Return the response from the backend.
     return NextResponse.json({
-      data: toCamelCase(locations),
-      message: 'Successfully fetched all dining locations',
       status: 200,
+      message: 'Successfully fetched all dining locations',
+      data: res.data,
     });
   } catch (error: unknown) {
+    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
     const message = error instanceof Error ? error.message : 'Unexpected error';
-    const details = DEBUG ? (error instanceof Error ? error.stack : String(error)) : undefined;
     const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
+    const details = error instanceof Error ? error.stack : String(error);
     return NextResponse.json(
-      {
-        status,
-        message,
-        data: null,
-        ...(details && { details }),
-      },
+      { status, message, data: null, ...(DEBUG && { details }) },
       { status }
     );
   }

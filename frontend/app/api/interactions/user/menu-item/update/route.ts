@@ -14,7 +14,6 @@
 
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { toCamelCase } from '@/utils/toCamelCase';
 import { updateUserMenuItemInteraction, patchUserMenuItemInteraction } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
@@ -27,6 +26,7 @@ const DEBUG = process.env.NODE_ENV === 'development';
  */
 export async function PUT(req: Request) {
   try {
+    // Get the access token from the request.
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
       return NextResponse.json(
@@ -39,9 +39,11 @@ export async function PUT(req: Request) {
       );
     }
 
+    // Get the request body and extract the menu item API ID.
     const body = await req.json();
     const menuItemApiId = body.menu_item_api_id;
 
+    // If the menu item API ID is not provided, return a 400 response.
     if (!menuItemApiId) {
       return NextResponse.json(
         {
@@ -53,6 +55,7 @@ export async function PUT(req: Request) {
       );
     }
 
+    // Update the user menu item interaction.
     const res = await updateUserMenuItemInteraction(accessToken, {
       menu_item_api_id: menuItemApiId,
       liked: body.liked,
@@ -61,26 +64,32 @@ export async function PUT(req: Request) {
       would_eat_again: body.would_eat_again,
     });
 
-    // Django backend returns: {"data": interaction, "message": "..."}
-    const data = res.data || res;
+    // If no interaction is found, return a 404 response.
+    if (!res.data) {
+      return NextResponse.json(
+        {
+          status: 404,
+          message: `No interaction found for menu_item_api_id ${menuItemApiId}`,
+          data: null,
+        },
+        { status: 404 }
+      );
+    }
 
+    // Return the response from the backend.
     return NextResponse.json({
-      data: toCamelCase(data),
+      data: res.data,
       message: 'Successfully updated menu item interaction',
       status: 200,
     });
   } catch (error: unknown) {
+    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
-    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
+    const details = error instanceof Error ? error.stack : String(error);
     return NextResponse.json(
-      {
-        status,
-        message: error instanceof Error ? error.message : 'Unexpected error',
-        data: null,
-        ...(DEBUG && {
-          details: error instanceof Error ? error.stack : String(error),
-        }),
-      },
+      { status, message, data: null, ...(DEBUG && { details }) },
       { status }
     );
   }
@@ -88,9 +97,13 @@ export async function PUT(req: Request) {
 
 /**
  * Updates user menu item interaction (PATCH method).
+ *
+ * @param req - The HTTP request object.
+ * @returns A NextResponse object with the updated interaction data.
  */
 export async function PATCH(req: Request) {
   try {
+    // Get the access token from the request.
     const { accessToken } = await getAccessToken();
     if (!accessToken) {
       return NextResponse.json(
@@ -103,9 +116,12 @@ export async function PATCH(req: Request) {
       );
     }
 
+    // Get the request body.
     const body = await req.json();
+    // Get the menu item API ID from the request body.
     const menuItemApiId = body.menu_item_api_id;
 
+    // If the menu item API ID is not provided, return a 400 response.
     if (!menuItemApiId) {
       return NextResponse.json(
         {
@@ -117,6 +133,7 @@ export async function PATCH(req: Request) {
       );
     }
 
+    // Update the user menu item interaction.
     const res = await patchUserMenuItemInteraction(accessToken, {
       menu_item_api_id: menuItemApiId,
       liked: body.liked,
@@ -125,26 +142,32 @@ export async function PATCH(req: Request) {
       would_eat_again: body.would_eat_again,
     });
 
-    // Django backend returns: {"data": interaction, "message": "..."}
-    const data = res.data || res;
+    // If the interaction update failed, return a error response.
+    if (res.status !== 200) {
+      return NextResponse.json(
+        {
+          status: res.status,
+          message: `Interaction update failed for menu_item_api_id ${menuItemApiId}`,
+          data: null,
+        },
+        { status: res.status }
+      );
+    }
 
+    // Return the response from the backend.
     return NextResponse.json({
-      data: toCamelCase(data),
+      data: res.data,
       message: 'Successfully updated menu item interaction',
       status: 200,
     });
   } catch (error: unknown) {
+    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
-    const status = error instanceof Error && 'status' in error ? (error as any).status : 500;
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
+    const details = error instanceof Error ? error.stack : String(error);
     return NextResponse.json(
-      {
-        status,
-        message: error instanceof Error ? error.message : 'Unexpected error',
-        data: null,
-        ...(DEBUG && {
-          details: error instanceof Error ? error.stack : String(error),
-        }),
-      },
+      { status, message, data: null, ...(DEBUG && { details }) },
       { status }
     );
   }
