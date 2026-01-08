@@ -111,8 +111,7 @@ async function fetchMenusForDateKey(dateKey: string): Promise<MenusForMealAndLoc
 async function fetchMenuItemsByApiIds(apiIds: ApiId[]): Promise<MenuItemMap | null> {
   if (!apiIds || apiIds.length === 0) return null;
   try {
-    const apiIdsString = apiIds.join(',');
-    const { data } = await getDiningMenuItems({ api_ids: apiIdsString });
+    const { data } = await getDiningMenuItems({ api_ids: apiIds.map(Number) });
     const menuItemsData = data?.data || data;
     if (!menuItemsData) throw new Error('No data received');
     return menuItemsData as MenuItemMap;

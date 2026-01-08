@@ -1,6 +1,6 @@
 """API endpoints for user management.
 
-This module provides the API endpoints for user management, including authentication, profile updates, and data retrieval.
+This module provides the API endpoints for user management, including authentication and user data retrieval.
 
 Copyright © 2021-2025 Hoagie Club and affiliates.
 
@@ -46,7 +46,7 @@ HOAGIE_IO_NAME_CLAIM = "https://hoagie.io/name"
 
 
 class UserAPI:
-    """API endpoints for user management, including authentication, profile updates, and data retrieval."""
+    """API for user management, including authentication and user creation."""
 
     def get_or_create_user(self, auth0_claims: dict) -> Optional[Any]:
         """Get or create a user based on Auth0 token claims.
@@ -55,16 +55,19 @@ class UserAPI:
             auth0_claims (dict): The Auth0 token claims.
 
         Returns:
-            Optional[User]: The user if they exist, otherwise None.
+            Optional[Any]: The user if they exist, otherwise None.
 
         """
         logger.info(f"Getting or creating user based on Auth0 token claims: {auth0_claims}.")
+
+        # Get Auth0 ID
         auth0_id = auth0_claims.get("sub")
         if not auth0_id:
             logger.error(f"Auth0 ID is required in Auth0 token claims: {auth0_claims}.")
             return None
 
         try:
+            # Get user and set last login
             with transaction.atomic():
                 user = User.objects.get(auth0_id=auth0_id)
                 user.last_login = timezone.now()
@@ -72,9 +75,12 @@ class UserAPI:
                 logger.info(f"User found for auth0_id: {auth0_id}")
                 return user
         except User.DoesNotExist:
+            # Create user based on Auth0 token claims
             logger.info(
                 f"User not found for auth0_id: {auth0_id}, creating user based on Auth0 token claims: {auth0_claims}"
             )
+
+            # Extract email and full name from Auth0 token claims
             email = auth0_claims.get(HOAGIE_IO_EMAIL_CLAIM)
             full_name = auth0_claims.get(HOAGIE_IO_NAME_CLAIM)
             name_parts = full_name.split(" ") if full_name else []
@@ -83,6 +89,7 @@ class UserAPI:
             username = email.split("@")[0] if email else ""
             last_login = timezone.now()
 
+            # Create user
             user = User.objects.create(
                 auth0_id=auth0_id,
                 email=email,
@@ -91,6 +98,8 @@ class UserAPI:
                 username=username,
                 last_login=last_login,
             )
+
+            # Return serialized user data
             logger.info(f"User created for auth0_id: {auth0_id}")
             return user
         except Exception as e:
@@ -113,26 +122,38 @@ def verify_and_get_or_create_user(request):
 
     Returns:
         Response: The response object.
-        user (User): The user's data.
+        user (Any): The user's data.
 
     """
     logger.info(f"Verifying and getting or creating user by Auth0 token from request: {request}")
     try:
+        # Decode Auth0 token
         auth0_claims = decode_auth0_token(request)
         if not auth0_claims:
-            return Response({"data": None, "message": "Failed to decode Auth0 token"}, status=401)
+            return Response(
+                {"data": None, "message": "Failed to decode Auth0 token", "error": "Failed to decode Auth0 token"},
+                status=401,
+            )
 
+        # Get or create user
         user = user_api.get_or_create_user(auth0_claims)
         if not user:
-            return Response({"data": None, "message": "Failed to get or create user"}, status=500)
+            return Response(
+                {"data": None, "message": "Failed to get or create user", "error": "Failed to get or create user"},
+                status=500,
+            )
 
+        # Return user
         return Response(
-            {"data": UserSerializer(user).data, "message": "User fetched or created successfully."},
+            {"data": UserSerializer(user).data, "message": "User fetched or created successfully.", "error": None},
             status=200,
         )
     except Exception as e:
         logger.error(f"Error in verify_and_get_or_create_user view: {e}")
-        return Response({"data": None, "message": f"Failed to verify and get or create user: {str(e)}"}, status=500)
+        return Response(
+            {"data": None, "message": f"Failed to verify and get or create user: {str(e)}", "error": str(e)},
+            status=500,
+        )
 
 
 #################### Utility functions for working with user data #########################
@@ -180,16 +201,19 @@ def get_user_from_request(request: HttpRequest) -> Optional[Any]:
 
     """
     try:
+        # Decode Auth0 token
         auth0_claims = decode_auth0_token(request)
         if not auth0_claims:
             logger.error(f"Failed to decode Auth0 token from request: {request}.")
             return None
 
+        # Get or create user
         user = user_api.get_or_create_user(auth0_claims)
         if not user:
             logger.error(f"Failed to get or create user from request: {request}.")
-            return None
+            return Nonegit stats
 
+        # Return user
         logger.info(f"User fetched from request: {request}.")
         return user
     except Exception as e:

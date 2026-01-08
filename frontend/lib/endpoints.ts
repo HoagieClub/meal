@@ -70,13 +70,14 @@ export const getDiningMenuItem = (params: { api_id: string }) => {
 /**
  * Gets multiple dining menu items by API IDs.
  *
- * @param params - Query parameters (api_ids - comma-separated string of integers)
+ * @param params - Request body (api_ids - array of integers)
  * @returns API response with menu items data
  */
-export const getDiningMenuItems = (params: { api_ids: string }) => {
-  const queryParams = new URLSearchParams({ api_ids: params.api_ids });
-  const url = `/api/dining/menu-items/batch/?${queryParams.toString()}`;
-  return request.get<any>()(url, {});
+export const getDiningMenuItems = (params: { api_ids: number[] }) => {
+  const url = '/api/dining/menu-items/batch/';
+  return request.post<any>()(url, {
+    arg: { api_ids: params.api_ids },
+  });
 };
 
 /**

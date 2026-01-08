@@ -27,7 +27,6 @@ const DEBUG = process.env.NODE_ENV === 'development';
 export async function GET(req: Request) {
   try {
     const res = await getAllDiningLocations();
-    DEBUG && console.log('Backend response:', res);
 
     // Django backend returns: {"data": locations, "message": "..."}
     const locations = res.data || {};

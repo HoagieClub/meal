@@ -4,6 +4,8 @@ This module fetches data from the following endpoints:
 
 - /dining/menus
 
+and manages the caching of menu items and menus in the database.
+
 Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
@@ -44,7 +46,6 @@ from hoagiemeal.serializers import (
 )
 from hoagiemeal.utils.scraper import Scraper
 from hoagiemeal.api.locations import LocationsService
-from django.conf import settings
 from hoagiemeal.data import (
     MEAT_KEYWORDS,
     DAIRY_EGG_HONEY_KEYWORDS,
@@ -57,7 +58,6 @@ from hoagiemeal.data import (
 
 USE_SAMPLE_MENUS = True
 DISABLE_CACHE = False
-DEBUG = settings.DEBUG
 
 
 #################### MenuAPI class for managing API communication #########################
@@ -71,7 +71,7 @@ class MenuAPI(StudentApp):
     SCRAPER = Scraper()
     LOCATIONS_SERVICE = LocationsService()
 
-    def get_menu_item(self, api_id: int) -> dict:
+    def get_menu_item(self, api_id: int) -> Optional[dict]:
         """Fetch menu item from the API.
 
         Args:
@@ -88,13 +88,13 @@ class MenuAPI(StudentApp):
             scraped_api_url_data = self.SCRAPER.scrape_api_url(api_url=api_url)  # type: ignore
             if not scraped_api_url_data:
                 logger.error(f"No scraped API URL data found for api_url: {api_url}.")
-                return {}
+                return None
 
             # Parse scraped API URL data into desired format and add extra fields
             parsed_scraped_api_url_data = parse_scraped_api_url_data(scraped_api_url_data)
             if not parsed_scraped_api_url_data:
                 logger.error(f"No parsed scraped API URL data found for api_url: {api_url}.")
-                return {}
+                return None
 
             menu_item = parsed_scraped_api_url_data
             menu_item["api_id"] = api_id
@@ -109,9 +109,9 @@ class MenuAPI(StudentApp):
             return menu_item
         except Exception as e:
             logger.error(f"Error fetching menu item for api_id: {api_id}: {e} in get_menu_item.")
-            return {}
+            return None
 
-    def get_menu_items(self, api_ids: List[int]) -> dict:
+    def get_menu_items(self, api_ids: List[int]) -> Optional[dict]:
         """Fetch menu items from the API.
 
         Args:
@@ -129,7 +129,7 @@ class MenuAPI(StudentApp):
                 menu_item = self.get_menu_item(api_id)
                 if not menu_item:
                     logger.error(f"No menu item found for api_id: {api_id}.")
-                    menu_items[api_id] = {}
+                    menu_items[api_id] = None
                 menu_items[api_id] = menu_item
 
             menu_items_length = len(list(menu_items.keys()))
@@ -137,9 +137,9 @@ class MenuAPI(StudentApp):
             return menu_items
         except Exception as e:
             logger.error(f"Error fetching menu items for api_ids: {api_ids}: {e} in get_menu_items.")
-            return {}
+            return None
 
-    def get_menu(self, location_id: int, menu_id: str) -> list:
+    def get_menu(self, location_id: int, menu_id: str) -> Optional[list]:
         """Fetch menu from API. Returns a list of API IDs.
 
         Args:
@@ -169,17 +169,17 @@ class MenuAPI(StudentApp):
             # API either returns a list or dictionary, must process both cases
             if not isinstance(menu, list) and not isinstance(menu, dict):
                 logger.error(f"Invalid menu format for location_id: {location_id}, menu_id: {menu_id}.")
-                return []
+                return None
             if isinstance(menu, dict):
                 menu = menu.get("menus", [])
 
-            # Extract API IDs from menu
+            # Extract API IDs from menu and return as list
             logger.info(f"Fetched menu from API for location_id: {location_id}, menu_id: {menu_id}.")
             api_ids = [int(menu_item.get("id")) for menu_item in menu]
             return api_ids
         except Exception as e:
             logger.error(f"Error fetching menu for location_id: {location_id}, menu_id: {menu_id}: {e}")
-            return []
+            return None
 
 
 #################### MenuCache class for managing database caching operations #########################
@@ -194,7 +194,7 @@ class MenuCache:
 
     LOCATIONS_SERVICE = LocationsService()
 
-    def get_cached_menu(self, location_id: int, menu_id: str) -> list:
+    def get_cached_menu(self, location_id: int, menu_id: str) -> Optional[list]:
         """Get cached menu from database.
 
         Args:
@@ -211,7 +211,7 @@ class MenuCache:
             menu_date, meal_code = parse_menu_id(menu_id)
             if not menu_date or not meal_code:
                 logger.error(f"Invalid menu_id: {menu_id}.")
-                return []
+                return None
 
             # Get cached menu from the location and menu
             cached_menu = Menu.objects.filter(
@@ -219,7 +219,7 @@ class MenuCache:
             ).first()
             if not cached_menu:
                 logger.info(f"No cached menu for location_id: {location_id}, menu_id: {menu_id}.")
-                return []
+                return None
 
             # Extract API IDs from cached menu
             logger.info(f"Returning cached menu for location_id: {location_id}, menu_id: {menu_id}.")
@@ -229,9 +229,9 @@ class MenuCache:
             logger.error(
                 f"Error getting cached menu for location_id: {location_id}, menu_id: {menu_id}: {e} in get_cached_menu."
             )
-            return []
+            return None
 
-    def get_cached_menu_item(self, api_id: int) -> dict:
+    def get_cached_menu_item(self, api_id: int) -> Optional[dict]:
         """Get cached menu item from database.
 
         Args:
@@ -244,17 +244,20 @@ class MenuCache:
         logger.info(f"Getting cached menu item for api_id: {api_id}.")
         try:
             # Get cached menu item from database
-            cached_menu_item = MenuItem.objects.get(api_id=api_id)
+            try:
+                cached_menu_item = MenuItem.objects.get(api_id=api_id)
+            except MenuItem.DoesNotExist:
+                logger.info(f"No cached menu item found for api_id: {api_id}.")
+                return None
+
+            # Serialize and return cached menu item
             logger.info(f"Returning cached menu item for api_id: {api_id}.")
             return MenuItemSerializer(cached_menu_item).data
-        except MenuItem.DoesNotExist:
-            logger.info(f"No cached menu item found for api_id: {api_id}.")
-            return {}
         except Exception as e:
             logger.error(f"Error getting cached menu item for api_id: {api_id}: {e} in get_cached_menu_item.")
-            return {}
+            return None
 
-    def get_cached_menu_items(self, api_ids: List[int]) -> dict:
+    def get_cached_menu_items(self, api_ids: List[int]) -> Optional[dict]:
         """Get cached menu items from database.
 
         Args:
@@ -268,6 +271,9 @@ class MenuCache:
         try:
             # Get cached menu items from database
             cached_menu_items = MenuItem.objects.filter(api_id__in=api_ids)
+            if not cached_menu_items:
+                logger.info(f"No cached menu items found for api_ids: {api_ids}.")
+                return None
 
             # Convert to dictionary of API IDs to menu items
             logger.info(f"Returning cached menu items for api_ids: {api_ids}.")
@@ -278,7 +284,7 @@ class MenuCache:
             return cached_menu_items_dict
         except Exception as e:
             logger.error(f"Error getting cached menu items for api_ids: {api_ids}: {e} in get_cached_menu_items.")
-            return {}
+            return None
 
     def cache_menu_items(self, menu_items_data: dict) -> bool:
         """Cache menu items in the database.
@@ -290,41 +296,47 @@ class MenuCache:
             bool: True if menu items were cached successfully, False otherwise.
 
         """
-        api_ids = list(menu_items_data.keys())
-        logger.info(f"Caching menu items for api_ids: {api_ids}.")
+        logger.info(f"Caching menu items for api_ids: {menu_items_data.keys()}.")
         try:
             # Cache new menu items
             with transaction.atomic():
-                for api_id in api_ids:
+                for api_id in menu_items_data.keys():
+                    # Cache error menu item if no menu item data found
                     if not menu_items_data[api_id]:
                         logger.error(f"No menu item data found for api_id: {api_id}, caching error menu item.")
                         cached_error_menu_item = self.cache_error_menu_item(api_id)
                         if not cached_error_menu_item:
-                            logger.error(f"Error caching error menu item for api_id: {api_id}.")
-                            return False
+                            raise Exception(f"Error caching error menu item for api_id: {api_id}.")
+
+                    # Cache menu item if menu item data found
                     else:
                         cached_menu_item = self.cache_menu_item(menu_items_data[api_id])
                         if not cached_menu_item:
-                            logger.error(f"Error caching menu item for api_id: {api_id}.")
-                            return False
+                            raise Exception(f"Error caching menu item for api_id: {api_id}.")
 
-            logger.info(f"Cached menu items for api_ids: {api_ids}.")
+            logger.info(f"Cached menu items for api_ids: {menu_items_data.keys()}.")
             return True
         except Exception as e:
             logger.error(
-                f"Error caching menu items for api_ids: {api_ids}: {e} in cache_menu_items in cache_menu_items."
+                f"Error caching menu items for api_ids: {menu_items_data.keys()}: {e} in cache_menu_items in cache_menu_items."
             )
             return False
 
     def cache_error_menu_item(self, api_id: int) -> bool:
-        """Cache error menu item in the database."""
+        """Cache error menu item in the database.
+
+        Args:
+            api_id (int): The API ID.
+
+        Returns:
+            bool: True if error menu item was cached successfully, False otherwise.
+
+        """
         logger.info(f"Caching error menu item for api_id: {api_id}.")
         try:
             with transaction.atomic():
-                menu_item_without_nutrition = {
-                    "api_id": api_id,
-                }
-                MenuItem.objects.create(**menu_item_without_nutrition)
+                # Create menu item instance without any fields but the API ID
+                MenuItem.objects.get_or_create(api_id=api_id)
                 return True
         except Exception as e:
             logger.error(f"Error caching error menu item for api_id: {api_id}: {e} in cache_error_menu_item.")
@@ -348,11 +360,11 @@ class MenuCache:
                 menu_item_without_nutrition = {
                     key: value for key, value in menu_item_data.items() if key != "nutrition"
                 }
-                menu_item = MenuItem.objects.create(**menu_item_without_nutrition)
+                menu_item = MenuItem.objects.get_or_create(**menu_item_without_nutrition)
 
                 # Create menu item nutrition instance
                 nutrition_data = menu_item_data.get("nutrition")
-                MenuItemNutrition.objects.create(menu_item=menu_item, **nutrition_data)  # type: ignore
+                MenuItemNutrition.objects.get_or_create(menu_item=menu_item, **nutrition_data)  # type: ignore
 
             logger.info(f"Cached menu item for api_id: {api_id}.")
             return True
@@ -361,7 +373,9 @@ class MenuCache:
             return False
 
     def cache_menu(self, location_id: int, menu_id: str, menu: list) -> bool:
-        """Cache menu with menu items in the database.
+        """Cache menu in the database.
+
+        NOTE: This method assumes that the menu items have already been cached.
 
         Args:
             location_id (int): The location ID.
@@ -380,20 +394,16 @@ class MenuCache:
                 logger.error(f"Invalid menu_id: {menu_id}.")
                 return False
 
-            # Create menu in database with all menu items
-            try:
-                with transaction.atomic():
-                    dining_venue = DiningVenue.objects.get(database_id=location_id)
-                    menu_obj, _ = Menu.objects.get_or_create(dining_venue=dining_venue, date=menu_date, meal=meal_code)
+            # Create menu in database
+            with transaction.atomic():
+                # Get dining venue and create menu instance
+                dining_venue = DiningVenue.objects.get(database_id=location_id)
+                menu_obj, _ = Menu.objects.get_or_create(dining_venue=dining_venue, date=menu_date, meal=meal_code)
 
-                    menu_items = MenuItem.objects.filter(api_id__in=menu)
-                    menu_obj.menu_items.set(menu_items)
-                    menu_obj.save()
-            except Exception as e:
-                logger.error(
-                    f"Error creating menu in database for location_id: {location_id}, menu_id: {menu_id}: {e}"
-                )
-                return False
+                # Get menu items and set them to the menu
+                menu_items = MenuItem.objects.filter(api_id__in=menu)
+                menu_obj.menu_items.set(menu_items)
+                menu_obj.save()
 
             logger.info(f"Cached menu with {len(menu)} menu items for location_id: {location_id}, menu_id: {menu_id}.")
             return True
@@ -413,7 +423,7 @@ class MenuService:
     LOCATIONS_SERVICE = LocationsService()
     SCRAPER = Scraper()
 
-    def get_or_cache_menu_item(self, api_id: int) -> dict:
+    def get_or_cache_menu_item(self, api_id: int) -> Optional[dict]:
         """Get or cache a menu item.
 
         Args:
@@ -435,7 +445,7 @@ class MenuService:
             api_menu_item = self.MENU_API.get_menu_item(api_id)
             if not api_menu_item:
                 logger.error(f"No menu item found for api_id: {api_id}.")
-                return {}
+                return None
 
             # If cache is disabled, return API menu item
             if DISABLE_CACHE:
@@ -446,16 +456,16 @@ class MenuService:
             cached_menu_item = self.MENU_CACHE.cache_menu_item(api_menu_item)
             if not cached_menu_item:
                 logger.error(f"Error caching menu item for api_id: {api_id}.")
-                return api_menu_item
+                return None
 
             # Return cached menu item
             logger.info(f"Returning cached menu item for api_id: {api_id}.")
             return self.MENU_CACHE.get_cached_menu_item(api_id)
         except Exception as e:
             logger.error(f"Error getting or caching menu item for api_id: {api_id}: {e} in get_or_cache_menu_item.")
-            return {}
+            return None
 
-    def get_or_cache_menu_items(self, api_ids: List[int]) -> dict:
+    def get_or_cache_menu_items(self, api_ids: List[int]) -> Optional[dict]:
         """Get or cache menu items.
 
         Args:
@@ -469,7 +479,9 @@ class MenuService:
         try:
             # Get menu items from database
             cached_menu_items = self.MENU_CACHE.get_cached_menu_items(api_ids)
-            found_api_ids = list(cached_menu_items.keys())
+
+            # Get found API IDs and missing API IDs
+            found_api_ids = list(cached_menu_items.keys()) if cached_menu_items else []
             missing_api_ids = list(set(api_ids) - set(found_api_ids))
             if not missing_api_ids:
                 logger.info(f"Returning cached menu items for api_ids: {api_ids}.")
@@ -479,7 +491,7 @@ class MenuService:
             api_menu_items = self.MENU_API.get_menu_items(missing_api_ids)
             if not api_menu_items:
                 logger.error(f"No menu items found for api_ids: {missing_api_ids}.")
-                return cached_menu_items
+                return None
 
             # If cache is disabled, return API menu items
             if DISABLE_CACHE:
@@ -490,7 +502,7 @@ class MenuService:
             cached_menu_items = self.MENU_CACHE.cache_menu_items(api_menu_items)
             if not cached_menu_items:
                 logger.error(f"Error caching menu items for api_ids: {api_ids}.")
-                return {}
+                return None
 
             # Return cached menu items
             logger.info(f"Returning cached menu items for api_ids: {api_ids}.")
@@ -499,9 +511,9 @@ class MenuService:
             logger.error(
                 f"Error getting or caching menu items for api_ids: {api_ids}: {e} in get_or_cache_menu_items."
             )
-            return {}
+            return None
 
-    def get_or_cache_menu_and_cache_menu_items(self, location_id: int, menu_id: str) -> list:
+    def get_or_cache_menu_and_cache_menu_items(self, location_id: int, menu_id: str) -> Optional[list]:
         """Get or cache a menu and cache its menu items if it does not exist in the cache.
 
         Args:
@@ -524,7 +536,7 @@ class MenuService:
             api_menu = self.MENU_API.get_menu(location_id, menu_id)
             if not api_menu:
                 logger.error(f"No menu found for location_id: {location_id}, menu_id: {menu_id}.")
-                return []
+                return None
 
             # If cache is disabled, return API menu
             if DISABLE_CACHE:
@@ -536,31 +548,35 @@ class MenuService:
             # Get menu items from API or cache
             cached_menu_items = self.MENU_CACHE.get_cached_menu_items(api_menu)
 
-            # Cache missing menu items in database after fetching them from API
-            found_api_ids = list(cached_menu_items.keys())
+            # Get found API IDs and missing API IDs
+            found_api_ids = list(cached_menu_items.keys()) if cached_menu_items else []
             missing_api_ids = list(set(api_menu) - set(found_api_ids))
+
+            # If there are missing API IDs, fetch them from API and cache them
             if missing_api_ids:
+                # Fetch menu items from API
                 api_menu_items = self.MENU_API.get_menu_items(missing_api_ids)
                 if not api_menu_items:
                     logger.error(f"No menu items found for api_ids: {missing_api_ids}.")
-                    return api_menu
+                    return None
 
+                # Cache menu items
                 cached_menu_items = self.MENU_CACHE.cache_menu_items(api_menu_items)
                 if not cached_menu_items:
                     logger.error(f"Error caching menu items for api_ids: {missing_api_ids}.")
-                    return api_menu
+                    return None
 
             # Make sure locations are cached
             locations = self.LOCATIONS_SERVICE.get_or_cache_locations(category_ids=["2", "3"])
             if not locations:
                 logger.error("No locations found, cannot cache menu.")
-                return api_menu
+                return None
 
             # Cache menu
             cached_menu = self.MENU_CACHE.cache_menu(location_id, menu_id, api_menu)
             if not cached_menu:
                 logger.error(f"Error caching menu for location_id: {location_id}, menu_id: {menu_id}.")
-                return api_menu
+                return None
 
             # Return cached menu
             logger.info(f"Returning cached menu for location_id: {location_id}, menu_id: {menu_id}.")
@@ -569,9 +585,9 @@ class MenuService:
             logger.error(
                 f"Error getting or caching menu for location_id: {location_id}, menu_id: {menu_id}: {e} in get_or_cache_menu_and_cache_menu_items."
             )
-            return []
+            return None
 
-    def get_or_cache_menus_and_cache_menu_items_for_locations(self, menu_id: str) -> dict:
+    def get_or_cache_menus_and_cache_menu_items_for_locations(self, menu_id: str) -> Optional[dict]:
         """Get or cache menus and cache their menu items for all locations.
 
         Args:
@@ -587,7 +603,7 @@ class MenuService:
             locations = self.LOCATIONS_SERVICE.get_or_cache_locations(category_ids=["2"])
             if not locations:
                 logger.error(f"No locations found for menu_id: {menu_id}.")
-                return {}
+                return None
 
             # Get menus for each location
             menus = {}
@@ -596,7 +612,14 @@ class MenuService:
                 if not menu:
                     logger.error(f"No menu found for location_id: {location_id}, menu_id: {menu_id}.")
                     continue
+
+                # Add menu to menus dictionary
                 menus[location_id] = menu
+
+            # If no menus were found, return None
+            if not menus:
+                logger.error(f"No menus found for menu_id: {menu_id}.")
+                return None
 
             logger.info(f"Returning cached menus for all locations for menu_id: {menu_id}.")
             return menus
@@ -604,9 +627,9 @@ class MenuService:
             logger.error(
                 f"Error getting or caching menus for all locations for menu_id: {menu_id}: {e} in get_or_cache_menus_and_cache_menu_items_for_locations."
             )
-            return {}
+            return None
 
-    def get_or_cache_menus_and_cache_menu_items_for_locations_and_day(self, menu_date: str) -> dict:
+    def get_or_cache_menus_and_cache_menu_items_for_locations_and_day(self, menu_date: str) -> Optional[dict]:
         """Get or cache menus and cache their menu items for all locations on a given day.
 
         Args:
@@ -622,12 +645,18 @@ class MenuService:
             meals = ["Breakfast", "Lunch", "Dinner"]
             menus = {}
             for meal in meals:
-                menu_id = f"{menu_date}-{meal}"
-                meal_menus = self.get_or_cache_menus_and_cache_menu_items_for_locations(menu_id)
+                meal_menus = self.get_or_cache_menus_and_cache_menu_items_for_locations(f"{menu_date}-{meal}")
                 if not meal_menus:
                     logger.error(f"No menus found for day: {menu_date}, meal: {meal}.")
                     continue
+
+                # Add meal menus to menus dictionary
                 menus[meal] = meal_menus
+
+            # If no menus were found, return None
+            if not menus:
+                logger.error(f"No menus found for day: {menu_date}.")
+                return None
 
             logger.info(f"Returning cached menus for all locations and day: {menu_date}.")
             return menus
@@ -635,9 +664,11 @@ class MenuService:
             logger.error(
                 f"Error getting or caching menus for all locations on day: {menu_date}: {e} in get_or_cache_menus_and_cache_menu_items_for_locations_and_day."
             )
-            return {}
+            return None
 
-    def get_or_cache_menus_and_cache_menu_items_for_locations_and_days(self, start_date: str, end_date: str) -> dict:
+    def get_or_cache_menus_and_cache_menu_items_for_locations_and_days(
+        self, start_date: str, end_date: str
+    ) -> Optional[dict]:
         """Get or cache menus and cache their menu items for all locations for a given date range.
 
         Args:
@@ -650,12 +681,14 @@ class MenuService:
         """
         logger.info(f"Getting or caching menus for all locations for date range: {start_date} to {end_date}.")
         try:
-            # Get menus with menu items for each meal
+            # Specify all dates in the date range
             start_date_obj = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
             end_date_obj = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
             dates = [
                 start_date_obj + datetime.timedelta(days=i) for i in range((end_date_obj - start_date_obj).days + 1)
             ]
+
+            # Get menus for each date
             menus = {}
             for date in dates:
                 date_str = str(date.strftime("%Y-%m-%d"))
@@ -663,7 +696,14 @@ class MenuService:
                 if not day_menus:
                     logger.error(f"No menus found for date: {date_str}.")
                     continue
+
+                # Add day menus to menus dictionary
                 menus[date_str] = day_menus
+
+            # If no menus were found, return None
+            if not menus:
+                logger.error(f"No menus found for date range: {start_date} to {end_date}.")
+                return None
 
             logger.info(f"Returning cached menus for all locations for date range: {start_date} to {end_date}.")
             return menus
@@ -671,7 +711,7 @@ class MenuService:
             logger.error(
                 f"Error getting or caching menus for all locations for date range: {start_date} to {end_date}: {e} in get_or_cache_menus_and_cache_menu_items_for_locations_and_days."
             )
-            return {}
+            return None
 
 
 #################### Exposed endpoints #########################
@@ -698,27 +738,40 @@ def get_dining_menu_item(request):
         # Get API ID from request
         api_id = request.GET.get("api_id")
         if not api_id:
-            return Response({"data": None, "message": "api_id is required"}, status=400)
+            return Response({"data": None, "message": "api_id is required", "error": "api_id is required"}, status=400)
 
-        # Get menu item from API or cache
+        # Get menu item
         menu_item = menu_service.get_or_cache_menu_item(int(api_id))
+        if not menu_item:
+            return Response(
+                {
+                    "data": None,
+                    "message": "No menu item found for api_id: {api_id}",
+                    "error": "No menu item found for api_id: {api_id}",
+                },
+                status=404,
+            )
+
+        # Return menu item
         logger.info(f"Returning dining menu item for api_id: {api_id}.")
         return Response(
-            {"data": menu_item, "message": "Dining menu item fetched successfully."},
+            {"data": menu_item, "message": "Dining menu item fetched successfully.", "error": None},
             status=200,
         )
     except Exception as e:
         logger.error(f"Error in get_dining_menu_item view: {e}")
-        return Response({"data": None, "message": f"Error fetching dining menu item: {str(e)}"}, status=500)
+        return Response(
+            {"data": None, "message": f"Error fetching dining menu item: {str(e)}", "error": str(e)}, status=500
+        )
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 def get_dining_menu_items(request):
     """Django view function to get or cache dining menu items.
 
     Args:
         request (Request): The HTTP request object.
-        api_ids (list): The list of API IDs.
+        api_ids (list[int]): The list of API IDs in request body.
 
     Returns:
         Response: The HTTP response object.
@@ -727,19 +780,38 @@ def get_dining_menu_items(request):
     """
     logger.info(f"Getting dining menu items for request: {request}")
     try:
-        # Get API IDs from request
-        api_ids = request.GET.get("api_ids")
-        api_ids = [int(api_id) for api_id in api_ids.split(",")]
+        # Get API IDs from request body
+        api_ids = request.data.get("api_ids")
         if not api_ids:
-            return Response({"data": None, "message": "api_ids is required"}, status=400)
+            return Response(
+                {"data": None, "message": "api_ids is required", "error": "api_ids is required"}, status=400
+            )
 
-        # Get menu items from API or cache
+        # Parse API IDs
+        api_ids = [int(api_id) for api_id in api_ids]
+
+        # Get menu items
         menu_items = menu_service.get_or_cache_menu_items(api_ids)
+        if not menu_items:
+            return Response(
+                {
+                    "data": None,
+                    "message": "No menu items found for api_ids: {api_ids}",
+                    "error": "No menu items found for api_ids: {api_ids}",
+                },
+                status=404,
+            )
+
+        # Return menu items
         logger.info(f"Returning dining menu items for api_ids: {api_ids}.")
-        return Response({"data": menu_items, "message": "Dining menu items fetched successfully."}, status=200)
+        return Response(
+            {"data": menu_items, "message": "Dining menu items fetched successfully.", "error": None}, status=200
+        )
     except Exception as e:
         logger.error(f"Error in get_dining_menu_items view: {e}")
-        return Response({"data": None, "message": f"Error fetching dining menu items: {str(e)}"}, status=500)
+        return Response(
+            {"data": None, "message": f"Error fetching dining menu items: {str(e)}", "error": str(e)}, status=500
+        )
 
 
 @cache_page(60 * 5)
@@ -763,21 +835,42 @@ def get_dining_menu(request):
         location_id = int(request.GET.get("location_id"))
         menu_id = request.GET.get("menu_id")
         if not location_id or not menu_id:
-            return Response({"data": None, "message": "location_id and menu_id are required"}, status=400)
+            return Response(
+                {
+                    "data": None,
+                    "message": "location_id and menu_id are required",
+                    "error": "location_id and menu_id are required",
+                },
+                status=400,
+            )
 
-        # Get menu from API or cache
+        # Get menu
         menu = menu_service.get_or_cache_menu_and_cache_menu_items(location_id, menu_id)
+        if not menu:
+            return Response(
+                {
+                    "data": None,
+                    "message": "No menu found for location_id: {location_id}, menu_id: {menu_id}",
+                    "error": "No menu found for location_id: {location_id}, menu_id: {menu_id}",
+                },
+                status=404,
+            )
+
+        # Return menu
         logger.info(f"Returning dining menu for location_id: {location_id}, menu_id: {menu_id}.")
         return Response(
             {
                 "data": menu,
                 "message": "Dining menu fetched successfully.",
+                "error": None,
             },
             status=200,
         )
     except Exception as e:
         logger.error(f"Error in get_dining_menu view: {e}")
-        return Response({"data": None, "message": f"Error fetching dining menu: {str(e)}"}, status=500)
+        return Response(
+            {"data": None, "message": f"Error fetching dining menu: {str(e)}", "error": str(e)}, status=500
+        )
 
 
 @cache_page(60 * 5)
@@ -799,15 +892,42 @@ def get_dining_menus_for_locations(request):
         # Get menu ID from request
         menu_id = request.GET.get("menu_id")
         if not menu_id:
-            return Response({"data": None, "message": "menu_id is required"}, status=400)
+            return Response(
+                {"data": None, "message": "menu_id is required", "error": "menu_id is required"}, status=400
+            )
 
-        # Get menus for all locations from API or cache
+        # Get menus for all locations
         menus = menu_service.get_or_cache_menus_and_cache_menu_items_for_locations(menu_id)
+        if not menus:
+            return Response(
+                {
+                    "data": None,
+                    "message": "No menus found for menu_id: {menu_id}",
+                    "error": "No menus found for menu_id: {menu_id}",
+                },
+                status=404,
+            )
+
+        # Return menus
         logger.info(f"Returning dining menus for all locations for menu_id: {menu_id}.")
-        return Response({"data": menus, "message": "Dining menus fetched successfully."}, status=200)
+        return Response(
+            {
+                "data": menus,
+                "message": "Dining menus fetched successfully.",
+                "error": None,
+            },
+            status=200,
+        )
     except Exception as e:
         logger.error(f"Error in get_dining_menus_for_locations view: {e}")
-        return Response({"data": None, "message": f"Error fetching dining menus: {str(e)}"}, status=500)
+        return Response(
+            {
+                "data": None,
+                "message": f"Error fetching dining menus: {str(e)}",
+                "error": str(e),
+            },
+            status=500,
+        )
 
 
 @cache_page(60 * 5)
@@ -829,15 +949,42 @@ def get_dining_menus_for_locations_and_day(request):
         # Get menu date from request
         menu_date = request.GET.get("menu_date")
         if not menu_date:
-            return Response({"data": None, "message": "menu_date is required"}, status=400)
+            return Response(
+                {"data": None, "message": "menu_date is required", "error": "menu_date is required"}, status=400
+            )
 
-        # Get menus for all locations on the given day from API or cache
+        # Get menus for all locations on the given day
         menus = menu_service.get_or_cache_menus_and_cache_menu_items_for_locations_and_day(menu_date)
+        if not menus:
+            return Response(
+                {
+                    "data": None,
+                    "message": "No menus found for menu_date: {menu_date}",
+                    "error": "No menus found for menu_date: {menu_date}",
+                },
+                status=404,
+            )
+
+        # Return menus
         logger.info(f"Returning dining menus for all locations on day: {menu_date}.")
-        return Response({"data": menus, "message": "Dining menus fetched successfully."}, status=200)
+        return Response(
+            {
+                "data": menus,
+                "message": "Dining menus fetched successfully.",
+                "error": None,
+            },
+            status=200,
+        )
     except Exception as e:
         logger.error(f"Error in get_dining_menus_for_locations_day view: {e}")
-        return Response({"data": None, "message": f"Error fetching dining menus: {str(e)}"}, status=500)
+        return Response(
+            {
+                "data": None,
+                "message": f"Error fetching dining menus: {str(e)}",
+                "error": str(e),
+            },
+            status=500,
+        )
 
 
 @cache_page(60 * 5)
@@ -861,15 +1008,47 @@ def get_dining_menus_for_locations_and_days(request):
         start_date = request.GET.get("start_date")
         end_date = request.GET.get("end_date")
         if not start_date or not end_date:
-            return Response({"data": None, "message": "start_date and end_date are required"}, status=400)
+            return Response(
+                {
+                    "data": None,
+                    "message": "start_date and end_date are required",
+                    "error": "start_date and end_date are required",
+                },
+                status=400,
+            )
 
-        # Get menus for all locations for the given date range from API or cache
+        # Get menus for all locations for the given date range
         menus = menu_service.get_or_cache_menus_and_cache_menu_items_for_locations_and_days(start_date, end_date)
+        if not menus:
+            return Response(
+                {
+                    "data": None,
+                    "message": "No menus found for start_date: {start_date}, end_date: {end_date}",
+                    "error": "No menus found for start_date: {start_date}, end_date: {end_date}",
+                },
+                status=404,
+            )
+
+        # Return menus
         logger.info(f"Returning dining menus for all locations for date range: {start_date} to {end_date}.")
-        return Response({"data": menus, "message": "Dining menus fetched successfully."}, status=200)
+        return Response(
+            {
+                "data": menus,
+                "message": "Dining menus fetched successfully.",
+                "error": None,
+            },
+            status=200,
+        )
     except Exception as e:
         logger.error(f"Error in get_dining_menus_for_locations_days view: {e}")
-        return Response({"data": None, "message": f"Error fetching dining menus: {str(e)}"}, status=500)
+        return Response(
+            {
+                "data": None,
+                "message": f"Error fetching dining menus: {str(e)}",
+                "error": str(e),
+            },
+            status=500,
+        )
 
 
 #################### Utility functions for working with menu data #########################
@@ -896,7 +1075,7 @@ def parse_menu_id(menu_id: str) -> Tuple[Optional[datetime.date], Optional[str]]
         return None, None
 
 
-def classify_by_dietary_flags(ingredients: List[str], allergens: List[str], name: str) -> List[str]:
+def classify_by_dietary_flags(ingredients: List[str], allergens: List[str], name: str) -> Optional[List[str]]:
     """Classify dietary flags for a menu item.
 
     Args:
@@ -977,9 +1156,9 @@ def classify_by_dietary_flags(ingredients: List[str], allergens: List[str], name
                 if not has_dairy_egg_honey:
                     flags.append("vegan")
 
+        # Add explicit labels if they are present
         if explicit["halal"] or (not has_pork and not has_alcohol):
             flags.append("halal")
-
         if explicit["kosher"]:
             flags.append("kosher")
         else:
@@ -994,7 +1173,7 @@ def classify_by_dietary_flags(ingredients: List[str], allergens: List[str], name
         logger.error(
             f"Error classifying dietary flags for ingredients: {ingredients}, allergens: {allergens}, name: {name}: {e} in classify_by_dietary_flags."
         )
-        return []
+        return None
 
 
 def parse_menu_item(menu_item: dict) -> dict:
@@ -1014,7 +1193,7 @@ def parse_menu_item(menu_item: dict) -> dict:
     }
 
 
-def parse_scraped_api_url_data(scraped_api_url_data: dict) -> dict:
+def parse_scraped_api_url_data(scraped_api_url_data: dict) -> Optional[dict]:
     """Parse scraped API URL data to a format that can be used to create a menu item instance.
 
     Args:
@@ -1045,9 +1224,12 @@ def parse_scraped_api_url_data(scraped_api_url_data: dict) -> dict:
     ingredients = scraped_api_url_data.get("ingredients", [])
     name = scraped_api_url_data.get("name")
 
+    # Test if API URL has nutrition information
     if not name:
-        return {}
+        logger.error(f"No nutrition information found for scraped API URL data: {scraped_api_url_data}.")
+        return None
 
+    # Extract nutrition information
     nutrition = {
         "serving_size": serving_size,
         "serving_unit": serving_unit,
@@ -1068,6 +1250,7 @@ def parse_scraped_api_url_data(scraped_api_url_data: dict) -> dict:
         "iron": iron,
     }
 
+    # Extract menu item data and attach nutrition information
     menu_item = {
         "name": name,
         "allergens": allergens,

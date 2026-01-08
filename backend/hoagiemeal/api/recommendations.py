@@ -37,7 +37,7 @@ from hoagiemeal.models.menu import (
 
 
 class RecommendationService:
-    """Service for scoring menu items for a user."""
+    """Service for scoring menu items based on user likes/dislikes."""
 
     def _calculate_score(
         self,
@@ -46,7 +46,7 @@ class RecommendationService:
         disliked_items: set,
         similarity_map: Dict[int, Dict[int, float]],
     ) -> float:
-        """Calculate recommendation score for a single menu item.
+        """Calculate recommendation score for a single menu item. Formula: score = sum(similarity_score for liked items) - sum(similarity_score for disliked items).
 
         Args:
             menu_item_api_id (int): Menu item API ID to score.
@@ -98,12 +98,12 @@ class RecommendationService:
             # Fetch similarity rows for relevant items
             similarities = MenuItemSimilarity.objects.filter(item_a__api_id__in=liked_items | disliked_items)
 
+            # Create similarity map and calculate score
             similarity_map = defaultdict(dict)
             for sim in similarities:
                 similarity_map[sim.item_a.api_id][sim.item_b.api_id] = sim.score
 
             score = self._calculate_score(menu_item_api_id, liked_items, disliked_items, similarity_map)
-
             logger.info(
                 f"Successfully calculated score {score} for menu item {menu_item_api_id} for user_id={user.id}."
             )
@@ -145,6 +145,7 @@ class RecommendationService:
             # Fetch similarity rows for relevant items (only fetch once)
             similarities = MenuItemSimilarity.objects.filter(item_a__api_id__in=liked_items | disliked_items)
 
+            # Create similarity map
             similarity_map = defaultdict(dict)
             for sim in similarities:
                 similarity_map[sim.item_a.api_id][sim.item_b.api_id] = sim.score
@@ -189,27 +190,31 @@ def get_menu_item_score(request):
         user = get_user_from_request(request)
         if not user:
             return Response(
-                {"data": None, "message": "Authentication required"},
+                {"data": None, "message": "Authentication required", "error": "Authentication required"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
+        # Get menu item API ID
         menu_item_api_id = request.data.get("menu_item_api_id")
         if menu_item_api_id is None:
             return Response(
-                {"data": None, "message": "menu_item_api_id is required"},
+                {"data": None, "message": "menu_item_api_id is required", "error": "menu_item_api_id is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Get score
         score = recommendation_service.get_menu_item_score(user, int(menu_item_api_id))
 
+        # Return score
         logger.info(f"Returning score {score} for menu item {menu_item_api_id} for user_id={user.id}.")
         return Response(
-            {"data": score, "message": "Menu item score retrieved successfully."}, status=status.HTTP_200_OK
+            {"data": score, "message": "Menu item score retrieved successfully.", "error": None},
+            status=status.HTTP_200_OK,
         )
     except Exception as e:
         logger.error(f"Error in get_menu_item_score view: {e}")
         return Response(
-            {"data": None, "message": f"Error getting menu item score: {str(e)}"},
+            {"data": None, "message": f"Error getting menu item score: {str(e)}", "error": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
@@ -237,6 +242,7 @@ def get_menu_items_score(request):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
+        # Get menu item API IDs
         menu_item_api_ids = request.data.get("menu_item_api_ids")
         if not menu_item_api_ids:
             return Response(
@@ -244,9 +250,18 @@ def get_menu_items_score(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Parse menu item API IDs
         menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids]
-        scores = recommendation_service.get_menu_items_score(user, menu_item_api_ids)
 
+        # Get scores
+        scores = recommendation_service.get_menu_items_score(user, menu_item_api_ids)
+        if not scores:
+            return Response(
+                {"data": None, "message": "No scores found", "error": "No scores found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Return scores
         logger.info(f"Returning scores for {len(scores)} menu items for user_id={user.id}.")
         return Response(
             {"data": scores, "message": "Menu items scores retrieved successfully."}, status=status.HTTP_200_OK

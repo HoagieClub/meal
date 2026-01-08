@@ -24,23 +24,34 @@ const DEBUG = process.env.NODE_ENV === 'development';
  * @param req - The HTTP request object.
  * @returns A NextResponse object with the menu items data.
  */
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const apiIds = searchParams.get('api_ids');
+    const body = await req.json();
+    const apiIds = body.api_ids;
 
     if (!apiIds) {
       return NextResponse.json(
         {
           status: 400,
-          message: 'Missing api_ids parameter',
+          message: 'Missing api_ids in request body',
           data: null,
         },
         { status: 400 }
       );
     }
 
-    const res = await getDiningMenuItems({ api_ids: apiIds });
+    if (!Array.isArray(apiIds)) {
+      return NextResponse.json(
+        {
+          status: 400,
+          message: 'api_ids must be an array',
+          data: null,
+        },
+        { status: 400 }
+      );
+    }
+
+    const res = await getDiningMenuItems({ api_ids: apiIds.map(Number) });
 
     // Django backend returns: {"data": menu_items, "message": "..."}
     const data = res.data || {};

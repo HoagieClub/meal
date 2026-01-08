@@ -220,9 +220,7 @@ class MenuItemInteraction(models.Model):
     liked = models.BooleanField(null=True, blank=True)
     favorited = models.BooleanField(default=False)
     saved_for_later = models.BooleanField(default=False)
-    would_eat_again = models.CharField(
-        max_length=1, choices=WouldEatAgain.choices, default=WouldEatAgain.MAYBE, null=True, blank=True
-    )
+    would_eat_again = models.CharField(max_length=1, choices=WouldEatAgain.choices, null=True, blank=True)
 
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)

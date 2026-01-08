@@ -30,8 +30,18 @@ export async function GET(req: Request) {
     const fmt = searchParams.get('fmt') ?? 'xml';
     const categoryId = searchParams.get('category_id') ?? '2';
 
+    if (!categoryId || !['2', '3'].includes(categoryId)) {
+      return NextResponse.json(
+        {
+          status: 400,
+          message: 'Invalid category_id',
+          data: null,
+        },
+        { status: 400 }
+      );
+    }
+
     const res = await getDiningLocations({ category_id: categoryId, fmt });
-    DEBUG && console.log('Backend response:', res);
 
     // Django backend returns: {"data": locations, "message": "..."}
     const locations = res.data || {};

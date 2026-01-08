@@ -34,40 +34,6 @@ interface MenuItemRowProps {
 }
 
 /**
- * Helper function to display allergens for a menu item.
- *
- * @param item - The menu item.
- * @param theme - The theme object.
- * @returns JSX element displaying allergens.
- */
-const showAllergens = (item: MenuItem, theme: any) => {
-  let itemAllergens = item?.allergens || [];
-  if (itemAllergens.length === 0) {
-    return (
-      <Text color='muted' fontStyle='italic'>
-        No allergens
-      </Text>
-    );
-  }
-
-  // Map over all allergens and display them as emojis
-  return itemAllergens.map((allergen: string) => (
-    <Pane
-      key={allergen}
-      display='inline-flex'
-      alignItems='center'
-      justifyContent='center'
-      width={26}
-      height={26}
-      borderRadius={999}
-      background={theme.colors.green100}
-    >
-      <Text>{ALLERGEN_EMOJI[allergen as keyof typeof ALLERGEN_EMOJI]}</Text>
-    </Pane>
-  ));
-};
-
-/**
  * Menu item row component.
  *
  * @param props - Component props
@@ -75,7 +41,7 @@ const showAllergens = (item: MenuItem, theme: any) => {
  */
 export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProps) {
   const theme = useTheme();
-  
+
   const menuItemApiId = item?.apiId;
   const calories = item?.nutrition?.calories ?? '';
   const protein = item?.nutrition?.protein ? `${item?.nutrition?.protein} g` : '';
@@ -112,6 +78,40 @@ export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProp
     Allergens: allergens,
   };
 
+  /**
+   * Helper function to display allergens for a menu item.
+   *
+   * @param item - The menu item.
+   * @param theme - The theme object.
+   * @returns JSX element displaying allergens.
+   */
+  const showAllergens = (item: MenuItem, theme: any) => {
+    let itemAllergens = item?.allergens || [];
+    if (itemAllergens.length === 0) {
+      return (
+        <Text color='muted' fontStyle='italic'>
+          No allergens
+        </Text>
+      );
+    }
+
+    // Map over all allergens and display them as emojis
+    return itemAllergens.map((allergen: string) => (
+      <Pane
+        key={allergen}
+        display='flex'
+        alignItems='center'
+        justifyContent='center'
+        width={26}
+        height={26}
+        borderRadius={999}
+        background={theme.colors.green100}
+      >
+        <Text>{ALLERGEN_EMOJI[allergen as keyof typeof ALLERGEN_EMOJI]}</Text>
+      </Pane>
+    ));
+  };
+
   // Render the menu item row
   return (
     <React.Fragment key={menuItemApiId}>
@@ -141,7 +141,7 @@ export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProp
               </Text>
             </Link>
           </Pane>
-          <Pane display='flex' gap={minorScale(1)} marginTop={minorScale(1)}>
+          <Pane display='flex' flexWrap='wrap' gap={minorScale(1)} marginTop={minorScale(1)}>
             {showAllergens(item, theme)}
           </Pane>
         </Pane>
