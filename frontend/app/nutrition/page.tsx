@@ -31,7 +31,7 @@ import { useSearchParams } from 'next/navigation';
 import NutritionTable from './components/nutrition-table';
 import LikeDislikeButtons from './components/like-dislike-buttons';
 import FavoriteBookmarkButtons from './components/favorite-bookmark-buttons';
-import { MenuItem, MenuItemInteraction, MenuItemMetrics } from '@/types/dining';
+import { MenuItem, MenuItemInteraction, MenuItemMetrics } from '@/types/types';
 import {
   getDiningMenuItem,
   getMenuItemMetrics,

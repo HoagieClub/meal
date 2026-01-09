@@ -15,7 +15,7 @@
 import { majorScale, minorScale, Pane, Text } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
 import { MacronutrientRow, MicronutrientRow } from './nutrient-rows';
-import { MenuItemNutrition } from '@/types/dining';
+import { MenuItemNutrition } from '@/types/types';
 import { getMacronutrients, getMicronutrients } from '../actions';
 
 /**

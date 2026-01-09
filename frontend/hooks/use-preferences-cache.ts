@@ -22,7 +22,7 @@
 
 import { DINING_HALLS } from '@/data';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { DiningHall, Allergen, DietaryTag } from '@/types/dining';
+import { DiningHall, Allergen, DietaryTag } from '@/types/types';
 
 // Keys for each preference type
 const CACHE_KEYS = {

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import { Pane, Text, useTheme, majorScale } from 'evergreen-ui';
-import { MenuItemInteraction } from '@/types/dining';
+import { MenuItemInteraction } from '@/types/types';
 import { useMenuItemFavoriteBookmark } from '@/hooks/use-menu-item-favorite-bookmark';
 
 /**

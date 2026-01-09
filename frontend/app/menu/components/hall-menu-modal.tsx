@@ -16,12 +16,12 @@
 
 import { Dialog, Pane, majorScale, minorScale } from 'evergreen-ui';
 import React, { useState, useEffect } from 'react';
-import MenuSection, { Column } from './menu-selection';
+import MenuSection from './menu-selection';
 import { Separator } from '@/components/ui/separator';
-import SortDropdown, { MenuSortOption } from './sort-dropdown';
+import SortDropdown from './sort-dropdown';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import ColumnVisibilityDropdown from './column-visibility-dropdown';
-import { COLUMNS } from './menu-selection';
+import { Column, COLUMNS, MenuSortOption } from '@/types/types';
 
 /**
  * Hall menu modal component props.
@@ -40,7 +40,7 @@ const HallMenuModal = ({
   setModalHall: any;
   showNutrition: boolean;
 }) => {
-  const [sortOption, setSortOption] = useState<MenuSortOption>('best');
+  const [sortOption, setSortOption] = useState<MenuSortOption>('Best');
   const [toggledColumns, setToggledColumns] = useState<Column[]>(COLUMNS);
   const foldDropdowns = useMediaQuery('(max-width: 800px)');
 

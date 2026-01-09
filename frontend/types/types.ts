@@ -1,4 +1,4 @@
-// @overview Type definitions for dining-related data structures.
+// @overview Type definitions.
 //
 // Copyright © 2021-2025 Hoagie Club and affiliates.
 //
@@ -21,7 +21,7 @@ export interface Location {
   amenities: string[];
   isActive: boolean;
   categoryId: number;
-  menu?: MenuItem[];
+  menu?: MenuItem[]; // Built data may attach menu items to the location.
 }
 
 // Nutritional information for a menu item. All values are optional and may be null if not available.
@@ -54,7 +54,7 @@ export interface MenuItem {
   ingredients?: string[];
   dietaryFlags?: string[];
   nutrition?: MenuItemNutrition;
-  metrics?: MenuItemMetrics;
+  metrics?: MenuItemMetrics; // Built data may attach metrics and interactions to the menu item.
   userInteraction?: MenuItemInteraction;
 }
 
@@ -96,6 +96,9 @@ export type LocationId = number | string;
 
 // Meal period types available at dining locations.
 export type Meal = 'Breakfast' | 'Lunch' | 'Dinner';
+
+// Meal periods types available at dining locations.
+export const MEALS: Meal[] = ['Breakfast', 'Lunch', 'Dinner'];
 
 // Date key format used for indexing menus by date. Typically in YYYY-MM-DD format.
 export type DateKey = string;
@@ -157,6 +160,21 @@ export type Allergen =
   | 'Fish'
   | 'Sesame';
 
+// Known allergens that may be present in menu items.
+export const ALLERGENS: Allergen[] = [
+  'Peanut',
+  'Coconut',
+  'Eggs',
+  'Milk',
+  'Wheat',
+  'Soybeans',
+  'Crustacean',
+  'Alcohol',
+  'Gluten',
+  'Fish',
+  'Sesame',
+];
+
 // Available dining halls at the institution.
 export type DiningHall =
   | 'Forbes College'
@@ -164,14 +182,72 @@ export type DiningHall =
   | 'Whitman & Butler Colleges'
   | 'Yeh College & NCW'
   | 'Center for Jewish Life'
-  | 'Graduate College'
-  | 'Frist Grill';
+  | 'Graduate College';
+
+// Available dining halls at the institution.
+export const DINING_HALLS: DiningHall[] = [
+  'Forbes College',
+  'Mathey & Rockefeller Colleges',
+  'Whitman & Butler Colleges',
+  'Yeh College & NCW',
+  'Center for Jewish Life',
+  'Graduate College',
+];
 
 // Dietary tags that can be applied to menu items or user preferences.
 export type DietaryTag = 'Vegetarian' | 'Vegan' | 'Halal' | 'Kosher';
 
-// Categories for organizing menu items within a menu.
-export type MenuCategory = 'Main Entrée' | 'Vegan Entrée';
+// Dietary tags that can be applied to menu items or user preferences.
+export const DIETARY_TAGS: DietaryTag[] = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
 
 // Emoji icons used to represent different meal types or dietary information.
 export type MealIcon = '🍂' | '🥜' | '🥚' | '🥛' | '🌱' | '🥜';
+
+// Emoji icons used to represent different meal types or dietary information.
+export const MEAL_ICONS: MealIcon[] = ['🍂', '🥜', '🥚', '🥛', '🌱', '🥜'];
+
+// Represents a team member.
+export interface TeamMember {
+  name: string;
+  role: string;
+  bio?: string;
+  imgSrc: string;
+  socials: {
+    linkedin?: string;
+    github?: string;
+    website?: string;
+    twitter?: string;
+  };
+}
+
+// Columns that can be displayed in the menu section.
+export type Column =
+  | 'Calories'
+  | 'Protein'
+  | 'Sodium'
+  | 'Fat'
+  | 'Carbs'
+  | 'Ingredients'
+  | 'Allergens';
+
+// Columns that can be displayed in the menu section.
+export const COLUMNS: Column[] = [
+  'Calories',
+  'Protein',
+  'Sodium',
+  'Fat',
+  'Carbs',
+  'Ingredients',
+  'Allergens',
+];
+
+// Options to sort the menu.
+export type MenuSortOption = 'Best' | 'Most Viewed' | 'Most Liked' | 'Recommended';
+
+// Options to sort the menu.
+export const MENU_SORT_OPTIONS: MenuSortOption[] = [
+  'Best',
+  'Most Viewed',
+  'Most Liked',
+  'Recommended',
+];

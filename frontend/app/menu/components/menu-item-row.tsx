@@ -16,10 +16,11 @@
 
 import React from 'react';
 import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
-import { ALLERGEN_EMOJI, ALLERGEN_STYLE_MAP } from '@/styles';
-import { Allergen, MenuItem } from '@/types/dining';
+import { ALLERGEN_EMOJI_MAP } from '@/data';
+import { ALLERGEN_STYLE_MAP } from '@/styles';
+import { Allergen, MenuItem } from '@/types/types';
 import { MiniLikeDislikeButtons } from '@/components/mini-like-dislike-button';
-import type { Column } from './menu-selection';
+import { Column } from '@/types/types';
 
 /**
  * Menu item row component.
@@ -68,7 +69,7 @@ export default function MenuItemRow({
   const viewCount = item?.metrics?.viewCount ?? 0;
 
   // Map the columns to their corresponding values.
-  const COLUMN_VALUES_MAP = {
+  const columnValuesMap: Record<Column, string | number | null> = {
     Calories: calories,
     Protein: protein,
     Sodium: sodium,
@@ -95,7 +96,7 @@ export default function MenuItemRow({
         borderRadius={999}
         background={ALLERGEN_STYLE_MAP(theme)[allergen]?.bg}
       >
-        <Text>{ALLERGEN_EMOJI[allergen]}</Text>
+        <Text>{ALLERGEN_EMOJI_MAP[allergen]}</Text>
       </Pane>
     );
   };
@@ -154,11 +155,13 @@ export default function MenuItemRow({
               </Text>
             </Link>
           </Pane>
+
           {/* Display the allergens for the menu item. */}
           <Pane display='flex' flexWrap='wrap' gap={minorScale(1)} marginTop={minorScale(1)}>
             {showAllergens(item)}
           </Pane>
         </Pane>
+
         {/* Display the values for the columns. */}
         {columns.map((column) => (
           <Text
@@ -170,9 +173,10 @@ export default function MenuItemRow({
             justifyContent='flex-end'
             key={column}
           >
-            {COLUMN_VALUES_MAP[column]}
+            {columnValuesMap[column]}
           </Text>
         ))}
+
         {/* Display the like/dislike buttons. */}
         <Pane
           display='flex'
@@ -184,6 +188,7 @@ export default function MenuItemRow({
         >
           <MiniLikeDislikeButtons item={item} />
         </Pane>
+
         {/* Display the view count if the full menu is displayed. */}
         {fullMenu && (
           <Pane

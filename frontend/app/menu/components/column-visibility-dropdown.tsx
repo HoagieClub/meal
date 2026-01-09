@@ -27,8 +27,7 @@ import {
   ChevronDownIcon,
   Checkbox,
 } from 'evergreen-ui';
-import type { Column } from './menu-selection';
-import { COLUMNS } from './menu-selection';
+import { COLUMNS } from '@/types/types';
 
 /**
  * Column visibility dropdown component for hall menu modal.

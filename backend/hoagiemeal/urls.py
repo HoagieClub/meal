@@ -44,8 +44,7 @@ urlpatterns = [
     # Location API Endpoints
     path("api/dining/locations/", get_dining_locations, name="dining-locations"),
     path("api/dining/locations/all/", get_all_dining_locations, name="all-dining-locations"),
-    # Menu API Endpoints - Grouped by functionality
-    # Menu fetching endpoints (menus)
+    # Menu fetching endpoints
     path("api/dining/menus/", get_dining_menu, name="dining-menu"),
     path(
         "api/dining/menus/locations/",

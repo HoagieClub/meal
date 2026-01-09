@@ -30,7 +30,7 @@ import {
   DateKey,
   Menu,
   Location,
-} from '@/types/dining';
+} from '@/types/types';
 
 const CACHE_KEYS = {
   MENU_STRUCTURE: 'menuStructureCache',

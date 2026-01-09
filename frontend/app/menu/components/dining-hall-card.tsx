@@ -26,7 +26,7 @@ import {
 } from 'evergreen-ui';
 import React from 'react';
 import MenuSection from './menu-selection';
-import { Location } from '@/types/dining';
+import { Location } from '@/types/types';
 import { HALL_BANNER_MAP } from '@/styles';
 
 /**

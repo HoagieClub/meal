@@ -23,7 +23,7 @@ import {
   MenusForMealAndLocations,
   MenusForDateMealAndLocations,
   LocationMap,
-} from '@/types/dining';
+} from '@/types/types';
 
 /**
  * Gets dining locations.

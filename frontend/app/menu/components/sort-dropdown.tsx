@@ -16,8 +16,7 @@
 
 import React from 'react';
 import { Select, Pane, Text, minorScale, useTheme } from 'evergreen-ui';
-
-export type MenuSortOption = 'best' | 'most viewed' | 'most liked' | 'recommended';
+import { MENU_SORT_OPTIONS, MenuSortOption } from '@/types/types';
 
 /**
  * Sort dropdown component for menu sorting.
@@ -54,10 +53,11 @@ export default function SortDropdown({
           setSortOption(e.target.value as MenuSortOption)
         }
       >
-        <option value='best'>Best</option>
-        <option value='most viewed'>Most viewed</option>
-        <option value='most liked'>Most liked</option>
-        <option value='recommended'>Recommended</option>
+        {MENU_SORT_OPTIONS.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
       </Select>
     </Pane>
   );

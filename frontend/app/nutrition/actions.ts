@@ -12,31 +12,60 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { MenuItemNutrition } from '@/types/dining';
+import { MenuItemNutrition } from '@/types/types';
+import { toNumber, calculateDVPercentage } from '@/utils/dining';
 
-/**
- * Helper to convert string/number to number for calculations.
- *
- * @param value - The value to convert to a number.
- * @returns The number.
- */
-const toNumber = (value: string | number | null | undefined): number => {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === 'number') return value;
-  const parsed = parseFloat(String(value));
-  return isNaN(parsed) ? 0 : parsed;
+const MACRONUTRIENTS_MAP: Record<keyof MenuItemNutrition, string> = {
+  totalFat: 'Total Fat',
+  saturatedFat: 'Saturated Fat',
+  cholesterol: 'Cholesterol',
+  sodium: 'Sodium',
+  totalCarbohydrates: 'Total Carbohydrates',
+  dietaryFiber: 'Dietary Fiber',
+  sugars: 'Sugars',
 };
 
-/**
- * Helper to calculate the dv percentage.
- *
- * @param amount - The amount of the nutrient.
- * @param dailyValue - The daily value of the nutrient.
- * @returns The dv percentage.
- */
-const calculateDVPercentage = (amount: number, dailyValue: number): number | null => {
-  if (!amount || amount === 0) return null;
-  return Math.round((amount / dailyValue) * 100);
+const MACRONUTRIENTS_DAILY_VALUES: Record<keyof MenuItemNutrition, number> = {
+  totalFat: 78,
+  saturatedFat: 20,
+  cholesterol: 300,
+  sodium: 2300,
+  totalCarbohydrates: 275,
+  dietaryFiber: 28,
+  sugars: 50,
+  protein: 50,
+};
+
+const MACRONUTRIENTS_UNITS: Record<keyof MenuItemNutrition, string> = {
+  totalFat: 'g',
+  saturatedFat: 'g',
+  cholesterol: 'mg',
+  sodium: 'mg',
+  totalCarbohydrates: 'g',
+  dietaryFiber: 'g',
+  sugars: 'g',
+  protein: 'g',
+};
+
+const MICRONUTRIENTS_MAP: Record<keyof MenuItemNutrition, string> = {
+  vitaminD: 'Vitamin D',
+  calcium: 'Calcium',
+  iron: 'Iron',
+  potassium: 'Potassium',
+};
+
+const MICRONUTRIENTS_UNITS: Record<keyof MenuItemNutrition, string> = {
+  vitaminD: 'mcg',
+  calcium: 'mg',
+  iron: 'mg',
+  potassium: 'mg',
+};
+
+const MICRONUTRIENTS_DAILY_VALUES: Record<keyof MenuItemNutrition, number> = {
+  vitaminD: 20,
+  calcium: 1300,
+  iron: 18,
+  potassium: 4700,
 };
 
 /**

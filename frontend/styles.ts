@@ -13,7 +13,6 @@
  */
 
 import cjlIcon from '@/public/images/icons/cjl.png';
-import defaultIcon from '@/public/images/icons/default.png';
 import forbesIcon from '@/public/images/icons/forbes.png';
 import gradIcon from '@/public/images/icons/grad.png';
 import whitmanIcon from '@/public/images/icons/whitman.png';
@@ -25,17 +24,17 @@ import gradBanner from '@/public/images/banners/gradbanner.png';
 import matheyBanner from '@/public/images/banners/rockybanner.png';
 import whitmanBanner from '@/public/images/banners/whitmanbanner.png';
 import yehBanner from '@/public/images/banners/yehbanner.png';
-import { Meal, Allergen, DietaryTag, DiningHall } from '@/types/dining';
+import { Meal, Allergen, DietaryTag, DiningHall } from '@/types/types';
 import { Theme } from 'evergreen-ui';
 import { StaticImageData } from 'next/image';
 
-// Hall emoji style.
+// Hall emoji style that maps from dining hall type to their corresponding emoji style.
 export const HALL_EMOJI_STYLE = (theme: Theme) => ({
   bg: theme.colors.gray100,
   color: theme.colors.gray700,
 });
 
-// Allergen style map.
+// Allergen style map that maps from allergen type to their corresponding style.
 export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<Allergen, any> => ({
   Peanut: {
     bg: theme.colors.yellow100,
@@ -77,7 +76,7 @@ export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<Allergen, any> => ({
   },
 });
 
-// Hall icon map.
+// Hall icon map that maps from dining hall type to their corresponding icon image.
 export const HALL_ICON_MAP: Record<DiningHall, string> = {
   'Center for Jewish Life': cjlIcon.src,
   'Forbes College': forbesIcon.src,
@@ -85,11 +84,9 @@ export const HALL_ICON_MAP: Record<DiningHall, string> = {
   'Whitman & Butler Colleges': whitmanIcon.src,
   'Yeh College & NCW': yehIcon.src,
   'Mathey & Rockefeller Colleges': rockyIcon.src,
-  'Frist Grill': defaultIcon.src,
 };
 
-// Hall banner map.
-// @ts-ignore
+// Hall banner map that maps from dining hall type to their corresponding banner image.
 export const HALL_BANNER_MAP: Record<DiningHall, StaticImageData> = {
   'Forbes College': forbesBanner,
   'Mathey & Rockefeller Colleges': matheyBanner,
@@ -99,22 +96,14 @@ export const HALL_BANNER_MAP: Record<DiningHall, StaticImageData> = {
   'Graduate College': gradBanner,
 };
 
-// Diet label map.
-export const DIET_LABEL_MAP: Record<DietaryTag, string> = {
-  Vegetarian: 'V',
-  Vegan: 'VG',
-  Halal: 'H',
-  Kosher: 'K',
-};
-
-// Meal color map.
+// Meal color map that maps from meal type to their corresponding color.
 export const MEAL_COLOR_MAP = (theme: Theme): Record<Meal, string> => ({
   Breakfast: theme.colors.green100 as string,
   Lunch: theme.colors.green200 as string,
   Dinner: theme.colors.green300 as string,
 });
 
-// Diet style map.
+// Diet style map that maps from dietary tag type to their corresponding style.
 export const DIET_STYLE_MAP = (theme: Theme): Record<DietaryTag, any> => ({
   Vegetarian: {
     bg: theme.colors.green100,
@@ -128,17 +117,3 @@ export const DIET_STYLE_MAP = (theme: Theme): Record<DietaryTag, any> => ({
   },
 });
 
-// Allergen emoji map.
-export const ALLERGEN_EMOJI: Record<Allergen, string> = {
-  Peanut: '🥜',
-  Coconut: '🌰',
-  Eggs: '🥚',
-  Milk: '🥛',
-  Wheat: '🌾',
-  Soybeans: '🌱',
-  Crustacean: '🦞',
-  Alcohol: '🍺',
-  Gluten: '🍞',
-  Fish: '🐟',
-  Sesame: '🍔',
-};

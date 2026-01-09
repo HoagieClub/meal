@@ -12,7 +12,7 @@
 
 import { Card, Avatar, Heading, Text, Pane, majorScale, minorScale, useTheme } from 'evergreen-ui';
 import { SocialIconButton } from '@/app/about/components/icons';
-import { TeamMember } from '../data';
+import { TeamMember } from '@/types/types';
 import { SOCIAL_ICONS } from '../data';
 
 /**

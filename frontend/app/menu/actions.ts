@@ -19,9 +19,12 @@ import {
   MenuItemMetricsMap,
   MenuItemScoreMap,
   MenusForLocations,
-} from '@/types/dining';
-import { DiningHall, DietaryTag, Allergen, MenuItem } from '@/types/dining';
-import { MenuSortOption } from './components/sort-dropdown';
+  DiningHall,
+  DietaryTag,
+  Allergen,
+  MenuItem,
+  MenuSortOption,
+} from '@/types/types';
 
 /**
  * Build display data props.
@@ -89,7 +92,7 @@ export const buildDisplayData = ({
 
   // Filter the location items by the applied dining halls.
   const filteredLocationItems = Object.fromEntries(
-    Object.entries(locationItems).filter(([locationId, location]) => {
+    Object.entries(locationItems).filter(([_, location]) => {
       const locationNameReduced = location.name.toLowerCase().trim();
       const isDiningHallApplied = appliedDiningHallsReduced.includes(locationNameReduced);
       return isDiningHallApplied;
@@ -98,7 +101,7 @@ export const buildDisplayData = ({
 
   // Filter the menu items by the applied dining halls, dietary restrictions, and allergens.
   const filteredMenuItems = Object.fromEntries(
-    Object.entries(menuItems).filter(([menuItemId, menuItem]) => {
+    Object.entries(menuItems).filter(([_, menuItem]) => {
       // If the menu item is not valid, return false.
       if (!menuItem || !menuItem.name) {
         return false;
@@ -190,7 +193,7 @@ export const buildDisplayData = ({
   });
 
   // Sort the display menus for locations by the sort option.
-  if (sortOption === 'recommended') {
+  if (sortOption === 'Recommended') {
     // Sort the display menus for locations by the recommended score.
     sortedDisplayMenusForLocations.forEach((location) => {
       location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
@@ -199,7 +202,7 @@ export const buildDisplayData = ({
         return menuItem2Score - menuItem1Score;
       });
     });
-  } else if (sortOption === 'most viewed') {
+  } else if (sortOption === 'Most Viewed') {
     // Sort the display menus for locations by the most viewed count.
     sortedDisplayMenusForLocations.forEach((location) => {
       location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
@@ -208,7 +211,7 @@ export const buildDisplayData = ({
         return menuItem2ViewCount - menuItem1ViewCount;
       });
     });
-  } else if (sortOption === 'most liked') {
+  } else if (sortOption === 'Most Liked') {
     // Sort the display menus for locations by the most liked count.
     sortedDisplayMenusForLocations.forEach((location) => {
       location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
@@ -223,7 +226,7 @@ export const buildDisplayData = ({
         return menuItem2LikeCount - menuItem1LikeCount;
       });
     });
-  } else if (sortOption === 'best') {
+  } else if (sortOption === 'Best') {
     // Sort the display menus for locations by the best score.
     sortedDisplayMenusForLocations.forEach((location) => {
       location.menu = location?.menu?.sort((menuItem1, menuItem2) => {

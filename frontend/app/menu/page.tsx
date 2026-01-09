@@ -45,7 +45,7 @@ import {
   LocationMap,
   MenuItemMetricsMap,
   MenuItemInteractionMap,
-} from '@/types/dining';
+} from '@/types/types';
 import { buildDisplayData } from './actions';
 import {
   getDiningMenusForLocationsAndDay,

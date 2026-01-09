@@ -1,4 +1,4 @@
-import { MenuItem, Meal, DiningHall } from '@/types/dining';
+import { MenuItem, Meal, DiningHall } from '@/types/types';
 
 export interface Nutrients {
   calories: number;

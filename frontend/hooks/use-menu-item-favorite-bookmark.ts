@@ -13,7 +13,7 @@
  */
 
 import { useState } from 'react';
-import { MenuItemInteraction } from '@/types/dining';
+import { MenuItemInteraction } from '@/types/types';
 import { updateUserMenuItemInteraction } from '@/lib/next-endpoints';
 
 /**

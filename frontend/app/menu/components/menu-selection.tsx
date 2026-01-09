@@ -16,51 +16,32 @@
 
 import React from 'react';
 import { Pane, Text, minorScale, majorScale, useTheme } from 'evergreen-ui';
-import { MenuItem } from '@/types/dining';
+import { Column, MenuItem } from '@/types/types';
 import MenuItemRow from './menu-item-row';
 
-export type Column =
-  | 'Calories'
-  | 'Protein'
-  | 'Sodium'
-  | 'Fat'
-  | 'Carbs'
-  | 'Ingredients'
-  | 'Allergens';
-
-export const COLUMNS: Column[] = [
-  'Calories',
-  'Protein',
-  'Sodium',
-  'Fat',
-  'Carbs',
-  'Ingredients',
-  'Allergens',
-];
-
 /**
- * Props for the MenuSection component.
+ * Menu section component.
  *
  * @param items - The items to display in the menu section.
  * @param showNutrition - Whether to show nutrition information.
  * @param fullMenu - Whether the menu is a full menu.
  * @param toggledColumns - The columns to display.
+ * @returns The menu section component.
  */
-interface MenuSectionProps {
+const MenuSection = ({
+  items,
+  showNutrition,
+  fullMenu,
+  toggledColumns,
+}: {
   items: MenuItem[];
   showNutrition?: boolean;
   fullMenu?: boolean;
   toggledColumns?: Column[];
-}
-
-/**
- * Menu section component.
- *
- * @returns The menu section component.
- */
-const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSectionProps) => {
+}) => {
   const theme = useTheme();
 
+  // Determine the columns to display based on the full menu and toggled columns.
   let columns: Column[] | undefined;
   if (fullMenu) {
     columns = toggledColumns;
@@ -72,11 +53,13 @@ const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSec
     }
   }
 
+  // Determine the items to display based on the full menu and items length.
   let displayItems = items;
   if (!fullMenu && items.length > 4) {
     displayItems = displayItems.slice(0, 4);
   }
 
+  // Determine the minimum width of the menu section based on the columns.
   const minWidth =
     columns?.reduce((acc, column) => {
       if (column === 'Ingredients') {
@@ -88,6 +71,7 @@ const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSec
       }
     }, 0) ?? 0;
 
+  // Render the menu section.
   return (
     <Pane marginBottom={majorScale(3)}>
       <Pane overflowX='auto'>
@@ -119,6 +103,7 @@ const MenuSection = ({ items, showNutrition, fullMenu, toggledColumns }: MenuSec
             )}
           </Pane>
 
+          {/* Render the menu items. */}
           {displayItems.length === 0 ? (
             <Text size={300} color='muted' fontStyle='italic' marginTop={minorScale(1)}>
               Nothing available

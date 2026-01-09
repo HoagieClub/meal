@@ -48,7 +48,7 @@ import {
 import { toast } from 'sonner';
 import NutrientProgressBar from '@/app/goals/components/nutrient-progress-bar';
 import { Nutrients, PlanSettings, WeeklyPlan, DailyPlan } from './types';
-import { Meal } from '@/types/dining';
+import { Meal } from '@/types/types';
 import MicronutrientPopover from '@/app/goals/components/micronutrient-popover';
 import { SkeletonWeeklySummary, SkeletonDayPlanCard } from '@/app/goals/components/skeletons';
 import SavedPlansManager from '@/app/goals/components/saved-plans-manager';
@@ -56,9 +56,9 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { DEFAULT_NUTRIENTS, DIET_PRESETS } from './data';
 import { DINING_HALLS, ALLERGENS } from '@/data';
-import { DiningHall } from '@/types/dining';
+import { DiningHall } from '@/types/types';
 import { generateDayPlan, handleGeneratePlan } from './actions';
-import { MenuItem, MenusForDateMealAndLocations } from '@/types/dining';
+import { MenuItem, MenusForDateMealAndLocations } from '@/types/types';
 
 const MENU_CACHE_KEY = 'menuCache';
 

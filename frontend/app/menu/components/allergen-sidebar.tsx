@@ -16,9 +16,8 @@
 
 import React from 'react';
 import { Pane, Heading, Text, majorScale, minorScale, useTheme } from 'evergreen-ui';
-import { ALLERGENS } from '@/data';
-import { ALLERGEN_EMOJI } from '@/styles';
-import { Allergen } from '@/types/dining';
+import { ALLERGEN_EMOJI_MAP } from '@/data';
+import { Allergen, ALLERGENS } from '@/types/types';
 
 /**
  * Allergen sidebar component for filtering by allergens.
@@ -70,7 +69,7 @@ export default function AllergenSidebar({
           background={backgroundColor}
           marginRight={minorScale(1)}
         >
-          <Text size={200}>{ALLERGEN_EMOJI[allergen as Allergen]}</Text>
+          <Text size={200}>{ALLERGEN_EMOJI_MAP[allergen]}</Text>
         </Pane>
         <Text size={400} color={theme.colors.green900} fontWeight={isSelected ? 600 : 400}>
           {allergen}
@@ -96,7 +95,7 @@ export default function AllergenSidebar({
       {/* Display the allergens. */}
       <Pane marginTop={majorScale(2)} display='flex' flexDirection='column' gap={majorScale(2)}>
         {ALLERGENS.map((allergen: Allergen) => (
-          <AllergenRow key={allergen} allergen={allergen as Allergen} />
+          <AllergenRow key={allergen} allergen={allergen} />
         ))}
       </Pane>
     </Pane>

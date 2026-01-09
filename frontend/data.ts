@@ -12,42 +12,36 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { Allergen, DiningHall, DietaryTag, Meal } from '@/types/dining';
+import { Meal, Allergen, DietaryTag } from '@/types/types';
 
-// Known allergens that may be present in menu items.
-export const ALLERGENS: Allergen[] = [
-  'Peanut',
-  'Coconut',
-  'Eggs',
-  'Milk',
-  'Wheat',
-  'Soybeans',
-  'Crustacean',
-  'Alcohol',
-  'Gluten',
-  'Fish',
-  'Sesame',
-];
-
-// Known dining halls.
-export const DINING_HALLS: DiningHall[] = [
-  'Forbes College',
-  'Mathey & Rockefeller Colleges',
-  'Whitman & Butler Colleges',
-  'Yeh College & NCW',
-  'Center for Jewish Life',
-  'Graduate College',
-];
-
-// Known dietary tags.
-export const DIETARY_TAGS: DietaryTag[] = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
-
-// Known meals.
-export const MEALS: Meal[] = ['Breakfast', 'Lunch', 'Dinner'];
-
-// Meal ranges.
+// Meal ranges that maps from meal type to their corresponding range.
 export const MEAL_RANGES: Record<Meal, string> = {
   Breakfast: '7:30 AM – 10:30 AM',
   Lunch: '11:30 AM – 2:00 PM',
   Dinner: '5:00 PM – 8:00 PM',
 };
+
+// Diet label map that maps from dietary tag type to their corresponding label.
+export const DIET_LABEL_MAP: Record<DietaryTag, string> = {
+  Vegetarian: 'V',
+  Vegan: 'VG',
+  Halal: 'H',
+  Kosher: 'K',
+};
+
+// Allergen emoji map that maps from allergen type to their corresponding emoji.
+export const ALLERGEN_EMOJI_MAP: Record<Allergen, string> = {
+  Peanut: '🥜',
+  Coconut: '🌰',
+  Eggs: '🥚',
+  Milk: '🥛',
+  Wheat: '🌾',
+  Soybeans: '🌱',
+  Crustacean: '🦞',
+  Alcohol: '🍺',
+  Gluten: '🍞',
+  Fish: '🐟',
+  Sesame: '🍔',
+};
+
+

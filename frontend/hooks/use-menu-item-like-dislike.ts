@@ -13,7 +13,9 @@
  */
 
 import { useState } from 'react';
-import { MenuItemInteraction, MenuItemMetrics } from '@/types/dining';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { MenuItemInteraction, MenuItemMetrics } from '@/types/types';
 import { updateUserMenuItemInteraction } from '@/lib/next-endpoints';
 
 /**
@@ -48,6 +50,8 @@ export const useMenuItemLikeDislike = (
   initialInteraction?: MenuItemInteraction | null,
   initialMetrics?: MenuItemMetrics | null
 ): UseMenuItemLikeDislikeReturn => {
+  const { user, isLoading: userLoading } = useUser();
+  const router = useRouter();
   const [userLiked, setUserLiked] = useState<boolean | null>(
     initialInteraction?.liked ? true : initialInteraction?.liked === false ? false : null
   );
@@ -59,6 +63,15 @@ export const useMenuItemLikeDislike = (
    * Handles when user clicks like button.
    */
   const handleLike = async () => {
+    // Check if user is signed in
+    if (!userLoading && !user) {
+      // Redirect to login with current page as callback
+      const currentPath =
+        typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
+      router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+
     if (updating) return;
     setUpdating(true);
 
@@ -112,6 +125,15 @@ export const useMenuItemLikeDislike = (
    * Handles when user clicks dislike button.
    */
   const handleDislike = async () => {
+    // Check if user is signed in
+    if (!userLoading && !user) {
+      // Redirect to login with current page as callback
+      const currentPath =
+        typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
+      router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+
     if (updating) return;
     setUpdating(true);
 

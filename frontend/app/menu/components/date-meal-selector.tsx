@@ -9,8 +9,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'evergreen-ui';
-import { MEALS } from '@/data';
-import { Meal } from '@/types/dining';
+import { Meal, MEALS } from '@/types/types';
 
 /**
  * Date and meal selector component props.

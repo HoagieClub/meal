@@ -28,15 +28,16 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from 'evergreen-ui';
-import { DINING_HALLS, ALLERGENS, DIETARY_TAGS } from '@/data';
+import { ALLERGEN_EMOJI_MAP, DIET_LABEL_MAP } from '@/data';
+import { ALLERGEN_STYLE_MAP, DIET_STYLE_MAP, HALL_ICON_MAP } from '@/styles';
 import {
-  ALLERGEN_EMOJI,
-  HALL_ICON_MAP,
-  DIET_LABEL_MAP,
-  ALLERGEN_STYLE_MAP,
-  DIET_STYLE_MAP,
-} from '@/styles';
-import { DiningHall, DietaryTag, Allergen } from '@/types/dining';
+  DiningHall,
+  DietaryTag,
+  Allergen,
+  DINING_HALLS,
+  ALLERGENS,
+  DIETARY_TAGS,
+} from '@/types/types';
 import SortDropdown, { MenuSortOption } from './sort-dropdown';
 
 /**
@@ -195,7 +196,7 @@ export default function FilterSidebar({
     onChange: () => void;
   }) => {
     const style = ALLERGEN_STYLE_MAP(theme)[allergen as Allergen];
-    const emoji = ALLERGEN_EMOJI[allergen as Allergen];
+    const emoji = ALLERGEN_EMOJI_MAP[allergen];
 
     // Render the allergen row.
     return (

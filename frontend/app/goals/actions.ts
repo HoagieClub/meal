@@ -13,8 +13,8 @@
 import { toast } from 'sonner';
 import { DEFAULT_NUTRIENTS } from './data';
 import { DailyPlan, Nutrients, PlanSettings, WeeklyPlan } from './types';
-import { Meal, DiningHall } from '@/types/dining';
-import { MenuItem, MenusForDateMealAndLocations, DiningVenue } from '@/types/dining';
+import { Meal, DiningHall } from '@/types/types';
+import { MenuItem, MenusForDateMealAndLocations, DiningVenue } from '@/types/types';
 import { getDiningMenusForDay } from '@/lib/next-endpoints';
 
 const MENU_CACHE_KEY = 'menuCache';

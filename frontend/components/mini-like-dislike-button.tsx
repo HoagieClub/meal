@@ -14,7 +14,7 @@
 
 import React from 'react';
 import { Pane, Text, useTheme, minorScale } from 'evergreen-ui';
-import { MenuItem } from '@/types/dining';
+import { MenuItem } from '@/types/types';
 import { useMenuItemLikeDislike } from '@/hooks/use-menu-item-like-dislike';
 
 /**
