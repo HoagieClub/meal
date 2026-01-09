@@ -140,9 +140,10 @@ export default function MenuItemRow({
           {/* Display the menu item name and favorite icon if the item is favorited. */}
           <Pane display='flex' alignItems='center' gap={minorScale(1)}>
             <Link
-              href={nutritionLink}
+              href={nutritionLink}  
               style={{ textDecoration: 'none' }}
               className='hover:underline'
+              target='_blank'
             >
               <Text color='green700' fontWeight={500}>
                 {item.name}{' '}

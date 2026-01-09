@@ -185,22 +185,6 @@ const NutritionLabelPage = () => {
         padding={majorScale(4)}
         className='sm:grid-cols-3 relative mx-auto max-w-5xl'
       >
-        {/* Render the back button */}
-        <Link
-          href='/menu'
-          position='absolute'
-          appearance='minimal'
-          textDecoration='none'
-          top={majorScale(2)}
-          left={majorScale(4)}
-          fontWeight={600}
-          zIndex={10}
-          border={`1px solid ${theme.colors.gray300}`}
-          className='hover:opacity-80 ml-[-3rem] sm:ml-[-5rem] sm:bg-white p-3 transition-opacity rounded-full'
-        >
-          <ChevronLeftIcon className='h-6 w-6' color='green600' />
-        </Link>
-
         {/* Render the nutrition information container */}
         <Pane>
           <Pane display='flex' flexDirection='column'>
@@ -208,7 +192,11 @@ const NutritionLabelPage = () => {
               NUTRITION
             </Text>
             {menuItemState.apiUrl && (
-              <Link href={menuItemState.apiUrl} target='_blank'>
+              <Link
+                href={menuItemState.apiUrl}
+                target='_blank'
+                className='hover:underline text-green-700'
+              >
                 <Text fontSize={20} fontWeight={800} color='green700'>
                   {menuItemState.name.toUpperCase()}
                 </Text>

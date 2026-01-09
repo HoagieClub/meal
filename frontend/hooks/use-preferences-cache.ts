@@ -20,7 +20,7 @@
 
 'use client';
 
-import { DINING_HALLS } from '@/data';
+import { DINING_HALLS } from '@/types/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { DiningHall, Allergen, DietaryTag } from '@/types/types';
 

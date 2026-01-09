@@ -15,59 +15,6 @@
 import { MenuItemNutrition } from '@/types/types';
 import { toNumber, calculateDVPercentage } from '@/utils/dining';
 
-const MACRONUTRIENTS_MAP: Record<keyof MenuItemNutrition, string> = {
-  totalFat: 'Total Fat',
-  saturatedFat: 'Saturated Fat',
-  cholesterol: 'Cholesterol',
-  sodium: 'Sodium',
-  totalCarbohydrates: 'Total Carbohydrates',
-  dietaryFiber: 'Dietary Fiber',
-  sugars: 'Sugars',
-};
-
-const MACRONUTRIENTS_DAILY_VALUES: Record<keyof MenuItemNutrition, number> = {
-  totalFat: 78,
-  saturatedFat: 20,
-  cholesterol: 300,
-  sodium: 2300,
-  totalCarbohydrates: 275,
-  dietaryFiber: 28,
-  sugars: 50,
-  protein: 50,
-};
-
-const MACRONUTRIENTS_UNITS: Record<keyof MenuItemNutrition, string> = {
-  totalFat: 'g',
-  saturatedFat: 'g',
-  cholesterol: 'mg',
-  sodium: 'mg',
-  totalCarbohydrates: 'g',
-  dietaryFiber: 'g',
-  sugars: 'g',
-  protein: 'g',
-};
-
-const MICRONUTRIENTS_MAP: Record<keyof MenuItemNutrition, string> = {
-  vitaminD: 'Vitamin D',
-  calcium: 'Calcium',
-  iron: 'Iron',
-  potassium: 'Potassium',
-};
-
-const MICRONUTRIENTS_UNITS: Record<keyof MenuItemNutrition, string> = {
-  vitaminD: 'mcg',
-  calcium: 'mg',
-  iron: 'mg',
-  potassium: 'mg',
-};
-
-const MICRONUTRIENTS_DAILY_VALUES: Record<keyof MenuItemNutrition, number> = {
-  vitaminD: 20,
-  calcium: 1300,
-  iron: 18,
-  potassium: 4700,
-};
-
 /**
  * Macronutrients data.
  *
@@ -75,54 +22,75 @@ const MICRONUTRIENTS_DAILY_VALUES: Record<keyof MenuItemNutrition, number> = {
  * @returns The macronutrients data.
  */
 export const getMacronutrients = (nutrition: MenuItemNutrition) => {
+  // Get the macronutrients from the nutrition
+  const totalFat = toNumber(nutrition?.totalFat);
+  const saturatedFat = toNumber(nutrition?.saturatedFat);
+  const cholesterol = toNumber(nutrition?.cholesterol);
+  const sodium = toNumber(nutrition?.sodium);
+  const totalCarbohydrates = toNumber(nutrition?.totalCarbohydrates);
+  const dietaryFiber = toNumber(nutrition?.dietaryFiber);
+  const sugars = toNumber(nutrition?.sugars);
+  const protein = toNumber(nutrition?.protein);
+
+  // Calculate the dv percentages for the macronutrients
+  const totalFatDVPercent = calculateDVPercentage(totalFat, 78);
+  const saturatedFatDVPercent = calculateDVPercentage(saturatedFat, 20);
+  const cholesterolDVPercent = calculateDVPercentage(cholesterol, 300);
+  const sodiumDVPercent = calculateDVPercentage(sodium, 2300);
+  const totalCarbohydratesDVPercent = calculateDVPercentage(totalCarbohydrates, 275);
+  const dietaryFiberDVPercent = calculateDVPercentage(dietaryFiber, 28);
+  const sugarsDVPercent = calculateDVPercentage(sugars, 50);
+  const proteinDVPercent = null;
+
+  // Return the macronutrients data
   return [
     {
       label: 'Total Fat',
-      amount: toNumber(nutrition?.totalFat),
+      amount: totalFat,
       unit: 'g',
-      dvPercent: calculateDVPercentage(toNumber(nutrition?.totalFat), 78),
+      dvPercent: totalFatDVPercent,
     },
     {
       label: 'Saturated Fat',
-      amount: toNumber(nutrition?.saturatedFat),
+      amount: saturatedFat,
       unit: 'g',
-      dvPercent: calculateDVPercentage(toNumber(nutrition?.saturatedFat), 20),
+      dvPercent: saturatedFatDVPercent,
     },
     {
       label: 'Cholesterol',
-      amount: toNumber(nutrition?.cholesterol),
+      amount: cholesterol,
       unit: 'mg',
-      dvPercent: calculateDVPercentage(toNumber(nutrition?.cholesterol), 300),
+      dvPercent: cholesterolDVPercent,
     },
     {
       label: 'Sodium',
-      amount: toNumber(nutrition?.sodium),
+      amount: sodium,
       unit: 'mg',
-      dvPercent: calculateDVPercentage(toNumber(nutrition?.sodium), 2300),
+      dvPercent: sodiumDVPercent,
     },
     {
       label: 'Total Carbohydrates',
-      amount: toNumber(nutrition?.totalCarbohydrates),
+      amount: totalCarbohydrates,
       unit: 'g',
-      dvPercent: calculateDVPercentage(toNumber(nutrition?.totalCarbohydrates), 275),
+      dvPercent: totalCarbohydratesDVPercent,
     },
     {
       label: 'Dietary Fiber',
-      amount: toNumber(nutrition?.dietaryFiber),
+      amount: dietaryFiber,
       unit: 'g',
-      dvPercent: calculateDVPercentage(toNumber(nutrition?.dietaryFiber), 28),
+      dvPercent: dietaryFiberDVPercent,
     },
     {
       label: 'Sugars',
-      amount: toNumber(nutrition?.sugars),
+      amount: sugars,
       unit: 'g',
-      dvPercent: null,
+      dvPercent: sugarsDVPercent,
     },
     {
       label: 'Protein',
-      amount: toNumber(nutrition?.protein),
+      amount: protein,
       unit: 'g',
-      dvPercent: null,
+      dvPercent: proteinDVPercent,
     },
   ];
 };
@@ -134,22 +102,29 @@ export const getMacronutrients = (nutrition: MenuItemNutrition) => {
  * @returns The micronutrients data.
  */
 export const getMicronutrients = (nutrition: MenuItemNutrition) => {
+  // Get the micronutrients from the nutrition
+  const vitaminDDV = nutrition?.vitaminD?.toString() || null;
+  const calciumDV = nutrition?.calcium?.toString() || null;
+  const ironDV = nutrition?.iron?.toString() || null;
+  const potassiumDV = nutrition?.potassium?.toString() || null;
+
+  // Calculate the dv percentages for the micronutrients
   return [
     {
       label: 'Vitamin D',
-      dvPercent: nutrition?.vitaminD?.toString() || null,
+      dvPercent: vitaminDDV,
     },
     {
       label: 'Calcium',
-      dvPercent: nutrition?.calcium?.toString() || null,
+      dvPercent: calciumDV,
     },
     {
       label: 'Iron',
-      dvPercent: nutrition?.iron?.toString() || null,
+      dvPercent: ironDV,
     },
     {
       label: 'Potassium',
-      dvPercent: nutrition?.potassium?.toString() || null,
+      dvPercent: potassiumDV,
     },
   ];
 };
