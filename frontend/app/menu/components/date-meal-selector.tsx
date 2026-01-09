@@ -12,6 +12,15 @@ import {
 import { MEALS } from '@/data';
 import { Meal } from '@/types/dining';
 
+/**
+ * Date and meal selector component props.
+ *
+ * @param meal - The current meal.
+ * @param setMeal - The function to set the meal.
+ * @param formattedDateForDisplay - The formatted date for display.
+ * @param goToPreviousDay - The function to go to the previous day.
+ * @param goToNextDay - The function to go to the next day.
+ */
 interface DateMealSelectorProps {
   meal: Meal;
   setMeal: (meal: Meal) => void;
@@ -35,19 +44,12 @@ export default function DateMealSelector({
 }: DateMealSelectorProps) {
   const theme = useTheme();
 
+  // Render the date and meal selector.
   return (
-    <Pane
-      display='flex'
-      gap={minorScale(2)}
-      className='mx-2 flex-col flex justify-center my-4'
-    >
+    <Pane display='flex' gap={minorScale(2)} className='mx-2 flex-col flex justify-center my-4'>
       {/* Date selector */}
-      <Pane
-        display='flex'
-        alignItems='center'
-        gap={minorScale(2)}
-        marginBottom={majorScale(1)}
-      >
+      <Pane display='flex' alignItems='center' gap={minorScale(2)} marginBottom={majorScale(1)}>
+        {/* Render the button to go to the previous day. */}
         <Button
           background='white'
           border={`1px solid ${theme.colors.gray300}`}
@@ -59,13 +61,12 @@ export default function DateMealSelector({
           <ChevronLeftIcon size={20} />
         </Button>
 
-        <Text
-          className='text-2xl text-center w-[14rem] truncate'
-          color={theme.colors.green700}
-        >
+        {/* Render the formatted date for display. */}
+        <Text className='text-2xl text-center w-[14rem] truncate' color={theme.colors.green700}>
           {formattedDateForDisplay}
         </Text>
 
+        {/* Render the button to go to the next day. */}
         <Button
           background='white'
           border={`1px solid ${theme.colors.gray300}`}
@@ -86,11 +87,13 @@ export default function DateMealSelector({
         overflow='hidden'
         boxShadow='0 2px 8px rgba(0,0,0,0.08)'
       >
+        {/* Render each meal option. */}
         {MEALS.map((mealOption: Meal) => {
           const isSelectedMeal = meal === mealOption;
           const backgroundColor = isSelectedMeal ? theme.colors.green700 : 'transparent';
           const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
 
+          // Render the meal option.
           return (
             <Pane
               key={mealOption}
@@ -112,4 +115,3 @@ export default function DateMealSelector({
     </Pane>
   );
 }
-

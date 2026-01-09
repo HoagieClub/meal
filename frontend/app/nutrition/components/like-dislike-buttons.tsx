@@ -44,6 +44,7 @@ interface LikeDislikeButtonProps {
 /**
  * Like/Dislike button component.
  *
+ * @param props - The props for the LikeDislikeButton component.
  * @returns A React component.
  */
 const LikeDislikeButton = ({
@@ -154,6 +155,7 @@ export default function LikeDislikeButtons({
   menuItemInteraction: MenuItemInteraction;
   menuItemMetrics: MenuItemMetrics;
 }) {
+  // Get the like and dislike state and handlers.
   const { userLiked, likeCount, dislikeCount, handleLike, handleDislike } = useMenuItemLikeDislike(
     menuItemApiId,
     menuItemInteraction,

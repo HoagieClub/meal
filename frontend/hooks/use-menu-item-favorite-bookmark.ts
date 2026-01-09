@@ -17,54 +17,6 @@ import { MenuItemInteraction } from '@/types/dining';
 import { updateUserMenuItemInteraction } from '@/lib/next-endpoints';
 
 /**
- * Updates favorite for a menu item.
- *
- * @param menuItemApiId - The API ID of the menu item.
- * @param favorited - The favorited status.
- * @returns Promise resolving to boolean indicating success.
- */
-const updateFavoriteForMenuItem = async (
-  menuItemApiId: number,
-  favorited: boolean
-): Promise<boolean> => {
-  try {
-    const { status } = await updateUserMenuItemInteraction({
-      menu_item_api_id: menuItemApiId,
-      favorited: favorited,
-    });
-    if (status !== 200) throw new Error('Failed to update interaction');
-    return true;
-  } catch (error) {
-    console.error('Error updating interaction:', error);
-    return false;
-  }
-};
-
-/**
- * Updates bookmark for a menu item.
- *
- * @param menuItemApiId - The API ID of the menu item.
- * @param savedForLater - The saved for later status.
- * @returns Promise resolving to boolean indicating success.
- */
-const updateBookmarkForMenuItem = async (
-  menuItemApiId: number,
-  savedForLater: boolean
-): Promise<boolean> => {
-  try {
-    const { status } = await updateUserMenuItemInteraction({
-      menu_item_api_id: menuItemApiId,
-      saved_for_later: savedForLater,
-    });
-    if (status !== 200) throw new Error('Failed to update interaction');
-    return true;
-  } catch (error) {
-    console.error('Error updating interaction:', error);
-    return false;
-  }
-};
-
-/**
  * Hook return type for useMenuItemFavoriteBookmark.
  *
  * @param favorited - The user's favorited status.
@@ -92,9 +44,7 @@ export const useMenuItemFavoriteBookmark = (
   menuItemApiId: number,
   initialInteraction?: MenuItemInteraction | null
 ): UseMenuItemFavoriteBookmarkReturn => {
-  const [favorited, setFavorited] = useState<boolean>(
-    initialInteraction?.favorited || false
-  );
+  const [favorited, setFavorited] = useState<boolean>(initialInteraction?.favorited || false);
   const [savedForLater, setSavedForLater] = useState<boolean>(
     initialInteraction?.savedForLater || false
   );
@@ -115,11 +65,11 @@ export const useMenuItemFavoriteBookmark = (
     setFavorited(newFavoritedStatus);
 
     // Update interaction in the API
-    const updatedSuccessfully = await updateFavoriteForMenuItem(
-      menuItemApiId,
-      newFavoritedStatus
-    );
-    if (!updatedSuccessfully) {
+    const updatedSuccessfully = await updateUserMenuItemInteraction({
+      menu_item_api_id: menuItemApiId,
+      favorited: newFavoritedStatus,
+    });
+    if (updatedSuccessfully.status !== 200) {
       // Rollback state if error occurs
       setFavorited(previousFavoritedBackup);
     }
@@ -141,11 +91,11 @@ export const useMenuItemFavoriteBookmark = (
     setSavedForLater(newSavedForLaterStatus);
 
     // Update interaction in the API
-    const updatedSuccessfully = await updateBookmarkForMenuItem(
-      menuItemApiId,
-      newSavedForLaterStatus
-    );
-    if (!updatedSuccessfully) {
+    const updatedSuccessfully = await updateUserMenuItemInteraction({
+      menu_item_api_id: menuItemApiId,
+      saved_for_later: newSavedForLaterStatus,
+    });
+    if (updatedSuccessfully.status !== 200) {
       // Rollback state if error occurs
       setSavedForLater(previousSavedForLaterBackup);
     }
@@ -160,4 +110,3 @@ export const useMenuItemFavoriteBookmark = (
     handleBookmark,
   };
 };
-

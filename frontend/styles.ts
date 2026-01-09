@@ -23,7 +23,6 @@ import cjlBanner from '@/public/images/banners/cjl-banner.png';
 import forbesBanner from '@/public/images/banners/forbesbanner.png';
 import gradBanner from '@/public/images/banners/gradbanner.png';
 import matheyBanner from '@/public/images/banners/rockybanner.png';
-import rockyBanner from '@/public/images/banners/rockybanner.png';
 import whitmanBanner from '@/public/images/banners/whitmanbanner.png';
 import yehBanner from '@/public/images/banners/yehbanner.png';
 import { Meal, Allergen, DietaryTag, DiningHall } from '@/types/dining';

@@ -40,11 +40,7 @@ interface FavoriteBookmarkButtonProps {
 /**
  * Favorite/Bookmark button component.
  *
- * @param emoji - The emoji to display.
- * @param isActive - Whether the interaction is active.
- * @param onClick - The function to call when the interaction is clicked.
- * @param title - The title of the interaction.
- * @param activeBgColor - The background color of the active interaction.
+ * @param props - The props for the FavoriteBookmarkButton component.
  * @returns A React component.
  */
 const FavoriteBookmarkButton = ({
@@ -131,6 +127,7 @@ export default function FavoriteBookmarkButtons({
   menuItemApiId: number;
   menuItemInteraction: MenuItemInteraction;
 }) {
+  // Get the favorite and bookmark state and handlers.
   const { favorited, savedForLater, handleFavorite, handleBookmark } = useMenuItemFavoriteBookmark(
     menuItemApiId,
     menuItemInteraction

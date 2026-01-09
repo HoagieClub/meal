@@ -22,47 +22,27 @@ import { useState } from 'react';
  * @returns An object containing the date-related functionality
  */
 export function useDate() {
-  /**
-   * Gets the current date at midnight
-   *
-   * @returns The current date at midnight
-   */
+  // Get the current date at midnight
   const getToday = (): Date => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return today;
   };
 
-  // State for the selected date
   const [selectedDate, setSelectedDate] = useState<Date>(getToday());
 
-  /**
-   * Gets the day of the week for a given date
-   *
-   * @param date - The date to get the day of the week for
-   * @returns The day of the week (0-6, where 0 is Sunday and 6 is Saturday)
-   */
+  // Get the day of the week for a given date
   const getDayOfWeek = (date: Date): number => {
     return date.getDay();
   };
 
-  /**
-   * Checks if a given date is a weekend
-   *
-   * @param date - The date to check if it is a weekend
-   * @returns True if the date is a weekend, false otherwise
-   */
+  // Check if a given date is a weekend
   const isWeekend = (date: Date): boolean => {
     const day = date.getDay();
     return day === 0 || day === 6;
   };
 
-  /**
-   * Gets the previous day for a given date
-   *
-   * @param date - The date to get the previous day for
-   * @returns The previous day
-   */
+  // Get the previous day for a given date
   const getPreviousDay = (date: Date): Date => {
     const newDate = new Date(date);
     newDate.setHours(0, 0, 0, 0);
@@ -70,12 +50,7 @@ export function useDate() {
     return newDate;
   };
 
-  /**
-   * Gets the next day for a given date
-   *
-   * @param date - The date to get the next day for
-   * @returns The next day
-   */
+  // Get the next day for a given date
   const getNextDay = (date: Date): Date => {
     const newDate = new Date(date);
     newDate.setHours(0, 0, 0, 0);
@@ -83,22 +58,12 @@ export function useDate() {
     return newDate;
   };
 
-  /**
-   * Gets the date key for a given date
-   *
-   * @param date - The date to get the date key for
-   * @returns The date key
-   */
+  // Get the date key for a given date
   const getDateKey = (date: Date): string => {
     return date.toISOString().split('T')[0];
   };
 
-  /**
-   * Formats a date to the YYYY-MM-DD format
-   *
-   * @param date - The date to format
-   * @returns The formatted date
-   */
+  // Format a date to the YYYY-MM-DD format
   const formatDate = (date: Date): string => {
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -106,12 +71,7 @@ export function useDate() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  /**
-   * Formats a date to the long date format
-   *
-   * @param date - The date to format
-   * @returns The formatted date
-   */
+  // Format a date to the long date format
   const formatDateForDisplay = (date: Date): string => {
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -120,44 +80,25 @@ export function useDate() {
     });
   };
 
-  /**
-   * Checks if a given date is today
-   *
-   * @param date - The date to check if it is today
-   * @returns True if the date is today, false otherwise
-   */
+  // Check if a given date is today
   const isToday = (date: Date): boolean => {
     const today = getToday();
     return date.getTime() === today.getTime();
   };
 
-  /**
-   * Checks if a given date is in the past
-   *
-   * @param date - The date to check if it is in the past
-   * @returns True if the date is in the past, false otherwise
-   */
+  // Check if a given date is in the past
   const isPast = (date: Date): boolean => {
     const today = getToday();
     return date.getTime() < today.getTime();
   };
 
-  /**
-   * Checks if a given date is in the future
-   *
-   * @param date - The date to check if it is in the future
-   * @returns True if the date is in the future, false otherwise
-   */
+  // Check if a given date is in the future
   const isFuture = (date: Date): boolean => {
     const today = getToday();
     return date.getTime() > today.getTime();
   };
 
-  /**
-   * Gets the current meal based on the time
-   *
-   * @returns The current meal
-   */
+  // Get the current meal based on the time
   const getCurrentMeal = () => {
     const now = new Date();
     const hour = now.getHours();

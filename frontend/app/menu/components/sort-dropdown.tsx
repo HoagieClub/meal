@@ -19,27 +19,29 @@ import { Select, Pane, Text, minorScale, useTheme } from 'evergreen-ui';
 
 export type MenuSortOption = 'best' | 'most viewed' | 'most liked' | 'recommended';
 
-interface SortDropdownProps {
-  sortOption: MenuSortOption;
-  setSortOption: (sort: MenuSortOption) => void;
-  showLabel?: boolean;
-}
-
 /**
  * Sort dropdown component for menu sorting.
  *
- * @param props - Component props
+ * @param sortOption - The sort option.
+ * @param setSortOption - The function to set the sort option.
+ * @param showLabel - Whether to show the label.
  * @returns The sort dropdown component
  */
 export default function SortDropdown({
   sortOption,
   setSortOption,
   showLabel = false,
-}: SortDropdownProps) {
+}: {
+  sortOption: MenuSortOption;
+  setSortOption: (sort: MenuSortOption) => void;
+  showLabel?: boolean;
+}) {
   const theme = useTheme();
 
+  // Render the sort dropdown.
   return (
     <Pane display='flex' flexDirection='column' gap={minorScale(1)}>
+      {/* Render the label if showLabel is true. */}
       {showLabel && (
         <Text size={300} fontWeight={600} color={theme.colors.gray800}>
           Sort Meals By

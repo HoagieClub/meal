@@ -79,12 +79,14 @@ export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {
         status: res.status,
         message: json?.message || 'Success',
         data: json?.data !== undefined ? json.data : null,
+        error: null,
       };
     } catch (error: any) {
       return {
         status: error?.status || 500,
         message: error?.message || 'Network or unexpected error',
         data: null,
+        error: error?.message || 'Network or unexpected error',
       };
     }
   };

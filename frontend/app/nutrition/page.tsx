@@ -25,14 +25,13 @@ import {
   ChevronLeftIcon,
   useTheme,
   Badge,
-  Button,
 } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import NutritionTable from './components/nutrition-table';
 import LikeDislikeButtons from './components/like-dislike-buttons';
 import FavoriteBookmarkButtons from './components/favorite-bookmark-buttons';
-import { MenuItem, ApiId, MenuItemInteraction, MenuItemMetrics } from '@/types/dining';
+import { MenuItem, MenuItemInteraction, MenuItemMetrics } from '@/types/dining';
 import {
   getDiningMenuItem,
   getMenuItemMetrics,
@@ -42,93 +41,29 @@ import {
 import { useMenuItemsCache } from '@/hooks/use-menu-cache';
 
 /**
- * Fetches a menu item by API ID.
- *
- * @param apiId - The API ID of the menu item.
- * @returns Promise resolving to MenuItem or null if error
- */
-const fetchMenuItemByApiId = async (apiId: ApiId): Promise<MenuItem | null> => {
-  try {
-    const { data } = await getDiningMenuItem({ api_id: apiId });
-    const menuItemData = data?.data || data;
-    if (!menuItemData) throw new Error('No menu item data received');
-    return menuItemData as MenuItem;
-  } catch (error) {
-    console.error('Error fetching menu item:', error);
-    return null;
-  }
-};
-
-/**
- * Records a menu item view in the database.
- *
- * @param apiId - The API ID of the menu item.
- * @returns Promise resolving to void.
- */
-const recordMenuItemView = async (apiId: ApiId): Promise<void> => {
-  try {
-    await recordUserMenuItemView({
-      menu_item_api_id: Number(apiId),
-    });
-  } catch (error) {
-    console.error('Error recording view:', error);
-  }
-};
-
-/**
- * Fetches menu item metrics.
- *
- * @param apiId - The API ID of the menu item.
- * @returns Promise resolving to MenuItemMetrics or null if error
- */
-const fetchMenuItemMetrics = async (apiId: ApiId): Promise<MenuItemMetrics | null> => {
-  try {
-    const { data } = await getMenuItemMetrics({ menu_item_api_id: Number(apiId) });
-    const metricsData = data?.data || data;
-    if (!metricsData) throw new Error('No metrics data received');
-    return metricsData as MenuItemMetrics;
-  } catch (error) {
-    console.error('Error fetching menu item metrics:', error);
-    return null;
-  }
-};
-
-/**
- * Fetches menu item interaction.
- *
- * @param apiId - The API ID of the menu item.
- * @returns Promise resolving to MenuItemInteraction or null if error
- */
-const fetchMenuItemInteraction = async (apiId: ApiId): Promise<MenuItemInteraction | null> => {
-  try {
-    const { data } = await getUserMenuItemInteraction({ menu_item_api_id: Number(apiId) });
-    const interactionData = data?.data || data;
-    if (!interactionData) throw new Error('No interaction data received');
-    return interactionData as MenuItemInteraction;
-  } catch (error) {
-    console.error('Error fetching menu item interaction:', error);
-    return null;
-  }
-};
-
-/**
  * Nutrition label page component.
  *
  * @returns The nutrition label page component.
  */
 const NutritionLabelPage = () => {
   const theme = useTheme();
+
+  // Get the menu item API ID from the search params
   const searchParams = useSearchParams();
   const menuItemApiId = searchParams.get('apiId');
-  const router = useRouter();
+
+  // Set the page error and loading state
   const [pageError, setPageError] = useState<string | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
+
+  // Create state for the menu item metrics, interaction, and state
   const [menuItemMetricsState, setMenuItemMetricsState] = useState<MenuItemMetrics | null>(null);
   const [menuItemInteractionState, setMenuItemInteractionState] =
     useState<MenuItemInteraction | null>(null);
   const [menuItemState, setMenuItemState] = useState<MenuItem | null>(null);
   const { menuItemsCacheLoading, getMenuItem, setMenuItem } = useMenuItemsCache();
 
+  // Create refs to prevent multiple requests
   const viewRecorded = useRef(false);
   const metricsRetrieved = useRef(false);
   const interactionRetrieved = useRef(false);
@@ -153,7 +88,12 @@ const NutritionLabelPage = () => {
 
     // Otherwise, fetch from API
     async function fetchMenuItemDetails() {
-      const menuItem = await fetchMenuItemByApiId(Number(menuItemApiId));
+      // Fetch menu item details from API
+      const { data: menuItem } = (await getDiningMenuItem({
+        api_id: Number(menuItemApiId),
+      })) as unknown as { data: MenuItem };
+
+      // Set the menu item state
       if (menuItem) {
         setMenuItemState(menuItem);
         setMenuItem(menuItem);
@@ -176,34 +116,39 @@ const NutritionLabelPage = () => {
     )
       return;
 
+    // Fetch menu item metrics and interaction from API
     async function fetchMenuItemMetricsAndInteraction() {
-      const metrics = await fetchMenuItemMetrics(Number(menuItemApiId));
-      const interaction = await fetchMenuItemInteraction(Number(menuItemApiId));
+      // Fetch menu item metrics from API
+      const { data: metrics } = (await getMenuItemMetrics({
+        menu_item_api_id: Number(menuItemApiId),
+      })) as unknown as { data: MenuItemMetrics };
+      const { data: interaction } = (await getUserMenuItemInteraction({
+        menu_item_api_id: Number(menuItemApiId),
+      })) as unknown as { data: MenuItemInteraction };
+
+      // Set the menu item metrics and interaction state
       if (metrics) {
         setMenuItemMetricsState(metrics);
       }
       if (interaction) {
         setMenuItemInteractionState(interaction);
       }
+
+      // Set the refs to true and set the page loading to false
       metricsRetrieved.current = true;
       interactionRetrieved.current = true;
       setPageLoading(false);
     }
 
-    fetchMenuItemMetricsAndInteraction();
-  }, [menuItemState, menuItemApiId]);
-
-  // Record view count when menu item is loaded
-  useEffect(() => {
-    if (!menuItemState || !menuItemApiId || pageLoading || viewRecorded.current) return;
-
-    const recordView = async () => {
-      await recordMenuItemView(Number(menuItemApiId));
+    // Record the view count
+    async function recordView() {
+      await recordUserMenuItemView({ menu_item_api_id: Number(menuItemApiId) });
       viewRecorded.current = true;
-    };
+    }
 
     recordView();
-  }, [menuItemState, menuItemApiId, pageLoading]);
+    fetchMenuItemMetricsAndInteraction();
+  }, [menuItemState, menuItemApiId]);
 
   // Display loading spinner if data is still loading
   if (pageLoading) {
@@ -240,6 +185,7 @@ const NutritionLabelPage = () => {
         padding={majorScale(4)}
         className='sm:grid-cols-3 relative mx-auto max-w-5xl'
       >
+        {/* Render the back button */}
         <Link
           href='/menu'
           position='absolute'
@@ -255,7 +201,7 @@ const NutritionLabelPage = () => {
           <ChevronLeftIcon className='h-6 w-6' color='green600' />
         </Link>
 
-        {/* Render the nutrition information */}
+        {/* Render the nutrition information container */}
         <Pane>
           <Pane display='flex' flexDirection='column'>
             <Text fontSize={50} fontWeight={800} color='green800' marginBottom={majorScale(4)}>
@@ -276,6 +222,7 @@ const NutritionLabelPage = () => {
           </Pane>
           <Separator height='3px' />
 
+          {/* Render the like/dislike and favorite/bookmark buttons */}
           {menuItemMetricsState && menuItemInteractionState && (
             <>
               <Pane
@@ -335,7 +282,6 @@ const NutritionLabelPage = () => {
               />
             </Pane>
           </Pane>
-
           <Separator height='3px' marginTop={majorScale(0)} />
 
           {/* Render the ingredients */}
@@ -376,6 +322,7 @@ const NutritionLabelPage = () => {
           <Separator height='3px' />
         </Pane>
 
+        {/* Render the nutrition table */}
         <NutritionTable nutrition={menuItemState.nutrition || null} />
       </Pane>
     </Pane>

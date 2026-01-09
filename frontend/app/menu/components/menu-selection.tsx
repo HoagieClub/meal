@@ -17,7 +17,6 @@
 import React from 'react';
 import { Pane, Text, minorScale, majorScale, useTheme } from 'evergreen-ui';
 import { MenuItem } from '@/types/dining';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import MenuItemRow from './menu-item-row';
 
 export type Column =

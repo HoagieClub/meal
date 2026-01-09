@@ -64,15 +64,15 @@ export async function PUT(req: Request) {
       would_eat_again: body.would_eat_again,
     });
 
-    // If no interaction is found, return a 404 response.
-    if (!res.data) {
+    // If the interaction update failed, return a error response.
+    if (res.status !== 200) {
       return NextResponse.json(
         {
-          status: 404,
-          message: `No interaction found for menu_item_api_id ${menuItemApiId}`,
+          status: res.status,
+          message: `Interaction update failed for menu_item_api_id ${menuItemApiId}`,
           data: null,
         },
-        { status: 404 }
+        { status: res.status }
       );
     }
 

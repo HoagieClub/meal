@@ -17,24 +17,22 @@
 import { useState, useEffect, useCallback } from 'react';
 
 /**
- * Interface for the useLocalStorage hook
+ * Hook for managing local storage.
  *
- * @param key - The key to store the value in localStorage
- * @param initialValue - The initial value to store in localStorage
- * @param expiryInMs - The expiry time in milliseconds
+ * @param key - The key to store the value in localStorage.
+ * @param initialValue - The initial value to store in localStorage.
+ * @param expiryInMs - The expiry time in milliseconds.
+ * @returns A tuple containing the stored value and a function to set the value.
  */
-interface UseLocalStorageProps<T> {
+export function useLocalStorage<T>({
+  key,
+  initialValue,
+  expiryInMs,
+}: {
   key: string;
   initialValue: T;
   expiryInMs?: number;
-}
-
-/**
- * Hook for managing local storage
- *
- * @returns A tuple containing the stored value and a function to set the value
- */
-export function useLocalStorage<T>({ key, initialValue, expiryInMs }: UseLocalStorageProps<T>) {
+}) {
   // State for stored value and loading state
   const [storedValue, setStoredValue] = useState<T>(initialValue);
   const [loading, setLoading] = useState<boolean>(true);
@@ -46,6 +44,7 @@ export function useLocalStorage<T>({ key, initialValue, expiryInMs }: UseLocalSt
       return;
     }
 
+    // Get the raw value from localStorage
     const raw = window.localStorage.getItem(key);
     if (!raw) {
       setLoading(false);
@@ -56,8 +55,8 @@ export function useLocalStorage<T>({ key, initialValue, expiryInMs }: UseLocalSt
       // Parse the raw value
       const parsed = JSON.parse(raw);
 
+      // If there is no expiry, set the stored value to the parsed value and return
       if (!expiryInMs) {
-        // If there is no expiry, set the stored value to the parsed value
         setStoredValue(parsed);
         setLoading(false);
         return;
@@ -93,6 +92,7 @@ export function useLocalStorage<T>({ key, initialValue, expiryInMs }: UseLocalSt
       setStoredValue((prev) => {
         const next = value instanceof Function ? value(prev) : value;
 
+        // If the window is defined, set the value to the local storage
         if (typeof window !== 'undefined') {
           const stored = expiryInMs ? { value: next, expiry: Date.now() + expiryInMs } : next;
           window.localStorage.setItem(key, JSON.stringify(stored));

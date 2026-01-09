@@ -55,16 +55,19 @@ async function apiRequest<T>({
 
     const json = await res.json();
 
+    // Return the API response with consistent structure
     return {
       status: json?.status || res.status,
       message: json?.message || 'Success',
       data: json?.data !== undefined ? json.data : null,
+      error: json?.error || null,
     };
   } catch (error: any) {
     return {
       status: error?.status || 500,
       message: error?.message || 'Network or unexpected error',
       data: null,
+      error: error?.message || 'Network or unexpected error',
     };
   }
 }

@@ -16,32 +16,31 @@
 
 import React from 'react';
 import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
-import { ALLERGEN_EMOJI } from '@/styles';
-import { MenuItem } from '@/types/dining';
+import { ALLERGEN_EMOJI, ALLERGEN_STYLE_MAP } from '@/styles';
+import { Allergen, MenuItem } from '@/types/dining';
 import { MiniLikeDislikeButtons } from '@/components/mini-like-dislike-button';
 import type { Column } from './menu-selection';
 
 /**
- * Props for the MenuItemRow component.
+ * Menu item row component.
  *
  * @param item - The menu item to display.
- * @param nutritionColumns - The columns to display.
+ * @param columns - The columns to display.
+ * @param fullMenu - Whether to display the full menu.
+ * @returns The menu item row component
  */
-interface MenuItemRowProps {
+export default function MenuItemRow({
+  item,
+  columns,
+  fullMenu,
+}: {
   item: MenuItem;
   columns: Column[];
   fullMenu?: boolean;
-}
-
-/**
- * Menu item row component.
- *
- * @param props - Component props
- * @returns The menu item row component
- */
-export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProps) {
+}) {
   const theme = useTheme();
 
+  // Extract all relevant information from the menu item.
   const menuItemApiId = item?.apiId;
   const calories = item?.nutrition?.calories ?? '';
   const protein = item?.nutrition?.protein ? `${item?.nutrition?.protein} g` : '';
@@ -68,6 +67,7 @@ export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProp
   const isFavorited = item?.userInteraction?.favorited ?? false;
   const viewCount = item?.metrics?.viewCount ?? 0;
 
+  // Map the columns to their corresponding values.
   const COLUMN_VALUES_MAP = {
     Calories: calories,
     Protein: protein,
@@ -79,14 +79,37 @@ export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProp
   };
 
   /**
+   * Allergen emoji component.
+   *
+   * @param allergen - The allergen to display.
+   * @returns JSX element displaying the allergen emoji.
+   */
+  const AllergenEmoji = ({ allergen }: { allergen: Allergen }) => {
+    return (
+      <Pane
+        display='flex'
+        alignItems='center'
+        justifyContent='center'
+        width={26}
+        height={26}
+        borderRadius={999}
+        background={ALLERGEN_STYLE_MAP(theme)[allergen]?.bg}
+      >
+        <Text>{ALLERGEN_EMOJI[allergen]}</Text>
+      </Pane>
+    );
+  };
+
+  /**
    * Helper function to display allergens for a menu item.
    *
    * @param item - The menu item.
-   * @param theme - The theme object.
    * @returns JSX element displaying allergens.
    */
-  const showAllergens = (item: MenuItem, theme: any) => {
-    let itemAllergens = item?.allergens || [];
+  const showAllergens = (item: MenuItem) => {
+    const itemAllergens = (item?.allergens as Allergen[]) || [];
+
+    // If there are no allergens, return a text element saying "No allergens".
     if (itemAllergens.length === 0) {
       return (
         <Text color='muted' fontStyle='italic'>
@@ -96,19 +119,8 @@ export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProp
     }
 
     // Map over all allergens and display them as emojis
-    return itemAllergens.map((allergen: string) => (
-      <Pane
-        key={allergen}
-        display='flex'
-        alignItems='center'
-        justifyContent='center'
-        width={26}
-        height={26}
-        borderRadius={999}
-        background={theme.colors.green100}
-      >
-        <Text>{ALLERGEN_EMOJI[allergen as keyof typeof ALLERGEN_EMOJI]}</Text>
-      </Pane>
+    return itemAllergens.map((allergen: Allergen) => (
+      <AllergenEmoji key={allergen} allergen={allergen} />
     ));
   };
 
@@ -124,6 +136,7 @@ export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProp
         borderBottom={`0.9px solid ${theme.colors.green300}`}
       >
         <Pane display='flex' flexDirection='column' marginY={majorScale(1)}>
+          {/* Display the menu item name and favorite icon if the item is favorited. */}
           <Pane display='flex' alignItems='center' gap={minorScale(1)}>
             <Link
               href={nutritionLink}
@@ -141,10 +154,12 @@ export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProp
               </Text>
             </Link>
           </Pane>
+          {/* Display the allergens for the menu item. */}
           <Pane display='flex' flexWrap='wrap' gap={minorScale(1)} marginTop={minorScale(1)}>
-            {showAllergens(item, theme)}
+            {showAllergens(item)}
           </Pane>
         </Pane>
+        {/* Display the values for the columns. */}
         {columns.map((column) => (
           <Text
             size={300}
@@ -158,6 +173,7 @@ export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProp
             {COLUMN_VALUES_MAP[column]}
           </Text>
         ))}
+        {/* Display the like/dislike buttons. */}
         <Pane
           display='flex'
           flexDirection='column'
@@ -168,6 +184,7 @@ export default function MenuItemRow({ item, columns, fullMenu }: MenuItemRowProp
         >
           <MiniLikeDislikeButtons item={item} />
         </Pane>
+        {/* Display the view count if the full menu is displayed. */}
         {fullMenu && (
           <Pane
             display='flex'

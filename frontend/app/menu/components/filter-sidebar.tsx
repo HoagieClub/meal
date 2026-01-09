@@ -39,6 +39,24 @@ import {
 import { DiningHall, DietaryTag, Allergen } from '@/types/dining';
 import SortDropdown, { MenuSortOption } from './sort-dropdown';
 
+/**
+ * Filter sidebar component props.
+ *
+ * @param searchTerm - The search term.
+ * @param setSearchTerm - The function to set the search term.
+ * @param showNutrition - Whether to show nutrition.
+ * @param toggleShowNutrition - The function to toggle the show nutrition.
+ * @param sortOption - The sort option.
+ * @param setSortOption - The function to set the sort option.
+ * @param diningHalls - The dining halls.
+ * @param dietaryRestrictions - The dietary restrictions.
+ * @param allergens - The allergens.
+ * @param toggleDiningHall - The function to toggle the dining hall.
+ * @param toggleDietaryRestriction - The function to toggle the dietary restriction.
+ * @param toggleAllergen - The function to toggle the allergen.
+ * @param clearPreferences - The function to clear the preferences.
+ * @param variant - The variant.
+ */
 interface FilterSidebarProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
@@ -81,11 +99,6 @@ export default function FilterSidebar({
   const theme = useTheme();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const handleResetFilters = () => {
-    clearPreferences();
-    setSearchTerm('');
-  };
-
   /**
    * Dining hall row component.
    *
@@ -105,6 +118,7 @@ export default function FilterSidebar({
   }) => {
     const diningHallText = diningHall.replace(' Colleges', '').replace(' College', '');
 
+    // Render the dining hall row.
     return (
       <Pane display='flex' alignItems='center' marginBottom='2px'>
         <Checkbox checked={checked} onChange={onChange} />
@@ -137,6 +151,7 @@ export default function FilterSidebar({
   }) => {
     const style = DIET_STYLE_MAP(theme)[dietKey as DietaryTag];
 
+    // Render the dietary tag row.
     return (
       <Pane display='flex' alignItems='center' marginBottom={minorScale(1)}>
         <Checkbox checked={checked} onChange={onChange} />
@@ -182,6 +197,7 @@ export default function FilterSidebar({
     const style = ALLERGEN_STYLE_MAP(theme)[allergen as Allergen];
     const emoji = ALLERGEN_EMOJI[allergen as Allergen];
 
+    // Render the allergen row.
     return (
       <Pane display='flex' alignItems='center' marginBottom={minorScale(1)}>
         <Checkbox checked={checked} onChange={onChange} />
@@ -217,6 +233,7 @@ export default function FilterSidebar({
         }
       : {};
 
+  // Determine inner container styles based on variant
   const innerContainerProps =
     variant === 'sidebar'
       ? {
@@ -236,6 +253,7 @@ export default function FilterSidebar({
           borderRadius: 12,
         };
 
+  // Determine filters container styles based on variant
   const filtersContainerProps =
     variant === 'sidebar'
       ? {
@@ -248,6 +266,7 @@ export default function FilterSidebar({
           overflowY: 'auto' as const,
         };
 
+  // Render the filter sidebar.
   return (
     <Pane {...containerProps}>
       <Pane {...innerContainerProps}>
@@ -263,7 +282,10 @@ export default function FilterSidebar({
             display='flex'
             alignItems='center'
             cursor='pointer'
-            onClick={handleResetFilters}
+            onClick={() => {
+              clearPreferences();
+              setSearchTerm('');
+            }}
             background={theme.colors.gray100}
             marginBottom={minorScale(2)}
           >
@@ -336,6 +358,7 @@ export default function FilterSidebar({
             marginBottom={minorScale(2)}
           />
 
+          {/* Render the filters if the filters are open. */}
           {filtersOpen && (
             <Pane>
               {/* Control which dining halls are displayed */}

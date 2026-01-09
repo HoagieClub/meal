@@ -13,33 +13,28 @@
  */
 
 import React from 'react';
-import { Pane, Text, useTheme, minorScale, majorScale } from 'evergreen-ui';
+import { Pane, Text, useTheme, minorScale } from 'evergreen-ui';
 import { MenuItem } from '@/types/dining';
 import { useMenuItemLikeDislike } from '@/hooks/use-menu-item-like-dislike';
-
-/**
- * Props for MiniLikeDislikeButtons component.
- */
-export interface MiniLikeDislikeButtonsProps {
-  /** Menu item to display like/dislike for */
-  item: MenuItem;
-}
 
 /**
  * Mini like/dislike buttons component.
  * Renders both like and dislike buttons that share the same state.
  *
- * @param item - The menu item.
+ * @param item - The menu item to display like/dislike for.
  * @returns A React component.
  */
-export const MiniLikeDislikeButtons = ({ item }: MiniLikeDislikeButtonsProps) => {
+export const MiniLikeDislikeButtons = ({ item }: { item: MenuItem }) => {
   const theme = useTheme();
+
+  // Get the like/dislike state and handlers from the useMenuItemLikeDislike hook
   const { userLiked, likeCount, dislikeCount, handleLike, handleDislike } = useMenuItemLikeDislike(
     item.apiId,
     item.userInteraction,
     item.metrics
   );
 
+  // Render the mini like/dislike buttons
   return (
     <Pane display='flex' flexDirection='column' alignItems='center'>
       {/* Like button */}

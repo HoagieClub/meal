@@ -24,32 +24,27 @@ import ColumnVisibilityDropdown from './column-visibility-dropdown';
 import { COLUMNS } from './menu-selection';
 
 /**
- * Props for the HallMenuModal component.
+ * Hall menu modal component props.
  *
  * @param modalHall - The dining venue to display the menu for.
  * @param setModalHall - The function to set the modal hall.
  * @param showNutrition - Whether to show nutrition information.
- */
-interface HallMenuModalProps {
-  modalHall: any;
-  setModalHall: any;
-  showNutrition: boolean;
-}
-
-/**
- * Hall menu modal component.
- *
  * @returns The hall menu modal component
  */
-const HallMenuModal: React.FC<HallMenuModalProps> = ({
+const HallMenuModal = ({
   modalHall,
   setModalHall,
   showNutrition,
+}: {
+  modalHall: any;
+  setModalHall: any;
+  showNutrition: boolean;
 }) => {
   const [sortOption, setSortOption] = useState<MenuSortOption>('best');
   const [toggledColumns, setToggledColumns] = useState<Column[]>(COLUMNS);
   const foldDropdowns = useMediaQuery('(max-width: 800px)');
 
+  // Update the toggled columns when the show nutrition changes.
   useEffect(() => {
     if (showNutrition) {
       setToggledColumns(COLUMNS);
@@ -60,6 +55,7 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
 
   if (!modalHall) return null;
 
+  // Render the hall menu modal.
   return (
     <Dialog
       isShown={!!modalHall}
@@ -75,10 +71,12 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
               gap={foldDropdowns ? minorScale(2) : minorScale(4)}
               marginRight={minorScale(4)}
             >
+              {/* Render the column visibility dropdown. */}
               <ColumnVisibilityDropdown
                 toggledColumns={toggledColumns}
                 setToggledColumns={setToggledColumns}
               />
+              {/* Render the sort dropdown. */}
               <Pane width={130}>
                 <SortDropdown
                   sortOption={sortOption}
@@ -94,6 +92,7 @@ const HallMenuModal: React.FC<HallMenuModalProps> = ({
       hasFooter={false}
       width='80vw'
     >
+      {/* Render the menu section. */}
       <Pane
         display='flex'
         flexDirection='column'

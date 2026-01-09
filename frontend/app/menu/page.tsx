@@ -15,21 +15,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import {
-  Pane,
-  Heading,
-  Text,
-  majorScale,
-  minorScale,
-  useTheme,
-  SearchIcon,
-  Spinner,
-  Button,
-  Checkbox,
-  SearchInput,
-  Switch,
-  UndoIcon,
-} from 'evergreen-ui';
+import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon } from 'evergreen-ui';
 import DiningHallCard from '@/app/menu/components/dining-hall-card';
 import HallMenuModal from '@/app/menu/components/hall-menu-modal';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
@@ -46,28 +32,17 @@ import {
   useMenuItemsCache,
   useMenuStructureCache,
 } from '@/hooks/use-menu-cache';
-import { DINING_HALLS, MEAL_RANGES, DIETARY_TAGS, MEALS } from '@/data';
-import {
-  MEAL_COLOR_MAP,
-  HALL_ICON_MAP,
-  DIET_LABEL_MAP,
-  ALLERGEN_STYLE_MAP,
-  DIET_STYLE_MAP,
-} from '@/styles';
+import { MEAL_RANGES } from '@/data';
+import { MEAL_COLOR_MAP } from '@/styles';
 import {
   Meal,
-  MenusForDateMealAndLocations,
   MenusForLocations,
   MenusForMealAndLocations,
   DiningHall,
-  DietaryTag,
-  Allergen,
   MenuItemMap,
   ApiId,
-  MenuItemScore,
   MenuItemScoreMap,
   LocationMap,
-  MenuItemMetrics,
   MenuItemMetricsMap,
   MenuItemInteractionMap,
 } from '@/types/dining';
@@ -77,128 +52,8 @@ import {
   getDiningMenuItems,
   getAllDiningLocations,
   getMenuItemsMetrics,
-  getMenuItemMetrics,
   getUserMenuItemsInteractions,
 } from '@/lib/next-endpoints';
-
-/**
- * Fetches menus for a specific date key from the API.
- *
- * @param dateKey - Date string in YYYY-MM-DD format
- * @returns Promise resolving to MenusForMealAndLocations or null
- */
-async function fetchMenusForDateKey(dateKey: string): Promise<MenusForMealAndLocations | null> {
-  if (!dateKey) return null;
-  try {
-    const { data } = await getDiningMenusForLocationsAndDay({
-      menu_date: dateKey,
-    });
-    const menusData = data?.data || data;
-    if (!menusData) throw new Error('No data received');
-    return menusData as MenusForMealAndLocations;
-  } catch (error) {
-    console.error(`Error fetching menu data for ${dateKey}:`, error);
-    return null;
-  }
-}
-
-/**
- * Fetches menu items from the API backend given a list of API IDs.
- *
- * @param apiIds - Array of menu item API IDs
- * @returns Promise resolving to Record<string, MenuItem> (map/dict) or null if error
- */
-async function fetchMenuItemsByApiIds(apiIds: ApiId[]): Promise<MenuItemMap | null> {
-  if (!apiIds || apiIds.length === 0) return null;
-  try {
-    const { data } = await getDiningMenuItems({ api_ids: apiIds.map(Number) });
-    const menuItemsData = data?.data || data;
-    if (!menuItemsData) throw new Error('No data received');
-    return menuItemsData as MenuItemMap;
-  } catch (error) {
-    console.error(`Error fetching menu items for API IDs ${apiIds.join(',')}:`, error);
-    return null;
-  }
-}
-
-/**
- * Fetches locations from the API backend.
- *
- * @returns Promise resolving to LocationMap or null if error
- */
-async function fetchLocationsForMenu(): Promise<LocationMap | null> {
-  try {
-    const { data } = await getAllDiningLocations();
-    const locationsData = data?.data || data;
-    if (!locationsData) throw new Error('No data received');
-    return locationsData as LocationMap;
-  } catch (error) {
-    console.error('Error fetching locations:', error);
-    return null;
-  }
-}
-
-/**
- * Fetches menu item metrics from the API backend given a list of API IDs.
- *
- * @param apiIds - Array of menu item API IDs
- * @returns Promise resolving to MenuItemMetricsMap or null if error
- */
-async function fetchMenuItemMetricsByApiIds(apiIds: ApiId[]): Promise<MenuItemMetricsMap | null> {
-  if (!apiIds || apiIds.length === 0) return null;
-  try {
-    const { data } = await getMenuItemsMetrics({ menu_item_api_ids: apiIds.map(Number) });
-    const menuItemMetricsData = data?.data || data;
-    if (!menuItemMetricsData) throw new Error('No data received');
-    return menuItemMetricsData as MenuItemMetricsMap;
-  } catch (error) {
-    console.error(`Error fetching menu item metrics for API IDs ${apiIds.join(',')}:`, error);
-    return null;
-  }
-}
-
-/**
- * Fetches user menu item interactions from the API backend given a list of API IDs.
- *
- * @param apiIds - Array of menu item API IDs
- * @returns Promise resolving to MenuItemInteractionMap or null if error
- */
-async function fetchUserMenuItemInteractionsByApiIds(
-  apiIds: ApiId[]
-): Promise<MenuItemInteractionMap | null> {
-  if (!apiIds || apiIds.length === 0) return null;
-  try {
-    const { data } = await getUserMenuItemsInteractions({ menu_item_api_ids: apiIds.map(Number) });
-    const userMenuItemInteractionsData = data?.data || data;
-    if (!userMenuItemInteractionsData) throw new Error('No data received');
-    return userMenuItemInteractionsData as MenuItemInteractionMap;
-  } catch (error) {
-    console.error(
-      `Error fetching user menu item interactions for API IDs ${apiIds.join(',')}:`,
-      error
-    );
-    return null;
-  }
-}
-
-/**
- * Ranks menu items for multiple locations based on user's interaction history.
- *
- * @param menus_for_locations - Dictionary mapping location IDs to arrays of menu item API IDs
- * @returns Promise resolving to Record<string, number[]> or null if error
- */
-async function fetchMenuItemsScoresByApiIds(apiIds: ApiId[]): Promise<MenuItemScoreMap | null> {
-  if (!apiIds || apiIds.length === 0) return null;
-  try {
-    const { data } = await getMenuItemsScore({ menu_item_api_ids: apiIds.map(Number) });
-    const menuItemsScoresData = data?.data || data;
-    if (!menuItemsScoresData) throw new Error('No data received');
-    return menuItemsScoresData as MenuItemScoreMap;
-  } catch (error) {
-    console.error(`Error fetching menu items scores for API IDs ${apiIds.join(',')}: ${error}`);
-    return null;
-  }
-}
 
 /**
  * Menu page component.
@@ -207,6 +62,8 @@ async function fetchMenuItemsScoresByApiIds(apiIds: ApiId[]): Promise<MenuItemSc
  */
 export default function MenuPage() {
   const theme = useTheme();
+
+  // Create page loading states for all data fetching operations
   const [loading, setLoading] = useState({
     menusForLocations: true,
     menuItems: true,
@@ -216,29 +73,16 @@ export default function MenuPage() {
     menuItemScores: true,
   });
 
-  const {
-    selectedDate,
-    currentMeal,
-    dateKey,
-    formattedDateForDisplay,
-    goToPreviousDay,
-    goToNextDay,
-  } = useDate();
+  // Get the date related information from the useDate hook
+  const { currentMeal, dateKey, formattedDateForDisplay, goToPreviousDay, goToNextDay } = useDate();
 
+  // Get the preferences for the menu page from local storage
   const {
     diningHalls,
     dietaryRestrictions,
     allergens,
     pinnedHalls,
     showNutrition,
-    addDiningHall,
-    addDietaryRestriction,
-    addAllergen,
-    addPinnedHall,
-    removeDiningHall,
-    removeDietaryRestriction,
-    removeAllergen,
-    removePinnedHall,
     toggleShowNutrition,
     toggleDiningHall,
     toggleDietaryRestriction,
@@ -248,16 +92,23 @@ export default function MenuPage() {
     loading: preferencesLoading,
   } = usePreferencesCache();
 
+  // Get menu, menu items, and location cache
   const {
     menuStructureCacheLoading,
     getApiIdsForMenusForLocations,
-    setApiIdsForMenusForLocations,
     setApiIdsForMenusForMealsLocations,
   } = useMenuStructureCache();
-  const { menuItemsCache, menuItemsCacheLoading, getMenuItems, setMenuItems } = useMenuItemsCache();
-  const { locationsCache, locationsCacheLoading, getAllLocations, setLocations } =
-    useLocationsCache();
+  const { menuItemsCacheLoading, getMenuItems, setMenuItems } = useMenuItemsCache();
+  const { locationsCacheLoading, getAllLocations, setLocations } = useLocationsCache();
 
+  // Create a loading state for the cache
+  const cacheLoading =
+    preferencesLoading ||
+    menuStructureCacheLoading ||
+    menuItemsCacheLoading ||
+    locationsCacheLoading;
+
+  // Create state to store the data that will be rendered/operated on
   const [menusForLocationsState, setMenusForLocationsState] = useState<MenusForLocations>({});
   const [menuItemsState, setMenuItemsState] = useState<MenuItemMap>({});
   const [menuItemMetricsState, setMenuItemMetricsState] = useState<MenuItemMetricsMap>({});
@@ -266,6 +117,7 @@ export default function MenuPage() {
   const [menuItemScoresState, setMenuItemScoresState] = useState<MenuItemScoreMap>({});
   const [locationsState, setLocationsState] = useState<LocationMap>({});
 
+  // Create state for the meal, search term, modal hall, and sort option
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [searchTerm, setSearchTerm] = useState('');
   const [modalHall, setModalHall] = useState<Location | null>(null);
@@ -275,12 +127,6 @@ export default function MenuPage() {
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeader = useMediaQuery('(max-width: 880px)');
-
-  const cacheLoading =
-    preferencesLoading ||
-    menuStructureCacheLoading ||
-    menuItemsCacheLoading ||
-    locationsCacheLoading;
 
   // Fetch menu data for the selected date
   useEffect(() => {
@@ -298,7 +144,9 @@ export default function MenuPage() {
 
     // Otherwise, fetch from API
     async function fetchMenuData() {
-      const menusForDateMealAndLocations = await fetchMenusForDateKey(dateKey);
+      const { data: menusForDateMealAndLocations } = (await getDiningMenusForLocationsAndDay({
+        menu_date: dateKey,
+      })) as unknown as { data: MenusForMealAndLocations };
       console.log('menusForDateMealAndLocations (API)', menusForDateMealAndLocations);
       if (menusForDateMealAndLocations && Object.keys(menusForDateMealAndLocations).length > 0) {
         setApiIdsForMenusForMealsLocations(dateKey, menusForDateMealAndLocations);
@@ -330,6 +178,8 @@ export default function MenuPage() {
     const menuItems = getMenuItems(apiIds);
     console.log('menuItems (cache)', menuItems);
     const cachedApiIds = Object.keys(menuItems);
+
+    // Extract any API IDs that are not in the cache
     const missingApiIds = apiIds.filter((apiId) => !cachedApiIds.includes(String(apiId)));
     if (missingApiIds.length === 0) {
       setMenuItemsState(menuItems);
@@ -337,9 +187,11 @@ export default function MenuPage() {
       return;
     }
 
-    // Otherwise, fetch from API
+    // If any API IDs are missing, fetch from API
     async function fetchMenuItems(cachedMenuItems: MenuItemMap, missingApiIds: ApiId[]) {
-      const menuItems = await fetchMenuItemsByApiIds(missingApiIds);
+      const { data: menuItems } = (await getDiningMenuItems({
+        api_ids: missingApiIds.map(Number),
+      })) as unknown as { data: MenuItemMap };
       console.log('menuItems (API)', menuItems);
       if (menuItems && Object.keys(menuItems).length > 0) {
         setMenuItems(menuItems);
@@ -369,7 +221,9 @@ export default function MenuPage() {
 
     // Fetch menu item metrics from API
     async function fetchMenuItemMetrics() {
-      const menuItemMetrics = await fetchMenuItemMetricsByApiIds(apiIds);
+      const { data: menuItemMetrics } = (await getMenuItemsMetrics({
+        menu_item_api_ids: apiIds.map(Number),
+      })) as unknown as { data: MenuItemMetricsMap };
       console.log('menuItemMetrics (API)', menuItemMetrics);
       if (menuItemMetrics && Object.keys(menuItemMetrics).length > 0) {
         setMenuItemMetricsState(menuItemMetrics);
@@ -380,7 +234,9 @@ export default function MenuPage() {
 
     // Fetch user menu item interactions from API
     async function fetchUserMenuItemInteractions() {
-      const userMenuItemInteractions = await fetchUserMenuItemInteractionsByApiIds(apiIds);
+      const { data: userMenuItemInteractions } = (await getUserMenuItemsInteractions({
+        menu_item_api_ids: apiIds.map(Number),
+      })) as unknown as { data: MenuItemInteractionMap };
       console.log('userMenuItemInteractions (API)', userMenuItemInteractions);
       if (userMenuItemInteractions && Object.keys(userMenuItemInteractions).length > 0) {
         setUserMenuItemInteractionsState(userMenuItemInteractions);
@@ -391,7 +247,9 @@ export default function MenuPage() {
 
     // Fetch menu item scores from API
     async function fetchMenuItemScores() {
-      const menuItemScores = await fetchMenuItemsScoresByApiIds(apiIds);
+      const { data: menuItemScores } = (await getMenuItemsScore({
+        menu_item_api_ids: apiIds.map(Number),
+      })) as unknown as { data: MenuItemScoreMap };
       console.log('menuItemScores (API)', menuItemScores);
       if (menuItemScores && Object.keys(menuItemScores).length > 0) {
         setMenuItemScoresState(menuItemScores);
@@ -421,7 +279,9 @@ export default function MenuPage() {
 
     // Otherwise, fetch from API
     async function fetchLocations() {
-      const locations = await fetchLocationsForMenu();
+      const { data: locations } = (await getAllDiningLocations()) as unknown as {
+        data: LocationMap;
+      };
       console.log('locations (API)', locations);
       if (locations && Object.keys(locations).length > 0) {
         setLocations(locations);
@@ -584,6 +444,7 @@ export default function MenuPage() {
             marginY={majorScale(3)}
             className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
           >
+            {/* Render the meal header */}
             <Pane width={240}>
               <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
                 {meal.toUpperCase()}
@@ -593,6 +454,7 @@ export default function MenuPage() {
               </Text>
             </Pane>
 
+            {/* Render the date and meal selector */}
             <DateMealSelector
               meal={meal}
               setMeal={setMeal}
@@ -601,6 +463,7 @@ export default function MenuPage() {
               goToNextDay={goToNextDay}
             />
 
+            {/* Render the sort and filter options */}
             <Pane
               display='flex'
               flexDirection='column'
@@ -611,7 +474,7 @@ export default function MenuPage() {
             ></Pane>
           </Pane>
 
-          {/* Filter sidebar for mobile */}
+          {/* Render the filter sidebar for mobile */}
           {hideFilterSidebar && (
             <FilterSidebar
               searchTerm={searchTerm}
@@ -631,7 +494,7 @@ export default function MenuPage() {
             />
           )}
 
-          {/* Render skeleton cards while loading */}
+          {/* Render the correct content depending on the loading/data states */}
           {loading.menusForLocations ||
           loading.menuItems ||
           loading.locations ||
@@ -646,8 +509,10 @@ export default function MenuPage() {
         </Pane>
       </Pane>
 
+      {/* Render the allergen sidebar for mobile */}
       {hideSidebar && <AllergenSidebar allergens={allergens} toggleAllergen={toggleAllergen} />}
 
+      {/* Render the hall menu modal */}
       <HallMenuModal
         modalHall={modalHall}
         setModalHall={setModalHall}

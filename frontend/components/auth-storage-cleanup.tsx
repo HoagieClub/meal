@@ -34,6 +34,7 @@ export default function AuthStorageCleanup() {
       return;
     }
 
+    // Get the current user and previous user
     const currentUser = user;
     const previousUser = previousUserRef.current;
     const pathname = window.location.pathname;
@@ -68,7 +69,6 @@ export default function AuthStorageCleanup() {
     // Clear localStorage when user state changes
     const userLoggedIn = !previousUser && currentUser;
     const userLoggedOut = previousUser && !currentUser;
-
     if (userLoggedIn || userLoggedOut) {
       if (typeof window !== 'undefined') {
         window.localStorage.clear();

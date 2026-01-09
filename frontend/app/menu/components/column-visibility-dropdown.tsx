@@ -33,7 +33,8 @@ import { COLUMNS } from './menu-selection';
 /**
  * Column visibility dropdown component for hall menu modal.
  *
- * @param props - Component props
+ * @param toggledColumns - The columns to display
+ * @param setToggledColumns - The function to set the columns to display
  * @returns The column visibility dropdown component
  */
 export default function ColumnVisibilityDropdown({
@@ -45,15 +46,7 @@ export default function ColumnVisibilityDropdown({
 }) {
   const theme = useTheme();
 
-  const handleToggle = (column: Column) => {
-    setToggledColumns((prev: Column[]) => {
-      if (prev.includes(column)) {
-        return prev.filter((c) => c !== column);
-      }
-      return [...prev, column];
-    });
-  };
-
+  // Render the column visibility dropdown.
   return (
     <Pane display='flex' flexDirection='column' gap={minorScale(1)}>
       <Popover
@@ -66,12 +59,20 @@ export default function ColumnVisibilityDropdown({
             padding={majorScale(2)}
             minWidth={200}
           >
+            {/* Render each column checkbox. */}
             <Pane display='flex' flexDirection='column' gap={minorScale(2)}>
               {COLUMNS.map((column) => (
                 <Checkbox
                   key={column}
                   checked={toggledColumns?.includes(column as Column) ?? false}
-                  onChange={() => handleToggle(column as Column)}
+                  onChange={() => {
+                    setToggledColumns((prev: Column[]) => {
+                      if (prev.includes(column)) {
+                        return prev.filter((c) => c !== column);
+                      }
+                      return [...prev, column];
+                    });
+                  }}
                   label={column}
                 />
               ))}
@@ -79,6 +80,7 @@ export default function ColumnVisibilityDropdown({
           </Pane>
         )}
       >
+        {/* Render the button to open the dropdown. */}
         <Button
           appearance='minimal'
           width='100%'

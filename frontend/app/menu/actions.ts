@@ -72,6 +72,7 @@ export const buildDisplayData = ({
   menuItemScores,
   sortOption,
 }: BuildDisplayDataProps) => {
+  // Reduce the applied dining halls, dietary restrictions, and allergens to lowercase.
   const appliedDiningHallsReduced = appliedDiningHalls.map((diningHall) =>
     diningHall.toLowerCase().trim()
   );
@@ -81,10 +82,12 @@ export const buildDisplayData = ({
   const appliedAllergensReduced = appliedAllergens.map((allergen) => allergen.toLowerCase().trim());
   const searchTermReduced = searchTerm.toLowerCase().trim();
 
+  // Determine if there is a search filter, dietary restriction filter, and allergen filter.
   const hasSearchFilter = searchTermReduced.length > 0;
   const hasDietaryRestrictionFilter = appliedDietaryRestrictionsReduced.length > 0;
   const hasAllergenFilter = appliedAllergensReduced.length > 0;
 
+  // Filter the location items by the applied dining halls.
   const filteredLocationItems = Object.fromEntries(
     Object.entries(locationItems).filter(([locationId, location]) => {
       const locationNameReduced = location.name.toLowerCase().trim();
@@ -93,12 +96,15 @@ export const buildDisplayData = ({
     })
   );
 
+  // Filter the menu items by the applied dining halls, dietary restrictions, and allergens.
   const filteredMenuItems = Object.fromEntries(
     Object.entries(menuItems).filter(([menuItemId, menuItem]) => {
+      // If the menu item is not valid, return false.
       if (!menuItem || !menuItem.name) {
         return false;
       }
 
+      // Filter the menu items by the applied allergens.
       if (hasAllergenFilter) {
         const menuItemAllergensReduced = menuItem.allergens?.map((allergen) =>
           allergen.toLowerCase().trim()
@@ -111,6 +117,7 @@ export const buildDisplayData = ({
         }
       }
 
+      // Filter the menu items by the applied dietary restrictions.
       if (hasDietaryRestrictionFilter) {
         const menuItemDietaryFlagsReduced = menuItem.dietaryFlags?.map((dietaryFlag) =>
           dietaryFlag.toLowerCase().trim()
@@ -123,6 +130,7 @@ export const buildDisplayData = ({
         }
       }
 
+      // Filter the menu items by the search term.
       if (hasSearchFilter) {
         const combinedText = `${menuItem.name} ${menuItem.allergens?.join(' ')} ${menuItem.dietaryFlags?.join(' ')} ${menuItem.ingredients?.join(' ')}`;
         const hasSearch = combinedText.toLowerCase().includes(searchTermReduced);
@@ -135,6 +143,7 @@ export const buildDisplayData = ({
     })
   );
 
+  // Filter the menus for locations by the filtered menu items.
   const filteredMenusForLocations = Object.fromEntries(
     Object.entries(menusForLocations)
       .filter(([locationId]) => filteredLocationItems[locationId])
@@ -144,33 +153,45 @@ export const buildDisplayData = ({
       ])
   );
 
+  // Build the display menus for locations.
   const displayMenusForLocations = [];
   for (const locationId of Object.keys(filteredMenusForLocations)) {
     const location = filteredLocationItems[locationId];
+
+    // Map the menu items for the location.
     let menuItems = filteredMenusForLocations[locationId].map((menuItemId) => {
       const menuItem = filteredMenuItems[menuItemId];
       if (!menuItem || !menuItem.name) {
         return null;
       }
+
+      // Set the metrics and user interaction for the menu item.
       menuItem.metrics = menuItemMetrics[menuItemId];
       menuItem.userInteraction = userMenuItemInteractions[menuItemId];
       return menuItem;
     });
+
+    // Filter out any null menu items.
     menuItems = menuItems.filter((menuItem) => menuItem !== null);
     if (menuItems.length === 0) {
       continue;
     }
+
+    // Set the menu items for the location and push to display menus
     location.menu = menuItems as MenuItem[];
     displayMenusForLocations.push(location);
   }
 
+  // Sort the display menus for locations by the pinned halls.
   const sortedDisplayMenusForLocations = displayMenusForLocations.sort((location1, location2) => {
     const location1IsPinned = pinnedHalls.includes(location1.name as DiningHall);
     const location2IsPinned = pinnedHalls.includes(location2.name as DiningHall);
     return location1IsPinned ? -1 : location2IsPinned ? 1 : 0;
   });
 
+  // Sort the display menus for locations by the sort option.
   if (sortOption === 'recommended') {
+    // Sort the display menus for locations by the recommended score.
     sortedDisplayMenusForLocations.forEach((location) => {
       location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
         const menuItem1Score = menuItemScores[menuItem1.apiId];
@@ -179,6 +200,7 @@ export const buildDisplayData = ({
       });
     });
   } else if (sortOption === 'most viewed') {
+    // Sort the display menus for locations by the most viewed count.
     sortedDisplayMenusForLocations.forEach((location) => {
       location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
         const menuItem1ViewCount = menuItem1.metrics?.viewCount ?? 0;
@@ -187,6 +209,7 @@ export const buildDisplayData = ({
       });
     });
   } else if (sortOption === 'most liked') {
+    // Sort the display menus for locations by the most liked count.
     sortedDisplayMenusForLocations.forEach((location) => {
       location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
         const menuItem1LikeCount =
@@ -201,6 +224,7 @@ export const buildDisplayData = ({
       });
     });
   } else if (sortOption === 'best') {
+    // Sort the display menus for locations by the best score.
     sortedDisplayMenusForLocations.forEach((location) => {
       location.menu = location?.menu?.sort((menuItem1, menuItem2) => {
         const menuItem1AverageLikeScore = menuItem1.metrics?.averageLikeScore ?? 0;

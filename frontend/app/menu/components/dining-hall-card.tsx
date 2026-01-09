@@ -61,6 +61,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
 
+  // Render the dining hall card.
   return (
     <Pane
       key={diningHall.name}
@@ -79,6 +80,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         background={theme.colors.gray100}
         className='py-4 border relative border-gray-300 rounded-md flex items-center'
       >
+        {/* Render the dining hall name. */}
         <Pane
           display='flex'
           alignItems='center'
@@ -91,6 +93,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           </Text>
         </Pane>
 
+        {/* Render the pin icon. */}
         <Pane className='flex items-center right-[-1rem] h-[140%] absolute'>
           <Pane
             onClick={onPinToggle}
@@ -107,16 +110,16 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
               color={isPinned ? theme.colors.green700 : theme.colors.gray700} // Dynamic color
             />
           </Pane>
+
+          {/* Render the dining hall image. */}
           <img src={imageSrc?.src} className='h-full my-auto w-auto' alt={diningHall.name} />
         </Pane>
       </Pane>
 
-      <MenuSection
-        items={diningHall.menu ?? []}
-        showNutrition={showNutrition}
-        fullMenu={false}
-      />
+      {/* Render the menu section. */}
+      <MenuSection items={diningHall.menu ?? []} showNutrition={showNutrition} fullMenu={false} />
 
+      {/* Render the button to show more details. */}
       <Pane display='flex' justifyContent='center' className='mt-auto'>
         <Button
           appearance='minimal'

@@ -14,24 +14,8 @@
 
 'use client';
 
-import { Pane, Text, Tooltip } from 'evergreen-ui';
+import { Pane, Text } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
-
-/**
- * Macronutrient row props.
- *
- * @param label - The label of the nutrient.
- * @param amount - The amount of the nutrient.
- * @param unit - The unit of the nutrient.
- * @param dvPercent - The dv percent of the nutrient.
- * @returns The macronutrient row props.
- */
-export interface MacronutrientRowProps {
-  label: string;
-  amount: number | string | null;
-  unit: string;
-  dvPercent: number | null;
-}
 
 /**
  * Macronutrient row component.
@@ -42,7 +26,17 @@ export interface MacronutrientRowProps {
  * @param dvPercent - The dv percent of the nutrient.
  * @returns The macronutrient row component.
  */
-export const MacronutrientRow = ({ label, amount, unit, dvPercent }: MacronutrientRowProps) => {
+export const MacronutrientRow = ({
+  label,
+  amount,
+  unit,
+  dvPercent,
+}: {
+  label: string;
+  amount: number | string | null;
+  unit: string;
+  dvPercent: number | null;
+}) => {
   if (amount === null || amount === undefined) return null;
 
   // Determine the color of the dv percent based on the dv percent
@@ -78,25 +72,19 @@ export const MacronutrientRow = ({ label, amount, unit, dvPercent }: Macronutrie
 };
 
 /**
- * Micronutrient row props.
- *
- * @param label - The label of the nutrient.
- * @param dvPercent - The dv percent of the nutrient.
- * @returns The micronutrient row props.
- */
-export interface MicronutrientRowProps {
-  label: string;
-  dvPercent?: string | null;
-}
-
-/**
  * Micronutrient row component.
  *
  * @param label - The label of the nutrient.
  * @param dvPercent - The dv percent of the nutrient.
  * @returns The micronutrient row component.
  */
-export const MicronutrientRow = ({ label, dvPercent }: MicronutrientRowProps) => {
+export const MicronutrientRow = ({
+  label,
+  dvPercent,
+}: {
+  label: string;
+  dvPercent?: string | null;
+}) => {
   if (dvPercent === null) return null;
   return (
     <>

@@ -17,30 +17,6 @@ import { MenuItemInteraction, MenuItemMetrics } from '@/types/dining';
 import { updateUserMenuItemInteraction } from '@/lib/next-endpoints';
 
 /**
- * Updates interaction for a menu item.
- *
- * @param menuItemApiId - The API ID of the menu item.
- * @param liked - The liked status.
- * @returns Promise resolving to boolean indicating success.
- */
-const updateInteractionForMenuItem = async (
-  menuItemApiId: number,
-  liked: boolean | null
-): Promise<boolean> => {
-  try {
-    const { status } = await updateUserMenuItemInteraction({
-      menu_item_api_id: menuItemApiId,
-      liked: liked,
-    });
-    if (status !== 200) throw new Error('Failed to update interaction');
-    return true;
-  } catch (error) {
-    console.error('Error updating interaction data:', error);
-    return false;
-  }
-};
-
-/**
  * Hook return type for useMenuItemLikeDislike.
  *
  * @param userLiked - The user's liked status.
@@ -119,8 +95,11 @@ export const useMenuItemLikeDislike = (
     setDislikeCount(optimisticDislikeCount);
 
     // Update interaction in the API
-    const updatedSuccessfully = await updateInteractionForMenuItem(menuItemApiId, newLikeStatus);
-    if (!updatedSuccessfully) {
+    const updatedSuccessfully = await updateUserMenuItemInteraction({
+      menu_item_api_id: menuItemApiId,
+      liked: newLikeStatus,
+    });
+    if (updatedSuccessfully.status !== 200) {
       // Rollback state if error occurs
       setUserLiked(previousLikedBackup);
       setLikeCount(previousLikeCountBackup);
@@ -169,8 +148,11 @@ export const useMenuItemLikeDislike = (
     setDislikeCount(optimisticDislikeCount);
 
     // Update interaction in the API
-    const updatedSuccessfully = await updateInteractionForMenuItem(menuItemApiId, newLikeStatus);
-    if (!updatedSuccessfully) {
+    const updatedSuccessfully = await updateUserMenuItemInteraction({
+      menu_item_api_id: menuItemApiId,
+      liked: newLikeStatus,
+    });
+    if (updatedSuccessfully.status !== 200) {
       // Rollback state if error occurs
       setUserLiked(previousLikedBackup);
       setLikeCount(previousLikeCountBackup);

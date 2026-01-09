@@ -13,7 +13,6 @@
  */
 
 import { MenuItemNutrition } from '@/types/dining';
-import { MacronutrientRowProps, MicronutrientRowProps } from './components/nutrient-rows';
 
 /**
  * Helper to convert string/number to number for calculations.
@@ -46,7 +45,7 @@ const calculateDVPercentage = (amount: number, dailyValue: number): number | nul
  * @param nutrition - The nutrition to display.
  * @returns The macronutrients data.
  */
-export const MACRONUTRIENTS = (nutrition: MenuItemNutrition): MacronutrientRowProps[] => {
+export const getMacronutrients = (nutrition: MenuItemNutrition) => {
   return [
     {
       label: 'Total Fat',
@@ -105,7 +104,7 @@ export const MACRONUTRIENTS = (nutrition: MenuItemNutrition): MacronutrientRowPr
  * @param nutrition - The nutrition to display.
  * @returns The micronutrients data.
  */
-export const MICRONUTRIENTS = (nutrition: MenuItemNutrition): MicronutrientRowProps[] => {
+export const getMicronutrients = (nutrition: MenuItemNutrition) => {
   return [
     {
       label: 'Vitamin D',
