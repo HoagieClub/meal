@@ -57,7 +57,7 @@ export async function POST(req: Request) {
 
     // Get the menu item scores from the backend.
     const res = await getMenuItemsScore(accessToken, {
-      menu_item_api_ids: menuItemApiIds.map(Number),
+      menu_item_api_ids: menuItemApiIds,
     });
 
     // If no scores are found, return a 404 response.

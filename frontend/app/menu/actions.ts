@@ -75,6 +75,14 @@ export const buildDisplayData = ({
   menuItemScores,
   sortOption,
 }: BuildDisplayDataProps) => {
+  // If missing required data, return an empty array.
+  const missingLocationItems = !locationItems || Object.keys(locationItems).length === 0;
+  const missingMenus = !menusForLocations || Object.keys(menusForLocations).length === 0;
+  const missingMenuItems = !menuItems || Object.keys(menuItems).length === 0;
+  if (missingLocationItems || missingMenus || missingMenuItems) {
+    return [];
+  }
+
   // Reduce the applied dining halls, dietary restrictions, and allergens to lowercase.
   const appliedDiningHallsReduced = appliedDiningHalls.map((diningHall) =>
     diningHall.toLowerCase().trim()

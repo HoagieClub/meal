@@ -82,7 +82,7 @@ class LocationsAPI(StudentApp):
 
                 # Parse each location and add to the locations dictionary
                 for location in category_locations:
-                    database_id = int(location.get("dbid", "").strip())
+                    database_id = location.get("dbid", "").strip()
                     location_parsed = parse_location_data(location, category_id)
                     if location_parsed:
                         locations[database_id] = location_parsed
@@ -344,7 +344,7 @@ def parse_location_data(location: dict, category_id: str) -> Optional[dict]:
         latitude = float(location.get("geoloc", {}).get("lat", "").strip())
         longitude = float(location.get("geoloc", {}).get("long", "").strip())
         building_name = location.get("building", {}).get("name", "").strip()
-        database_id = int(location.get("dbid", "").strip())
+        database_id = location.get("dbid", "").strip()
         is_active = True
 
         # Remove inactive suffixes from name and map name
@@ -390,7 +390,7 @@ def parse_location_data(location: dict, category_id: str) -> Optional[dict]:
             "building_name": building_name,
             "amenities": amenity_list,
             "is_active": is_active,
-            "category_id": int(category_id),
+            "category_id": category_id,
         }
     except Exception as e:
         logger.error(f"Error in parse_location_data: {e}")

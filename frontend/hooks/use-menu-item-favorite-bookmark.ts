@@ -41,7 +41,7 @@ export interface UseMenuItemFavoriteBookmarkReturn {
  * @returns Object containing state and handlers for favorite/bookmark interactions.
  */
 export const useMenuItemFavoriteBookmark = (
-  menuItemApiId: number,
+  menuItemApiId: string,
   initialInteraction?: MenuItemInteraction | null
 ): UseMenuItemFavoriteBookmarkReturn => {
   const [favorited, setFavorited] = useState<boolean>(initialInteraction?.favorited || false);

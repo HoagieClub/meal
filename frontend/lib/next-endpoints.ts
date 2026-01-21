@@ -117,7 +117,7 @@ export const getDiningMenusForLocationsAndDays = async (params: {
  * @param params - Query parameters (api_id)
  * @returns API response with menu item data
  */
-export const getDiningMenuItem = async (params: { api_id: string | number }) => {
+export const getDiningMenuItem = async (params: { api_id: string }) => {
   const queryParams = new URLSearchParams({ api_id: String(params.api_id) });
   const url = `/api/dining/menu-items/?${queryParams.toString()}`;
   return api.get<{ data: MenuItem }>(url);
@@ -126,10 +126,10 @@ export const getDiningMenuItem = async (params: { api_id: string | number }) => 
 /**
  * Gets multiple dining menu items by API IDs.
  *
- * @param params - Request body (api_ids - array of integers)
+ * @param params - Request body (api_ids - array of strings)
  * @returns API response with menu items data
  */
-export const getDiningMenuItems = async (params: { api_ids: number[] }) => {
+export const getDiningMenuItems = async (params: { api_ids: string[] }) => {
   const url = '/api/dining/menu-items/batch/';
   return api.post<{ data: Record<string, MenuItem> }>(url, {
     api_ids: params.api_ids,
@@ -142,7 +142,7 @@ export const getDiningMenuItems = async (params: { api_ids: number[] }) => {
  * @param params - Query parameters (menu_item_api_id)
  * @returns API response with interaction data
  */
-export const getUserMenuItemInteraction = async (params: { menu_item_api_id: string | number }) => {
+export const getUserMenuItemInteraction = async (params: { menu_item_api_id: string }) => {
   const queryParams = new URLSearchParams({ menu_item_api_id: String(params.menu_item_api_id) });
   const url = `/api/interactions/user/menu-item/?${queryParams.toString()}`;
   return api.get<{ data: MenuItemInteraction }>(url);
@@ -151,10 +151,10 @@ export const getUserMenuItemInteraction = async (params: { menu_item_api_id: str
 /**
  * Gets user menu item interactions for multiple menu items.
  *
- * @param params - Request body (menu_item_api_ids - array of integers)
+ * @param params - Request body (menu_item_api_ids - array of strings)
  * @returns API response with interactions data dictionary
  */
-export const getUserMenuItemsInteractions = async (params: { menu_item_api_ids: number[] }) => {
+export const getUserMenuItemsInteractions = async (params: { menu_item_api_ids: string[] }) => {
   const url = '/api/interactions/user/menu-items/';
   return api.post<{ data: Record<string, MenuItemInteraction | null> }>(url, {
     menu_item_api_ids: params.menu_item_api_ids,
@@ -167,7 +167,7 @@ export const getUserMenuItemsInteractions = async (params: { menu_item_api_ids: 
  * @param params - Request body (menu_item_api_id)
  * @returns API response
  */
-export const recordUserMenuItemView = async (params: { menu_item_api_id: number }) => {
+export const recordUserMenuItemView = async (params: { menu_item_api_id: string }) => {
   const url = '/api/interactions/user/menu-item/view/';
   return api.post<{ data: MenuItemInteraction }>(url, {
     menu_item_api_id: params.menu_item_api_id,
@@ -181,7 +181,7 @@ export const recordUserMenuItemView = async (params: { menu_item_api_id: number 
  * @returns API response with updated interaction data
  */
 export const updateUserMenuItemInteraction = async (params: {
-  menu_item_api_id: number;
+  menu_item_api_id: string;
   liked?: boolean | null;
   favorited?: boolean;
   saved_for_later?: boolean;
@@ -204,7 +204,7 @@ export const updateUserMenuItemInteraction = async (params: {
  * @returns API response with updated interaction data
  */
 export const patchUserMenuItemInteraction = async (params: {
-  menu_item_api_id: number;
+  menu_item_api_id: string;
   liked?: boolean | null;
   favorited?: boolean;
   saved_for_later?: boolean;
@@ -226,7 +226,7 @@ export const patchUserMenuItemInteraction = async (params: {
  * @param params - Query parameters (menu_item_api_id)
  * @returns API response with metrics data
  */
-export const getMenuItemMetrics = async (params: { menu_item_api_id: string | number }) => {
+export const getMenuItemMetrics = async (params: { menu_item_api_id: string }) => {
   const queryParams = new URLSearchParams({ menu_item_api_id: String(params.menu_item_api_id) });
   const url = `/api/interactions/menu-item/metrics/?${queryParams.toString()}`;
   return api.get<{ data: MenuItemMetrics }>(url);
@@ -235,10 +235,10 @@ export const getMenuItemMetrics = async (params: { menu_item_api_id: string | nu
 /**
  * Gets metrics for multiple menu items.
  *
- * @param params - Request body (menu_item_api_ids - array of integers)
+ * @param params - Request body (menu_item_api_ids - array of strings)
  * @returns API response with metrics data dictionary
  */
-export const getMenuItemsMetrics = async (params: { menu_item_api_ids: number[] }) => {
+export const getMenuItemsMetrics = async (params: { menu_item_api_ids: string[] }) => {
   const url = '/api/interactions/menu-items/metrics/';
   return api.post<{ data: Record<string, MenuItemMetrics | null> }>(url, {
     menu_item_api_ids: params.menu_item_api_ids,
@@ -248,10 +248,10 @@ export const getMenuItemsMetrics = async (params: { menu_item_api_ids: number[] 
 /**
  * Gets recommendation score for a single menu item.
  *
- * @param params - Request body (menu_item_api_id - integer)
+ * @param params - Request body (menu_item_api_id - string)
  * @returns API response with menu item score
  */
-export const getMenuItemScore = async (params: { menu_item_api_id: number }) => {
+export const getMenuItemScore = async (params: { menu_item_api_id: string }) => {
   const url = '/api/recommend/menu-item/';
   return api.post<{ data: number }>(url, {
     menu_item_api_id: params.menu_item_api_id,
@@ -261,10 +261,10 @@ export const getMenuItemScore = async (params: { menu_item_api_id: number }) => 
 /**
  * Gets recommendation scores for multiple menu items.
  *
- * @param params - Request body (menu_item_api_ids - array of integers)
+ * @param params - Request body (menu_item_api_ids - array of strings)
  * @returns API response with dictionary mapping menu item API IDs to scores
  */
-export const getMenuItemsScore = async (params: { menu_item_api_ids: number[] }) => {
+export const getMenuItemsScore = async (params: { menu_item_api_ids: string[] }) => {
   const url = '/api/recommend/menu-items/';
   return api.post<{ data: Record<string, number> }>(url, {
     menu_item_api_ids: params.menu_item_api_ids,

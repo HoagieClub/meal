@@ -41,15 +41,15 @@ class RecommendationService:
 
     def _calculate_score(
         self,
-        menu_item_api_id: int,
+        menu_item_api_id: str,
         liked_items: set,
         disliked_items: set,
-        similarity_map: Dict[int, Dict[int, float]],
+        similarity_map: Dict[str, Dict[str, float]],
     ) -> float:
         """Calculate recommendation score for a single menu item. Formula: score = sum(similarity_score for liked items) - sum(similarity_score for disliked items).
 
         Args:
-            menu_item_api_id (int): Menu item API ID to score.
+            menu_item_api_id (str): Menu item API ID to score.
             liked_items (set): Set of liked menu item API IDs.
             disliked_items (set): Set of disliked menu item API IDs.
             similarity_map (dict): Map of item_a -> item_b -> similarity score.
@@ -68,13 +68,13 @@ class RecommendationService:
     def get_menu_item_score(
         self,
         user: Any,
-        menu_item_api_id: int,
+        menu_item_api_id: str,
     ) -> float:
         """Get recommendation score for a single menu item.
 
         Args:
             user (User): Authenticated user.
-            menu_item_api_id (int): Menu item API ID to score.
+            menu_item_api_id (str): Menu item API ID to score.
 
         Returns:
             float: Recommendation score for the menu item.
@@ -115,16 +115,16 @@ class RecommendationService:
     def get_menu_items_score(
         self,
         user: Any,
-        menu_item_api_ids: List[int],
-    ) -> Dict[int, float]:
+        menu_item_api_ids: List[str],
+    ) -> Dict[str, float]:
         """Get recommendation scores for multiple menu items.
 
         Args:
             user (User): Authenticated user.
-            menu_item_api_ids (list[int]): Menu item API IDs to score.
+            menu_item_api_ids (list[str]): Menu item API IDs to score.
 
         Returns:
-            dict[int, float]: Dictionary mapping menu item API IDs to their scores.
+            dict[str, float]: Dictionary mapping menu item API IDs to their scores.
 
         """
         logger.info(f"Getting scores for {len(menu_item_api_ids)} menu items for user_id={user.id}.")
@@ -177,7 +177,7 @@ def get_menu_item_score(request):
 
     Args:
         request (Request): The HTTP request object.
-        menu_item_api_id (int): Menu item API ID.
+        menu_item_api_id (str): Menu item API ID.
 
     Returns:
         Response: Recommendation score for the menu item.
@@ -203,7 +203,7 @@ def get_menu_item_score(request):
             )
 
         # Get score
-        score = recommendation_service.get_menu_item_score(user, int(menu_item_api_id))
+        score = recommendation_service.get_menu_item_score(user, menu_item_api_id)
 
         # Return score
         logger.info(f"Returning score {score} for menu item {menu_item_api_id} for user_id={user.id}.")
@@ -225,7 +225,7 @@ def get_menu_items_score(request):
 
     Args:
         request (Request): The HTTP request object.
-        menu_item_api_ids (list[int]): List of menu item API IDs.
+        menu_item_api_ids (list[str]): List of menu item API IDs.
 
     Returns:
         Response: Dictionary mapping menu item API IDs to their scores.
@@ -249,9 +249,6 @@ def get_menu_items_score(request):
                 {"data": None, "message": "menu_item_api_ids is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        # Parse menu item API IDs
-        menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids]
 
         # Get scores
         scores = recommendation_service.get_menu_items_score(user, menu_item_api_ids)

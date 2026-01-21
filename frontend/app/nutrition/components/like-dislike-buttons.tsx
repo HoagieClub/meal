@@ -151,7 +151,7 @@ export default function LikeDislikeButtons({
   menuItemInteraction,
   menuItemMetrics,
 }: {
-  menuItemApiId: number;
+  menuItemApiId: string;
   menuItemInteraction: MenuItemInteraction;
   menuItemMetrics: MenuItemMetrics;
 }) {

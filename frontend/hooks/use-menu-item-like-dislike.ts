@@ -46,7 +46,7 @@ export interface UseMenuItemLikeDislikeReturn {
  * @returns Object containing state and handlers for like/dislike interactions.
  */
 export const useMenuItemLikeDislike = (
-  menuItemApiId: number,
+  menuItemApiId: string,
   initialInteraction?: MenuItemInteraction | null,
   initialMetrics?: MenuItemMetrics | null
 ): UseMenuItemLikeDislikeReturn => {

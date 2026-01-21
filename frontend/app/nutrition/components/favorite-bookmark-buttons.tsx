@@ -124,7 +124,7 @@ export default function FavoriteBookmarkButtons({
   menuItemApiId,
   menuItemInteraction,
 }: {
-  menuItemApiId: number;
+  menuItemApiId: string;
   menuItemInteraction: MenuItemInteraction;
 }) {
   // Get the favorite and bookmark state and handlers.

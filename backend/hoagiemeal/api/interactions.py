@@ -42,12 +42,12 @@ MISSING = object()
 class MenuItemInteractionsService:
     """Service for managing user interactions with menu items."""
 
-    def get_or_create_user_menu_item_interaction(self, user: Any, menu_item_api_id: int) -> Optional[Dict]:
+    def get_or_create_user_menu_item_interaction(self, user: Any, menu_item_api_id: str) -> Optional[Dict]:
         """Get or create user menu item interaction for a menu item.
 
         Args:
             user (User): The user.
-            menu_item_api_id (int): The menu item API ID.
+            menu_item_api_id (str): The menu item API ID.
 
         Returns:
             Optional[Dict]: The interaction serialized data.
@@ -74,8 +74,8 @@ class MenuItemInteractionsService:
             return None
 
     def get_or_create_user_menu_item_interactions(
-        self, user: Any, menu_item_api_ids: List[int]
-    ) -> Optional[Dict[int, Optional[Dict]]]:
+        self, user: Any, menu_item_api_ids: List[str]
+    ) -> Optional[Dict[str, Optional[Dict]]]:
         """Get or create user menu item interactions for multiple menu items.
 
         Args:
@@ -83,7 +83,7 @@ class MenuItemInteractionsService:
             menu_item_api_ids: The list of menu item API IDs.
 
         Returns:
-            Optional[Dict[int, Optional[Dict]]]: The dictionary of user menu item interactions.
+            Optional[Dict[str, Optional[Dict]]]: The dictionary of user menu item interactions.
 
         """
         logger.info(
@@ -110,11 +110,11 @@ class MenuItemInteractionsService:
             )
             return None
 
-    def get_or_create_menu_item_metrics(self, menu_item_api_id: int) -> Optional[MenuItemMetrics]:
+    def get_or_create_menu_item_metrics(self, menu_item_api_id: str) -> Optional[MenuItemMetrics]:
         """Get metrics for a menu item.
 
         Args:
-            menu_item_api_id (int): The menu item API ID.
+            menu_item_api_id (str): The menu item API ID.
 
         Returns:
             Optional[MenuItemMetrics]: The metrics data if they exist, None otherwise.
@@ -133,14 +133,14 @@ class MenuItemInteractionsService:
             logger.error(f"Error getting or creating metrics for menu_item_api_id: {menu_item_api_id}: {e}")
             return None
 
-    def get_or_create_menu_items_metrics(self, menu_item_api_ids: List[int]) -> Optional[Dict[int, Optional[Dict]]]:
+    def get_or_create_menu_items_metrics(self, menu_item_api_ids: List[str]) -> Optional[Dict[str, Optional[Dict]]]:
         """Get or create metrics for multiple menu items.
 
         Args:
-            menu_item_api_ids (list[int]): List of menu item API IDs.
+            menu_item_api_ids (list[str]): List of menu item API IDs.
 
         Returns:
-            Optional[Dict[int, Optional[Dict]]]: Dictionary mapping menu_item_api_id to metrics data.
+            Optional[Dict[str, Optional[Dict]]]: Dictionary mapping menu_item_api_id to metrics data.
 
         """
         logger.info(f"Getting metrics for {len(menu_item_api_ids)} menu items.")
@@ -163,11 +163,11 @@ class MenuItemInteractionsService:
             logger.error(f"Error getting metrics for multiple menu items: {e}")
             return None
 
-    def update_menu_item_metrics(self, menu_item_api_id: int) -> bool:
+    def update_menu_item_metrics(self, menu_item_api_id: str) -> bool:
         """Update aggregated metrics for a menu item.
 
         Args:
-            menu_item_api_id (int): The menu item API ID.
+            menu_item_api_id (str): The menu item API ID.
 
         Returns:
             bool: True if metrics were updated successfully, False otherwise.
@@ -228,12 +228,12 @@ class MenuItemInteractionsService:
             logger.error(f"Error updating metrics for menu_item_api_id: {menu_item_api_id}: {e}")
             return False
 
-    def record_user_menu_item_view(self, user: Any, menu_item_api_id: int) -> bool:
+    def record_user_menu_item_view(self, user: Any, menu_item_api_id: str) -> bool:
         """Record a user menu item view.
 
         Args:
             user (Any): The user.
-            menu_item_api_id (int): The menu item API ID.
+            menu_item_api_id (str): The menu item API ID.
 
         Returns:
             bool: True if the user menu item view was recorded successfully, False otherwise.
@@ -268,7 +268,7 @@ class MenuItemInteractionsService:
     def update_user_menu_item_interaction(
         self,
         user: Any,
-        menu_item_api_id: int,
+        menu_item_api_id: str,
         liked: Optional[bool] = None,
         favorited: Optional[bool] = None,
         saved_for_later: Optional[bool] = None,
@@ -278,7 +278,7 @@ class MenuItemInteractionsService:
 
         Args:
             user (Any): The user.
-            menu_item_api_id (int): The menu item API ID.
+            menu_item_api_id (str): The menu item API ID.
             liked (Optional[bool]): Whether the menu item was liked.
             favorited (Optional[bool]): Whether the menu item was favorited.
             saved_for_later (Optional[bool]): Whether the menu item was saved for later.
@@ -331,7 +331,7 @@ def get_user_menu_item_interaction(request):
 
     Args:
         request (Request): The HTTP request object.
-        menu_item_api_id (int): The menu item API ID.
+        menu_item_api_id (str): The menu item API ID.
 
     Returns:
         Response: The HTTP response object.
@@ -402,7 +402,7 @@ def get_user_menu_item_interactions(request):
 
     Args:
         request (Request): The HTTP request object.
-        menu_item_api_ids (list[int]): List of menu item API IDs.
+        menu_item_api_ids (list[str]): List of menu item API IDs.
 
     Returns:
         Response: The HTTP response object.
@@ -427,8 +427,7 @@ def get_user_menu_item_interactions(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Parse menu item API IDs and get user menu item interactions for menu items
-        menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids]
+        # Get user menu item interactions for menu items
         interactions = interactions_service.get_or_create_user_menu_item_interactions(user, menu_item_api_ids)
         if not interactions:
             return Response(
@@ -462,7 +461,7 @@ def record_user_menu_item_view(request):
 
     Args:
         request (Request): The HTTP request object.
-        menu_item_api_id (int): The menu item API ID.
+        menu_item_api_id (str): The menu item API ID.
 
     Returns:
         Response: The HTTP response object.
@@ -521,7 +520,7 @@ def update_user_menu_item_interaction(request):
 
     Args:
         request (Request): The HTTP request object.
-        menu_item_api_id (int): The menu item API ID.
+        menu_item_api_id (str): The menu item API ID.
         liked (Optional[bool]): Whether the menu item was liked.
         favorited (Optional[bool]): Whether the menu item was favorited.
         saved_for_later (Optional[bool]): Whether the menu item was saved for later.
@@ -607,7 +606,7 @@ def get_menu_items_metrics(request):
 
     Args:
         request (Request): The HTTP request object.
-        menu_item_api_ids (list[int]): List of menu item API IDs.
+        menu_item_api_ids (list[str]): List of menu item API IDs.
 
     Returns:
         Response: The HTTP response object.
@@ -623,9 +622,6 @@ def get_menu_items_metrics(request):
                 {"data": None, "message": "menu_item_api_ids is required", "error": "menu_item_api_ids is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        # Parse menu item API IDs
-        menu_item_api_ids = [int(api_id) for api_id in menu_item_api_ids]
 
         # Get or create metrics for menu items
         metrics = interactions_service.get_or_create_menu_items_metrics(menu_item_api_ids)
@@ -655,7 +651,7 @@ def get_menu_item_metrics(request):
 
     Args:
         request (Request): The HTTP request object.
-        menu_item_api_id (int): The menu item API ID.
+        menu_item_api_id (str): The menu item API ID.
 
     Returns:
         Response: The HTTP response object.

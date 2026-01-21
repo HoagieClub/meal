@@ -22,11 +22,11 @@ import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skele
 import FilterSidebar from '@/app/menu/components/filter-sidebar';
 import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
 import DateMealSelector from '@/app/menu/components/date-meal-selector';
-import type { MenuSortOption } from '@/app/menu/components/sort-dropdown';
 import { getMenuItemsScore } from '@/lib/next-endpoints';
 import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import type { MenuSortOption } from '@/types/types';
 import {
   useLocationsCache,
   useMenuItemsCache,
@@ -66,11 +66,11 @@ export default function MenuPage() {
   // Create page loading states for all data fetching operations
   const [loading, setLoading] = useState({
     menusForLocations: true,
-    menuItems: true,
-    locations: true,
-    menuItemMetrics: true,
-    userMenuItemInteractions: true,
-    menuItemScores: true,
+    menuItems: false,
+    locations: false,
+    menuItemMetrics: false,
+    userMenuItemInteractions: false,
+    menuItemScores: false,
   });
 
   // Get the date related information from the useDate hook
@@ -121,7 +121,7 @@ export default function MenuPage() {
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [searchTerm, setSearchTerm] = useState('');
   const [modalHall, setModalHall] = useState<Location | null>(null);
-  const [sortOption, setSortOption] = useState<MenuSortOption>('best');
+  const [sortOption, setSortOption] = useState<MenuSortOption>('Best');
 
   // Media query flags
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
@@ -172,7 +172,10 @@ export default function MenuPage() {
     // Extract all unique API IDs from the menus for locations
     const apiIdsSet = new Set<ApiId>(Object.values(menusForLocationsState).flatMap((menu) => menu));
     const apiIds = Array.from(apiIdsSet);
-    if (apiIds.length === 0) return;
+    if (apiIds.length === 0) {
+      setLoading((prev) => ({ ...prev, menuItems: false }));
+      return;
+    }
 
     // Check cache first
     const menuItems = getMenuItems(apiIds);
@@ -190,7 +193,7 @@ export default function MenuPage() {
     // If any API IDs are missing, fetch from API
     async function fetchMenuItems(cachedMenuItems: MenuItemMap, missingApiIds: ApiId[]) {
       const { data: menuItems } = (await getDiningMenuItems({
-        api_ids: missingApiIds.map(Number),
+        api_ids: missingApiIds,
       })) as unknown as { data: MenuItemMap };
       console.log('menuItems (API)', menuItems);
       if (menuItems && Object.keys(menuItems).length > 0) {
@@ -217,12 +220,15 @@ export default function MenuPage() {
     // Extract all unique API IDs from the menus for locations
     const apiIdsSet = new Set<ApiId>(Object.values(menusForLocationsState).flatMap((menu) => menu));
     const apiIds = Array.from(apiIdsSet);
-    if (apiIds.length === 0) return;
+    if (apiIds.length === 0) {
+      setLoading((prev) => ({ ...prev, menuItemMetrics: false, userMenuItemInteractions: false, menuItemScores: false }));
+      return;
+    }
 
     // Fetch menu item metrics from API
     async function fetchMenuItemMetrics() {
       const { data: menuItemMetrics } = (await getMenuItemsMetrics({
-        menu_item_api_ids: apiIds.map(Number),
+        menu_item_api_ids: apiIds,
       })) as unknown as { data: MenuItemMetricsMap };
       console.log('menuItemMetrics (API)', menuItemMetrics);
       if (menuItemMetrics && Object.keys(menuItemMetrics).length > 0) {
@@ -235,7 +241,7 @@ export default function MenuPage() {
     // Fetch user menu item interactions from API
     async function fetchUserMenuItemInteractions() {
       const { data: userMenuItemInteractions } = (await getUserMenuItemsInteractions({
-        menu_item_api_ids: apiIds.map(Number),
+        menu_item_api_ids: apiIds,
       })) as unknown as { data: MenuItemInteractionMap };
       console.log('userMenuItemInteractions (API)', userMenuItemInteractions);
       if (userMenuItemInteractions && Object.keys(userMenuItemInteractions).length > 0) {
@@ -248,7 +254,7 @@ export default function MenuPage() {
     // Fetch menu item scores from API
     async function fetchMenuItemScores() {
       const { data: menuItemScores } = (await getMenuItemsScore({
-        menu_item_api_ids: apiIds.map(Number),
+        menu_item_api_ids: apiIds,
       })) as unknown as { data: MenuItemScoreMap };
       console.log('menuItemScores (API)', menuItemScores);
       if (menuItemScores && Object.keys(menuItemScores).length > 0) {
@@ -496,10 +502,10 @@ export default function MenuPage() {
 
           {/* Render the correct content depending on the loading/data states */}
           {loading.menusForLocations ||
-          loading.menuItems ||
-          loading.locations ||
-          loading.menuItemMetrics ||
-          loading.userMenuItemInteractions ? (
+            loading.menuItems ||
+            loading.locations ||
+            loading.menuItemMetrics ||
+            loading.userMenuItemInteractions ? (
             <DiningHallSkeletonCards />
           ) : displayMenusForLocations.length === 0 ? (
             <NoMenusFoundCard />

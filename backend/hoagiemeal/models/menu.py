@@ -59,7 +59,7 @@ class MenuItem(models.Model):
     """Represent a canonical dish served in dining halls with nutritional information.
 
     Attributes:
-        api_id (int): Primary key. Unique original menu item ID from the external API.
+        api_id (str): Primary key. Unique original menu item ID from the external API.
 
         name (str): Name of the menu item.
         description (str): Description of the dish.
@@ -73,7 +73,7 @@ class MenuItem(models.Model):
 
     """
 
-    api_id = models.PositiveIntegerField(primary_key=True, help_text=_("Original menu item ID from the API"))
+    api_id = models.CharField(max_length=50, primary_key=True, help_text=_("Original menu item ID from the API"))
 
     api_url = models.URLField(max_length=500, blank=True)
     name = models.CharField(max_length=255, db_index=True, null=True, blank=True)

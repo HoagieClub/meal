@@ -12,7 +12,7 @@
 
 // Represents a dining venue or location where meals are served.
 export interface Location {
-  databaseId: number;
+  databaseId: string | number; // Can be string to preserve leading zeros
   name: string;
   mapName: string;
   latitude: string;
@@ -20,7 +20,7 @@ export interface Location {
   buildingName: string;
   amenities: string[];
   isActive: boolean;
-  categoryId: number;
+  categoryId: string | number; // Can be string to preserve leading zeros
   menu?: MenuItem[]; // Built data may attach menu items to the location.
 }
 
@@ -47,7 +47,7 @@ export interface MenuItemNutrition {
 
 // Represents a single menu item (food item) available at a dining location.
 export interface MenuItem {
-  apiId: number;
+  apiId: string;
   apiUrl?: string;
   name: string;
   allergens?: string[];
@@ -88,8 +88,8 @@ export interface MenuItemInteraction {
 // Represents a recommendation score for a menu item.
 export type MenuItemScore = number;
 
-// Unique identifier for a menu item from the API. Can be either a number or string.
-export type ApiId = number | string;
+// Unique identifier for a menu item from the API. Always a string.
+export type ApiId = string;
 
 // Unique identifier for a dining location. Can be either a number or string.
 export type LocationId = number | string;

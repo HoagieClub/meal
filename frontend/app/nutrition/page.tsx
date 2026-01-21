@@ -79,7 +79,7 @@ const NutritionLabelPage = () => {
     setPageLoading(true);
 
     // Check cache first
-    const cachedMenuItem = getMenuItem(Number(menuItemApiId));
+    const cachedMenuItem = getMenuItem(menuItemApiId);
     if (cachedMenuItem) {
       setMenuItemState(cachedMenuItem);
       setPageLoading(false);
@@ -90,7 +90,7 @@ const NutritionLabelPage = () => {
     async function fetchMenuItemDetails() {
       // Fetch menu item details from API
       const { data: menuItem } = (await getDiningMenuItem({
-        api_id: Number(menuItemApiId),
+        api_id: menuItemApiId,
       })) as unknown as { data: MenuItem };
 
       // Set the menu item state
@@ -120,10 +120,10 @@ const NutritionLabelPage = () => {
     async function fetchMenuItemMetricsAndInteraction() {
       // Fetch menu item metrics from API
       const { data: metrics } = (await getMenuItemMetrics({
-        menu_item_api_id: Number(menuItemApiId),
+        menu_item_api_id: menuItemApiId,
       })) as unknown as { data: MenuItemMetrics };
       const { data: interaction } = (await getUserMenuItemInteraction({
-        menu_item_api_id: Number(menuItemApiId),
+        menu_item_api_id: menuItemApiId,
       })) as unknown as { data: MenuItemInteraction };
 
       // Set the menu item metrics and interaction state
@@ -142,7 +142,7 @@ const NutritionLabelPage = () => {
 
     // Record the view count
     async function recordView() {
-      await recordUserMenuItemView({ menu_item_api_id: Number(menuItemApiId) });
+      await recordUserMenuItemView({ menu_item_api_id: menuItemApiId });
       viewRecorded.current = true;
     }
 
@@ -220,12 +220,12 @@ const NutritionLabelPage = () => {
                 marginTop={majorScale(2)}
               >
                 <LikeDislikeButtons
-                  menuItemApiId={Number(menuItemState.apiId)}
+                  menuItemApiId={menuItemState.apiId}
                   menuItemInteraction={menuItemInteractionState}
                   menuItemMetrics={menuItemMetricsState}
                 />
                 <FavoriteBookmarkButtons
-                  menuItemApiId={Number(menuItemState.apiId)}
+                  menuItemApiId={menuItemState.apiId}
                   menuItemInteraction={menuItemInteractionState}
                 />
               </Pane>

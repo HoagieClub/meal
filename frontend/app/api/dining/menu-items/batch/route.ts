@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     }
 
     // Fetch menu items data from the backend.
-    const res = await getDiningMenuItems({ api_ids: apiIds.map(Number) });
+    const res = await getDiningMenuItems({ api_ids: apiIds });
 
     // If no menu items are found, return a 404 response.
     if (!res.data) {
