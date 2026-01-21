@@ -48,8 +48,8 @@ class Scraper:
 
     EMPTY_NUTRITION_SCHEMA = {
         "name": None,
-        "ingredients": None,
-        "allergens": None,
+        "ingredients": [],
+        "allergens": [],
         "serving_size": {"amount": None, "dv": None, "unit": None},
         "calories": {"amount": None, "dv": None, "unit": None},
         "calories_from_fat": {"amount": None, "dv": None, "unit": None},

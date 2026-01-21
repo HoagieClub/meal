@@ -140,7 +140,7 @@ class MenuItemNutrition(models.Model):
     )
 
     serving_size = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    serving_unit = models.CharField(max_length=20, blank=True)
+    serving_unit = models.CharField(max_length=20, blank=True, null=True)
     calories = models.PositiveSmallIntegerField(null=True, blank=True)
     calories_from_fat = models.PositiveSmallIntegerField(null=True, blank=True)
     total_fat = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)

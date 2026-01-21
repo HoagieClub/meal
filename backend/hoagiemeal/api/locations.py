@@ -187,6 +187,11 @@ class LocationsService:
         """
         logger.info(f"Getting or caching dining locations for categories: {', '.join(category_ids)}.")
         try:
+            # If cache is disabled, return API locations
+            if DISABLE_CACHE:
+                logger.info("Cache is disabled, returning API locations.")
+                return self.LOCATIONS_API.get_locations(category_ids)
+
             # Return cached locations if they exist
             cached_locations = self.LOCATIONS_CACHE.get_cached_locations(category_ids)
             if cached_locations:
@@ -198,11 +203,6 @@ class LocationsService:
             if not api_locations:
                 logger.error(f"No locations found for categories: {', '.join(category_ids)}.")
                 return None
-
-            # If cache is disabled, return API locations
-            if DISABLE_CACHE:
-                logger.info("Cache is disabled, returning API locations.")
-                return api_locations
 
             # Cache locations
             cached_locations = self.LOCATIONS_CACHE.cache_locations(api_locations)

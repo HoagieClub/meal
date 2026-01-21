@@ -56,8 +56,9 @@ from hoagiemeal.data import (
     SAMPLE_MENUS,
 )
 
-USE_SAMPLE_MENUS = True
+USE_SAMPLE_MENUS = False
 DISABLE_CACHE = False
+CACHE_TIMEOUT = 60 * 30  # 30 minutes
 
 
 #################### MenuAPI class for managing API communication #########################
@@ -172,6 +173,7 @@ class MenuAPI(StudentApp):
                 return None
             if isinstance(menu, dict):
                 menu = menu.get("menus", [])
+            print("menu", menu)
 
             # Extract API IDs from menu and return as list
             logger.info(f"Fetched menu from API for location_id: {location_id}, menu_id: {menu_id}.")
@@ -360,7 +362,7 @@ class MenuCache:
                 menu_item_without_nutrition = {
                     key: value for key, value in menu_item_data.items() if key != "nutrition"
                 }
-                menu_item = MenuItem.objects.get_or_create(**menu_item_without_nutrition)
+                menu_item, _ = MenuItem.objects.get_or_create(**menu_item_without_nutrition)
 
                 # Create menu item nutrition instance
                 nutrition_data = menu_item_data.get("nutrition")
@@ -435,6 +437,11 @@ class MenuService:
         """
         logger.info(f"Getting or caching menu item for api_id: {api_id}.")
         try:
+            # If cache is disabled, return API menu item
+            if DISABLE_CACHE:
+                logger.info(f"Cache is disabled, returning API menu item for api_id: {api_id}.")
+                return self.MENU_API.get_menu_item(api_id)
+
             # Get menu item from database
             cached_menu_item = self.MENU_CACHE.get_cached_menu_item(api_id)
             if cached_menu_item:
@@ -446,11 +453,6 @@ class MenuService:
             if not api_menu_item:
                 logger.error(f"No menu item found for api_id: {api_id}.")
                 return None
-
-            # If cache is disabled, return API menu item
-            if DISABLE_CACHE:
-                logger.info(f"Cache is disabled, returning API menu item for api_id: {api_id}.")
-                return api_menu_item
 
             # Cache menu item
             cached_menu_item = self.MENU_CACHE.cache_menu_item(api_menu_item)
@@ -477,6 +479,11 @@ class MenuService:
         """
         logger.info(f"Getting or caching menu items for api_ids: {api_ids}.")
         try:
+            # If cache is disabled, return API menu items
+            if DISABLE_CACHE:
+                logger.info(f"Cache is disabled, returning API menu items for api_ids: {api_ids}.")
+                return self.MENU_API.get_menu_items(api_ids)
+
             # Get menu items from database
             cached_menu_items = self.MENU_CACHE.get_cached_menu_items(api_ids)
 
@@ -492,11 +499,6 @@ class MenuService:
             if not api_menu_items:
                 logger.error(f"No menu items found for api_ids: {missing_api_ids}.")
                 return None
-
-            # If cache is disabled, return API menu items
-            if DISABLE_CACHE:
-                logger.info(f"Cache is disabled, returning API menu items for api_ids: {api_ids}.")
-                return api_menu_items
 
             # Cache menu items
             cached_menu_items = self.MENU_CACHE.cache_menu_items(api_menu_items)
@@ -526,6 +528,13 @@ class MenuService:
         """
         logger.info(f"Getting or caching menu for location_id: {location_id}, menu_id: {menu_id}.")
         try:
+            # If cache is disabled, return API menu
+            if DISABLE_CACHE:
+                logger.info(
+                    f"Cache is disabled, returning API menu for location_id: {location_id}, menu_id: {menu_id}."
+                )
+                return self.MENU_API.get_menu(location_id, menu_id)
+
             # Return cached menu if it exists
             cached_menu = self.MENU_CACHE.get_cached_menu(location_id, menu_id)
             if cached_menu:
@@ -537,13 +546,6 @@ class MenuService:
             if not api_menu:
                 logger.error(f"No menu found for location_id: {location_id}, menu_id: {menu_id}.")
                 return None
-
-            # If cache is disabled, return API menu
-            if DISABLE_CACHE:
-                logger.info(
-                    f"Cache is disabled, returning API menu for location_id: {location_id}, menu_id: {menu_id}."
-                )
-                return api_menu
 
             # Get menu items from API or cache
             cached_menu_items = self.MENU_CACHE.get_cached_menu_items(api_menu)
@@ -719,7 +721,7 @@ class MenuService:
 menu_service = MenuService()
 
 
-@cache_page(60 * 5)
+@cache_page(CACHE_TIMEOUT)
 @api_view(["GET"])
 def get_dining_menu_item(request):
     """Django view function to get or cache dining menu item.
@@ -765,6 +767,7 @@ def get_dining_menu_item(request):
         )
 
 
+@cache_page(0)
 @api_view(["POST"])
 def get_dining_menu_items(request):
     """Django view function to get or cache dining menu items.
@@ -796,8 +799,8 @@ def get_dining_menu_items(request):
             return Response(
                 {
                     "data": None,
-                    "message": "No menu items found for api_ids: {api_ids}",
-                    "error": "No menu items found for api_ids: {api_ids}",
+                    "message": f"No menu items found for api_ids: {api_ids}",
+                    "error": f"No menu items found for api_ids: {api_ids}",
                 },
                 status=404,
             )
@@ -814,7 +817,7 @@ def get_dining_menu_items(request):
         )
 
 
-@cache_page(60 * 5)
+@cache_page(CACHE_TIMEOUT)
 @api_view(["GET"])
 def get_dining_menu(request):
     """Django view function to get or cache dining menu with menu items.
@@ -873,7 +876,7 @@ def get_dining_menu(request):
         )
 
 
-@cache_page(60 * 5)
+@cache_page(CACHE_TIMEOUT)
 @api_view(["GET"])
 def get_dining_menus_for_locations(request):
     """Django view function to get or cache dining menus for all locations.
@@ -930,7 +933,7 @@ def get_dining_menus_for_locations(request):
         )
 
 
-@cache_page(60 * 5)
+@cache_page(CACHE_TIMEOUT)
 @api_view(["GET"])
 def get_dining_menus_for_locations_and_day(request):
     """Django view function to get or cache dining menus for all locations on a given day.
@@ -987,7 +990,7 @@ def get_dining_menus_for_locations_and_day(request):
         )
 
 
-@cache_page(60 * 5)
+@cache_page(CACHE_TIMEOUT)
 @api_view(["GET"])
 def get_dining_menus_for_locations_and_days(request):
     """Django view function to get or cache dining menus for all locations for a given date range.
@@ -1226,7 +1229,7 @@ def parse_scraped_api_url_data(scraped_api_url_data: dict) -> Optional[dict]:
 
     # Test if API URL has nutrition information
     if not name:
-        logger.error(f"No nutrition information found for scraped API URL data: {scraped_api_url_data}.")
+        logger.error("No nutrition information found for scraped API URL data.")
         return None
 
     # Extract nutrition information

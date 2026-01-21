@@ -17,7 +17,7 @@ This software is provided "as-is", without warranty of any kind.
 
 from .user import CustomUser
 from .dining import DiningVenue
-from .menu import Menu, MenuItem, MenuItemInteraction, MenuItemMetrics
+from .menu import Menu, MenuItem, MenuItemInteraction, MenuItemMetrics, MenuItemSimilarity
 
 __all__ = [
     "CustomUser",
@@ -26,4 +26,5 @@ __all__ = [
     "MenuItem",
     "MenuItemInteraction",
     "MenuItemMetrics",
+    "MenuItemSimilarity",
 ]
