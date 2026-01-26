@@ -142,9 +142,7 @@ export default function MenuPage() {
         getApiIdsForMenusForLocations,
         setApiIdsForMenusForMealsLocations
       );
-      if (Object.keys(menusForLocations).length > 0) {
-        setMenusForLocationsState(menusForLocations);
-      }
+      setMenusForLocationsState(menusForLocations);
       setLoading((prev) => ({ ...prev, menusForLocations: false }));
     }
 
@@ -163,9 +161,7 @@ export default function MenuPage() {
 
     async function fetchMenuItemsData() {
       const menuItems = await fetchMenuItems(menusForLocationsState, getMenuItems, setMenuItems);
-      if (Object.keys(menuItems).length > 0) {
-        setMenuItemsState(menuItems);
-      }
+      setMenuItemsState(menuItems);
       setLoading((prev) => ({ ...prev, menuItems: false }));
     }
 
@@ -194,15 +190,9 @@ export default function MenuPage() {
         fetchMenuItemScores(menusForLocationsState),
       ]);
 
-      if (Object.keys(menuItemMetrics).length > 0) {
-        setMenuItemMetricsState(menuItemMetrics);
-      }
-      if (Object.keys(userMenuItemInteractions).length > 0) {
-        setUserMenuItemInteractionsState(userMenuItemInteractions);
-      }
-      if (Object.keys(menuItemScores).length > 0) {
-        setMenuItemScoresState(menuItemScores);
-      }
+      setMenuItemMetricsState(menuItemMetrics);
+      setUserMenuItemInteractionsState(userMenuItemInteractions);
+      setMenuItemScoresState(menuItemScores);
 
       setLoading((prev) => ({
         ...prev,
@@ -222,9 +212,7 @@ export default function MenuPage() {
 
     async function fetchLocations() {
       const locations = await fetchLocationsWithCache(getAllLocations, setLocations);
-      if (Object.keys(locations).length > 0) {
-        setLocationsState(locations);
-      }
+      setLocationsState(locations);
       setLoading((prev) => ({ ...prev, locations: false }));
     }
 

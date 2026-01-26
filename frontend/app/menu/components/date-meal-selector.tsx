@@ -45,7 +45,6 @@ export default function DateMealSelector({
 }: DateMealSelectorProps) {
   const theme = useTheme();
   const meals = isWeekend ? ["Lunch", "Dinner"] : ["Breakfast", "Lunch", "Dinner"];
-  console.log('meals', meals);
 
   // Render the date and meal selector.
   return (
