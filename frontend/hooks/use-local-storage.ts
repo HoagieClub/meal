@@ -33,8 +33,7 @@ export function useLocalStorage<T>({
   initialValue: T;
   expiryInMs?: number;
 }) {
-  // Default expiry to 1 week (7 days * 24 hours * 60 minutes * 60 seconds * 1000 milliseconds)
-  const DEFAULT_EXPIRY_MS = 30 * 1000;
+  const DEFAULT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
   const effectiveExpiryInMs = expiryInMs ?? DEFAULT_EXPIRY_MS;
 
   // State for stored value and loading state
