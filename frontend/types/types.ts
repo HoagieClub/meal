@@ -182,7 +182,6 @@ export type DiningHall =
   | 'Whitman & Butler Colleges'
   | 'Yeh College & NCW'
   | 'Center for Jewish Life'
-  | 'Graduate College';
 
 // Available dining halls at the institution.
 export const DINING_HALLS: DiningHall[] = [
@@ -191,7 +190,6 @@ export const DINING_HALLS: DiningHall[] = [
   'Whitman & Butler Colleges',
   'Yeh College & NCW',
   'Center for Jewish Life',
-  'Graduate College',
 ];
 
 // Dietary tags that can be applied to menu items or user preferences.

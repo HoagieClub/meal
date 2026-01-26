@@ -137,7 +137,7 @@ export default function FavoriteBookmarkButtons({
   return (
     <Pane display='flex' alignItems='center' gap={majorScale(2)}>
       <FavoriteButton isActive={favorited} onClick={handleFavorite} />
-      <BookmarkButton isActive={savedForLater} onClick={handleBookmark} />
+      {/* <BookmarkButton isActive={savedForLater} onClick={handleBookmark} /> */}
     </Pane>
   );
 }

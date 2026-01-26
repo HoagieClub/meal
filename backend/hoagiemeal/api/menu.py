@@ -642,8 +642,13 @@ class MenuService:
         """
         logger.info(f"Getting or caching menus for all locations on day: {menu_date}.")
         try:
-            # Get menus with menu items for each meal
+            # Determine if the date is Saturday or Sunday
+            menu_date_obj = datetime.datetime.strptime(menu_date, "%Y-%m-%d").date()
+            is_weekend = menu_date_obj.weekday() >= 5  # Saturday = 5, Sunday = 6
             meals = ["Breakfast", "Lunch", "Dinner"]
+            if is_weekend:
+                meals = ["Lunch", "Dinner"]
+                
             menus = {}
             for meal in meals:
                 meal_menus = self.get_or_cache_menus_and_cache_menu_items_for_locations(f"{menu_date}-{meal}")
@@ -766,7 +771,6 @@ def get_dining_menu_item(request):
         )
 
 
-@cache_page(0)
 @api_view(["POST"])
 def get_dining_menu_items(request):
     """Django view function to get or cache dining menu items.

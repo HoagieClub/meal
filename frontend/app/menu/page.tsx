@@ -22,7 +22,6 @@ import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skele
 import FilterSidebar from '@/app/menu/components/filter-sidebar';
 import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
 import DateMealSelector from '@/app/menu/components/date-meal-selector';
-import { getMenuItemsScore } from '@/lib/next-endpoints';
 import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -37,7 +36,6 @@ import { MEAL_COLOR_MAP } from '@/styles';
 import {
   Meal,
   MenusForLocations,
-  MenusForMealAndLocations,
   DiningHall,
   MenuItemMap,
   ApiId,
@@ -46,13 +44,17 @@ import {
   MenuItemMetricsMap,
   MenuItemInteractionMap,
 } from '@/types/types';
-import { buildDisplayData } from './actions';
 import {
-  getDiningMenusForLocationsAndDay,
-  getDiningMenuItems,
+  buildDisplayData,
+  fetchLocationsWithCache,
+  fetchMenusForLocations,
+  fetchMenuItems,
+  fetchMenuItemMetrics,
+  fetchUserMenuItemInteractions,
+  fetchMenuItemScores,
+} from './actions';
+import {
   getAllDiningLocations,
-  getMenuItemsMetrics,
-  getUserMenuItemsInteractions,
 } from '@/lib/next-endpoints';
 
 /**
@@ -74,7 +76,7 @@ export default function MenuPage() {
   });
 
   // Get the date related information from the useDate hook
-  const { currentMeal, dateKey, formattedDateForDisplay, goToPreviousDay, goToNextDay } = useDate();
+  const { currentMeal, dateKey, formattedDateForDisplay, goToPreviousDay, goToNextDay, isWeekend } = useDate();
 
   // Get the preferences for the menu page from local storage
   const {
@@ -133,32 +135,17 @@ export default function MenuPage() {
     if (cacheLoading || !meal || !dateKey) return;
     setLoading((prev) => ({ ...prev, menusForLocations: true }));
 
-    // Check cache first
-    const menusForLocations = getApiIdsForMenusForLocations(dateKey, meal);
-    console.log('menusForLocations (cache)', menusForLocations);
-    if (menusForLocations && Object.keys(menusForLocations).length > 0) {
-      setMenusForLocationsState(menusForLocations);
-      setLoading((prev) => ({ ...prev, menusForLocations: false }));
-      return;
-    }
-
-    // Otherwise, fetch from API
     async function fetchMenuData() {
-      const { data: menusForDateMealAndLocations } = (await getDiningMenusForLocationsAndDay({
-        menu_date: dateKey,
-      })) as unknown as { data: MenusForMealAndLocations };
-      console.log('menusForDateMealAndLocations (API)', menusForDateMealAndLocations);
-      if (menusForDateMealAndLocations && Object.keys(menusForDateMealAndLocations).length > 0) {
-        setApiIdsForMenusForMealsLocations(dateKey, menusForDateMealAndLocations);
-
-        const menusForLocations = menusForDateMealAndLocations[meal];
-        console.log('menusForLocations (API)', menusForLocations);
-        if (menusForLocations && Object.keys(menusForLocations).length > 0) {
-          setMenusForLocationsState(menusForLocations);
-        }
+      const menusForLocations = await fetchMenusForLocations(
+        dateKey,
+        meal,
+        getApiIdsForMenusForLocations,
+        setApiIdsForMenusForMealsLocations
+      );
+      if (Object.keys(menusForLocations).length > 0) {
+        setMenusForLocationsState(menusForLocations);
       }
       setLoading((prev) => ({ ...prev, menusForLocations: false }));
-      return;
     }
 
     fetchMenuData();
@@ -167,49 +154,32 @@ export default function MenuPage() {
   // Fetch menu items for the found menu
   useEffect(() => {
     if (cacheLoading) return;
+    if (!menusForLocationsState || Object.keys(menusForLocationsState).length === 0) {
+      setLoading((prev) => ({ ...prev, menuItems: false }));
+      return;
+    }
+
     setLoading((prev) => ({ ...prev, menuItems: true }));
 
-    // Extract all unique API IDs from the menus for locations
-    const apiIdsSet = new Set<ApiId>(Object.values(menusForLocationsState).flatMap((menu) => menu));
-    const apiIds = Array.from(apiIdsSet);
-    if (apiIds.length === 0) {
-      setLoading((prev) => ({ ...prev, menuItems: false }));
-      return;
-    }
-
-    // Check cache first
-    const menuItems = getMenuItems(apiIds);
-    console.log('menuItems (cache)', menuItems);
-    const cachedApiIds = Object.keys(menuItems);
-
-    // Extract any API IDs that are not in the cache
-    const missingApiIds = apiIds.filter((apiId) => !cachedApiIds.includes(String(apiId)));
-    if (missingApiIds.length === 0) {
-      setMenuItemsState(menuItems);
-      setLoading((prev) => ({ ...prev, menuItems: false }));
-      return;
-    }
-
-    // If any API IDs are missing, fetch from API
-    async function fetchMenuItems(cachedMenuItems: MenuItemMap, missingApiIds: ApiId[]) {
-      const { data: menuItems } = (await getDiningMenuItems({
-        api_ids: missingApiIds,
-      })) as unknown as { data: MenuItemMap };
-      console.log('menuItems (API)', menuItems);
-      if (menuItems && Object.keys(menuItems).length > 0) {
-        setMenuItems(menuItems);
-        setMenuItemsState({ ...cachedMenuItems, ...menuItems });
+    async function fetchMenuItemsData() {
+      const menuItems = await fetchMenuItems(menusForLocationsState, getMenuItems, setMenuItems);
+      if (Object.keys(menuItems).length > 0) {
+        setMenuItemsState(menuItems);
       }
       setLoading((prev) => ({ ...prev, menuItems: false }));
-      return;
     }
 
-    fetchMenuItems(menuItems, missingApiIds);
+    fetchMenuItemsData();
   }, [cacheLoading, menusForLocationsState]);
 
   // Fetch menu item metrics, user menu item interactions, and menu item scores for the found menu
   useEffect(() => {
     if (cacheLoading) return;
+    if (!menusForLocationsState || Object.keys(menusForLocationsState).length === 0) {
+      setLoading((prev) => ({ ...prev, menuItemMetrics: false, userMenuItemInteractions: false, menuItemScores: false }));
+      return;
+    }
+
     setLoading((prev) => ({
       ...prev,
       menuItemMetrics: true,
@@ -217,56 +187,32 @@ export default function MenuPage() {
       menuItemScores: true,
     }));
 
-    // Extract all unique API IDs from the menus for locations
-    const apiIdsSet = new Set<ApiId>(Object.values(menusForLocationsState).flatMap((menu) => menu));
-    const apiIds = Array.from(apiIdsSet);
-    if (apiIds.length === 0) {
-      setLoading((prev) => ({ ...prev, menuItemMetrics: false, userMenuItemInteractions: false, menuItemScores: false }));
-      return;
-    }
+    async function fetchAllMenuItemData() {
+      const [menuItemMetrics, userMenuItemInteractions, menuItemScores] = await Promise.all([
+        fetchMenuItemMetrics(menusForLocationsState),
+        fetchUserMenuItemInteractions(menusForLocationsState),
+        fetchMenuItemScores(menusForLocationsState),
+      ]);
 
-    // Fetch menu item metrics from API
-    async function fetchMenuItemMetrics() {
-      const { data: menuItemMetrics } = (await getMenuItemsMetrics({
-        menu_item_api_ids: apiIds,
-      })) as unknown as { data: MenuItemMetricsMap };
-      console.log('menuItemMetrics (API)', menuItemMetrics);
-      if (menuItemMetrics && Object.keys(menuItemMetrics).length > 0) {
+      if (Object.keys(menuItemMetrics).length > 0) {
         setMenuItemMetricsState(menuItemMetrics);
       }
-      setLoading((prev) => ({ ...prev, menuItemMetrics: false }));
-      return;
-    }
-
-    // Fetch user menu item interactions from API
-    async function fetchUserMenuItemInteractions() {
-      const { data: userMenuItemInteractions } = (await getUserMenuItemsInteractions({
-        menu_item_api_ids: apiIds,
-      })) as unknown as { data: MenuItemInteractionMap };
-      console.log('userMenuItemInteractions (API)', userMenuItemInteractions);
-      if (userMenuItemInteractions && Object.keys(userMenuItemInteractions).length > 0) {
+      if (Object.keys(userMenuItemInteractions).length > 0) {
         setUserMenuItemInteractionsState(userMenuItemInteractions);
       }
-      setLoading((prev) => ({ ...prev, userMenuItemInteractions: false }));
-      return;
-    }
-
-    // Fetch menu item scores from API
-    async function fetchMenuItemScores() {
-      const { data: menuItemScores } = (await getMenuItemsScore({
-        menu_item_api_ids: apiIds,
-      })) as unknown as { data: MenuItemScoreMap };
-      console.log('menuItemScores (API)', menuItemScores);
-      if (menuItemScores && Object.keys(menuItemScores).length > 0) {
+      if (Object.keys(menuItemScores).length > 0) {
         setMenuItemScoresState(menuItemScores);
       }
-      setLoading((prev) => ({ ...prev, menuItemScores: false }));
-      return;
+
+      setLoading((prev) => ({
+        ...prev,
+        menuItemMetrics: false,
+        userMenuItemInteractions: false,
+        menuItemScores: false,
+      }));
     }
 
-    fetchMenuItemMetrics();
-    fetchUserMenuItemInteractions();
-    fetchMenuItemScores();
+    fetchAllMenuItemData();
   }, [cacheLoading, menusForLocationsState]);
 
   // Fetch locations
@@ -274,27 +220,12 @@ export default function MenuPage() {
     if (cacheLoading) return;
     setLoading((prev) => ({ ...prev, locations: true }));
 
-    // Check cache first
-    const locations = getAllLocations();
-    console.log('locations (cache)', locations);
-    if (locations && Object.keys(locations).length > 0) {
-      setLocationsState(locations);
-      setLoading((prev) => ({ ...prev, locations: false }));
-      return;
-    }
-
-    // Otherwise, fetch from API
     async function fetchLocations() {
-      const { data: locations } = (await getAllDiningLocations()) as unknown as {
-        data: LocationMap;
-      };
-      console.log('locations (API)', locations);
-      if (locations && Object.keys(locations).length > 0) {
-        setLocations(locations);
+      const locations = await fetchLocationsWithCache(getAllLocations, setLocations);
+      if (Object.keys(locations).length > 0) {
         setLocationsState(locations);
       }
       setLoading((prev) => ({ ...prev, locations: false }));
-      return;
     }
 
     fetchLocations();
@@ -456,7 +387,7 @@ export default function MenuPage() {
                 {meal.toUpperCase()}
               </Heading>
               <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
-                {MEAL_RANGES[meal as Meal as keyof typeof MEAL_RANGES]}
+                {/* {MEAL_RANGES[meal as Meal as keyof typeof MEAL_RANGES]} */}
               </Text>
             </Pane>
 
@@ -467,6 +398,7 @@ export default function MenuPage() {
               formattedDateForDisplay={formattedDateForDisplay}
               goToPreviousDay={goToPreviousDay}
               goToNextDay={goToNextDay}
+              isWeekend={isWeekend}
             />
 
             {/* Render the sort and filter options */}

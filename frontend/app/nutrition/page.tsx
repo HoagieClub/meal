@@ -25,6 +25,8 @@ import {
   ChevronLeftIcon,
   useTheme,
   Badge,
+  Popover,
+  Position,
 } from 'evergreen-ui';
 import { Separator } from '@/components/ui/separator';
 import { useSearchParams } from 'next/navigation';
@@ -300,9 +302,30 @@ const NutritionLabelPage = () => {
               </Text>
               <Pane display='flex' flexWrap='wrap' gap={minorScale(2)} marginTop={minorScale(1)}>
                 {menuItemState.dietaryFlags.map((tag) => (
-                  <Badge key={tag} color='green'>
-                    {tag}
-                  </Badge>
+                  <Pane key={tag} display='flex' alignItems='center'>
+                    <Badge color='green'>{tag}</Badge>
+                    {(tag === 'halal' || tag === 'kosher') && (
+                      <Popover
+                        position={Position.TOP}
+                        content={
+                          <Pane padding={majorScale(2)} maxWidth={250}>
+                            <Text size={300}>
+                              This tag might not be correct. Please double check with chefs.
+                            </Text>
+                          </Pane>
+                        }
+                      >
+                        <Text
+                          size={300}
+                          cursor='help'
+                          color='green700'
+                          title='This tag might not be correct. Please double check with chefs.'
+                        >
+                          *
+                        </Text>
+                      </Popover>
+                    )}
+                  </Pane>
                 ))}
               </Pane>
             </Pane>

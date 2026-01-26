@@ -9,7 +9,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'evergreen-ui';
-import { Meal, MEALS } from '@/types/types';
+import { Meal } from '@/types/types';
 
 /**
  * Date and meal selector component props.
@@ -26,6 +26,7 @@ interface DateMealSelectorProps {
   formattedDateForDisplay: string;
   goToPreviousDay: () => void;
   goToNextDay: () => void;
+  isWeekend: boolean;
 }
 
 /**
@@ -40,8 +41,11 @@ export default function DateMealSelector({
   formattedDateForDisplay,
   goToPreviousDay,
   goToNextDay,
+  isWeekend,
 }: DateMealSelectorProps) {
   const theme = useTheme();
+  const meals = isWeekend ? ["Lunch", "Dinner"] : ["Breakfast", "Lunch", "Dinner"];
+  console.log('meals', meals);
 
   // Render the date and meal selector.
   return (
@@ -87,7 +91,7 @@ export default function DateMealSelector({
         boxShadow='0 2px 8px rgba(0,0,0,0.08)'
       >
         {/* Render each meal option. */}
-        {MEALS.map((mealOption: Meal) => {
+        {meals.map((mealOption: string) => {
           const isSelectedMeal = meal === mealOption;
           const backgroundColor = isSelectedMeal ? theme.colors.green700 : 'transparent';
           const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
@@ -104,7 +108,7 @@ export default function DateMealSelector({
               color={textColor}
               className='text-xs px-4'
               fontWeight={300}
-              onClick={() => setMeal(mealOption as Meal)}
+              onClick={() => setMeal(mealOption as string as Meal)}
             >
               {mealOption}
             </Pane>

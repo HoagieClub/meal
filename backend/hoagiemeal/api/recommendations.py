@@ -24,7 +24,6 @@ from collections import defaultdict
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-
 from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.user import get_user_from_request
 from hoagiemeal.models.menu import (

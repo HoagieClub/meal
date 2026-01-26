@@ -19,12 +19,24 @@ import {
   MenuItemMetricsMap,
   MenuItemScoreMap,
   MenusForLocations,
+  MenusForMealAndLocations,
   DiningHall,
   DietaryTag,
   Allergen,
   MenuItem,
   MenuSortOption,
+  ApiId,
+  Meal,
+  DateKey,
 } from '@/types/types';
+import {
+  getAllDiningLocations,
+  getDiningMenuItems,
+  getDiningMenusForLocationsAndDay,
+  getMenuItemsMetrics,
+  getUserMenuItemsInteractions,
+  getMenuItemsScore,
+} from '@/lib/next-endpoints';
 
 /**
  * Build display data props.
@@ -247,4 +259,192 @@ export const buildDisplayData = ({
 
   console.log('sortedDisplayMenusForLocations', sortedDisplayMenusForLocations);
   return sortedDisplayMenusForLocations;
+};
+
+/**
+ * Fetch locations with cache-first strategy.
+ * Checks cache first, then falls back to API if cache is empty.
+ *
+ * @param getAllLocations - Function to get all locations from cache.
+ * @param setLocations - Function to set locations in cache.
+ * @returns Promise that resolves to LocationMap.
+ */
+export const fetchLocationsWithCache = async (
+  getAllLocations: () => LocationMap,
+  setLocations: (locations: LocationMap) => void
+): Promise<LocationMap> => {
+  // Check cache first
+  const cachedLocations = getAllLocations();
+  console.log('locations (cache)', cachedLocations);
+  if (cachedLocations && Object.keys(cachedLocations).length > 0) {
+    return cachedLocations;
+  }
+
+  // Otherwise, fetch from API
+  const { data: locations } = (await getAllDiningLocations()) as unknown as {
+    data: LocationMap;
+  };
+  console.log('locations (API)', locations);
+  if (locations && Object.keys(locations).length > 0) {
+    setLocations(locations);
+    return locations;
+  }
+
+  return {};
+};
+
+/**
+ * Fetch menus for locations with cache-first strategy.
+ * Checks cache first, then falls back to API if cache is empty.
+ *
+ * @param dateKey - The date key (YYYY-MM-DD format).
+ * @param meal - The meal type.
+ * @param getApiIdsForMenusForLocations - Function to get menus for locations from cache.
+ * @param setApiIdsForMenusForMealsLocations - Function to set menus for meals and locations in cache.
+ * @returns Promise that resolves to MenusForLocations.
+ */
+export const fetchMenusForLocations = async (
+  dateKey: DateKey,
+  meal: Meal,
+  getApiIdsForMenusForLocations: (date: DateKey, meal: Meal) => MenusForLocations,
+  setApiIdsForMenusForMealsLocations: (date: DateKey, menus: MenusForMealAndLocations) => void
+): Promise<MenusForLocations> => {
+  // Check cache first
+  const cachedMenusForLocations = getApiIdsForMenusForLocations(dateKey, meal);
+  console.log('menusForLocations (cache)', cachedMenusForLocations);
+  if (cachedMenusForLocations && Object.keys(cachedMenusForLocations).length > 0) {
+    return cachedMenusForLocations;
+  }
+
+  // Otherwise, fetch from API
+  const { data: menusForDateMealAndLocations } = (await getDiningMenusForLocationsAndDay({
+    menu_date: dateKey,
+  })) as unknown as { data: MenusForMealAndLocations };
+  console.log('menusForDateMealAndLocations (API)', menusForDateMealAndLocations);
+  if (menusForDateMealAndLocations && Object.keys(menusForDateMealAndLocations).length > 0) {
+    // Cache the fetched menus
+    setApiIdsForMenusForMealsLocations(dateKey, menusForDateMealAndLocations);
+
+    const menusForLocations = menusForDateMealAndLocations[meal];
+    console.log('menusForLocations (API)', menusForLocations);
+    if (menusForLocations && Object.keys(menusForLocations).length > 0) {
+      return menusForLocations;
+    }
+  }
+
+  return {};
+};
+
+/**
+ * Fetch menu items with cache-first strategy.
+ * Checks cache first, then fetches missing items from API if needed and caches them.
+ *
+ * @param menusForLocations - The menus for locations to extract API IDs from.
+ * @param getMenuItems - Function to get menu items from cache.
+ * @param setMenuItems - Function to set menu items in cache.
+ * @returns Promise that resolves to MenuItemMap.
+ */
+export const fetchMenuItems = async (
+  menusForLocations: MenusForLocations,
+  getMenuItems: (apiIds: ApiId[]) => MenuItemMap,
+  setMenuItems: (menuItems: MenuItemMap) => void
+): Promise<MenuItemMap> => {
+  // Extract all unique API IDs from the menus for locations
+  const apiIdsSet = new Set<ApiId>(Object.values(menusForLocations).flatMap((menu) => menu));
+  const apiIds = Array.from(apiIdsSet);
+  if (apiIds.length === 0) {
+    return {};
+  }
+
+  // Check cache first
+  const cachedMenuItems = getMenuItems(apiIds);
+  console.log('menuItems (cache)', cachedMenuItems);
+  const cachedApiIds = Object.keys(cachedMenuItems);
+
+  // Extract any API IDs that are not in the cache
+  const missingApiIds = apiIds.filter((apiId) => !cachedApiIds.includes(String(apiId)));
+  if (missingApiIds.length === 0) {
+    return cachedMenuItems;
+  }
+
+  // If any API IDs are missing, fetch from API
+  const { data: menuItems } = (await getDiningMenuItems({
+    api_ids: missingApiIds,
+  })) as unknown as { data: MenuItemMap };
+  console.log('menuItems (API)', menuItems);
+  if (menuItems && Object.keys(menuItems).length > 0) {
+    // Cache the newly fetched items
+    setMenuItems(menuItems);
+    return { ...cachedMenuItems, ...menuItems };
+  }
+
+  return cachedMenuItems;
+};
+
+/**
+ * Fetch menu item metrics from API.
+ *
+ * @param menusForLocations - The menus for locations to extract API IDs from.
+ * @returns Promise that resolves to MenuItemMetricsMap.
+ */
+export const fetchMenuItemMetrics = async (
+  menusForLocations: MenusForLocations
+): Promise<MenuItemMetricsMap> => {
+  const apiIdsSet = new Set<ApiId>(Object.values(menusForLocations).flatMap((menu) => menu));
+  const apiIds = Array.from(apiIdsSet);
+  if (apiIds.length === 0) {
+    return {};
+  }
+
+  const { data: menuItemMetrics } = (await getMenuItemsMetrics({
+    menu_item_api_ids: apiIds,
+  })) as unknown as { data: MenuItemMetricsMap };
+  console.log('menuItemMetrics (API)', menuItemMetrics);
+  return menuItemMetrics && Object.keys(menuItemMetrics).length > 0 ? menuItemMetrics : {};
+};
+
+/**
+ * Fetch user menu item interactions from API.
+ *
+ * @param menusForLocations - The menus for locations to extract API IDs from.
+ * @returns Promise that resolves to MenuItemInteractionMap.
+ */
+export const fetchUserMenuItemInteractions = async (
+  menusForLocations: MenusForLocations
+): Promise<MenuItemInteractionMap> => {
+  const apiIdsSet = new Set<ApiId>(Object.values(menusForLocations).flatMap((menu) => menu));
+  const apiIds = Array.from(apiIdsSet);
+  if (apiIds.length === 0) {
+    return {};
+  }
+
+  const { data: userMenuItemInteractions } = (await getUserMenuItemsInteractions({
+    menu_item_api_ids: apiIds,
+  })) as unknown as { data: MenuItemInteractionMap };
+  console.log('userMenuItemInteractions (API)', userMenuItemInteractions);
+  return userMenuItemInteractions && Object.keys(userMenuItemInteractions).length > 0
+    ? userMenuItemInteractions
+    : {};
+};
+
+/**
+ * Fetch menu item scores from API.
+ *
+ * @param menusForLocations - The menus for locations to extract API IDs from.
+ * @returns Promise that resolves to MenuItemScoreMap.
+ */
+export const fetchMenuItemScores = async (
+  menusForLocations: MenusForLocations
+): Promise<MenuItemScoreMap> => {
+  const apiIdsSet = new Set<ApiId>(Object.values(menusForLocations).flatMap((menu) => menu));
+  const apiIds = Array.from(apiIdsSet);
+  if (apiIds.length === 0) {
+    return {};
+  }
+
+  const { data: menuItemScores } = (await getMenuItemsScore({
+    menu_item_api_ids: apiIds,
+  })) as unknown as { data: MenuItemScoreMap };
+  console.log('menuItemScores (API)', menuItemScores);
+  return menuItemScores && Object.keys(menuItemScores).length > 0 ? menuItemScores : {};
 };

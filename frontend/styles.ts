@@ -14,13 +14,11 @@
 
 import cjlIcon from '@/public/images/icons/cjl.png';
 import forbesIcon from '@/public/images/icons/forbes.png';
-import gradIcon from '@/public/images/icons/grad.png';
 import whitmanIcon from '@/public/images/icons/whitman.png';
 import yehIcon from '@/public/images/icons/yeh.png';
 import rockyIcon from '@/public/images/icons/rocky.png';
 import cjlBanner from '@/public/images/banners/cjl-banner.png';
 import forbesBanner from '@/public/images/banners/forbesbanner.png';
-import gradBanner from '@/public/images/banners/gradbanner.png';
 import matheyBanner from '@/public/images/banners/rockybanner.png';
 import whitmanBanner from '@/public/images/banners/whitmanbanner.png';
 import yehBanner from '@/public/images/banners/yehbanner.png';
@@ -80,7 +78,6 @@ export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<Allergen, any> => ({
 export const HALL_ICON_MAP: Record<DiningHall, string> = {
   'Center for Jewish Life': cjlIcon.src,
   'Forbes College': forbesIcon.src,
-  'Graduate College': gradIcon.src,
   'Whitman & Butler Colleges': whitmanIcon.src,
   'Yeh College & NCW': yehIcon.src,
   'Mathey & Rockefeller Colleges': rockyIcon.src,
@@ -93,7 +90,6 @@ export const HALL_BANNER_MAP: Record<DiningHall, StaticImageData> = {
   'Whitman & Butler Colleges': whitmanBanner,
   'Yeh College & NCW': yehBanner,
   'Center for Jewish Life': cjlBanner,
-  'Graduate College': gradBanner,
 };
 
 // Meal color map that maps from meal type to their corresponding color.

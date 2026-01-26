@@ -27,6 +27,8 @@ import {
   UndoIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  Popover,
+  Position,
 } from 'evergreen-ui';
 import { ALLERGEN_EMOJI_MAP, DIET_LABEL_MAP } from '@/data';
 import { ALLERGEN_STYLE_MAP, DIET_STYLE_MAP, HALL_ICON_MAP } from '@/styles';
@@ -151,6 +153,7 @@ export default function FilterSidebar({
     onChange: () => void;
   }) => {
     const style = DIET_STYLE_MAP(theme)[dietKey as DietaryTag];
+    const isHalalOrKosher = dietKey === 'Halal' || dietKey === 'Kosher';
 
     // Render the dietary tag row.
     return (
@@ -174,6 +177,27 @@ export default function FilterSidebar({
         <Text size={300} color={theme.colors.gray900}>
           {dietKey}
         </Text>
+        {isHalalOrKosher && (
+          <Popover
+            position={Position.TOP}
+            content={
+              <Pane padding={majorScale(2)} maxWidth={250}>
+                <Text size={300}>
+                  This tag might not be correct. Please double check with chefs.
+                </Text>
+              </Pane>
+            }
+          >
+            <Text
+              size={300}
+              cursor='help'
+              marginLeft={minorScale(1)}
+              title='This tag might not be correct. Please double check with chefs.'
+            >
+              *
+            </Text>
+          </Popover>
+        )}
       </Pane>
     );
   };
@@ -227,45 +251,45 @@ export default function FilterSidebar({
   const containerProps =
     variant === 'sidebar'
       ? {
-          flexDirection: 'column' as const,
-          width: 280,
-          padding: majorScale(3),
-          className: 'max-w-[100%] hidden sm:inline z-20',
-        }
+        flexDirection: 'column' as const,
+        width: 280,
+        padding: majorScale(3),
+        className: 'max-w-[100%] hidden sm:inline z-20',
+      }
       : {};
 
   // Determine inner container styles based on variant
   const innerContainerProps =
     variant === 'sidebar'
       ? {
-          display: 'flex' as const,
-          background: 'white',
-          maxHeight: '100%',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          className: 'fixed sm:relative overflow-hidden flex-col',
-          borderRadius: 12,
-        }
+        display: 'flex' as const,
+        background: 'white',
+        maxHeight: '100%',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        className: 'fixed sm:relative overflow-hidden flex-col',
+        borderRadius: 12,
+      }
       : {
-          display: 'flex' as const,
-          background: 'white',
-          className: 'flex-col mb-4',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          marginBottom: majorScale(2),
-          borderRadius: 12,
-        };
+        display: 'flex' as const,
+        background: 'white',
+        className: 'flex-col mb-4',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        marginBottom: majorScale(2),
+        borderRadius: 12,
+      };
 
   // Determine filters container styles based on variant
   const filtersContainerProps =
     variant === 'sidebar'
       ? {
-          className: 'p-4',
-          overflowY: 'auto' as const,
-          height: '100%' as const,
-        }
+        className: 'p-4',
+        overflowY: 'auto' as const,
+        height: '100%' as const,
+      }
       : {
-          className: 'p-4',
-          overflowY: 'auto' as const,
-        };
+        className: 'p-4',
+        overflowY: 'auto' as const,
+      };
 
   // Render the filter sidebar.
   return (
