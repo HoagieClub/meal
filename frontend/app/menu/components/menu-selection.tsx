@@ -47,7 +47,7 @@ const MenuSection = ({
     columns = toggledColumns;
   } else {
     if (showNutrition) {
-      columns = ['Protein', 'Sodium', 'Calories'];
+      columns = ['Protein', 'Calories'];
     } else {
       columns = [];
     }
