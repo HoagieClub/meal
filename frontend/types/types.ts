@@ -156,7 +156,6 @@ export type Allergen =
   | 'Soybeans'
   | 'Crustacean'
   | 'Alcohol'
-  | 'Gluten'
   | 'Fish'
   | 'Sesame';
 
@@ -170,7 +169,6 @@ export const ALLERGENS: Allergen[] = [
   'Soybeans',
   'Crustacean',
   'Alcohol',
-  'Gluten',
   'Fish',
   'Sesame',
 ];
@@ -193,10 +191,10 @@ export const DINING_HALLS: DiningHall[] = [
 ];
 
 // Dietary tags that can be applied to menu items or user preferences.
-export type DietaryTag = 'Vegetarian' | 'Vegan' | 'Halal' | 'Kosher';
+export type DietaryTag = 'Vegetarian' | 'Vegan' | 'Halal' | 'Kosher' | 'Gluten Free';
 
 // Dietary tags that can be applied to menu items or user preferences.
-export const DIETARY_TAGS: DietaryTag[] = ['Vegetarian', 'Vegan', 'Halal', 'Kosher'];
+export const DIETARY_TAGS: DietaryTag[] = ['Vegetarian', 'Vegan', 'Halal', 'Kosher', 'Gluten Free'];
 
 // Emoji icons used to represent different meal types or dietary information.
 export type MealIcon = '🍂' | '🥜' | '🥚' | '🥛' | '🌱' | '🥜';

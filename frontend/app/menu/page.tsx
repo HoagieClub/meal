@@ -20,7 +20,6 @@ import DiningHallCard from '@/app/menu/components/dining-hall-card';
 import HallMenuModal from '@/app/menu/components/hall-menu-modal';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
 import FilterSidebar from '@/app/menu/components/filter-sidebar';
-import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
 import DateMealSelector from '@/app/menu/components/date-meal-selector';
 import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
@@ -306,7 +305,8 @@ export default function MenuPage() {
         display='grid'
         overflowY='auto'
         paddingBottom={majorScale(6)}
-        gridTemplateColumns='repeat(auto-fill,minmax(400px,1fr))'
+        paddingRight={majorScale(3)}
+        gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
         gap={majorScale(2)}
         className='h-full no-scrollbar'
       >
@@ -435,8 +435,6 @@ export default function MenuPage() {
         </Pane>
       </Pane>
 
-      {/* Render the allergen sidebar for mobile */}
-      {hideSidebar && <AllergenSidebar allergens={allergens} toggleAllergen={toggleAllergen} />}
 
       {/* Render the hall menu modal */}
       <HallMenuModal

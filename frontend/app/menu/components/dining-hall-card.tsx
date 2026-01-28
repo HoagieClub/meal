@@ -20,14 +20,14 @@ import {
   majorScale,
   minorScale,
   Pane,
-  PinIcon,
   Text,
   useTheme,
 } from 'evergreen-ui';
 import React from 'react';
 import MenuSection from './menu-selection';
-import { Location } from '@/types/types';
+import { Location, DiningHall } from '@/types/types';
 import { HALL_BANNER_MAP } from '@/styles';
+import { DINING_HALL_DISPLAY_NAMES } from '@/data';
 
 /**
  * Props for the DiningHallCard component.
@@ -89,7 +89,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           paddingY={minorScale(1)}
         >
           <Text size={700} fontWeight={600} color={theme.colors.gray900}>
-            {diningHall.name}
+            {DINING_HALL_DISPLAY_NAMES[diningHall.name as DiningHall] ?? diningHall.name}
           </Text>
         </Pane>
 
@@ -100,14 +100,16 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
             cursor='pointer'
             padding={minorScale(1)}
             marginRight={minorScale(1)}
-            className='mr-4'
+            className='transition-transform duration-200 hover:scale-95 active:scale-85'
             display='flex'
             alignItems='center'
             title={isPinned ? 'Unpin hall' : 'Pin hall'}
           >
-            <PinIcon
-              size={16}
-              color={isPinned ? theme.colors.green700 : theme.colors.gray700} // Dynamic color
+            <img
+              src={isPinned ? '/images/icons/pinned.svg' : '/images/icons/unpinned.svg'}
+              width={16}
+              height={16}
+              alt={isPinned ? 'Unpin hall' : 'Pin hall'}
             />
           </Pane>
 

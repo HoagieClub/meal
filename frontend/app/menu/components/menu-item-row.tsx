@@ -16,9 +16,8 @@
 
 import React from 'react';
 import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
-import { ALLERGEN_EMOJI_MAP } from '@/data';
-import { ALLERGEN_STYLE_MAP } from '@/styles';
-import { Allergen, MenuItem } from '@/types/types';
+import { ALLERGEN_ICON_MAP, DIET_ICON_MAP } from '@/data';
+import { Allergen, DietaryTag, MenuItem } from '@/types/types';
 import { MiniLikeDislikeButtons } from '@/components/mini-like-dislike-button';
 import { Column } from '@/types/types';
 
@@ -80,38 +79,16 @@ export default function MenuItemRow({
   };
 
   /**
-   * Allergen emoji component.
-   *
-   * @param allergen - The allergen to display.
-   * @returns JSX element displaying the allergen emoji.
-   */
-  const AllergenEmoji = ({ allergen }: { allergen: Allergen }) => {
-    return (
-      <Pane
-        display='flex'
-        alignItems='center'
-        justifyContent='center'
-        width={26}
-        height={26}
-        borderRadius={999}
-        background={ALLERGEN_STYLE_MAP(theme)[allergen]?.bg}
-      >
-        <Text>{ALLERGEN_EMOJI_MAP[allergen]}</Text>
-      </Pane>
-    );
-  };
-
-  /**
-   * Helper function to display allergens for a menu item.
+   * Helper function to display dietary flags and allergens for a menu item.
    *
    * @param item - The menu item.
-   * @returns JSX element displaying allergens.
+   * @returns JSX element displaying dietary and allergen icons.
    */
-  const showAllergens = (item: MenuItem) => {
+  const showIcons = (item: MenuItem) => {
+    const itemDietaryFlags = (item?.dietaryFlags as DietaryTag[]) || [];
     const itemAllergens = (item?.allergens as Allergen[]) || [];
 
-    // If there are no allergens, return a text element saying "No allergens".
-    if (itemAllergens.length === 0) {
+    if (itemDietaryFlags.length === 0 && itemAllergens.length === 0) {
       return (
         <Text color='muted' fontStyle='italic'>
           No allergens
@@ -119,10 +96,25 @@ export default function MenuItemRow({
       );
     }
 
-    // Map over all allergens and display them as emojis
-    return itemAllergens.map((allergen: Allergen) => (
-      <AllergenEmoji key={allergen} allergen={allergen} />
-    ));
+    // Build a case-insensitive lookup for DIET_ICON_MAP since the backend
+    // returns lowercase flags (e.g. "vegan") while the map keys are PascalCase.
+    const dietIconLookup = Object.fromEntries(
+      Object.entries(DIET_ICON_MAP).map(([k, v]) => [k.toLowerCase(), v])
+    );
+
+    return (
+      <>
+        {itemDietaryFlags.map((flag) => {
+          const icon = dietIconLookup[flag.toLowerCase()];
+          return icon ? (
+            <img key={flag} src={icon} alt={flag} title={flag} width={20} height={20} />
+          ) : null;
+        })}
+        {itemAllergens.map((allergen: Allergen) => (
+          <img key={allergen} src={ALLERGEN_ICON_MAP[allergen]} alt={allergen} title={allergen} width={20} height={20} />
+        ))}
+      </>
+    );
   };
 
   // Render the menu item row
@@ -159,7 +151,7 @@ export default function MenuItemRow({
 
           {/* Display the allergens for the menu item. */}
           <Pane display='flex' flexWrap='wrap' gap={minorScale(1)} marginTop={minorScale(1)}>
-            {showAllergens(item)}
+            {showIcons(item)}
           </Pane>
         </Pane>
 
