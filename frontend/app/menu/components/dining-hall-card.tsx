@@ -78,7 +78,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         alignItems='center'
         marginBottom={majorScale(2)}
         background={theme.colors.gray100}
-        className='py-4 border relative border-gray-300 rounded-md flex items-center'
+        className='py-2 border relative border-gray-300 rounded-md flex items-center'
       >
         {/* Render the dining hall name. */}
         <Pane
@@ -88,7 +88,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           paddingX={majorScale(2)}
           paddingY={minorScale(1)}
         >
-          <Text size={700} fontWeight={600} color={theme.colors.gray900}>
+            <Text size={600} fontWeight={600} color={theme.colors.gray900}>
             {DINING_HALL_DISPLAY_NAMES[diningHall.name as DiningHall] ?? diningHall.name}
           </Text>
         </Pane>

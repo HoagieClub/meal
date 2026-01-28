@@ -91,9 +91,9 @@ export const HALL_BANNER_MAP: Record<DiningHall, StaticImageData> = {
 
 // Meal color map that maps from meal type to their corresponding color.
 export const MEAL_COLOR_MAP = (theme: Theme): Record<Meal, string> => ({
-  Breakfast: theme.colors.green100 as string,
-  Lunch: theme.colors.green200 as string,
-  Dinner: theme.colors.green300 as string,
+  Breakfast: "#ebf7f2",
+  Lunch: "#daefe8",
+  Dinner: "#cae6dc",
 });
 
 // Diet style map that maps from dietary tag type to their corresponding style.

@@ -331,7 +331,7 @@ export default function MenuPage() {
   return (
     <Pane
       display='flex'
-      className='sm:flex-row overflow-hidden min-h-screen flex-col'
+      className='sm:flex-row overflow-hidden min-h-screen flex-col transition-colors duration-300'
       background={MEAL_COLOR_MAP(theme)[meal]}
     >
       {/* Filter sidebar for desktop*/}
@@ -366,16 +366,16 @@ export default function MenuPage() {
             display='flex'
             alignItems='center'
             justifyContent='space-between'
-            marginY={majorScale(3)}
+            marginY={majorScale(2)}
             className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
           >
             {/* Render the meal header */}
             <Pane width={240}>
-              <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
+              <Heading className='text-5xl' color={theme.colors.green700} fontWeight={900}>
                 {meal.toUpperCase()}
               </Heading>
               <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
-                {/* {MEAL_RANGES[meal as Meal as keyof typeof MEAL_RANGES]} */}
+                {MEAL_RANGES[meal]}
               </Text>
             </Pane>
 

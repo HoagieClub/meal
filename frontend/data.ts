@@ -27,7 +27,6 @@ export const DIET_LABEL_MAP: Record<DietaryTag, string> = {
   Vegan: 'VG',
   Halal: 'H',
   Kosher: 'K',
-  'Gluten Free': 'GF',
 };
 
 // Allergen emoji map that maps from allergen type to their corresponding emoji.
@@ -42,6 +41,7 @@ export const ALLERGEN_EMOJI_MAP: Record<Allergen, string> = {
   Alcohol: '🍺',
   Fish: '🐟',
   Sesame: '🍔',
+  Gluten: '🍞',
 };
 
 // Icon path map for dietary tags.
@@ -50,7 +50,6 @@ export const DIET_ICON_MAP: Record<DietaryTag, string> = {
   Vegan: '/images/icons/vegan.svg',
   Halal: '/images/icons/halal.svg',
   Kosher: '/images/icons/kosher.svg',
-  'Gluten Free': '/images/icons/gluten-free.svg',
 };
 
 // Icon path map for allergens.
@@ -65,6 +64,7 @@ export const ALLERGEN_ICON_MAP: Record<Allergen, string> = {
   Alcohol: '/images/icons/alcohol.svg',
   Fish: '/images/icons/fish.svg',
   Sesame: '/images/icons/sesame.svg',
+  Gluten: '/images/icons/gluten.svg',
 };
 
 // Display name map for dining halls. Maps backend API names to short user-facing nicknames.
