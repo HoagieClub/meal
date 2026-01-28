@@ -28,13 +28,13 @@ class DiningVenue(models.Model):
     Attributes:
         name (str): Name of the dining hall.
         map_name (str): Name used for mapping purposes.
-        database_id (int): Unique API location identifier.
+        database_id (str): Unique API location identifier.
         latitude (float): Latitude coordinate.
         longitude (float): Longitude coordinate.
         building_name (str): Name of the building.
         amenities (list of str): List of available amenities.
         is_active (bool): Operational status of the dining hall.
-        operation_hours (dict): Operating hours in JSON format.
+        category_id (str): The category ID of the dining venue.
         created_at (datetime): Timestamp when the record was created.
         updated_at (datetime): Timestamp when the record was last updated.
 
@@ -42,13 +42,17 @@ class DiningVenue(models.Model):
 
     name = models.CharField(max_length=255, unique=True)
     map_name = models.CharField(max_length=255)
-    database_id = models.PositiveIntegerField(unique=True, help_text=_("API's location identifier"), primary_key=True)
+    database_id = models.CharField(
+        max_length=50, unique=True, help_text=_("API's location identifier"), primary_key=True
+    )
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     building_name = models.CharField(max_length=255)
     amenities = ArrayField(models.CharField(max_length=100), blank=True, default=list)
     is_active = models.BooleanField(default=True, help_text=_("Whether this dining hall is currently operational"))
-    operation_hours = models.JSONField(null=True, blank=True, help_text=_("Operating hours in JSON format"))
+    category_id = models.CharField(
+        max_length=50, help_text=_("The category ID of the dining venue"), null=True, blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -59,9 +63,8 @@ class DiningVenue(models.Model):
         indexes = [
             models.Index(fields=["database_id"]),
             models.Index(fields=["name"]),
+            models.Index(fields=["category_id"]),
         ]
-        
-    
 
     def __str__(self):
         """Return the string representation of the DiningVenue instance.

@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -15,9 +15,10 @@
 import { HttpMethod, HTTP_METHODS } from '@/types/http';
 
 // Checks if requested HTTP method is valid
-export const valid = (method: string): method is HttpMethod => HTTP_METHODS.includes(method as HttpMethod);
+export const valid = (method: string): method is HttpMethod =>
+  HTTP_METHODS.includes(method as HttpMethod);
 
 // Syntactic sugar for adding auth headers
 export const withAuth = (token: string) => ({
-  Authorization: `Bearer ${token}`
+  Authorization: `Bearer ${token}`,
 });

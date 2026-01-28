@@ -16,14 +16,22 @@
 
 import { handleAuth, handleCallback } from '@auth0/nextjs-auth0';
 import { NextRequest } from 'next/server';
-import { request } from '@/lib/http';
+import { verifyUser } from '@/lib/endpoints';
 
+/**
+ * After callback function to verify the user.
+ *
+ * @param req - The request object.
+ * @param session - The session object.
+ * @returns The session object.
+ */
 const afterCallback = async (req: NextRequest, session: any) => {
   if (session.accessToken) {
     try {
-      await request.getAuth(session.accessToken)('/api/auth/verify', {});
+      await verifyUser(session.accessToken);
     } catch (error) {
-      console.log('error', error);
+      console.error('Error verifying user:', error);
+      return null;
     }
   }
   return session;

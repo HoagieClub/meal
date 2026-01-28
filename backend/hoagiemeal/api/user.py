@@ -1,5 +1,25 @@
+"""API endpoints for user management.
+
+This module provides the API endpoints for user management, including authentication and user data retrieval.
+
+Copyright © 2021-2025 Hoagie Club and affiliates.
+
+Licensed under the MIT License. You may obtain a copy of the License at:
+
+  https://github.com/hoagieclub/meal/blob/main/LICENSE
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+This software is provided "as-is", without warranty of any kind.
+"""
+
 import jwt
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 from jwt import PyJWKClient
 from django.conf import settings
 from hoagiemeal.utils.logger import logger
@@ -7,33 +27,155 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.http import HttpRequest
 from django.contrib.auth import get_user_model
-from hoagiemeal.serializers import UserSerializer
 from datetime import datetime
+from typing import TypedDict, List
+from django.utils import timezone
+from hoagiemeal.serializers import UserSerializer
+from django.db import transaction
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
 _JWK_CLIENT = PyJWKClient(f"{settings.AUTH0_ISSUER}.well-known/jwks.json")
 
-
-def get_bearer_token(request: HttpRequest) -> Optional[str]:
-    """Extract the Bearer token from the request headers."""
-    auth = request.headers.get("Authorization") or request.META.get("HTTP_AUTHORIZATION") or ""
-    parts = auth.split()
-    if len(parts) == 2 and parts[0].lower() == "bearer":
-        return parts[1].strip()
-    logger.error("No Bearer token found in request headers in get_bearer_token")
-    return None
+HOAGIE_IO_EMAIL_CLAIM = "https://hoagie.io/email"
+HOAGIE_IO_NAME_CLAIM = "https://hoagie.io/name"
 
 
-def decode_jwt_token(token: Optional[str]) -> Optional[Any]:
-    """Verify the JWT token with Auth0 and return the claims."""
-    if not token:
-        logger.error("No token found in decode_jwt_token")
-        return None
+#################### UserAPI class for user management #########################
 
+
+class UserAPI:
+    """API for user management, including authentication and user creation."""
+
+    def get_or_create_user(self, auth0_claims: dict) -> Optional[Any]:
+        """Get or create a user based on Auth0 token claims.
+
+        Args:
+            auth0_claims (dict): The Auth0 token claims.
+
+        Returns:
+            Optional[Any]: The user if they exist, otherwise None.
+
+        """
+        logger.info(f"Getting or creating user based on Auth0 token claims: {auth0_claims}.")
+
+        # Get Auth0 ID
+        auth0_id = auth0_claims.get("sub")
+        if not auth0_id:
+            logger.error(f"Auth0 ID is required in Auth0 token claims: {auth0_claims}.")
+            return None
+
+        try:
+            # Get user and set last login
+            with transaction.atomic():
+                user = User.objects.get(auth0_id=auth0_id)
+                user.last_login = timezone.now()
+                user.save()
+                logger.info(f"User found for auth0_id: {auth0_id}")
+                return user
+        except User.DoesNotExist:
+            # Create user based on Auth0 token claims
+            logger.info(
+                f"User not found for auth0_id: {auth0_id}, creating user based on Auth0 token claims: {auth0_claims}"
+            )
+
+            # Extract email and full name from Auth0 token claims
+            email = auth0_claims.get(HOAGIE_IO_EMAIL_CLAIM)
+            full_name = auth0_claims.get(HOAGIE_IO_NAME_CLAIM)
+            name_parts = full_name.split(" ") if full_name else []
+            first_name = name_parts[0] if len(name_parts) > 0 else ""
+            last_name = name_parts[-1] if len(name_parts) > 1 else ""
+            username = email.split("@")[0] if email else ""
+            last_login = timezone.now()
+
+            # Create user
+            user = User.objects.create(
+                auth0_id=auth0_id,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                username=username,
+                last_login=last_login,
+            )
+
+            # Return serialized user data
+            logger.info(f"User created for auth0_id: {auth0_id}")
+            return user
+        except Exception as e:
+            logger.error(f"Failed to get or create user for auth0_id: {auth0_id}: {e}")
+            return None
+
+
+#################### Exposed endpoints #########################
+
+
+user_api = UserAPI()
+
+
+@api_view(["POST"])
+def verify_and_get_or_create_user(request):
+    """Verify if the user is authenticated and create the user if they don't exist.
+
+    Args:
+        request (HttpRequest): The request object.
+
+    Returns:
+        Response: The response object.
+        user (Any): The user's data.
+
+    """
+    logger.info(f"Verifying and getting or creating user by Auth0 token from request: {request}")
     try:
-        key = _JWK_CLIENT.get_signing_key_from_jwt(token).key
-        claims = jwt.decode(
-            token,
+        # Decode Auth0 token
+        auth0_claims = decode_auth0_token(request)
+        if not auth0_claims:
+            return Response(
+                {"data": None, "message": "Failed to decode Auth0 token", "error": "Failed to decode Auth0 token"},
+                status=401,
+            )
+
+        # Get or create user
+        user = user_api.get_or_create_user(auth0_claims)
+        if not user:
+            return Response(
+                {"data": None, "message": "Failed to get or create user", "error": "Failed to get or create user"},
+                status=500,
+            )
+
+        # Return user
+        return Response(
+            {"data": UserSerializer(user).data, "message": "User fetched or created successfully.", "error": None},
+            status=200,
+        )
+    except Exception as e:
+        logger.error(f"Error in verify_and_get_or_create_user view: {e}")
+        return Response(
+            {"data": None, "message": f"Failed to verify and get or create user: {str(e)}", "error": str(e)},
+            status=500,
+        )
+
+
+#################### Utility functions for working with user data #########################
+
+
+def decode_auth0_token(request: HttpRequest) -> Optional[dict]:
+    """Decode the Auth0 token from the request.
+
+    Args:
+        request (HttpRequest): The request object.
+
+    Returns:
+        Optional[dict]: The Auth0 token claims if successful, otherwise None.
+
+    """
+    logger.info(f"Decoding Auth0 token from request: {request}")
+    try:
+        auth_headers = request.headers.get("Authorization")
+        auth0_token = auth_headers.split()[1].strip()
+        key = _JWK_CLIENT.get_signing_key_from_jwt(auth0_token).key
+        auth0_claims = jwt.decode(
+            auth0_token,
             key,
             algorithms=["RS256"],
             audience=settings.AUTH0_AUDIENCE,
@@ -41,156 +183,39 @@ def decode_jwt_token(token: Optional[str]) -> Optional[Any]:
             options={"require": ["exp", "iat", "iss", "aud", "sub"]},
             leeway=5,
         )
-        return claims
+        logger.info(f"Auth0 token decoded successfully for request: {request}.")
+        return auth0_claims
     except Exception as e:
-        logger.error(f"Error decoding JWT token: {e} in decode_jwt_token")
+        logger.error(f"Failed to decode Auth0 token from request: {request}: {e}")
         return None
 
 
-def get_or_create_user(claims: Any, create: bool = True) -> Optional[Any]:
-    """Find or create a user based on Auth0 token claims."""
-    if not claims:
-        logger.error("No claims found in get_or_create_user")
-        return None
+def get_user_from_request(request: HttpRequest) -> Optional[Any]:
+    """Get user from request using Auth0 token.
 
-    if "sub" not in claims:
-        logger.error("No Auth0 ID found in claims in get_or_create_user")
-        return None
+    Args:
+        request (HttpRequest): The request object.
 
-    auth0_id = claims["sub"]
+    Returns:
+        Optional[Any]: The user if authenticated, None otherwise.
+
+    """
     try:
-        user = User.objects.get(auth0_id=auth0_id)
-        logger.info(f"Found existing user: {user.username} (Auth0 ID: {auth0_id})")
-        """Update the last login time for the user."""
-        user.last_login = datetime.now()
-        user.save()
-        return user
-
-    except User.DoesNotExist:
-        """Create a new user if they don't exist."""
-        if not create:
+        # Decode Auth0 token
+        auth0_claims = decode_auth0_token(request)
+        if not auth0_claims:
+            logger.error(f"Failed to decode Auth0 token from request: {request}.")
             return None
 
-        email = claims.get("https://hoagie.io/email")
-        full_name = claims.get("https://hoagie.io/name")
-        name_parts = full_name.split(" ") if full_name else []
-        first_name = name_parts[0] if len(name_parts) > 0 else ""
-        last_name = name_parts[-1] if len(name_parts) > 1 else ""
-        username = email.split("@")[0] if email else ""
+        # Get or create user
+        user = user_api.get_or_create_user(auth0_claims)
+        if not user:
+            logger.error(f"Failed to get or create user from request: {request}.")
+            return None
 
-        user_data = {
-            "email": email,
-            "first_name": first_name,
-            "last_name": last_name,
-            "username": username,
-            "auth0_id": auth0_id,
-            "last_login": datetime.now(),
-        }
-        logger.info(f"Creating new user: {auth0_id}")
-        user = User.objects.create(**user_data)
-        logger.info(f"Created new user: {user.username} (Auth0 ID: {auth0_id})")
+        # Return user
+        logger.info(f"User fetched from request: {request}.")
         return user
-
-
-def authenticate_request(request: HttpRequest) -> Optional[Any]:
-    """Check if the request is authenticated and return the user."""
-    token = get_bearer_token(request)
-    claims = decode_jwt_token(token)
-    return claims
-
-
-#################### Exposed endpoints #########################
-
-
-@api_view(["GET"])
-def me(request):
-    """Get current user information."""
-    try:
-        claims = authenticate_request(request)
-        if not claims:
-            logger.error("Authentication failed in me view")
-            return Response({"user": None, "error": "Authentication required"}, status=401)
-
-        user = get_or_create_user(claims, create=False)
-        if not user:
-            logger.error("User not found in me view")
-            return Response({"user": None, "error": "User not found"}, status=404)
-
-        user_data = UserSerializer(user).data
-        return Response({"user": user_data}, status=200)
-
     except Exception as e:
-        logger.error(f"Error in me view: {e}")
-        return Response({"user": None, "error": str(e)}, status=500)
-
-
-@api_view(["GET"])
-def verify(request):
-    """Verify if the user is authenticated and create the user if they don't exist."""
-    try:
-        claims = authenticate_request(request)
-        if not claims:
-            logger.error("Authentication failed in verify view")
-            return Response({"authenticated": False, "user": None}, status=401)
-
-        user = get_or_create_user(claims, create=True)
-        if not user:
-            logger.error("Failed to create user in verify view")
-            return Response({"authenticated": False, "user": None, "error": "Failed to create user"}, status=500)
-
-        return Response({"authenticated": True, "user": user.id}, status=200)
-
-    except Exception as e:
-        logger.error(f"Error in verify view: {e}")
-        return Response({"authenticated": False, "user": None, "error": str(e)}, status=500)
-
-
-@api_view(["POST"])
-def update_user_profile(request):
-    """Update user's profile information."""
-    try:
-        claims = authenticate_request(request)
-        if not claims:
-            logger.error("Authentication failed in update_user_profile view")
-            return Response({"error": "Authentication required"}, status=401)
-
-        user = get_or_create_user(claims, create=False)
-        if not user:
-            logger.error("User not found in update_user_profile view")
-            return Response({"error": "User not found"}, status=404)
-
-        dietary_restrictions = request.data.get("dietary_restrictions")
-        allergens = request.data.get("allergens")
-        daily_calorie_target = request.data.get("daily_calorie_target")
-        daily_protein_target = request.data.get("daily_protein_target")
-        dining_halls = request.data.get("dining_halls")
-
-        updated_fields = {}
-        if dietary_restrictions is not None and len(dietary_restrictions) > 0:
-            user.dietary_restrictions = dietary_restrictions
-            updated_fields["dietary_restrictions"] = dietary_restrictions
-
-        if allergens is not None and len(allergens) > 0:
-            user.allergens = allergens
-            updated_fields["allergens"] = allergens
-
-        if daily_calorie_target is not None and daily_calorie_target > 0:
-            user.daily_calorie_target = daily_calorie_target
-            updated_fields["daily_calorie_target"] = daily_calorie_target
-
-        if daily_protein_target is not None and daily_protein_target > 0:
-            user.daily_protein_target = daily_protein_target
-            updated_fields["daily_protein_target"] = daily_protein_target
-
-        if dining_halls is not None and len(dining_halls) > 0:
-            user.dining_halls = dining_halls
-            updated_fields["dining_halls"] = dining_halls
-
-        user.save()
-        logger.info(f"Updated profile for user {user.username}: {list(updated_fields.keys())}")
-
-        return Response({"message": "Profile updated successfully", "updated_fields": updated_fields}, status=200)
-
-    except Exception as e:
-        logger.error(f"Error in update_user_profile view: {e}")
-        return Response({"error": str(e)}, status=500)
+        logger.error(f"Error getting user from request: {request}: {e}")
+        return None

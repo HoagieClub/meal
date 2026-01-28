@@ -26,6 +26,10 @@ if (!API_URL && typeof window === 'undefined') {
 
 /**
  * Makes HTTP requests to the Hoagie API.
+ * Always returns {status, message, data} structure:
+ * - status: HTTP status code
+ * - message: Message from backend response
+ * - data: Data from backend response (null on error)
  *
  * @param config - Optional request configuration (method, headers)
  * @returns Async function taking endpoint and optional args
@@ -40,7 +44,7 @@ if (!API_URL && typeof window === 'undefined') {
  * @example (minimal syntactic sugar)
  * request({ method: 'GET', headers: {...} })
  *
- * @throws On invalid HTTP method or failed request
+ * @throws On invalid HTTP method only
  */
 export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {}) => {
   return async (
@@ -69,22 +73,20 @@ export const request: HoagieRequest = (<T>(config: RequestConfig<HttpMethod> = {
     try {
       // making the API request
       const res = await fetch(url, options);
-      const data = await res.json();
+      const json = await res.json();
 
-      if (!res.ok) {
-        throw {
-          status: res.status,
-          message: data.error || 'An error occurred',
-          data,
-        };
-      }
-
-      return data;
+      return {
+        status: res.status,
+        message: json?.message || 'Success',
+        data: json?.data !== undefined ? json.data : null,
+        error: null,
+      };
     } catch (error: any) {
-      throw {
-        status: error.status || 500,
-        message: error.message || 'An error occurred',
-        data: error.data,
+      return {
+        status: error?.status || 500,
+        message: error?.message || 'Network or unexpected error',
+        data: null,
+        error: error?.message || 'Network or unexpected error',
       };
     }
   };

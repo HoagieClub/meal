@@ -16,297 +16,257 @@ furnished to do so, subject to the following conditions:
 This software is provided "as-is", without warranty of any kind.
 """
 
-import requests
 import pprint
+import requests
 from bs4 import BeautifulSoup
 from copy import deepcopy
 from hoagiemeal.utils.logger import logger
+from typing import Optional, List
+from decimal import Decimal
+import re
+from typing import TypedDict
+import typing
+from typing import Union
+
+
+Numeric = Union[int, Decimal]
 
 
 class Scraper:
-    """Web scraper for extracting and structuring menu item information.
+    """Web scraper for extracting and structuring menu item information."""
 
-    Attributes:
-        INGREDIENTS_CLASS (str): CSS class used to locate ingredient elements in HTML.
-        ALLERGENS_CLASS (str): CSS class used to locate allergen elements in HTML.
-        CALORIES_SIZE_ID (str): HTML ID used to locate calorie and serving size elements.
-        NUTRITION_ID (str): HTML ID used to locate nutrition facts.
-        NAME_QUERY (str): HTML tag used to locate the menu item name.
-        EMPTY_MENU_SCHEMA (dict): A default schema for structured menu information,
-                                  including "Name", "Serving Size", "Calories",
-                                  "Calories from Fat", and detailed nutritional sections
-                                  for "Fat", "Carbohydrates", "Protein", and "Vitamins".
+    INGREDIENTS_CLASS = "labelingredientsvalue"
+    ALLERGENS_CLASS = "labelallergensvalue"
+    CALORIES_SIZE_ID = "facts2"
+    NUTRITION_ID = "facts4"
+    NAME_QUERY = "h2"
+    ALLERGEN_MAPPINGS = {
+        "crustacean shellfish": "Crustacean",
+        "ingredients include alcohol": "Alcohol",
+        "ingredients include coconut": "Coconut",
+    }
 
-    """
+    EMPTY_NUTRITION_SCHEMA = {
+        "name": None,
+        "ingredients": [],
+        "allergens": [],
+        "serving_size": {"amount": None, "dv": None, "unit": None},
+        "calories": {"amount": None, "dv": None, "unit": None},
+        "calories_from_fat": {"amount": None, "dv": None, "unit": None},
+        "total_fat": {"amount": None, "dv": None, "unit": None},
+        "saturated_fat": {"amount": None, "dv": None, "unit": None},
+        "trans_fat": {"amount": None, "dv": None, "unit": None},
+        "cholesterol": {"amount": None, "dv": None, "unit": None},
+        "sodium": {"amount": None, "dv": None, "unit": None},
+        "total_carbohydrates": {"amount": None, "dv": None, "unit": None},
+        "dietary_fiber": {"amount": None, "dv": None, "unit": None},
+        "sugars": {"amount": None, "dv": None, "unit": None},
+        "protein": {"amount": None, "dv": None, "unit": None},
+        "vitamin_d": {"amount": None, "dv": None, "unit": None},
+        "potassium": {"amount": None, "dv": None, "unit": None},
+        "calcium": {"amount": None, "dv": None, "unit": None},
+        "iron": {"amount": None, "dv": None, "unit": None},
+    }
 
-    def __init__(self):
-        """Initialize the Scraper with HTML selectors and an empty schema template."""
-        self.INGREDIENTS_CLASS = "labelingredientsvalue"
-        self.ALLERGENS_CLASS = "labelallergensvalue"
-        self.CALORIES_SIZE_ID = "facts2"
-        self.NUTRITION_ID = "facts4"
-        self.NAME_QUERY = "h2"
-        self.EMPTY_MENU_SCHEMA = {
-            "Name": "",
-            "Serving Size": "",
-            "Calories": "",
-            "Calories from Fat": "",
-            "Ingredients": [],
-            "Allergens": [],
-            "Fat": {
-                "Total Fat": {
-                    "Amount": "",
-                    "Daily Value": "",
-                },
-                "Saturated Fat": {
-                    "Amount": "",
-                    "Daily Value": "",
-                },
-                "Trans Fat": {
-                    "Amount": "",
-                    "Daily Value": "",
-                },
-            },
-            "Cholesterol": {
-                "Amount": "",
-                "Daily Value": "",
-            },
-            "Sodium": {
-                "Amount": "",
-                "Daily Value": "",
-            },
-            "Carbohydrates": {
-                "Total Carbohydrates": {
-                    "Amount": "",
-                    "Daily Value": "",
-                },
-                "Dietary Fiber": {
-                    "Amount": "",
-                    "Daily Value": "",
-                },
-                "Sugar": {
-                    "Amount": "",
-                    "Daily Value": "",
-                },
-            },
-            "Protein": {
-                "Amount": "",
-                "Daily Value": "",
-            },
-            "Vitamins": {
-                "Vitamin D": {
-                    "Amount": "",
-                    "Daily Value": "",
-                },
-                "Calcium": {
-                    "Amount": "",
-                    "Daily Value": "",
-                },
-                "Iron": {
-                    "Amount": "",
-                    "Daily Value": "",
-                },
-                "Potassium": {
-                    "Amount": "",
-                    "Daily Value": "",
-                },
-            },
-        }
+    def scrape_api_url(self, api_url: str) -> Optional[dict]:
+        """Fetch HTML and extract menu item information in one call."""
+        response = requests.get(api_url, timeout=10)
+        response.raise_for_status()
 
-    def get_html(self, link: str) -> BeautifulSoup | None:
-        """Fetch and parse HTML content from the specified URL.
-
-        Args:
-            link (str): The URL to fetch HTML content from. If None or empty,
-                        logs an error and returns None.
-
-        Returns:
-            BeautifulSoup: Parsed HTML content as a BeautifulSoup object if the request
-                        is successful. Returns None if no link is provided or if an
-                        exception occurs during fetching.
-
-        """
-        logger.info(f"Fetching HTML content for link: {link}.")
-        try:
-            response = requests.get(link, timeout=10)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.content, "lxml")
-            return soup
-        except Exception as e:
-            logger.error(f"Unexpected error fetching HTML content: {e}")
-            return None
-
-    def get_info(self, soup: BeautifulSoup) -> dict:
-        """Extract menu item information.
-
-        Args:
-            soup (BeautifulSoup): Parsed HTML content containing menu item data. If None
-                or invalid, an empty schema is returned.
-
-        Returns:
-            dict: A dictionary with the following keys (indented implies nested keys):
-                - "Ingredients"
-                - "Allergens"
-                - "Name"
-                - "Serving Size"
-                - "Calories"
-                - "Calories from Fat"
-                - "Fat"
-                    - "Total Fat", "Saturated Fat", "Trans Fat"
-                - "Carbohydrates"
-                    - "Total Carbohydrates", "Dietary Fiber", "Sugar"
-                - "Cholesterol"
-                - "Protein"
-                - "Sodium"
-                - "Vitamins"
-                    - "Vitamin D", "Potassium", "Calcium", "Iron")
-
-        """
+        soup = BeautifulSoup(response.content, "lxml")
+        scraped_data = deepcopy(self.EMPTY_NUTRITION_SCHEMA)
 
         def extract_field(text: str) -> str:
-            """Finds the first numerical digit and returns the rest of the string."""
-            for i, c in enumerate(text):
-                if c.isdigit():
-                    return text[i:].strip()
+            for index, char in enumerate(text):
+                if char.isdigit():
+                    return text[index:].strip()
             return ""
 
-        def safe_get_text(elements_list: list, index: int, extractor=extract_field) -> str:
-            """Safely get text from a list of elements at a specific index."""
-            try:
-                if index < len(elements_list):
-                    return extractor(elements_list[index].get_text())
-            except Exception as e:
-                logger.warning(f"Failed to safely extract text at index {index}: {e}")
-            return ""
+        def safe(index, elements, transform_fn=extract_field):
+            return transform_fn(elements[index].get_text()) if 0 <= index < len(elements) else ""
 
-        def process_allergen(raw_allergen: str) -> str:
-            """Strips, maps, and capitalizes allergen strings."""
-            allergen = raw_allergen.strip()
-            
-            # Apply mappings (case-insensitive for robustness)
-            if allergen.lower() == "crustacean shellfish":
-                return "Crustacean"
-            if allergen.lower() == "ingredients include alcohol":
-                return "Alcohol"
-            if allergen.lower() == "ingredients include coconut":
-                return "Coconut"
-            
-            # Capitalize anything that didn't match a map
-            return allergen.capitalize()
+        def process_allergen(allergen_text: str) -> str:
+            allergen_text = allergen_text.strip().lower()
+            return self.ALLERGEN_MAPPINGS.get(allergen_text, allergen_text.capitalize())
 
-        response = deepcopy(self.EMPTY_MENU_SCHEMA)
-        if not soup:
-            return response
+        def to_numeric(raw_value: str) -> Optional[Numeric]:
+            if not raw_value:
+                return None
+            number_match = re.search(r"[\d\.]+", raw_value)
+            if not number_match:
+                return None
+            numeric_string = number_match.group(0)
+            if "." in numeric_string:
+                return Decimal(numeric_string)
+            return int(numeric_string)
+
+        def parse_amount_and_unit(raw_value: str):
+            if not raw_value:
+                return None, None
+
+            numeric_value = to_numeric(raw_value)
+            unit_match = re.search(r"[\d\.]+\s*([a-zA-Zµ%]+)", raw_value)
+            unit_value = unit_match.group(1) if unit_match else None
+            return numeric_value, unit_value
+
+        page_text = soup.get_text()
+        if "Nutritional information is not available for this recipe" in page_text:
+            return {}
+
+        ingredients_element = soup.find(class_=self.INGREDIENTS_CLASS)
+        allergens_element = soup.find(class_=self.ALLERGENS_CLASS)
+        name_element = soup.find(self.NAME_QUERY)
+        calories_elements = soup.find_all(id=self.CALORIES_SIZE_ID)
+        nutrition_elements = soup.find_all(id=self.NUTRITION_ID)
+        vitamin_elements = soup.find_all("li")
+
+        if ingredients_element:
+            ingredients_text = ingredients_element.get_text().strip()
+            ingredient_items: List[str] = []
+            ingredient_buffer: List[str] = []
+            parenthesis_depth = 0
+
+            for char in ingredients_text:
+                if char == "(":
+                    parenthesis_depth += 1
+                    ingredient_buffer.append(char)
+                elif char == ")":
+                    parenthesis_depth -= 1
+                    ingredient_buffer.append(char)
+                elif char == "," and parenthesis_depth == 0:
+                    ingredient_value = "".join(ingredient_buffer).strip()
+                    if ingredient_value:
+                        ingredient_items.append(ingredient_value.capitalize())
+                    ingredient_buffer = []
+                else:
+                    ingredient_buffer.append(char)
+
+            final_ingredient_value = "".join(ingredient_buffer).strip()
+            if final_ingredient_value:
+                ingredient_items.append(final_ingredient_value.capitalize())
+            scraped_data["ingredients"] = ingredient_items
+
+        if name_element:
+            scraped_data["name"] = name_element.get_text().strip()
+
+        if allergens_element:
+            allergens_text = allergens_element.get_text().strip()
+            if allergens_text.startswith("Ingredients include"):
+                allergens_text = allergens_text[len("Ingredients include") :]
+            allergen_list = [process_allergen(a) for a in allergens_text.split(",") if a.strip()]
+            scraped_data["allergens"] = allergen_list
+
+        serving_amount, serving_unit = parse_amount_and_unit(safe(0, calories_elements))
+        scraped_data["serving_size"] = {"amount": serving_amount, "dv": None, "unit": serving_unit}
 
         try:
-            # Ingredients
-            ingredients_elements = soup.find_all(class_=self.INGREDIENTS_CLASS)
-            if ingredients_elements:
-                ingredients_parsed = ingredients_elements[0].get_text().split(",")
-                ingredients_list = [item.strip().capitalize() for item in ingredients_parsed]
-                response["Ingredients"] = ingredients_list or []
+            calories_raw_value = safe(1, calories_elements)
+            scraped_data["calories"] = {
+                "amount": int(calories_raw_value) if calories_raw_value else None,
+                "dv": None,
+                "unit": None,
+            }
+        except Exception:
+            scraped_data["calories"] = {"amount": None, "dv": None, "unit": None}
 
-            # Allergens
-            allergens_elements = soup.find_all(class_=self.ALLERGENS_CLASS)
-            if allergens_elements:
-                allergens_text = allergens_elements[0].get_text().strip()
-                allergen_text_truncated = (
-                    allergens_text[len("Ingredients include") :]
-                    if allergens_text.startswith("Ingredients include")
-                    else allergens_text
-                )
-                
-                # Split, process/map, and filter out empty strings
-                raw_allergens = allergen_text_truncated.split(",")
-                print(raw_allergens)
-                processed_allergens = [process_allergen(a) for a in raw_allergens if a.strip()]
-                response["Allergens"] = processed_allergens
+        try:
+            calories_from_fat_raw_value = safe(2, calories_elements)
+            scraped_data["calories_from_fat"] = {
+                "amount": int(calories_from_fat_raw_value) if calories_from_fat_raw_value else None,
+                "dv": None,
+                "unit": None,
+            }
+        except Exception:
+            scraped_data["calories_from_fat"] = {"amount": None, "dv": None, "unit": None}
 
-            # Name
-            name_elements = soup.find_all(self.NAME_QUERY)
-            if name_elements:
-                response["Name"] = name_elements[0].get_text().strip()
+        nutrition_mapping = [
+            ("total_fat", 0, 1),
+            ("total_carbohydrates", 2, 3),
+            ("saturated_fat", 4, 5),
+            ("dietary_fiber", 6, 7),
+            ("trans_fat", 8, 9),
+            ("sugars", 10, 11),
+        ]
 
-            # Serving Size, Calories
-            elements = soup.find_all(id=self.CALORIES_SIZE_ID)
-            response["Serving Size"] = safe_get_text(elements, 0)
-            response["Calories"] = safe_get_text(elements, 1)
-            response["Calories from Fat"] = safe_get_text(elements, 2)
+        for nutrition_key, amount_index, dv_index in nutrition_mapping:
+            nutrition_amount_raw = safe(amount_index, nutrition_elements)
+            nutrition_dv_raw = safe(dv_index, nutrition_elements)
+            numeric_amount, unit_value = parse_amount_and_unit(nutrition_amount_raw)
+            dv_value = to_numeric(nutrition_dv_raw)
+            scraped_data[nutrition_key] = {"amount": numeric_amount, "dv": dv_value, "unit": unit_value}
 
-            # --- Macronutrients ---
-            nutrition_elements = soup.find_all(id=self.NUTRITION_ID)
+        cholesterol_amount, cholesterol_unit = parse_amount_and_unit(safe(12, nutrition_elements))
+        scraped_data["cholesterol"] = {
+            "amount": cholesterol_amount,
+            "dv": to_numeric(safe(13, nutrition_elements)),
+            "unit": cholesterol_unit,
+        }
 
-            # Fat
-            response["Fat"]["Total Fat"]["Amount"] = safe_get_text(nutrition_elements, 0)
-            response["Fat"]["Total Fat"]["Daily Value"] = safe_get_text(nutrition_elements, 1)
-            response["Fat"]["Saturated Fat"]["Amount"] = safe_get_text(nutrition_elements, 4)
-            response["Fat"]["Saturated Fat"]["Daily Value"] = safe_get_text(nutrition_elements, 5)
-            response["Fat"]["Trans Fat"]["Amount"] = safe_get_text(nutrition_elements, 8)
-            response["Fat"]["Trans Fat"]["Daily Value"] = safe_get_text(nutrition_elements, 9)
+        protein_amount, protein_unit = parse_amount_and_unit(safe(14, nutrition_elements))
+        scraped_data["protein"] = {
+            "amount": protein_amount,
+            "dv": to_numeric(safe(15, nutrition_elements)),
+            "unit": protein_unit,
+        }
 
-            # Carbs
-            response["Carbohydrates"]["Total Carbohydrates"]["Amount"] = safe_get_text(
-                nutrition_elements, 2
-            )
-            response["Carbohydrates"]["Total Carbohydrates"]["Daily Value"] = safe_get_text(
-                nutrition_elements, 3
-            )
-            response["Carbohydrates"]["Dietary Fiber"]["Amount"] = safe_get_text(
-                nutrition_elements, 6
-            )
-            response["Carbohydrates"]["Dietary Fiber"]["Daily Value"] = safe_get_text(
-                nutrition_elements, 7
-            )
-            response["Carbohydrates"]["Sugar"]["Amount"] = safe_get_text(nutrition_elements, 10)
-            response["Carbohydrates"]["Sugar"]["Daily Value"] = safe_get_text(
-                nutrition_elements, 11
-            )
+        sodium_amount, sodium_unit = parse_amount_and_unit(safe(16, nutrition_elements))
+        scraped_data["sodium"] = {
+            "amount": sodium_amount,
+            "dv": to_numeric(safe(17, nutrition_elements)),
+            "unit": sodium_unit,
+        }
 
-            # Cholesterol
-            response["Cholesterol"]["Amount"] = safe_get_text(nutrition_elements, 12)
-            response["Cholesterol"]["Daily Value"] = safe_get_text(nutrition_elements, 13)
+        vitamin_keys = ["vitamin_d", "potassium", "calcium", "iron"]
+        for vitamin_index, vitamin_key in enumerate(vitamin_keys):
+            vitamin_dv_value = to_numeric(safe(vitamin_index, vitamin_elements))
+            scraped_data[vitamin_key] = {"amount": None, "dv": vitamin_dv_value, "unit": None}
 
-            # Protein
-            response["Protein"]["Amount"] = safe_get_text(nutrition_elements, 14)
-            response["Protein"]["Daily Value"] = safe_get_text(nutrition_elements, 15)
-
-            # Sodium
-            response["Sodium"]["Amount"] = safe_get_text(nutrition_elements, 16)
-            response["Sodium"]["Daily Value"] = safe_get_text(nutrition_elements, 17)
-
-            # --- Micronutrients (Vitamins) ---
-            vitamin_elements = soup.find_all("li")
-            response["Vitamins"]["Vitamin D"]["Daily Value"] = safe_get_text(vitamin_elements, 0)
-            response["Vitamins"]["Potassium"]["Daily Value"] = safe_get_text(vitamin_elements, 1)
-            response["Vitamins"]["Calcium"]["Daily Value"] = safe_get_text(vitamin_elements, 2)
-            response["Vitamins"]["Iron"]["Daily Value"] = safe_get_text(vitamin_elements, 3)
-            # print(response)
-            return response
-        except Exception as e:
-            logger.error(f"Exception occurred during scraping: {e}", exc_info=True)
-            # Return whatever was scraped so far, or the empty schema
-            return response
+        return scraped_data  # type: ignore
 
 
 def _test_scraper():
     """Test the dining hall menus scraper."""
-    # This link is for "Choice of Toppings", which has full nutrition
-    link = "http://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=680005"
-    
-    # This link is for "Shanghai Pork Noodles", which also has full nutrition
-    # link = "http://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=601067"
-    
-    # This link is for an item that might be missing data (for testing robustness)
-    # link = "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=390047"
-    
+    link = "https://menus.princeton.edu/dining/_Foodpro/online-menu/label.asp?RecNumAndPort=680000"
+
     scraper = Scraper()
-    soup = scraper.get_html(link=link)
-    info = scraper.get_info(soup=soup)
+    scraped_data = scraper.scrape_api_url(api_url=link)
+    pprint.pprint(scraped_data)
+
+    """
+    Example output:
+    {'allergens': ['Fish', 'Soybeans', 'Alcohol'],
+    'calcium': {'amount': None, 'dv': 1, 'unit': None},
+    'calories': {'amount': 45, 'dv': None, 'unit': None},
+    'calories_from_fat': {'amount': None, 'dv': None, 'unit': None},
+    'cholesterol': {'amount': 12, 'dv': None, 'unit': 'mg'},
+    'dietary_fiber': {'amount': Decimal('0.4'), 'dv': 1, 'unit': 'g'},
+    'ingredients': ['Chipotle beef (ground beef vegetable blend (grass-fed beef, '
+                    'spare starter (cauliflower, zucchini, tomato, onion, '
+                    'eggplant, salt, garlic powder, black pepper), carrot fiber), '
+                    'tomato strips, chipotle peppers)',
+                    'Cumin tofu (tofu, cumin, smoked paprika, coriander, black '
+                    'pepper, kosher salt)',
+                    'Chipotle honey chicken (halal chicken breast, hot sauce '
+                    '(aged cayenne red peppers, vinegar, water, salt, garlic '
+                    'powder.), honey, chipotle peppers)',
+                    'Dijon salmon (salmon filet, dijon mustard (water, vinegar, '
+                    'mustard seed, salt, white wine, fruit pectin, citric  acid, '
+                    'tartaric acid, sugar, spice.), flat leaf parsley, whole '
+                    'grain mustard (water, mustard seeds, vinegar, salt))'],
+    'iron': {'amount': None, 'dv': 3, 'unit': None},
+    'name': 'Choice of Beef Chicken Salmon or Tofu',
+    'potassium': {'amount': None, 'dv': 2, 'unit': None},
+    'protein': {'amount': 5, 'dv': None, 'unit': 'g'},
+    'saturated_fat': {'amount': Decimal('0.6'), 'dv': 2, 'unit': 'g'},
+    'serving_size': {'amount': 6, 'dv': None, 'unit': 'oz'},
+    'sodium': {'amount': Decimal('128.9'), 'dv': 6, 'unit': 'mg'},
+    'sugars': {'amount': Decimal('0.7'), 'dv': None, 'unit': 'g'},
+    'total_carbohydrates': {'amount': Decimal('1.3'), 'dv': 1, 'unit': 'g'},
+    'total_fat': {'amount': Decimal('2.1'), 'dv': 3, 'unit': 'g'},
+    'trans_fat': {'amount': Decimal('0.1'), 'dv': None, 'unit': 'g'},
+    'vitamin_d': {'amount': None, 'dv': 0, 'unit': None}}
+    """
+
 
 if __name__ == "__main__":
-    # Configure a simple logger for testing if run directly
-    import logging
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-    
     _test_scraper()

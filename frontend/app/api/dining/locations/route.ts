@@ -5,7 +5,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -13,55 +13,64 @@
  */
 
 import { NextResponse } from 'next/server';
-import { request } from '@/lib/http';
-import type { DiningLocation } from '@/types/dining';
-import toCamelCase from '@/utils/toCamelCase';
+import { getDiningLocations } from '@/lib/endpoints';
 
-const ROUTE = '/api/dining/locations';
 const DEBUG = process.env.NODE_ENV === 'development';
 
+/**
+ * Fetches dining locations data.
+ *
+ * @param req - The HTTP request object.
+ * @returns A NextResponse object with the dining locations data.
+ */
 export async function GET(req: Request) {
   try {
+    // Get the query parameters from the request.
     const { searchParams } = new URL(req.url);
     const fmt = searchParams.get('fmt') ?? 'xml';
+    const categoryId = searchParams.get('category_id') ?? '2';
 
-    const res = await request.get<any>()(ROUTE, { arg: { category_id: '2', fmt } });
-    DEBUG && console.log('Backend response:', res);
-
-    const locations =
-      fmt === 'xml'
-        ? res.data?.locations?.location ?? []
-        : Array.isArray(res.data)
-          ? res.data
-          : res.data?.data ?? [];
-
-    if (!locations?.length)
+    // If the category_id is not valid, return a 400 response.
+    if (!categoryId || !['2', '3'].includes(categoryId)) {
       return NextResponse.json(
         {
-          error: 'No dining locations found',
-          message: 'No dining locations available',
+          status: 400,
+          message: 'Invalid category_id',
+          data: null,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Fetch dining locations data from the backend.
+    const res = await getDiningLocations({ category_id: categoryId, fmt });
+
+    // If no locations are found, return a 404 response.
+    if (!res.data) {
+      return NextResponse.json(
+        {
           status: 404,
-          data: []
+          message: `No dining locations found for category_id ${categoryId}`,
+          data: null,
         },
         { status: 404 }
       );
+    }
 
+    // Return the response from the backend.
     return NextResponse.json({
-      data: toCamelCase(locations),
+      status: 200,
       message: 'Successfully fetched dining locations',
-      status: 200
+      data: res.data,
     });
   } catch (error: unknown) {
+    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
     const message = error instanceof Error ? error.message : 'Unexpected error';
-    const details = DEBUG ? (error instanceof Error ? error.stack : String(error)) : undefined;
     const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
+    const details = error instanceof Error ? error.stack : String(error);
     return NextResponse.json(
-      {
-        error: 'Failed to fetch dining locations',
-        message,
-        ...(details && { details })
-      },
+      { status, message, data: null, ...(DEBUG && { details }) },
       { status }
     );
   }

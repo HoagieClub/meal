@@ -20,6 +20,7 @@ import Layout from '@/lib/hoagie-ui/Layout';
 import Nav from '@/lib/hoagie-ui/Nav';
 import Theme from '@/lib/hoagie-ui/Theme';
 import { Toaster } from '@/components/ui/sonner';
+import AuthStorageCleanup from '@/components/auth-storage-cleanup';
 import { hoagie } from '@/app/hoagie';
 
 import '@/app/globals.css';
@@ -50,7 +51,6 @@ async function Content({ children }: { children: ReactNode }): Promise<React.JSX
 
   const tabs = [
     { title: 'Menu', href: '/menu' },
-    { title: 'Goals', href: '/goals' },
     { title: 'About', href: '/about' },
     // { title: 'Profile', href: '/profile' },
   ];
@@ -75,7 +75,11 @@ async function Content({ children }: { children: ReactNode }): Promise<React.JSX
  */
 export default function RootLayout({ children }: { children: ReactNode }): React.JSX.Element {
   return (
-    <html lang='en' className={`bg-hoagiemeal-dark-green ${poppins.className}`}>
+    <html
+      lang='en'
+      className={`bg-hoagiemeal-dark-green ${poppins.className}`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -84,7 +88,8 @@ export default function RootLayout({ children }: { children: ReactNode }): React
         />
       </head>
       <UserProvider>
-        <body className='antialiased'>
+        <body className='antialiased' suppressHydrationWarning>
+          <AuthStorageCleanup />
           <Content>{children}</Content>
           <Analytics />
           <SpeedInsights />

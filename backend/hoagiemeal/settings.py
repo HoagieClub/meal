@@ -5,6 +5,20 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
+
+Copyright © 2021-2025 Hoagie Club and affiliates.
+
+Licensed under the MIT License. You may obtain a copy of the License at:
+
+    https://github.com/hoagieclub/meal/blob/main/LICENSE
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, subject to the following conditions:
+
+This software is provided "as-is", without warranty of any kind.
 """
 
 import os
@@ -23,7 +37,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
+DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t", "True")
+
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -86,9 +101,7 @@ WSGI_APPLICATION = "hoagiemeal.wsgi.application"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 os.environ["DATABASE_URL"] = os.getenv("TEST_DATABASE_URL") if DEBUG else os.getenv("DATABASE_URL")
-DATABASES = {
-    "default": dj_database_url.config(default=os.getenv("DATABASE_URL"), ssl_require=False)
-}
+DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"), ssl_require=False)}
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 # Set the custom user model for Hoagie Meal

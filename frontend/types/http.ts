@@ -24,10 +24,10 @@ type MethodConfig<M extends HttpMethod> = {
 
 // Base response type
 export type ApiResponse<T> = {
-  status?: number;
-  data?: T;
-  message?: string;
-  error?: string;
+  status: number;
+  error: string | null;
+  message: string;
+  data: T | null;
 };
 
 // Prevent body in GET requests
@@ -57,7 +57,6 @@ export interface HoagieRequest {
 }
 
 // SWR-specific options. Read the docs: https://swr.vercel.app/docs/getting-started
-// Goes into the hooks as configuration options for SWR. See @/hooks/use-endpoints
 export interface FetchConfig {
   revalidateOnFocus?: boolean; // Revalidate on window focus
   revalidateOnReconnect?: boolean; // Revalidate on network reconnect
