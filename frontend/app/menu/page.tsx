@@ -20,7 +20,6 @@ import DiningHallCard from '@/app/menu/components/dining-hall-card';
 import HallMenuModal from '@/app/menu/components/hall-menu-modal';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
 import FilterSidebar from '@/app/menu/components/filter-sidebar';
-import AllergenSidebar from '@/app/menu/components/allergen-sidebar';
 import DateMealSelector from '@/app/menu/components/date-meal-selector';
 import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
@@ -306,7 +305,8 @@ export default function MenuPage() {
         display='grid'
         overflowY='auto'
         paddingBottom={majorScale(6)}
-        gridTemplateColumns='repeat(auto-fill,minmax(400px,1fr))'
+        paddingRight={majorScale(3)}
+        gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
         gap={majorScale(2)}
         className='h-full no-scrollbar'
       >
@@ -331,7 +331,7 @@ export default function MenuPage() {
   return (
     <Pane
       display='flex'
-      className='sm:flex-row overflow-hidden min-h-screen flex-col'
+      className='sm:flex-row overflow-hidden min-h-screen flex-col transition-colors duration-300'
       background={MEAL_COLOR_MAP(theme)[meal]}
     >
       {/* Filter sidebar for desktop*/}
@@ -366,16 +366,16 @@ export default function MenuPage() {
             display='flex'
             alignItems='center'
             justifyContent='space-between'
-            marginY={majorScale(3)}
+            marginY={majorScale(2)}
             className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
           >
             {/* Render the meal header */}
             <Pane width={240}>
-              <Heading className='text-4xl' color={theme.colors.green700} fontWeight={900}>
+              <Heading className='text-5xl' color={theme.colors.green700} fontWeight={900}>
                 {meal.toUpperCase()}
               </Heading>
               <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
-                {/* {MEAL_RANGES[meal as Meal as keyof typeof MEAL_RANGES]} */}
+                {MEAL_RANGES[meal]}
               </Text>
             </Pane>
 
@@ -435,8 +435,6 @@ export default function MenuPage() {
         </Pane>
       </Pane>
 
-      {/* Render the allergen sidebar for mobile */}
-      {hideSidebar && <AllergenSidebar allergens={allergens} toggleAllergen={toggleAllergen} />}
 
       {/* Render the hall menu modal */}
       <HallMenuModal

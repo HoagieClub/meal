@@ -75,7 +75,7 @@ export function useDate() {
   const formatDateForDisplay = (date: Date): string => {
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
-      month: 'numeric',
+      month: 'short',
       day: 'numeric',
     });
   };

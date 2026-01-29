@@ -30,8 +30,8 @@ import {
   Popover,
   Position,
 } from 'evergreen-ui';
-import { ALLERGEN_EMOJI_MAP, DIET_LABEL_MAP } from '@/data';
-import { ALLERGEN_STYLE_MAP, DIET_STYLE_MAP, HALL_ICON_MAP } from '@/styles';
+import { ALLERGEN_ICON_MAP, DIET_ICON_MAP, DINING_HALL_DISPLAY_NAMES } from '@/data';
+import { HALL_ICON_MAP } from '@/styles';
 import {
   DiningHall,
   DietaryTag,
@@ -119,14 +119,14 @@ export default function FilterSidebar({
     checked: boolean;
     onChange: () => void;
   }) => {
-    const diningHallText = diningHall.replace(' Colleges', '').replace(' College', '');
+    const diningHallText = DINING_HALL_DISPLAY_NAMES[diningHall] ?? diningHall;
 
     // Render the dining hall row.
     return (
-      <Pane display='flex' alignItems='center' marginBottom='2px'>
-        <Checkbox checked={checked} onChange={onChange} />
-        <Pane marginX={minorScale(2)}>
-          <img src={HALL_ICON_MAP[diningHall]} alt={diningHall} width={20} height={20} />
+      <Pane display='flex' alignItems='center' height={30} cursor='pointer' onClick={onChange}>
+        <Checkbox checked={checked} onChange={onChange} className="[&_input:checked+div]:!bg-green-700" />
+        <Pane marginLeft={minorScale(2)} marginRight={minorScale(1)}>
+          <img src={HALL_ICON_MAP[diningHall]} alt={diningHall} width={15} height={15} />
         </Pane>
         <Text size={300} color={theme.colors.gray900}>
           {diningHallText}
@@ -152,27 +152,14 @@ export default function FilterSidebar({
     checked: boolean;
     onChange: () => void;
   }) => {
-    const style = DIET_STYLE_MAP(theme)[dietKey as DietaryTag];
     const isHalalOrKosher = dietKey === 'Halal' || dietKey === 'Kosher';
 
     // Render the dietary tag row.
     return (
-      <Pane display='flex' alignItems='center' marginBottom={minorScale(1)}>
-        <Checkbox checked={checked} onChange={onChange} />
-        <Pane
-          width={20}
-          height={20}
-          borderRadius={3}
-          background={style?.bg}
-          display='flex'
-          alignItems='center'
-          justifyContent='center'
-          marginX={minorScale(2)}
-          className='p-1'
-        >
-          <Text className='text-xs' color={style?.color} fontWeight={600}>
-            {DIET_LABEL_MAP[dietKey]}
-          </Text>
+      <Pane display='flex' alignItems='center' height={30} cursor='pointer' onClick={onChange}>
+        <Checkbox checked={checked} onChange={onChange} className="[&_input:checked+div]:!bg-green-700" />
+        <Pane marginLeft={minorScale(2)} marginRight={minorScale(1)}>
+          <img src={DIET_ICON_MAP[dietKey]} alt={dietKey} width={15} height={15} />
         </Pane>
         <Text size={300} color={theme.colors.gray900}>
           {dietKey}
@@ -219,26 +206,12 @@ export default function FilterSidebar({
     checked: boolean;
     onChange: () => void;
   }) => {
-    const style = ALLERGEN_STYLE_MAP(theme)[allergen as Allergen];
-    const emoji = ALLERGEN_EMOJI_MAP[allergen];
-
     // Render the allergen row.
     return (
-      <Pane display='flex' alignItems='center' marginBottom={minorScale(1)}>
-        <Checkbox checked={checked} onChange={onChange} />
-        <Pane
-          width={20}
-          height={20}
-          borderRadius={999}
-          background={style?.bg}
-          display='flex'
-          alignItems='center'
-          justifyContent='center'
-          marginX={minorScale(2)}
-        >
-          <Text className='text-xs' color={style?.color}>
-            {emoji}
-          </Text>
+      <Pane display='flex' alignItems='center' height={30} cursor='pointer' onClick={onChange}>
+        <Checkbox checked={checked} onChange={onChange} className="[&_input:checked+div]:!bg-green-700" />
+        <Pane marginLeft={minorScale(2)} marginRight={minorScale(1)}>
+          <img src={ALLERGEN_ICON_MAP[allergen]} alt={allergen} width={15} height={15} />
         </Pane>
         <Text size={300} color={theme.colors.gray900}>
           {allergen}
@@ -312,11 +285,12 @@ export default function FilterSidebar({
               setSearchTerm('');
             }}
             background={theme.colors.gray100}
-            marginBottom={minorScale(2)}
-          >
+            marginBottom={minorScale(1)}
+            className='rounded-sm w-fit py-1 px-2 -ml-2 -mt-2 space-x-1 transition-colors duration-200 hover:bg-gray-200'
+            >
             <UndoIcon size={14} color={theme.colors.gray700} />
             <Text marginLeft={minorScale(1)} size={300} color={theme.colors.gray700}>
-              Reset Filters
+              Reset
             </Text>
           </Pane>
           <Pane borderBottom={`1px solid ${theme.colors.gray200}`} marginBottom={minorScale(2)} />
@@ -331,7 +305,7 @@ export default function FilterSidebar({
             Search Food
           </Text>
           <SearchInput
-            placeholder='Type to filter...'
+            placeholder='Search for food...'
             value={searchTerm}
             onChange={(e: any) => setSearchTerm(e.target.value)}
           />
@@ -348,12 +322,26 @@ export default function FilterSidebar({
             <Text size={300} fontWeight={600} color={theme.colors.gray800}>
               Show Nutrition
             </Text>
-            <Switch checked={showNutrition} onChange={toggleShowNutrition} />
+            <Switch
+              checked={showNutrition}
+              onChange={toggleShowNutrition}
+              className="[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none"
+            />
           </Pane>
 
           {/* Sort dropdown */}
-          <Pane marginBottom={minorScale(3)}>
-            <SortDropdown sortOption={sortOption} setSortOption={setSortOption} />
+          <Pane
+            display='flex'
+            alignItems='center'
+            justifyContent='space-between'
+            marginBottom={minorScale(3)}
+          >
+            <Text size={300} fontWeight={600} color={theme.colors.gray800}>
+              Sort By
+            </Text>
+            <Pane width='65%'>
+              <SortDropdown sortOption={sortOption} setSortOption={setSortOption} />
+            </Pane>
           </Pane>
           <Pane borderBottom={`1px solid ${theme.colors.gray200}`} />
         </Pane>
@@ -372,9 +360,9 @@ export default function FilterSidebar({
               {filtersOpen ? 'Hide Filters' : 'Filter By'}
             </Text>
             {filtersOpen ? (
-              <ChevronUpIcon size={16} color='green600' />
+              <ChevronUpIcon size={16} color='gray700' />
             ) : (
-              <ChevronDownIcon size={16} color='green600' />
+              <ChevronDownIcon size={16} color='gray700' />
             )}
           </Pane>
 

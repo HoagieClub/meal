@@ -13,6 +13,7 @@
  */
 
 import React from 'react';
+import Image from 'next/image';
 import { Pane, Text, useTheme, minorScale } from 'evergreen-ui';
 import { MenuItem } from '@/types/types';
 import { useMenuItemLikeDislike } from '@/hooks/use-menu-item-like-dislike';
@@ -34,45 +35,67 @@ export const MiniLikeDislikeButtons = ({ item }: { item: MenuItem }) => {
     item.metrics
   );
 
-  // Render the mini like/dislike buttons
+  // Render the mini like/dislike buttons (YouTube-style pill)
   return (
-    <Pane display='flex' flexDirection='column' alignItems='center'>
+    <Pane
+      display='flex'
+      alignItems='center'
+      borderRadius={999}
+      overflow='hidden'
+    >
       {/* Like button */}
-      <Pane display='flex' alignItems='center' gap={minorScale(2)}>
-        <Text size={300}>{likeCount}</Text>
-        <Pane
-          onClick={handleLike}
-          cursor='pointer'
-          padding={2}
-          background={userLiked === true ? theme.colors.green100 : 'transparent'}
-          borderRadius={999}
-          title='Like this item'
-          transition='all 0.2s'
-          className='hover:opacity-80'
-        >
-          <Text fontSize={16} lineHeight={1}>
-            👍
-          </Text>
-        </Pane>
+      <Pane
+        display='flex'
+        alignItems='center'
+        justifyContent='center'
+        gap={minorScale(1)}
+        onClick={handleLike}
+        cursor='pointer'
+        paddingX={minorScale(3)}
+        paddingY={minorScale(1)}
+        className={"hover:bg-green-50" + (userLiked === true ? " bg-green-50" : " transparent")}
+        title='Like this item'
+        transition='all 0.2s'
+      >
+        <Image
+          src={userLiked === true ? '/images/icons/like-solid.svg' : '/images/icons/like.svg'}
+          alt='Like'
+          width={15}
+          height={15}
+          style={{ display: 'block' }}
+        />
+        <Text size={300} fontWeight={500}>
+          {likeCount}
+        </Text>
       </Pane>
 
+      {/* Divider */}
+      <Pane width={2} height={20} background={theme.colors.gray500} />
+
       {/* Dislike button */}
-      <Pane display='flex' alignItems='center' gap={minorScale(2)}>
-        <Text size={300}>{dislikeCount}</Text>
-        <Pane
-          onClick={handleDislike}
-          cursor='pointer'
-          padding={2}
-          background={userLiked === false ? theme.colors.red100 : 'transparent'}
-          borderRadius={999}
-          title='Dislike this item'
-          transition='all 0.2s'
-          className='hover:opacity-80'
-        >
-          <Text fontSize={16} lineHeight={1}>
-            👎
-          </Text>
-        </Pane>
+      <Pane
+        display='flex'
+        alignItems='center'
+        justifyContent='center'
+        gap={minorScale(1)}
+        onClick={handleDislike}
+        cursor='pointer'
+        paddingX={minorScale(3)}
+        paddingY={minorScale(1)}
+        className={"hover:bg-red-50" + (userLiked === false ? " bg-red-50" : " transparent")}
+        title='Dislike this item'
+        transition='all 0.2s'
+      >
+        <Image
+          src={userLiked === false ? '/images/icons/dislike-solid.svg' : '/images/icons/dislike.svg'}
+          alt='Dislike'
+          width={15}
+          height={15}
+          style={{ display: 'block' }}
+        />
+        <Text size={300} fontWeight={500}>
+          {dislikeCount}
+        </Text>
       </Pane>
     </Pane>
   );

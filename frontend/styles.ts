@@ -15,12 +15,13 @@
 import cjlIcon from '@/public/images/icons/cjl.png';
 import forbesIcon from '@/public/images/icons/forbes.png';
 import whitmanIcon from '@/public/images/icons/whitman.png';
+import whitmanButlerIcon from '@/public/images/icons/whitman-butler.png';
 import yehIcon from '@/public/images/icons/yeh.png';
 import rockyIcon from '@/public/images/icons/rocky.png';
 import cjlBanner from '@/public/images/banners/cjl-banner.png';
 import forbesBanner from '@/public/images/banners/forbesbanner.png';
 import matheyBanner from '@/public/images/banners/rockybanner.png';
-import whitmanBanner from '@/public/images/banners/whitmanbanner.png';
+import whitmanBanner from '@/public/images/banners/whitmanbutlerbanner.png';
 import yehBanner from '@/public/images/banners/yehbanner.png';
 import { Meal, Allergen, DietaryTag, DiningHall } from '@/types/types';
 import { Theme } from 'evergreen-ui';
@@ -63,10 +64,6 @@ export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<Allergen, any> => ({
     bg: theme.colors.purple100,
     color: theme.colors.purple900,
   },
-  Gluten: {
-    bg: theme.colors.orange100,
-    color: theme.colors.orange900,
-  },
   Fish: { bg: theme.colors.blue100, color: theme.colors.blue900 },
   Sesame: {
     bg: theme.colors.orange100,
@@ -78,7 +75,7 @@ export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<Allergen, any> => ({
 export const HALL_ICON_MAP: Record<DiningHall, string> = {
   'Center for Jewish Life': cjlIcon.src,
   'Forbes College': forbesIcon.src,
-  'Whitman & Butler Colleges': whitmanIcon.src,
+  'Whitman & Butler Colleges': whitmanButlerIcon.src,
   'Yeh College & NCW': yehIcon.src,
   'Mathey & Rockefeller Colleges': rockyIcon.src,
 };
@@ -94,9 +91,9 @@ export const HALL_BANNER_MAP: Record<DiningHall, StaticImageData> = {
 
 // Meal color map that maps from meal type to their corresponding color.
 export const MEAL_COLOR_MAP = (theme: Theme): Record<Meal, string> => ({
-  Breakfast: theme.colors.green100 as string,
-  Lunch: theme.colors.green200 as string,
-  Dinner: theme.colors.green300 as string,
+  Breakfast: "#ebf7f2",
+  Lunch: "#daefe8",
+  Dinner: "#cae6dc",
 });
 
 // Diet style map that maps from dietary tag type to their corresponding style.
@@ -110,6 +107,10 @@ export const DIET_STYLE_MAP = (theme: Theme): Record<DietaryTag, any> => ({
   Kosher: {
     bg: theme.colors.purple100,
     color: theme.colors.purple900,
+  },
+  'Gluten Free': {
+    bg: theme.colors.orange100,
+    color: theme.colors.orange900,
   },
 });
 

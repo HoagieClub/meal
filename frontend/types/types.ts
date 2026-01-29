@@ -156,9 +156,9 @@ export type Allergen =
   | 'Soybeans'
   | 'Crustacean'
   | 'Alcohol'
-  | 'Gluten'
   | 'Fish'
-  | 'Sesame';
+  | 'Sesame'
+  | 'Gluten';
 
 // Known allergens that may be present in menu items.
 export const ALLERGENS: Allergen[] = [
@@ -170,9 +170,9 @@ export const ALLERGENS: Allergen[] = [
   'Soybeans',
   'Crustacean',
   'Alcohol',
-  'Gluten',
   'Fish',
   'Sesame',
+  'Gluten',
 ];
 
 // Available dining halls at the institution.
