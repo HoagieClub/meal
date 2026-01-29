@@ -86,7 +86,7 @@ export const MiniLikeDislikeButtons = ({ item }: { item: MenuItem }) => {
         </Text>
       </Pane>
 
-      <Pane width={1} height="100%" background={theme.colors.gray500} />
+      <Pane width={1} alignSelf='stretch' background={theme.colors.gray500} />
 
       {/* Dislike button */}
       <Pane

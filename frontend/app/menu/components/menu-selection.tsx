@@ -46,11 +46,7 @@ const MenuSection = ({
   if (fullMenu) {
     columns = toggledColumns;
   } else {
-    if (showNutrition) {
-      columns = ['Calories'];
-    } else {
-      columns = [];
-    }
+    columns = [];
   }
 
   // Determine the items to display.
@@ -76,7 +72,7 @@ const MenuSection = ({
           {/* Section header */}
           <Pane
             display='grid'
-            gridTemplateColumns={`2fr ${columns?.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} ${fullMenu ? '1fr 1fr' : '1fr'}`}
+            gridTemplateColumns={`2fr ${columns?.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} auto${fullMenu ? ' 1fr' : ''}`}
             columnGap={minorScale(2)}
             rowGap={minorScale(1)}
             borderBottom={`1px solid ${theme.colors.green300}`}
@@ -90,9 +86,8 @@ const MenuSection = ({
                 {column}
               </Text>
             ))}
-            <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
-              Likes
-            </Text>
+            {/* Empty column for favorite/likes buttons (no header) */}
+            <Pane />
             {fullMenu && (
               <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
                 Views

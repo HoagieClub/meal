@@ -19,6 +19,7 @@ import { Pane, Text, minorScale, majorScale, useTheme } from 'evergreen-ui';
 import { ALLERGEN_ICON_MAP, DIET_ICON_MAP } from '@/data';
 import { Allergen, DietaryTag, MenuItem } from '@/types/types';
 import { MiniLikeDislikeButtons } from '@/components/mini-like-dislike-button';
+import { MiniFavoriteButton } from '@/components/mini-favorite-button';
 import { Column } from '@/types/types';
 
 /**
@@ -64,7 +65,6 @@ export default function MenuItemRow({
       ? item?.allergens.join(', ').slice(0, allergenCharacterLimit) + '...'
       : item?.allergens?.join(', ') || 'No allergens';
   const nutritionLink = `/nutrition?apiId=${menuItemApiId}`;
-  const isFavorited = item?.userInteraction?.favorited ?? false;
   const viewCount = item?.metrics?.viewCount ?? 0;
 
   // Map the columns to their corresponding values.
@@ -120,7 +120,7 @@ export default function MenuItemRow({
     <React.Fragment key={menuItemApiId}>
       <Pane
         display='grid'
-        gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} ${fullMenu ? '1fr 1fr' : '1fr'}`}
+        gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} auto${fullMenu ? ' 1fr' : ''}`}
         rowGap={minorScale(1)}
         columnGap={minorScale(2)}
         borderBottom={`0.9px solid ${theme.colors.green300}`}
@@ -134,11 +134,6 @@ export default function MenuItemRow({
             target='_blank'
           >
             {item.name}
-            {isFavorited && (
-              <span style={{ color: theme.colors.yellow800 }} title='Favorited'>
-                {' '}⭐
-              </span>
-            )}
           </a>{' '}
           {showIcons(item)}
         </Pane>
@@ -158,14 +153,15 @@ export default function MenuItemRow({
           </Text>
         ))}
 
-        {/* Display the like/dislike buttons. */}
+        {/* Display the favorite and like/dislike buttons. */}
         <Pane
           display='flex'
-          flexDirection='column'
-          alignItems='flex-end'
-          justifyContent='center'
-          marginRight={-majorScale(1)}
+          flexDirection='row'
+          alignItems='center'
+          justifyContent='flex-end'
+          gap={minorScale(1)}
         >
+          <MiniFavoriteButton item={item} />
           <MiniLikeDislikeButtons item={item} />
         </Pane>
 
