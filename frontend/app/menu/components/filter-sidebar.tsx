@@ -409,7 +409,7 @@ export default function FilterSidebar({
                 Dietary Tags
               </Text>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                {DIETARY_TAGS.map((dietKey: DietaryTag) => (
+                {DIETARY_TAGS.filter(tag => tag !== 'Halal' && tag !== 'Kosher').map((dietKey: DietaryTag) => (
                   <DietaryTagRow
                     key={dietKey}
                     dietKey={dietKey}

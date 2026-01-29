@@ -15,7 +15,7 @@
 'use client';
 
 import React from 'react';
-import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
+import { Pane, Text, minorScale, majorScale, useTheme } from 'evergreen-ui';
 import { ALLERGEN_ICON_MAP, DIET_ICON_MAP } from '@/data';
 import { Allergen, DietaryTag, MenuItem } from '@/types/types';
 import { MiniLikeDislikeButtons } from '@/components/mini-like-dislike-button';
@@ -89,11 +89,7 @@ export default function MenuItemRow({
     const itemAllergens = (item?.allergens as Allergen[]) || [];
 
     if (itemDietaryFlags.length === 0 && itemAllergens.length === 0) {
-      return (
-        <Text color='muted' fontStyle='italic'>
-          No allergens
-        </Text>
-      );
+      return;
     }
 
     // Build a case-insensitive lookup for DIET_ICON_MAP since the backend
@@ -104,14 +100,16 @@ export default function MenuItemRow({
 
     return (
       <>
-        {itemDietaryFlags.map((flag) => {
-          const icon = dietIconLookup[flag.toLowerCase()];
-          return icon ? (
-            <img key={flag} src={icon} alt={flag} title={flag} width={20} height={20} />
-          ) : null;
-        })}
+        {itemDietaryFlags
+          .filter(flag => flag.toLowerCase() !== 'halal' && flag.toLowerCase() !== 'kosher')
+          .map((flag) => {
+            const icon = dietIconLookup[flag.toLowerCase()];
+            return icon ? (
+              <img key={flag} src={icon} alt={flag} title={flag} width={14} height={14} style={{ display: 'inline', marginRight: minorScale(1), verticalAlign: 'middle' }} />
+            ) : null;
+          })}
         {itemAllergens.map((allergen: Allergen) => (
-          <img key={allergen} src={ALLERGEN_ICON_MAP[allergen]} alt={allergen} title={allergen} width={20} height={20} />
+          <img key={allergen} src={ALLERGEN_ICON_MAP[allergen]} alt={allergen} title={allergen} width={14} height={14} style={{ display: 'inline', marginRight: minorScale(1), verticalAlign: 'middle' }} />
         ))}
       </>
     );
@@ -125,34 +123,24 @@ export default function MenuItemRow({
         gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} ${fullMenu ? '1fr 1fr' : '1fr'}`}
         rowGap={minorScale(1)}
         columnGap={minorScale(2)}
-        marginTop={minorScale(1)}
         borderBottom={`0.9px solid ${theme.colors.green300}`}
       >
-        <Pane display='flex' flexDirection='column' marginY={majorScale(1)}>
-          {/* Display the menu item name and favorite icon if the item is favorited. */}
-          <Pane display='flex' alignItems='center' gap={minorScale(1)}>
-            <Link
-              href={nutritionLink}  
-              style={{ textDecoration: 'none' }}
-              className='hover:underline'
-              target='_blank'
-            >
-              <Text color='green700' fontWeight={500}>
-                {item.name}{' '}
-                {isFavorited && (
-                  <Text fontSize={16} color={theme.colors.yellow800} title='Favorited'>
-                    {' '}
-                    ⭐
-                  </Text>
-                )}
-              </Text>
-            </Link>
-          </Pane>
-
-          {/* Display the allergens for the menu item. */}
-          <Pane display='flex' flexWrap='wrap' gap={minorScale(1)} marginTop={minorScale(1)}>
-            {showIcons(item)}
-          </Pane>
+        <Pane marginY={majorScale(1)} style={{ fontSize: 14, fontWeight: 500, color: 'black', lineHeight: 1.2 }}>
+          {/* Display the menu item name, favorite icon, and allergens. */}
+          <a
+            href={nutritionLink}
+            style={{ textDecoration: 'none', color: 'inherit', paddingRight: minorScale(1) }}
+            className='hover:underline'
+            target='_blank'
+          >
+            {item.name}
+            {isFavorited && (
+              <span style={{ color: theme.colors.yellow800 }} title='Favorited'>
+                {' '}⭐
+              </span>
+            )}
+          </a>{' '}
+          {showIcons(item)}
         </Pane>
 
         {/* Display the values for the columns. */}
@@ -176,8 +164,7 @@ export default function MenuItemRow({
           flexDirection='column'
           alignItems='flex-end'
           justifyContent='center'
-          gap={minorScale(1)}
-          marginY={majorScale(1)}
+          marginRight={-majorScale(1)}
         >
           <MiniLikeDislikeButtons item={item} />
         </Pane>

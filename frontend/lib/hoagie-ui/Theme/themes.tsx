@@ -17,17 +17,17 @@ export const hoagieUI = mergeTheme(defaultTheme, {
     gray90: '#FBFBFB',
     gray75: '#FCFCFC',
     gray50: '#FFFFFF',
-    green900: '#10261E',
-    green800: '#214C3C',
-    green700: '#317159',
-    green600: '#429777',
-    green500: '#52BD95',
-    green400: '#75CAAA',
-    green300: '#97D7BF',
-    green200: '#BAE5D5',
-    green100: '#DCF2EA',
-    green50: '#EBF0FF',
-    green25: '#F5FBF8',
+    green900: '#052e16', // Tailwind green-950
+    green800: '#14532d', // Tailwind green-900
+    green700: '#166534', // Tailwind green-800
+    green600: '#15803d', // Tailwind green-700
+    green500: '#16a34a', // Tailwind green-600
+    green400: '#22c55e', // Tailwind green-500
+    green300: '#4ade80', // Tailwind green-400
+    green200: '#86efac', // Tailwind green-300
+    green100: '#bbf7d0', // Tailwind green-200
+    green50: '#dcfce7', // Tailwind green-100
+    green25: '#f0fdf4', // Tailwind green-50
     red700: '#7D2828',
     red600: '#A73636',
     red500: '#D14343',
@@ -51,12 +51,12 @@ export const hoagieUI = mergeTheme(defaultTheme, {
     muted: '#808080',
     default: '#343434',
     dark: '#000000',
-    selected: '#52BD95',
-    tint1: '#F5FBF8',
-    tint2: '#F5FBF8',
-    overlay: 'rgba(16, 38, 30, 0.7)',
+    selected: '#008001', // hoagiemeal-dark-green
+    tint1: '#f0fdf4', // Tailwind green-50
+    tint2: '#f0fdf4', // Tailwind green-50
+    overlay: 'rgba(5, 46, 22, 0.7)', // updated to match Tailwind green-950
     yellowTint: '#FFEFD2',
-    greenTint: '#F5FBF8',
+    greenTint: '#f0fdf4', // Tailwind green-50
     orangeTint: '#FFFAF2',
     redTint: '#FDF4F4',
     blueTint: '#F3F6FF',
@@ -70,12 +70,12 @@ export const hoagieUI = mergeTheme(defaultTheme, {
       default: '#808080',
       muted: '#D2D2D2',
       disabled: '#D2D2D2',
-      selected: '#52BD95', // green500
+      selected: '#008001', // hoagiemeal-dark-green
     },
     text: {
       danger: '#D14343',
-      success: '#52BD95',
-      info: '#52BD95', // green500
+      success: '#008001', // hoagiemeal-dark-green
+      info: '#008001', // hoagiemeal-dark-green
     },
     'hoagie-orange': '#DE7548',
   },
@@ -86,8 +86,8 @@ export const hoagieUI = mergeTheme(defaultTheme, {
       backgroundColor: '#F1F1F1',
     },
     green: {
-      color: '#429777', // green600
-      backgroundColor: '#DCF2EA', // green100
+      color: '#15803d', // Tailwind green-700
+      backgroundColor: '#bbf7d0', // Tailwind green-200
     },
     red: {
       color: '#7D2828',
@@ -113,16 +113,16 @@ export const hoagieUI = mergeTheme(defaultTheme, {
   intents: {
     ...defaultTheme.intents,
     info: {
-      background: '#F5FBF8', // greenTint
-      border: '#52BD95', // green500
-      text: '#429777', // green600
-      icon: '#52BD95', // green500
+      background: '#f0fdf4', // Tailwind green-50
+      border: '#008001', // hoagiemeal-dark-green
+      text: '#15803d', // Tailwind green-700
+      icon: '#008001', // hoagiemeal-dark-green
     },
     success: {
-      background: '#F5FBF8', // greenTint
-      border: '#52BD95', // green500
-      text: '#317159', // green700
-      icon: '#52BD95', // green500
+      background: '#f0fdf4', // Tailwind green-50
+      border: '#008001', // hoagiemeal-dark-green
+      text: '#166534', // Tailwind green-800
+      icon: '#008001', // hoagiemeal-dark-green
     },
     warning: {
       background: '#FFFAF2',
@@ -150,7 +150,7 @@ export const hoagieUI = mergeTheme(defaultTheme, {
     2: '0 0 1px rgba(16, 38, 30, 0.3), 0 5px 8px -4px rgba(16, 38, 30, 0.47)',
     3: '0 0 1px rgba(16, 38, 30, 0.3), 0 8px 10px -4px rgba(16, 38, 30, 0.47)',
     4: '0 0 1px rgba(16, 38, 30, 0.3), 0 16px 24px -8px rgba(16, 38, 30, 0.47)',
-    focusRing: '0 0 0 2px #DCF2EA', // green100
+    focusRing: '0 0 0 2px #86efac', // Tailwind green-300
   },
   fontFamilies: {
     ...defaultTheme.fontFamilies,
@@ -190,9 +190,9 @@ export const hoagieGreen = mergeTheme(hoagieUI, {
   title: 'green',
   colors: {
     ...hoagieUI.colors,
-    selected: '#52BD95', // green500
-    tint1: '#F5FBF8', // greenTint
-    tint2: '#F5FBF8', // greenTint
+    selected: '#008001', // hoagiemeal-dark-green
+    tint1: '#f0fdf4', // Tailwind green-50
+    tint2: '#f0fdf4', // Tailwind green-50
     border: {
       default: '#EEEEEE',
       muted: '#F1F1F1',
@@ -201,27 +201,27 @@ export const hoagieGreen = mergeTheme(hoagieUI, {
       default: '#808080',
       muted: '#D2D2D2',
       disabled: '#D2D2D2',
-      selected: '#52BD95', // green500
+      selected: '#008001', // hoagiemeal-dark-green
     },
     text: {
       danger: '#D14343',
-      success: '#52BD95',
-      info: '#52BD95', // green500
+      success: '#008001', // hoagiemeal-dark-green
+      info: '#008001', // hoagiemeal-dark-green
     },
   },
   intents: {
     ...hoagieUI.intents,
     info: {
-      background: '#F5FBF8', // greenTint
-      border: '#52BD95', // green500
-      text: '#429777', // green600
-      icon: '#52BD95', // green500
+      background: '#f0fdf4', // Tailwind green-50
+      border: '#008001', // hoagiemeal-dark-green
+      text: '#15803d', // Tailwind green-700
+      icon: '#008001', // hoagiemeal-dark-green
     },
     success: {
-      background: '#F5FBF8', // greenTint
-      border: '#52BD95', // green500
-      text: '#317159', // green700
-      icon: '#52BD95', // green500
+      background: '#f0fdf4', // Tailwind green-50
+      border: '#008001', // hoagiemeal-dark-green
+      text: '#166534', // Tailwind green-800
+      icon: '#008001', // hoagiemeal-dark-green
     },
     warning: {
       background: '#FFFAF2',

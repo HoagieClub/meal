@@ -47,17 +47,14 @@ const MenuSection = ({
     columns = toggledColumns;
   } else {
     if (showNutrition) {
-      columns = ['Protein', 'Calories'];
+      columns = ['Calories'];
     } else {
       columns = [];
     }
   }
 
-  // Determine the items to display based on the full menu and items length.
-  let displayItems = items;
-  if (!fullMenu && items.length > 4) {
-    displayItems = displayItems.slice(0, 4);
-  }
+  // Determine the items to display.
+  const displayItems = items;
 
   // Determine the minimum width of the menu section based on the columns.
   const minWidth =
@@ -74,8 +71,8 @@ const MenuSection = ({
   // Render the menu section.
   return (
     <Pane marginBottom={majorScale(3)}>
-      <Pane overflowX='auto'>
-        <Pane minWidth={minWidth} className='overflow-x-auto scrollbar-top'>
+      <Pane overflow='visible'>
+        <Pane minWidth={minWidth} className='scrollbar-top' overflow='visible'>
           {/* Section header */}
           <Pane
             display='grid'
@@ -109,7 +106,7 @@ const MenuSection = ({
               Nothing available
             </Text>
           ) : (
-            <Pane marginTop={minorScale(1)}>
+            <Pane>
               {displayItems.map((item) => (
                 <MenuItemRow
                   key={item.apiId}
