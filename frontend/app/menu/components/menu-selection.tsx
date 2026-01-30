@@ -33,11 +33,13 @@ const MenuSection = ({
   showNutrition,
   fullMenu,
   toggledColumns,
+  diningHallId,
 }: {
   items: MenuItem[];
   showNutrition?: boolean;
   fullMenu?: boolean;
   toggledColumns?: Column[];
+  diningHallId?: string;
 }) => {
   const theme = useTheme();
 
@@ -66,7 +68,7 @@ const MenuSection = ({
 
   // Render the menu section.
   return (
-    <Pane marginBottom={majorScale(3)}>
+    <Pane>
       <Pane overflow='visible'>
         <Pane minWidth={minWidth} className='scrollbar-top' overflow='visible'>
           {/* Section header */}
@@ -104,10 +106,11 @@ const MenuSection = ({
             <Pane>
               {displayItems.map((item) => (
                 <MenuItemRow
-                  key={item.apiId}
+                  key={`${diningHallId}-${item.apiId}`}
                   item={item}
                   columns={columns ?? []}
                   fullMenu={fullMenu}
+                  diningHallId={diningHallId}
                 />
               ))}
             </Pane>

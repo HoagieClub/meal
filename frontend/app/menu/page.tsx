@@ -52,6 +52,7 @@ import {
   fetchUserMenuItemInteractions,
   fetchMenuItemScores,
 } from './actions';
+import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
 import {
   getAllDiningLocations,
 } from '@/lib/next-endpoints';
@@ -260,7 +261,8 @@ export default function MenuPage() {
         display='grid'
         overflowY='auto'
         paddingBottom={majorScale(6)}
-        gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
+        paddingRight={majorScale(3)}
+        gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
         gap={majorScale(2)}
         className='h-full no-scrollbar'
       >
@@ -329,6 +331,7 @@ export default function MenuPage() {
 
   // Render the menu page
   return (
+    <NutritionAccordionProvider>
     <Pane
       display='flex'
       className='sm:flex-row overflow-hidden min-h-screen flex-col transition-colors duration-300'
@@ -443,5 +446,6 @@ export default function MenuPage() {
         showNutrition={showNutrition}
       />
     </Pane>
+    </NutritionAccordionProvider>
   );
 }

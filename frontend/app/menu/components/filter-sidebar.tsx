@@ -26,7 +26,6 @@ import {
   Switch,
   UndoIcon,
   ChevronDownIcon,
-  ChevronUpIcon,
   Popover,
   Position,
 } from 'evergreen-ui';
@@ -239,13 +238,13 @@ export default function FilterSidebar({
         background: 'white',
         maxHeight: '100%',
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        className: 'fixed sm:relative overflow-hidden flex-col',
+        className: 'fixed sm:relative overflow-hidden flex-col select-none',
         borderRadius: 12,
       }
       : {
         display: 'flex' as const,
         background: 'white',
-        className: 'flex-col mb-4',
+        className: 'flex-col mb-4 select-none',
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
         marginBottom: majorScale(2),
         borderRadius: 12,
@@ -359,11 +358,11 @@ export default function FilterSidebar({
             <Text size={300} color={theme.colors.gray700}>
               {filtersOpen ? 'Hide Filters' : 'Filter By'}
             </Text>
-            {filtersOpen ? (
-              <ChevronUpIcon size={16} color='gray700' />
-            ) : (
-              <ChevronDownIcon size={16} color='gray700' />
-            )}
+            <ChevronDownIcon
+              size={16}
+              color='gray700'
+              className={`transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`}
+            />
           </Pane>
 
           <Pane
@@ -371,9 +370,12 @@ export default function FilterSidebar({
             marginBottom={minorScale(2)}
           />
 
-          {/* Render the filters if the filters are open. */}
-          {filtersOpen && (
-            <Pane>
+          {/* Render the filters with collapse animation */}
+          <div
+            className="filter-collapse-wrapper"
+            data-state={filtersOpen ? 'open' : 'closed'}
+          >
+            <Pane className="filter-collapse-inner">
               {/* Control which dining halls are displayed */}
               <Text
                 size={300}
@@ -444,7 +446,7 @@ export default function FilterSidebar({
                 ))}
               </Pane>
             </Pane>
-          )}
+          </div>
         </Pane>
       </Pane>
     </Pane>

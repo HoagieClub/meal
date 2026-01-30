@@ -101,6 +101,11 @@
 }
 
 @layer base {
+  /* Force all elements to use Poppins font */
+  * {
+    font-family: 'Poppins', sans-serif !important;
+  }
+
   p {
     font-size: 14pt;
   }
@@ -157,4 +162,50 @@ body {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
   }
+}
+
+/* Accordion animations - using raw CSS to avoid Tailwind important conflicts */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.accordion-content-inner[data-state="open"] {
+  animation: accordion-down 200ms ease-out;
+}
+
+.accordion-content-inner[data-state="closed"] {
+  animation: accordion-up 200ms ease-out;
+}
+
+/* Filter bar collapse/expand animation using CSS grid */
+.filter-collapse-wrapper {
+  display: grid;
+  transition: grid-template-rows 200ms ease-out;
+}
+
+.filter-collapse-wrapper[data-state="closed"] {
+  grid-template-rows: 0fr;
+}
+
+.filter-collapse-wrapper[data-state="open"] {
+  grid-template-rows: 1fr;
+}
+
+.filter-collapse-inner {
+  overflow: hidden;
+  min-height: 0;
 }

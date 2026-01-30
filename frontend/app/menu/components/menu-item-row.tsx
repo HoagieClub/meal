@@ -21,6 +21,9 @@ import { Allergen, DietaryTag, MenuItem } from '@/types/types';
 import { MiniLikeDislikeButtons } from '@/components/mini-like-dislike-button';
 import { MiniFavoriteButton } from '@/components/mini-favorite-button';
 import { Column } from '@/types/types';
+import { Accordion, AccordionItem, AccordionContent, AccordionTrigger } from '@/components/ui/accordion';
+import { useNutritionAccordion } from '@/contexts/nutrition-accordion-context';
+import NutritionAccordionContent from './nutrition-accordion-content';
 
 /**
  * Menu item row component.
@@ -34,12 +37,15 @@ export default function MenuItemRow({
   item,
   columns,
   fullMenu,
+  diningHallId,
 }: {
   item: MenuItem;
   columns: Column[];
   fullMenu?: boolean;
+  diningHallId?: string;
 }) {
   const theme = useTheme();
+  const { expandedItemId, setExpandedItemId } = useNutritionAccordion();
 
   // Extract all relevant information from the menu item.
   const menuItemApiId = item?.apiId;
@@ -64,7 +70,6 @@ export default function MenuItemRow({
     item?.allergens.join(', ').length > allergenCharacterLimit
       ? item?.allergens.join(', ').slice(0, allergenCharacterLimit) + '...'
       : item?.allergens?.join(', ') || 'No allergens';
-  const nutritionLink = `/nutrition?apiId=${menuItemApiId}`;
   const viewCount = item?.metrics?.viewCount ?? 0;
 
   // Map the columns to their corresponding values.
@@ -115,72 +120,93 @@ export default function MenuItemRow({
     );
   };
 
+  // Toggle accordion when row is clicked
+  const handleRowClick = () => {
+    const itemValue = `${diningHallId}-${menuItemApiId}`;
+    setExpandedItemId(expandedItemId === itemValue ? '' : itemValue);
+  };
+
   // Render the menu item row
   return (
-    <React.Fragment key={menuItemApiId}>
-      <Pane
-        display='grid'
-        gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} auto${fullMenu ? ' 1fr' : ''}`}
-        rowGap={minorScale(1)}
-        columnGap={minorScale(2)}
-        borderBottom={`0.9px solid ${theme.colors.green300}`}
-      >
-        <Pane marginY={majorScale(1)} style={{ fontSize: 14, fontWeight: 500, color: 'black', lineHeight: 1.2 }}>
-          {/* Display the menu item name, favorite icon, and allergens. */}
-          <a
-            href={nutritionLink}
-            style={{ textDecoration: 'none', color: 'inherit', paddingRight: minorScale(1) }}
-            className='hover:underline'
-            target='_blank'
-          >
-            {item.name}
-          </a>{' '}
-          {showIcons(item)}
-        </Pane>
-
-        {/* Display the values for the columns. */}
-        {columns.map((column) => (
-          <Text
-            size={300}
-            textAlign='right'
-            marginY={majorScale(1)}
-            display='flex'
-            alignItems='center'
-            justifyContent='flex-end'
-            key={column}
-          >
-            {columnValuesMap[column]}
-          </Text>
-        ))}
-
-        {/* Display the favorite and like/dislike buttons. */}
+    <Accordion
+      type="single"
+      collapsible
+      value={expandedItemId}
+      onValueChange={setExpandedItemId}
+      className="border-none"
+    >
+      <AccordionItem value={`${diningHallId}-${menuItemApiId}`} className="border-none">
         <Pane
-          display='flex'
-          flexDirection='row'
-          alignItems='center'
-          justifyContent='flex-end'
-          gap={minorScale(1)}
+          display='grid'
+          gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} auto${fullMenu ? ' 1fr' : ''} auto`}
+          rowGap={minorScale(1)}
+          columnGap={minorScale(2)}
+          onClick={handleRowClick}
+          cursor="pointer"
         >
-          <MiniFavoriteButton item={item} />
-          <MiniLikeDislikeButtons item={item} />
-        </Pane>
+          <Pane marginY={majorScale(1)} style={{ fontSize: 14, fontWeight: 500, color: 'black', lineHeight: 1.2 }}>
+            {/* Display the menu item name and dietary/allergen icons. */}
+            <span style={{ paddingRight: minorScale(1) }}>{item.name}</span>{' '}
+            {showIcons(item)}
+          </Pane>
 
-        {/* Display the view count if the full menu is displayed. */}
-        {fullMenu && (
+          {/* Display the values for the columns. */}
+          {columns.map((column) => (
+            <Text
+              size={300}
+              textAlign='right'
+              marginY={majorScale(1)}
+              display='flex'
+              alignItems='center'
+              justifyContent='flex-end'
+              key={column}
+            >
+              {columnValuesMap[column]}
+            </Text>
+          ))}
+
+          {/* Display the favorite and like/dislike buttons. */}
           <Pane
             display='flex'
-            flexDirection='column'
-            alignItems='flex-end'
-            justifyContent='center'
+            flexDirection='row'
+            alignItems='center'
+            justifyContent='flex-end'
             gap={minorScale(1)}
-            marginY={majorScale(1)}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-            <Text size={300} textAlign='right' className='my-auto'>
-              {viewCount}
-            </Text>
+            <MiniFavoriteButton item={item} />
+            <MiniLikeDislikeButtons item={item} />
           </Pane>
-        )}
-      </Pane>
-    </React.Fragment>
+
+          {/* Display the view count if the full menu is displayed. */}
+          {fullMenu && (
+            <Pane
+              display='flex'
+              flexDirection='column'
+              alignItems='flex-end'
+              justifyContent='center'
+              gap={minorScale(1)}
+              marginY={majorScale(1)}
+            >
+              <Text size={300} textAlign='right' className='my-auto'>
+                {viewCount}
+              </Text>
+            </Pane>
+          )}
+
+          {/* Accordion trigger (chevron) */}
+          <AccordionTrigger className="p-0 hover:no-underline [&>svg]:h-4 [&>svg]:w-4 cursor-pointer" />
+        </Pane>
+
+        {/* Accordion content with nutrition info */}
+        <AccordionContent >
+          <NutritionAccordionContent
+            nutrition={item.nutrition}
+            ingredients={item.ingredients}
+            allergens={item.allergens}
+          />
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }

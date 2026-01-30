@@ -106,6 +106,7 @@ const HallMenuModal = ({
           showNutrition={showNutrition}
           fullMenu={true}
           toggledColumns={toggledColumns}
+          diningHallId={modalHall.name}
         />
       </Pane>
     </Dialog>
