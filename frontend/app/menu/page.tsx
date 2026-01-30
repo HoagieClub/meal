@@ -76,7 +76,7 @@ export default function MenuPage() {
   });
 
   // Get the date related information from the useDate hook
-  const { currentMeal, dateKey, formattedDateForDisplay, goToPreviousDay, goToNextDay, isWeekend } = useDate();
+  const { currentMeal, dateKey, formattedDateForDisplay, goToPreviousDay, goToNextDay, isWeekend, selectedDate, goToDate } = useDate();
 
   // Get the preferences for the menu page from local storage
   const {
@@ -400,6 +400,8 @@ export default function MenuPage() {
               goToPreviousDay={goToPreviousDay}
               goToNextDay={goToNextDay}
               isWeekend={isWeekend}
+              selectedDate={selectedDate}
+              goToDate={goToDate}
             />
 
             {/* Render the sort and filter options */}
