@@ -425,7 +425,7 @@ export default function FilterSidebar({
                 />
               </Pane>
               <Text className="text-xs" color={theme.colors.gray600} marginBottom={minorScale(1)}>
-                Show items that are:
+                Only show items that are:
               </Text>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
                 {DIETARY_TAGS.filter(tag => tag !== 'Halal' && tag !== 'Kosher').map((dietKey: DietaryTag) => (

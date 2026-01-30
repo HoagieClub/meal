@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
+import { Tooltip } from 'evergreen-ui';
 import { ALLERGEN_ICON_MAP } from '@/data';
 import { Allergen } from '@/types/types';
 import { SectionTitle } from './section-title';
@@ -45,24 +46,41 @@ export function AllergensDisplay({ allergens }: AllergensDisplayProps) {
         <div ref={scrollRef} className="flex items-center gap-1 overflow-x-auto no-scrollbar pr-4">
           {allergens.map((allergen) => {
             const iconPath = ALLERGEN_ICON_MAP[allergen as Allergen];
+            // Render icon if available, otherwise fall back to text label
             return iconPath ? (
-              <img
+              <Tooltip
                 key={allergen}
-                src={iconPath}
-                alt={allergen}
-                title={allergen}
-                width={18}
-                height={18}
-                className="inline-block flex-shrink-0"
-              />
-            ) : (
-              <span
-                key={allergen}
-                className="text-xs bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap"
-                title={allergen}
+                content={allergen}
+                appearance="card"
+                statelessProps={{
+                  paddingX: 6,
+                  paddingY: 2,
+                  fontSize: 9,
+                }}
               >
-                {allergen}
-              </span>
+                <img
+                  src={iconPath}
+                  alt={allergen}
+                  width={18}
+                  height={18}
+                  className="inline-block flex-shrink-0"
+                />
+              </Tooltip>
+            ) : (
+              <Tooltip
+                key={allergen}
+                content={allergen}
+                appearance="card"
+                statelessProps={{
+                  paddingX: 6,
+                  paddingY: 2,
+                  fontSize: 9,
+                }}
+              >
+                <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0 whitespace-nowrap">
+                  {allergen}
+                </span>
+              </Tooltip>
             );
           })}
         </div>

@@ -379,7 +379,7 @@ export default function MenuPage() {
             display='flex'
             alignItems='center'
             justifyContent='space-between'
-            marginY={majorScale(2)}
+            marginY={majorScale(1)}
             className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
           >
             {/* Render the meal header */}
