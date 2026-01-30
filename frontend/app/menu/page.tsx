@@ -86,6 +86,10 @@ export default function MenuPage() {
     pinnedHalls,
     showNutrition,
     toggleShowNutrition,
+    showDietaryTags,
+    toggleShowDietaryTags,
+    showAllergenTags,
+    toggleShowAllergenTags,
     toggleDiningHall,
     toggleDietaryRestriction,
     toggleAllergen,
@@ -320,6 +324,8 @@ export default function MenuPage() {
               diningHall={diningHall}
               setModalHall={setModalHall}
               showNutrition={showNutrition}
+              showDietaryTags={showDietaryTags}
+              showAllergenTags={showAllergenTags}
               isPinned={isPinned}
               onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
             />
@@ -344,6 +350,10 @@ export default function MenuPage() {
           setSearchTerm={setSearchTerm}
           showNutrition={showNutrition}
           toggleShowNutrition={toggleShowNutrition}
+          showDietaryTags={showDietaryTags}
+          toggleShowDietaryTags={toggleShowDietaryTags}
+          showAllergenTags={showAllergenTags}
+          toggleShowAllergenTags={toggleShowAllergenTags}
           sortOption={sortOption}
           setSortOption={setSortOption}
           diningHalls={diningHalls}
@@ -410,6 +420,10 @@ export default function MenuPage() {
               setSearchTerm={setSearchTerm}
               showNutrition={showNutrition}
               toggleShowNutrition={toggleShowNutrition}
+              showDietaryTags={showDietaryTags}
+              toggleShowDietaryTags={toggleShowDietaryTags}
+              showAllergenTags={showAllergenTags}
+              toggleShowAllergenTags={toggleShowAllergenTags}
               sortOption={sortOption}
               setSortOption={setSortOption}
               diningHalls={diningHalls}
@@ -444,6 +458,8 @@ export default function MenuPage() {
         modalHall={modalHall}
         setModalHall={setModalHall}
         showNutrition={showNutrition}
+        showDietaryTags={showDietaryTags}
+        showAllergenTags={showAllergenTags}
       />
     </Pane>
     </NutritionAccordionProvider>

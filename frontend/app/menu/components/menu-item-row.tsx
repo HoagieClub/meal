@@ -38,11 +38,15 @@ export default function MenuItemRow({
   columns,
   fullMenu,
   diningHallId,
+  showDietaryTags = true,
+  showAllergenTags = true,
 }: {
   item: MenuItem;
   columns: Column[];
   fullMenu?: boolean;
   diningHallId?: string;
+  showDietaryTags?: boolean;
+  showAllergenTags?: boolean;
 }) {
   const theme = useTheme();
   const { expandedItemId, setExpandedItemId } = useNutritionAccordion();
@@ -93,7 +97,10 @@ export default function MenuItemRow({
     const itemDietaryFlags = (item?.dietaryFlags as DietaryTag[]) || [];
     const itemAllergens = (item?.allergens as Allergen[]) || [];
 
-    if (itemDietaryFlags.length === 0 && itemAllergens.length === 0) {
+    const hasDietaryToShow = showDietaryTags && itemDietaryFlags.length > 0;
+    const hasAllergensToShow = showAllergenTags && itemAllergens.length > 0;
+
+    if (!hasDietaryToShow && !hasAllergensToShow) {
       return;
     }
 
@@ -105,7 +112,7 @@ export default function MenuItemRow({
 
     return (
       <>
-        {itemDietaryFlags
+        {showDietaryTags && itemDietaryFlags
           .filter(flag => flag.toLowerCase() !== 'halal' && flag.toLowerCase() !== 'kosher')
           .map((flag) => {
             const icon = dietIconLookup[flag.toLowerCase()];
@@ -113,7 +120,7 @@ export default function MenuItemRow({
               <img key={flag} src={icon} alt={flag} title={flag} width={14} height={14} style={{ display: 'inline', marginRight: minorScale(1), verticalAlign: 'middle' }} />
             ) : null;
           })}
-        {itemAllergens.map((allergen: Allergen) => (
+        {showAllergenTags && itemAllergens.map((allergen: Allergen) => (
           <img key={allergen} src={ALLERGEN_ICON_MAP[allergen]} alt={allergen} title={allergen} width={14} height={14} style={{ display: 'inline', marginRight: minorScale(1), verticalAlign: 'middle' }} />
         ))}
       </>

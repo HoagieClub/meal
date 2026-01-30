@@ -31,6 +31,8 @@ const CACHE_KEYS = {
   ALLERGENS: 'allergensPreferences',
   DIETARY_RESTRICTIONS: 'dietaryRestrictionsPreferences',
   SHOW_NUTRITION: 'showNutritionPreference',
+  SHOW_DIETARY_TAGS: 'showDietaryTagsPreference',
+  SHOW_ALLERGEN_TAGS: 'showAllergenTagsPreference',
 } as const;
 
 // Default values for each preference type
@@ -39,6 +41,8 @@ const DEFAULT_DINING_HALLS: DiningHall[] = DINING_HALLS;
 const DEFAULT_ALLERGENS: Allergen[] = [];
 const DEFAULT_DIETARY_RESTRICTIONS: DietaryTag[] = [];
 const DEFAULT_SHOW_NUTRITION: boolean = true;
+const DEFAULT_SHOW_DIETARY_TAGS: boolean = true;
+const DEFAULT_SHOW_ALLERGEN_TAGS: boolean = true;
 
 /**
  * Hook for managing user dining preferences cache
@@ -78,13 +82,27 @@ export function usePreferencesCache() {
     initialValue: DEFAULT_SHOW_NUTRITION,
   });
 
+  // Show dietary tags preference cache
+  const [showDietaryTags, setShowDietaryTags, showDietaryTagsLoading] = useLocalStorage<boolean>({
+    key: CACHE_KEYS.SHOW_DIETARY_TAGS,
+    initialValue: DEFAULT_SHOW_DIETARY_TAGS,
+  });
+
+  // Show allergen tags preference cache
+  const [showAllergenTags, setShowAllergenTags, showAllergenTagsLoading] = useLocalStorage<boolean>({
+    key: CACHE_KEYS.SHOW_ALLERGEN_TAGS,
+    initialValue: DEFAULT_SHOW_ALLERGEN_TAGS,
+  });
+
   // Loading state
   const loading =
     pinnedHallsLoading ||
     diningHallsLoading ||
     allergensLoading ||
     dietaryRestrictionsLoading ||
-    showNutritionLoading;
+    showNutritionLoading ||
+    showDietaryTagsLoading ||
+    showAllergenTagsLoading;
 
   // Check if a dining hall is pinned
   const isPinned = (diningHall: DiningHall): boolean => {
@@ -236,6 +254,16 @@ export function usePreferencesCache() {
     setShowNutrition((prev) => !prev);
   };
 
+  // Toggle show dietary tags
+  const toggleShowDietaryTags = (): void => {
+    setShowDietaryTags((prev) => !prev);
+  };
+
+  // Toggle show allergen tags
+  const toggleShowAllergenTags = (): void => {
+    setShowAllergenTags((prev) => !prev);
+  };
+
   // Clear all pinned halls
   const clearPinnedHalls = (): void => {
     setPinnedHalls(DEFAULT_PINNED_HALLS);
@@ -278,6 +306,8 @@ export function usePreferencesCache() {
     allergens,
     dietaryRestrictions,
     showNutrition,
+    showDietaryTags,
+    showAllergenTags,
 
     // Checkers
     isPinned,
@@ -304,6 +334,8 @@ export function usePreferencesCache() {
     toggleAllergen,
     toggleDietaryRestriction,
     toggleShowNutrition,
+    toggleShowDietaryTags,
+    toggleShowAllergenTags,
 
     // Clearers
     clearPinnedHalls,

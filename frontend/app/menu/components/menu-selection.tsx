@@ -31,12 +31,16 @@ import MenuItemRow from './menu-item-row';
 const MenuSection = ({
   items,
   showNutrition,
+  showDietaryTags = true,
+  showAllergenTags = true,
   fullMenu,
   toggledColumns,
   diningHallId,
 }: {
   items: MenuItem[];
   showNutrition?: boolean;
+  showDietaryTags?: boolean;
+  showAllergenTags?: boolean;
   fullMenu?: boolean;
   toggledColumns?: Column[];
   diningHallId?: string;
@@ -111,6 +115,8 @@ const MenuSection = ({
                   columns={columns ?? []}
                   fullMenu={fullMenu}
                   diningHallId={diningHallId}
+                  showDietaryTags={showDietaryTags}
+                  showAllergenTags={showAllergenTags}
                 />
               ))}
             </Pane>

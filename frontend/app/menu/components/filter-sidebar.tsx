@@ -64,6 +64,10 @@ interface FilterSidebarProps {
   setSearchTerm: (term: string) => void;
   showNutrition: boolean;
   toggleShowNutrition: () => void;
+  showDietaryTags: boolean;
+  toggleShowDietaryTags: () => void;
+  showAllergenTags: boolean;
+  toggleShowAllergenTags: () => void;
   sortOption: MenuSortOption;
   setSortOption: (sort: MenuSortOption) => void;
   diningHalls: DiningHall[];
@@ -87,6 +91,10 @@ export default function FilterSidebar({
   setSearchTerm,
   showNutrition,
   toggleShowNutrition,
+  showDietaryTags,
+  toggleShowDietaryTags,
+  showAllergenTags,
+  toggleShowAllergenTags,
   sortOption,
   setSortOption,
   diningHalls,
@@ -312,7 +320,7 @@ export default function FilterSidebar({
 
         {/* Show Nutrition Toggle */}
         <Pane className='px-4 pt-4'>
-          <Pane
+          {/* <Pane
             display='flex'
             alignItems='center'
             justifyContent='space-between'
@@ -326,7 +334,7 @@ export default function FilterSidebar({
               onChange={toggleShowNutrition}
               className="[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none"
             />
-          </Pane>
+          </Pane> */}
 
           {/* Sort dropdown */}
           <Pane
@@ -402,13 +410,22 @@ export default function FilterSidebar({
               />
 
               {/* Control which dietary tags are displayed */}
-              <Text
-                size={300}
-                fontWeight={600}
-                color={theme.colors.gray800}
-                marginBottom={minorScale(1)}
+              <Pane
+                display='flex'
+                alignItems='center'
+                justifyContent='space-between'
               >
-                Dietary Tags
+                <Text size={300} fontWeight={600} color={theme.colors.gray800}>
+                  Dietary Tags
+                </Text>
+                <Switch
+                  checked={showDietaryTags}
+                  onChange={toggleShowDietaryTags}
+                  className="[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none"
+                />
+              </Pane>
+              <Text className="text-xs" color={theme.colors.gray600} marginBottom={minorScale(1)}>
+                Show items that are:
               </Text>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
                 {DIETARY_TAGS.filter(tag => tag !== 'Halal' && tag !== 'Kosher').map((dietKey: DietaryTag) => (
@@ -427,13 +444,22 @@ export default function FilterSidebar({
               />
 
               {/* Control which allergens are not displayed */}
-              <Text
-                size={300}
-                fontWeight={600}
-                color={theme.colors.gray800}
-                marginBottom={minorScale(1)}
+              <Pane
+                display='flex'
+                alignItems='center'
+                justifyContent='space-between'
               >
-                Allergen Tags
+                <Text size={300} fontWeight={600} color={theme.colors.gray800}>
+                  Allergen Tags
+                </Text>
+                <Switch
+                  checked={showAllergenTags}
+                  onChange={toggleShowAllergenTags}
+                  className="[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none"
+                />
+              </Pane>
+              <Text className="text-xs" color={theme.colors.gray600} marginBottom={minorScale(1)}>
+                Exclude items containing:
               </Text>
               <Pane display='flex' flexDirection='column'>
                 {ALLERGENS.map((allergen: Allergen) => (
