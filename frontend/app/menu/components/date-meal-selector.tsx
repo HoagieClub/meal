@@ -19,6 +19,8 @@ import { Meal } from '@/types/types';
  * @param formattedDateForDisplay - The formatted date for display.
  * @param goToPreviousDay - The function to go to the previous day.
  * @param goToNextDay - The function to go to the next day.
+ * @param selectedDate - The currently selected date.
+ * @param goToDate - The function to go to a specific date.
  */
 interface DateMealSelectorProps {
   meal: Meal;
@@ -27,7 +29,32 @@ interface DateMealSelectorProps {
   goToPreviousDay: () => void;
   goToNextDay: () => void;
   isWeekend: boolean;
+  selectedDate: Date;
+  goToDate: (date: Date) => void;
 }
+
+// Generate the next 7 days starting from today
+const getNext7Days = (): Date[] => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    return date;
+  });
+};
+
+// Format a date to 3-letter day abbreviation
+const formatDayAbbrev = (date: Date): string => {
+  return date.toLocaleDateString('en-US', { weekday: 'short' });
+};
+
+// Check if two dates are the same day
+const isSameDay = (a: Date, b: Date): boolean => {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
+};
 
 /**
  * Date and meal selector component.
@@ -42,15 +69,18 @@ export default function DateMealSelector({
   goToPreviousDay,
   goToNextDay,
   isWeekend,
+  selectedDate,
+  goToDate,
 }: DateMealSelectorProps) {
   const theme = useTheme();
   const meals = isWeekend ? ["Lunch", "Dinner"] : ["Breakfast", "Lunch", "Dinner"];
+  const next7Days = getNext7Days();
 
   // Render the date and meal selector.
   return (
     <Pane display='flex' gap={minorScale(2)} className='mx-2 flex-col flex justify-center my-4'>
       {/* Date selector */}
-      <Pane display='flex' alignItems='center' justifyContent='center' gap={minorScale(2)} marginBottom={majorScale(1)}>
+      <Pane display='flex' alignItems='center' justifyContent='center' gap={minorScale(2)} >
         {/* Render the button to go to the previous day. */}
         <Button
           background='white'
@@ -81,6 +111,25 @@ export default function DateMealSelector({
         >
           <ChevronRightIcon size={20} />
         </Button>
+      </Pane>
+
+      {/* Quick day selector */}
+      <Pane display='flex' justifyContent='center' gap={majorScale(2)} marginBottom={minorScale(1)}>
+        {next7Days.map((date) => {
+          const isSelected = isSameDay(date, selectedDate);
+          return (
+            <Text
+              key={date.toISOString()}
+              cursor='pointer'
+              color={theme.colors.green700}
+              fontWeight={isSelected ? 600 : 400}
+              className={`text-sm transition-all ${isSelected ? 'underline underline-offset-4' : ''}`}
+              onClick={() => goToDate(date)}
+            >
+              {formatDayAbbrev(date)}
+            </Text>
+          );
+        })}
       </Pane>
 
       {/* Control which meal is displayed */}

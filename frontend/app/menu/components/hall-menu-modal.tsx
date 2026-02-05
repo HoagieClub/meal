@@ -35,10 +35,14 @@ const HallMenuModal = ({
   modalHall,
   setModalHall,
   showNutrition,
+  showDietaryTags = true,
+  showAllergenTags = true,
 }: {
   modalHall: any;
   setModalHall: any;
   showNutrition: boolean;
+  showDietaryTags?: boolean;
+  showAllergenTags?: boolean;
 }) => {
   const [sortOption, setSortOption] = useState<MenuSortOption>('Best');
   const [toggledColumns, setToggledColumns] = useState<Column[]>(COLUMNS);
@@ -104,8 +108,11 @@ const HallMenuModal = ({
         <MenuSection
           items={modalHall.menu ?? []}
           showNutrition={showNutrition}
+          showDietaryTags={showDietaryTags}
+          showAllergenTags={showAllergenTags}
           fullMenu={true}
           toggledColumns={toggledColumns}
+          diningHallId={modalHall.name}
         />
       </Pane>
     </Dialog>

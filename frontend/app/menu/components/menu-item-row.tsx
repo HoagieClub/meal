@@ -15,11 +15,15 @@
 'use client';
 
 import React from 'react';
-import { Pane, Text, Link, minorScale, majorScale, useTheme } from 'evergreen-ui';
+import { Pane, Text, minorScale, majorScale, useTheme } from 'evergreen-ui';
 import { ALLERGEN_ICON_MAP, DIET_ICON_MAP } from '@/data';
 import { Allergen, DietaryTag, MenuItem } from '@/types/types';
 import { MiniLikeDislikeButtons } from '@/components/mini-like-dislike-button';
+import { MiniFavoriteButton } from '@/components/mini-favorite-button';
 import { Column } from '@/types/types';
+import { Accordion, AccordionItem, AccordionContent, AccordionTrigger } from '@/components/ui/accordion';
+import { useNutritionAccordion } from '@/contexts/nutrition-accordion-context';
+import NutritionAccordionContent from './nutrition-accordion-content';
 
 /**
  * Menu item row component.
@@ -33,12 +37,19 @@ export default function MenuItemRow({
   item,
   columns,
   fullMenu,
+  diningHallId,
+  showDietaryTags = true,
+  showAllergenTags = true,
 }: {
   item: MenuItem;
   columns: Column[];
   fullMenu?: boolean;
+  diningHallId?: string;
+  showDietaryTags?: boolean;
+  showAllergenTags?: boolean;
 }) {
   const theme = useTheme();
+  const { expandedItemId, setExpandedItemId } = useNutritionAccordion();
 
   // Extract all relevant information from the menu item.
   const menuItemApiId = item?.apiId;
@@ -63,8 +74,6 @@ export default function MenuItemRow({
     item?.allergens.join(', ').length > allergenCharacterLimit
       ? item?.allergens.join(', ').slice(0, allergenCharacterLimit) + '...'
       : item?.allergens?.join(', ') || 'No allergens';
-  const nutritionLink = `/nutrition?apiId=${menuItemApiId}`;
-  const isFavorited = item?.userInteraction?.favorited ?? false;
   const viewCount = item?.metrics?.viewCount ?? 0;
 
   // Map the columns to their corresponding values.
@@ -88,12 +97,11 @@ export default function MenuItemRow({
     const itemDietaryFlags = (item?.dietaryFlags as DietaryTag[]) || [];
     const itemAllergens = (item?.allergens as Allergen[]) || [];
 
-    if (itemDietaryFlags.length === 0 && itemAllergens.length === 0) {
-      return (
-        <Text color='muted' fontStyle='italic'>
-          No allergens
-        </Text>
-      );
+    const hasDietaryToShow = showDietaryTags && itemDietaryFlags.length > 0;
+    const hasAllergensToShow = showAllergenTags && itemAllergens.length > 0;
+
+    if (!hasDietaryToShow && !hasAllergensToShow) {
+      return;
     }
 
     // Build a case-insensitive lookup for DIET_ICON_MAP since the backend
@@ -104,100 +112,108 @@ export default function MenuItemRow({
 
     return (
       <>
-        {itemDietaryFlags.map((flag) => {
-          const icon = dietIconLookup[flag.toLowerCase()];
-          return icon ? (
-            <img key={flag} src={icon} alt={flag} title={flag} width={20} height={20} />
-          ) : null;
-        })}
-        {itemAllergens.map((allergen: Allergen) => (
-          <img key={allergen} src={ALLERGEN_ICON_MAP[allergen]} alt={allergen} title={allergen} width={20} height={20} />
+        {showDietaryTags && itemDietaryFlags
+          .filter(flag => flag.toLowerCase() !== 'halal' && flag.toLowerCase() !== 'kosher')
+          .map((flag) => {
+            const icon = dietIconLookup[flag.toLowerCase()];
+            return icon ? (
+              <img key={flag} src={icon} alt={flag} title={flag} width={14} height={14} style={{ display: 'inline', marginRight: minorScale(1), verticalAlign: 'middle' }} />
+            ) : null;
+          })}
+        {showAllergenTags && itemAllergens.map((allergen: Allergen) => (
+          <img key={allergen} src={ALLERGEN_ICON_MAP[allergen]} alt={allergen} title={allergen} width={14} height={14} style={{ display: 'inline', marginRight: minorScale(1), verticalAlign: 'middle' }} />
         ))}
       </>
     );
   };
 
+  // Toggle accordion when row is clicked
+  const handleRowClick = () => {
+    const itemValue = `${diningHallId}-${menuItemApiId}`;
+    setExpandedItemId(expandedItemId === itemValue ? '' : itemValue);
+  };
+
   // Render the menu item row
   return (
-    <React.Fragment key={menuItemApiId}>
-      <Pane
-        display='grid'
-        gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} ${fullMenu ? '1fr 1fr' : '1fr'}`}
-        rowGap={minorScale(1)}
-        columnGap={minorScale(2)}
-        marginTop={minorScale(1)}
-        borderBottom={`0.9px solid ${theme.colors.green300}`}
-      >
-        <Pane display='flex' flexDirection='column' marginY={majorScale(1)}>
-          {/* Display the menu item name and favorite icon if the item is favorited. */}
-          <Pane display='flex' alignItems='center' gap={minorScale(1)}>
-            <Link
-              href={nutritionLink}  
-              style={{ textDecoration: 'none' }}
-              className='hover:underline'
-              target='_blank'
-            >
-              <Text color='green700' fontWeight={500}>
-                {item.name}{' '}
-                {isFavorited && (
-                  <Text fontSize={16} color={theme.colors.yellow800} title='Favorited'>
-                    {' '}
-                    ⭐
-                  </Text>
-                )}
-              </Text>
-            </Link>
-          </Pane>
-
-          {/* Display the allergens for the menu item. */}
-          <Pane display='flex' flexWrap='wrap' gap={minorScale(1)} marginTop={minorScale(1)}>
+    <Accordion
+      type="single"
+      collapsible
+      value={expandedItemId}
+      onValueChange={setExpandedItemId}
+      className="border-none"
+    >
+      <AccordionItem value={`${diningHallId}-${menuItemApiId}`} className="border-none">
+        <Pane
+          display='grid'
+          gridTemplateColumns={`2fr ${columns.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} auto${fullMenu ? ' 1fr' : ''} auto`}
+          rowGap={minorScale(1)}
+          columnGap={minorScale(2)}
+          onClick={handleRowClick}
+          cursor="pointer"
+        >
+          <Pane marginY={majorScale(1)} style={{ fontSize: 14, fontWeight: 500, color: 'black', lineHeight: 1.2 }}>
+            {/* Display the menu item name and dietary/allergen icons. */}
+            <span style={{ paddingRight: minorScale(1) }}>{item.name}</span>{' '}
             {showIcons(item)}
           </Pane>
-        </Pane>
 
-        {/* Display the values for the columns. */}
-        {columns.map((column) => (
-          <Text
-            size={300}
-            textAlign='right'
-            marginY={majorScale(1)}
-            display='flex'
-            alignItems='center'
-            justifyContent='flex-end'
-            key={column}
-          >
-            {columnValuesMap[column]}
-          </Text>
-        ))}
+          {/* Display the values for the columns. */}
+          {columns.map((column) => (
+            <Text
+              size={300}
+              textAlign='right'
+              marginY={majorScale(1)}
+              display='flex'
+              alignItems='center'
+              justifyContent='flex-end'
+              key={column}
+            >
+              {columnValuesMap[column]}
+            </Text>
+          ))}
 
-        {/* Display the like/dislike buttons. */}
-        <Pane
-          display='flex'
-          flexDirection='column'
-          alignItems='flex-end'
-          justifyContent='center'
-          gap={minorScale(1)}
-          marginY={majorScale(1)}
-        >
-          <MiniLikeDislikeButtons item={item} />
-        </Pane>
-
-        {/* Display the view count if the full menu is displayed. */}
-        {fullMenu && (
+          {/* Display the favorite and like/dislike buttons. */}
           <Pane
             display='flex'
-            flexDirection='column'
-            alignItems='flex-end'
-            justifyContent='center'
+            flexDirection='row'
+            alignItems='center'
+            justifyContent='flex-end'
             gap={minorScale(1)}
-            marginY={majorScale(1)}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-            <Text size={300} textAlign='right' className='my-auto'>
-              {viewCount}
-            </Text>
+            <MiniFavoriteButton item={item} />
+            <MiniLikeDislikeButtons item={item} />
           </Pane>
-        )}
-      </Pane>
-    </React.Fragment>
+
+          {/* Display the view count if the full menu is displayed. */}
+          {fullMenu && (
+            <Pane
+              display='flex'
+              flexDirection='column'
+              alignItems='flex-end'
+              justifyContent='center'
+              gap={minorScale(1)}
+              marginY={majorScale(1)}
+            >
+              <Text size={300} textAlign='right' className='my-auto'>
+                {viewCount}
+              </Text>
+            </Pane>
+          )}
+
+          {/* Accordion trigger (chevron) */}
+          <AccordionTrigger className="p-0 hover:no-underline [&>svg]:h-4 [&>svg]:w-4 cursor-pointer" />
+        </Pane>
+
+        {/* Accordion content with nutrition info */}
+        <AccordionContent >
+          <NutritionAccordionContent
+            nutrition={item.nutrition}
+            ingredients={item.ingredients}
+            allergens={item.allergens}
+          />
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }

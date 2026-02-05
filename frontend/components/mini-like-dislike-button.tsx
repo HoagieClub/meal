@@ -51,26 +51,42 @@ export const MiniLikeDislikeButtons = ({ item }: { item: MenuItem }) => {
         gap={minorScale(1)}
         onClick={handleLike}
         cursor='pointer'
-        paddingX={minorScale(3)}
+        minWidth={40}
+        paddingX={minorScale(2)}
         paddingY={minorScale(1)}
         className={"hover:bg-green-50" + (userLiked === true ? " bg-green-50" : " transparent")}
         title='Like this item'
         transition='all 0.2s'
       >
-        <Image
-          src={userLiked === true ? '/images/icons/like-solid.svg' : '/images/icons/like.svg'}
-          alt='Like'
-          width={15}
-          height={15}
-          style={{ display: 'block' }}
-        />
+        <Pane position="relative" width={12} height={12}>
+          <Image
+            src='/images/icons/like.svg'
+            alt='Like'
+            width={12}
+            height={12}
+            style={{
+              position: 'absolute',
+              opacity: userLiked === true ? 0 : 1,
+              transition: 'all 0.2s'
+            }}
+          />
+          <Image
+            src='/images/icons/like-solid.svg'
+            alt='Like'
+            width={12}
+            height={12}
+            style={{
+              opacity: userLiked === true ? 1 : 0,
+              transition: 'all 0.2s'
+            }}
+          />
+        </Pane>
         <Text size={300} fontWeight={500}>
           {likeCount}
         </Text>
       </Pane>
 
-      {/* Divider */}
-      <Pane width={2} height={20} background={theme.colors.gray500} />
+      <Pane width={1} alignSelf='stretch' background={theme.colors.gray500} />
 
       {/* Dislike button */}
       <Pane
@@ -80,19 +96,36 @@ export const MiniLikeDislikeButtons = ({ item }: { item: MenuItem }) => {
         gap={minorScale(1)}
         onClick={handleDislike}
         cursor='pointer'
-        paddingX={minorScale(3)}
+        minWidth={40}
+        paddingX={minorScale(2)}
         paddingY={minorScale(1)}
         className={"hover:bg-red-50" + (userLiked === false ? " bg-red-50" : " transparent")}
         title='Dislike this item'
         transition='all 0.2s'
       >
-        <Image
-          src={userLiked === false ? '/images/icons/dislike-solid.svg' : '/images/icons/dislike.svg'}
-          alt='Dislike'
-          width={15}
-          height={15}
-          style={{ display: 'block' }}
-        />
+        <Pane position="relative" width={12} height={12}>
+          <Image
+            src='/images/icons/dislike.svg'
+            alt='Dislike'
+            width={12}
+            height={12}
+            style={{
+              position: 'absolute',
+              opacity: userLiked === false ? 0 : 1,
+              transition: 'all 0.2s ease-in-out'
+            }}
+          />
+          <Image
+            src='/images/icons/dislike-solid.svg'
+            alt='Dislike'
+            width={12}
+            height={12}
+            style={{
+              opacity: userLiked === false ? 1 : 0,
+              transition: 'all 0.2s ease-in-out'
+            }}
+          />
+        </Pane>
         <Text size={300} fontWeight={500}>
           {dislikeCount}
         </Text>

@@ -52,6 +52,7 @@ import {
   fetchUserMenuItemInteractions,
   fetchMenuItemScores,
 } from './actions';
+import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
 import {
   getAllDiningLocations,
 } from '@/lib/next-endpoints';
@@ -75,7 +76,7 @@ export default function MenuPage() {
   });
 
   // Get the date related information from the useDate hook
-  const { currentMeal, dateKey, formattedDateForDisplay, goToPreviousDay, goToNextDay, isWeekend } = useDate();
+  const { currentMeal, dateKey, formattedDateForDisplay, goToPreviousDay, goToNextDay, isWeekend, selectedDate, goToDate } = useDate();
 
   // Get the preferences for the menu page from local storage
   const {
@@ -85,6 +86,10 @@ export default function MenuPage() {
     pinnedHalls,
     showNutrition,
     toggleShowNutrition,
+    showDietaryTags,
+    toggleShowDietaryTags,
+    showAllergenTags,
+    toggleShowAllergenTags,
     toggleDiningHall,
     toggleDietaryRestriction,
     toggleAllergen,
@@ -260,7 +265,8 @@ export default function MenuPage() {
         display='grid'
         overflowY='auto'
         paddingBottom={majorScale(6)}
-        gridTemplateColumns='repeat(auto-fill,minmax(340px,1fr))'
+        paddingRight={majorScale(3)}
+        gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
         gap={majorScale(2)}
         className='h-full no-scrollbar'
       >
@@ -318,6 +324,8 @@ export default function MenuPage() {
               diningHall={diningHall}
               setModalHall={setModalHall}
               showNutrition={showNutrition}
+              showDietaryTags={showDietaryTags}
+              showAllergenTags={showAllergenTags}
               isPinned={isPinned}
               onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
             />
@@ -329,6 +337,7 @@ export default function MenuPage() {
 
   // Render the menu page
   return (
+    <NutritionAccordionProvider>
     <Pane
       display='flex'
       className='sm:flex-row overflow-hidden min-h-screen flex-col transition-colors duration-300'
@@ -341,6 +350,10 @@ export default function MenuPage() {
           setSearchTerm={setSearchTerm}
           showNutrition={showNutrition}
           toggleShowNutrition={toggleShowNutrition}
+          showDietaryTags={showDietaryTags}
+          toggleShowDietaryTags={toggleShowDietaryTags}
+          showAllergenTags={showAllergenTags}
+          toggleShowAllergenTags={toggleShowAllergenTags}
           sortOption={sortOption}
           setSortOption={setSortOption}
           diningHalls={diningHalls}
@@ -366,7 +379,7 @@ export default function MenuPage() {
             display='flex'
             alignItems='center'
             justifyContent='space-between'
-            marginY={majorScale(2)}
+            marginY={majorScale(1)}
             className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
           >
             {/* Render the meal header */}
@@ -387,6 +400,8 @@ export default function MenuPage() {
               goToPreviousDay={goToPreviousDay}
               goToNextDay={goToNextDay}
               isWeekend={isWeekend}
+              selectedDate={selectedDate}
+              goToDate={goToDate}
             />
 
             {/* Render the sort and filter options */}
@@ -407,6 +422,10 @@ export default function MenuPage() {
               setSearchTerm={setSearchTerm}
               showNutrition={showNutrition}
               toggleShowNutrition={toggleShowNutrition}
+              showDietaryTags={showDietaryTags}
+              toggleShowDietaryTags={toggleShowDietaryTags}
+              showAllergenTags={showAllergenTags}
+              toggleShowAllergenTags={toggleShowAllergenTags}
               sortOption={sortOption}
               setSortOption={setSortOption}
               diningHalls={diningHalls}
@@ -441,7 +460,10 @@ export default function MenuPage() {
         modalHall={modalHall}
         setModalHall={setModalHall}
         showNutrition={showNutrition}
+        showDietaryTags={showDietaryTags}
+        showAllergenTags={showAllergenTags}
       />
     </Pane>
+    </NutritionAccordionProvider>
   );
 }

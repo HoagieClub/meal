@@ -12,10 +12,32 @@
 
 import { defaultTheme } from 'evergreen-ui';
 
+const primarySelectors = defaultTheme.components.Tab.appearances.primary.selectors;
+
 const Tab = {
   ...defaultTheme.components.Tab,
   appearances: {
     ...defaultTheme.components.Tab.appearances,
+    primary: {
+      ...defaultTheme.components.Tab.appearances.primary,
+      selectors: {
+        ...primarySelectors,
+        _before: {
+          ...primarySelectors?._before,
+          backgroundColor: '#008001', // hoagiemeal-dark-green (underline)
+        },
+        _current: {
+          ...primarySelectors?._current,
+          color: '#008001', // hoagiemeal-dark-green
+          '&:focus': {
+            color: '#008001',
+          },
+        },
+        _focus: {
+          boxShadow: 'none',
+        },
+      },
+    },
     navbar: {
       ...defaultTheme.components.Tab.appearances.primary,
       fontSize: '14px',

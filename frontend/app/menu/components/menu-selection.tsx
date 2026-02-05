@@ -31,13 +31,19 @@ import MenuItemRow from './menu-item-row';
 const MenuSection = ({
   items,
   showNutrition,
+  showDietaryTags = true,
+  showAllergenTags = true,
   fullMenu,
   toggledColumns,
+  diningHallId,
 }: {
   items: MenuItem[];
   showNutrition?: boolean;
+  showDietaryTags?: boolean;
+  showAllergenTags?: boolean;
   fullMenu?: boolean;
   toggledColumns?: Column[];
+  diningHallId?: string;
 }) => {
   const theme = useTheme();
 
@@ -46,18 +52,11 @@ const MenuSection = ({
   if (fullMenu) {
     columns = toggledColumns;
   } else {
-    if (showNutrition) {
-      columns = ['Protein', 'Calories'];
-    } else {
-      columns = [];
-    }
+    columns = [];
   }
 
-  // Determine the items to display based on the full menu and items length.
-  let displayItems = items;
-  if (!fullMenu && items.length > 4) {
-    displayItems = displayItems.slice(0, 4);
-  }
+  // Determine the items to display.
+  const displayItems = items;
 
   // Determine the minimum width of the menu section based on the columns.
   const minWidth =
@@ -73,13 +72,13 @@ const MenuSection = ({
 
   // Render the menu section.
   return (
-    <Pane marginBottom={majorScale(3)}>
-      <Pane overflowX='auto'>
-        <Pane minWidth={minWidth} className='overflow-x-auto scrollbar-top'>
+    <Pane>
+      <Pane overflow='visible'>
+        <Pane minWidth={minWidth} className='scrollbar-top' overflow='visible'>
           {/* Section header */}
           <Pane
             display='grid'
-            gridTemplateColumns={`2fr ${columns?.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} ${fullMenu ? '1fr 1fr' : '1fr'}`}
+            gridTemplateColumns={`2fr ${columns?.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} auto${fullMenu ? ' 1fr' : ''}`}
             columnGap={minorScale(2)}
             rowGap={minorScale(1)}
             borderBottom={`1px solid ${theme.colors.green300}`}
@@ -93,9 +92,8 @@ const MenuSection = ({
                 {column}
               </Text>
             ))}
-            <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
-              Likes
-            </Text>
+            {/* Empty column for favorite/likes buttons (no header) */}
+            <Pane />
             {fullMenu && (
               <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
                 Views
@@ -109,13 +107,16 @@ const MenuSection = ({
               Nothing available
             </Text>
           ) : (
-            <Pane marginTop={minorScale(1)}>
+            <Pane>
               {displayItems.map((item) => (
                 <MenuItemRow
-                  key={item.apiId}
+                  key={`${diningHallId}-${item.apiId}`}
                   item={item}
                   columns={columns ?? []}
                   fullMenu={fullMenu}
+                  diningHallId={diningHallId}
+                  showDietaryTags={showDietaryTags}
+                  showAllergenTags={showAllergenTags}
                 />
               ))}
             </Pane>

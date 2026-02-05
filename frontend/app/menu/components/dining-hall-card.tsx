@@ -42,6 +42,8 @@ interface DiningHallCardProps {
   diningHall: Location;
   setModalHall: any;
   showNutrition: boolean;
+  showDietaryTags: boolean;
+  showAllergenTags: boolean;
   isPinned: boolean;
   onPinToggle: () => void;
 }
@@ -55,6 +57,8 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
   diningHall,
   setModalHall,
   showNutrition,
+  showDietaryTags,
+  showAllergenTags,
   isPinned,
   onPinToggle,
 }) => {
@@ -119,10 +123,10 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
       </Pane>
 
       {/* Render the menu section. */}
-      <MenuSection items={diningHall.menu ?? []} showNutrition={showNutrition} fullMenu={false} />
+      <MenuSection items={diningHall.menu ?? []} showNutrition={showNutrition} showDietaryTags={showDietaryTags} showAllergenTags={showAllergenTags} fullMenu={false} diningHallId={diningHall.name} />
 
       {/* Render the button to show more details. */}
-      <Pane display='flex' justifyContent='center' className='mt-auto'>
+      {/* <Pane display='flex' justifyContent='center' className='mt-auto'>
         <Button
           appearance='minimal'
           iconBefore={<ChevronDownIcon />}
@@ -131,7 +135,7 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
         >
           {'More Details'}
         </Button>
-      </Pane>
+      </Pane> */}
     </Pane>
   );
 };
