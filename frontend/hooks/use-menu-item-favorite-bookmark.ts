@@ -14,7 +14,7 @@
 
 import { useState } from 'react';
 import { MenuItemInteraction } from '@/types/types';
-import { updateUserMenuItemInteraction } from '@/lib/next-endpoints';
+import { patchUserMenuItemInteraction } from '@/lib/next-endpoints';
 
 /**
  * Hook return type for useMenuItemFavoriteBookmark.
@@ -65,7 +65,7 @@ export const useMenuItemFavoriteBookmark = (
     setFavorited(newFavoritedStatus);
 
     // Update interaction in the API
-    const updatedSuccessfully = await updateUserMenuItemInteraction({
+    const updatedSuccessfully = await patchUserMenuItemInteraction({
       menu_item_api_id: menuItemApiId,
       favorited: newFavoritedStatus,
     });
@@ -91,7 +91,7 @@ export const useMenuItemFavoriteBookmark = (
     setSavedForLater(newSavedForLaterStatus);
 
     // Update interaction in the API
-    const updatedSuccessfully = await updateUserMenuItemInteraction({
+    const updatedSuccessfully = await patchUserMenuItemInteraction({
       menu_item_api_id: menuItemApiId,
       saved_for_later: newSavedForLaterStatus,
     });

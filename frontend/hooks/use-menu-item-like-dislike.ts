@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { MenuItemInteraction, MenuItemMetrics } from '@/types/types';
-import { updateUserMenuItemInteraction } from '@/lib/next-endpoints';
+import { patchUserMenuItemInteraction } from '@/lib/next-endpoints';
 
 /**
  * Hook return type for useMenuItemLikeDislike.
@@ -108,7 +108,7 @@ export const useMenuItemLikeDislike = (
     setDislikeCount(optimisticDislikeCount);
 
     // Update interaction in the API
-    const updatedSuccessfully = await updateUserMenuItemInteraction({
+    const updatedSuccessfully = await patchUserMenuItemInteraction({
       menu_item_api_id: menuItemApiId,
       liked: newLikeStatus,
     });
@@ -170,7 +170,7 @@ export const useMenuItemLikeDislike = (
     setDislikeCount(optimisticDislikeCount);
 
     // Update interaction in the API
-    const updatedSuccessfully = await updateUserMenuItemInteraction({
+    const updatedSuccessfully = await patchUserMenuItemInteraction({
       menu_item_api_id: menuItemApiId,
       liked: newLikeStatus,
     });

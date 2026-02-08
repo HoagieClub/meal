@@ -260,7 +260,7 @@ def get_user_menu_item_interactions(request):
         )
 
 
-@api_view(["PUT", "PATCH"])
+@api_view(["PATCH"])
 def update_user_menu_item_interaction(request):
     """Django view function to update user menu item interaction.
 

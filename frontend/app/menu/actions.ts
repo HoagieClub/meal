@@ -30,9 +30,8 @@ import {
   DateKey,
 } from '@/types/types';
 import {
-  getAllDiningLocations,
-  getDiningMenuItems,
-  getDiningMenusForLocationsAndDay,
+  getMenuItems,
+  getAllMenusForDate,
   getMenuItemsMetrics,
   getUserMenuItemsInteractions,
   getMenuItemsScore,

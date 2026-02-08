@@ -19,17 +19,12 @@ from django.contrib import admin
 from django.urls import path
 from hoagiemeal.api.cacher import (
     get_or_cache_all_locations,
-    get_or_cache_residential_locations,
-    get_or_cache_retail_locations,
-    get_or_cache_residential_menus_for_date,
-    get_or_cache_retail_menus_for_date,
     get_or_cache_all_menus_for_date,
     get_or_cache_menu_items,
 )
 from hoagiemeal.api.recommend import get_menu_items_score
 from hoagiemeal.api.engagement import (
     get_user_menu_item_interactions,
-    record_user_menu_item_view,
     update_user_menu_item_interaction,
     get_menu_items_metrics,
 )
@@ -37,22 +32,12 @@ from hoagiemeal.api.user import verify_and_get_or_create_user
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # Location API Endpoints
     path("api/locations/", get_or_cache_all_locations, name="all-locations"),
-    path("api/locations/residential/", get_or_cache_residential_locations, name="residential-locations"),
-    path("api/locations/retail/", get_or_cache_retail_locations, name="retail-locations"),
-    # Menu API Endpoints
-    path("api/menus/residential/", get_or_cache_residential_menus_for_date, name="residential-menus-for-date"),
-    path("api/menus/retail/", get_or_cache_retail_menus_for_date, name="retail-menus-for-date"),
     path("api/menus/", get_or_cache_all_menus_for_date, name="all-menus-for-date"),
-    # Menu Items API Endpoints
     path("api/menu-items/", get_or_cache_menu_items, name="menu-items"),
-    # Recommendation API Endpoints
     path("api/recommend/", get_menu_items_score, name="menu-items-score"),
-    # Engagement API Endpoints
     path("api/engagement/interactions/", get_user_menu_item_interactions, name="user-menu-item-interactions"),
     path("api/engagement/interaction/", update_user_menu_item_interaction, name="update-user-menu-item-interaction"),
     path("api/engagement/metrics/", get_menu_items_metrics, name="menu-items-metrics"),
-    # User API Endpoints
     path("api/user/", verify_and_get_or_create_user, name="verify-and-get-or-create-user"),
 ]
