@@ -16,69 +16,36 @@
 
 import React from 'react';
 import { Pane, Text, minorScale, majorScale, useTheme } from 'evergreen-ui';
-import { Column, MenuItem } from '@/types/types';
 import MenuItemRow from './menu-item-row';
 
 /**
  * Menu section component.
  *
  * @param items - The items to display in the menu section.
- * @param showNutrition - Whether to show nutrition information.
  * @param fullMenu - Whether the menu is a full menu.
- * @param toggledColumns - The columns to display.
  * @returns The menu section component.
  */
 const MenuSection = ({
   items,
-  showNutrition,
-  showDietaryTags = true,
-  showAllergenTags = true,
   fullMenu,
-  toggledColumns,
   diningHallId,
 }: {
-  items: MenuItem[];
+  items: any[];
   showNutrition?: boolean;
-  showDietaryTags?: boolean;
-  showAllergenTags?: boolean;
   fullMenu?: boolean;
-  toggledColumns?: Column[];
   diningHallId?: string;
 }) => {
   const theme = useTheme();
-
-  // Determine the columns to display based on the full menu and toggled columns.
-  let columns: Column[] | undefined;
-  if (fullMenu) {
-    columns = toggledColumns;
-  } else {
-    columns = [];
-  }
-
-  // Determine the items to display.
-  const displayItems = items;
-
-  // Determine the minimum width of the menu section based on the columns.
-  const minWidth =
-    columns?.reduce((acc, column) => {
-      if (column === 'Ingredients') {
-        return acc + 300;
-      } else if (column === 'Allergens') {
-        return acc + 200;
-      } else {
-        return acc + 100;
-      }
-    }, 0) ?? 0;
 
   // Render the menu section.
   return (
     <Pane>
       <Pane overflow='visible'>
-        <Pane minWidth={minWidth} className='scrollbar-top' overflow='visible'>
+        <Pane minWidth={300} className='scrollbar-top' overflow='visible'>
           {/* Section header */}
           <Pane
             display='grid'
-            gridTemplateColumns={`2fr ${columns?.map((column) => (column === 'Ingredients' ? '3fr' : column === 'Allergens' ? '2fr' : '1fr')).join(' ')} auto${fullMenu ? ' 1fr' : ''}`}
+            gridTemplateColumns='2fr 1fr auto 1fr'
             columnGap={minorScale(2)}
             rowGap={minorScale(1)}
             borderBottom={`1px solid ${theme.colors.green300}`}
@@ -87,36 +54,22 @@ const MenuSection = ({
             <Text size={300} fontWeight={500} textAlign='left' className='my-auto'>
               Meal
             </Text>
-            {columns?.map((column) => (
-              <Text size={300} fontWeight={500} textAlign='right' className='my-auto' key={column}>
-                {column}
-              </Text>
-            ))}
             {/* Empty column for favorite/likes buttons (no header) */}
             <Pane />
-            {fullMenu && (
-              <Text size={300} fontWeight={500} textAlign='right' className='my-auto'>
-                Views
-              </Text>
-            )}
           </Pane>
 
           {/* Render the menu items. */}
-          {displayItems.length === 0 ? (
+          {items.length === 0 ? (
             <Text size={300} color='muted' fontStyle='italic' marginTop={minorScale(1)}>
               Nothing available
             </Text>
           ) : (
             <Pane>
-              {displayItems.map((item) => (
+              {items.map((item) => (
                 <MenuItemRow
                   key={`${diningHallId}-${item.apiId}`}
                   item={item}
-                  columns={columns ?? []}
-                  fullMenu={fullMenu}
                   diningHallId={diningHallId}
-                  showDietaryTags={showDietaryTags}
-                  showAllergenTags={showAllergenTags}
                 />
               ))}
             </Pane>

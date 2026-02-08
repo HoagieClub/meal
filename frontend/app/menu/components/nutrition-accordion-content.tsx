@@ -1,6 +1,5 @@
 'use client';
 
-import { MenuItemNutrition } from '@/types/types';
 import { calculateDVPercentage } from '@/utils/dining';
 import {
   ServingCalories,
@@ -9,17 +8,13 @@ import {
   Ingredients,
 } from './nutrition';
 
-interface NutritionAccordionContentProps {
-  nutrition: MenuItemNutrition | undefined;
-  ingredients?: string[];
-  allergens?: string[];
-}
-
 export default function NutritionAccordionContent({
-  nutrition,
-  ingredients,
-  allergens,
-}: NutritionAccordionContentProps) {
+  item,
+}: any) {
+  const nutrition = item.nutrition;
+  const ingredients = item.ingredients;
+  const allergens = item.allergens;
+
   if (!nutrition) {
     return (
       <div className="p-4 text-gray-500">

@@ -15,8 +15,6 @@
 'use client';
 
 import {
-  Button,
-  ChevronDownIcon,
   majorScale,
   minorScale,
   Pane,
@@ -25,7 +23,6 @@ import {
 } from 'evergreen-ui';
 import React from 'react';
 import MenuSection from './menu-selection';
-import { Location, DiningHall } from '@/types/types';
 import { HALL_BANNER_MAP } from '@/styles';
 import { DINING_HALL_DISPLAY_NAMES } from '@/data';
 
@@ -33,17 +30,13 @@ import { DINING_HALL_DISPLAY_NAMES } from '@/data';
  * Props for the DiningHallCard component.
  *
  * @param diningHall - The dining hall to display
- * @param setModalHall - The function to set the modal hall
  * @param showNutrition - Whether to show nutrition information
  * @param isPinned - Whether the dining hall is pinned
  * @param onPinToggle - The function to call when the pin is toggled
  */
 interface DiningHallCardProps {
-  diningHall: Location;
-  setModalHall: any;
+  diningHall: any;
   showNutrition: boolean;
-  showDietaryTags: boolean;
-  showAllergenTags: boolean;
   isPinned: boolean;
   onPinToggle: () => void;
 }
@@ -53,19 +46,15 @@ interface DiningHallCardProps {
  *
  * @returns The dining hall card component
  */
-const DiningHallCard: React.FC<DiningHallCardProps> = ({
+const DiningHallCard = ({
   diningHall,
-  setModalHall,
   showNutrition,
-  showDietaryTags,
-  showAllergenTags,
   isPinned,
   onPinToggle,
-}) => {
+}: DiningHallCardProps) => {
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
 
-  // Render the dining hall card.
   return (
     <Pane
       key={diningHall.name}
@@ -92,8 +81,8 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
           paddingX={majorScale(2)}
           paddingY={minorScale(1)}
         >
-            <Text size={600} fontWeight={600} color={theme.colors.gray900}>
-            {DINING_HALL_DISPLAY_NAMES[diningHall.name as DiningHall] ?? diningHall.name}
+          <Text size={600} fontWeight={600} color={theme.colors.gray900}>
+            {DINING_HALL_DISPLAY_NAMES[diningHall.name as keyof typeof DINING_HALL_DISPLAY_NAMES] ?? diningHall.name}
           </Text>
         </Pane>
 
@@ -116,26 +105,10 @@ const DiningHallCard: React.FC<DiningHallCardProps> = ({
               alt={isPinned ? 'Unpin hall' : 'Pin hall'}
             />
           </Pane>
-
-          {/* Render the dining hall image. */}
           <img src={imageSrc?.src} className='h-full my-auto w-auto' alt={diningHall.name} />
         </Pane>
       </Pane>
-
-      {/* Render the menu section. */}
-      <MenuSection items={diningHall.menu ?? []} showNutrition={showNutrition} showDietaryTags={showDietaryTags} showAllergenTags={showAllergenTags} fullMenu={false} diningHallId={diningHall.name} />
-
-      {/* Render the button to show more details. */}
-      {/* <Pane display='flex' justifyContent='center' className='mt-auto'>
-        <Button
-          appearance='minimal'
-          iconBefore={<ChevronDownIcon />}
-          onClick={() => setModalHall(diningHall)}
-          className='w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold'
-        >
-          {'More Details'}
-        </Button>
-      </Pane> */}
+      <MenuSection items={diningHall.menu ?? []} showNutrition={showNutrition} diningHallId={diningHall.name} />
     </Pane>
   );
 };

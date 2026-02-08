@@ -39,7 +39,7 @@ import {
   ALLERGENS,
   DIETARY_TAGS,
 } from '@/types/types';
-import SortDropdown, { MenuSortOption } from './sort-dropdown';
+import SortDropdown from './sort-dropdown';
 
 /**
  * Filter sidebar component props.
@@ -62,19 +62,11 @@ import SortDropdown, { MenuSortOption } from './sort-dropdown';
 interface FilterSidebarProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  showNutrition: boolean;
-  toggleShowNutrition: () => void;
-  showDietaryTags: boolean;
-  toggleShowDietaryTags: () => void;
-  showAllergenTags: boolean;
-  toggleShowAllergenTags: () => void;
-  sortOption: MenuSortOption;
-  setSortOption: (sort: MenuSortOption) => void;
+  sortOption: any;
+  setSortOption: (sort: any) => void;
   diningHalls: DiningHall[];
-  dietaryRestrictions: DietaryTag[];
   allergens: Allergen[];
   toggleDiningHall: (hall: DiningHall) => void;
-  toggleDietaryRestriction: (tag: DietaryTag) => void;
   toggleAllergen: (allergen: Allergen) => void;
   clearPreferences: () => void;
   variant?: 'sidebar' | 'mobile';
@@ -89,19 +81,11 @@ interface FilterSidebarProps {
 export default function FilterSidebar({
   searchTerm,
   setSearchTerm,
-  showNutrition,
-  toggleShowNutrition,
-  showDietaryTags,
-  toggleShowDietaryTags,
-  showAllergenTags,
-  toggleShowAllergenTags,
   sortOption,
   setSortOption,
   diningHalls,
-  dietaryRestrictions,
   allergens,
   toggleDiningHall,
-  toggleDietaryRestriction,
   toggleAllergen,
   clearPreferences,
   variant = 'sidebar',
@@ -138,60 +122,6 @@ export default function FilterSidebar({
         <Text size={300} color={theme.colors.gray900}>
           {diningHallText}
         </Text>
-      </Pane>
-    );
-  };
-
-  /**
-   * Dietary tag row component.
-   *
-   * @param dietKey - The dietary tag to display
-   * @param checked - Whether the dietary tag is checked
-   * @param onChange - The function to call when the dietary tag is changed
-   * @returns The dietary tag row component
-   */
-  const DietaryTagRow = ({
-    dietKey,
-    checked,
-    onChange,
-  }: {
-    dietKey: DietaryTag;
-    checked: boolean;
-    onChange: () => void;
-  }) => {
-    const isHalalOrKosher = dietKey === 'Halal' || dietKey === 'Kosher';
-
-    // Render the dietary tag row.
-    return (
-      <Pane display='flex' alignItems='center' height={30} cursor='pointer' onClick={onChange}>
-        <Checkbox checked={checked} onChange={onChange} className="[&_input:checked+div]:!bg-green-700" />
-        <Pane marginLeft={minorScale(2)} marginRight={minorScale(1)}>
-          <img src={DIET_ICON_MAP[dietKey]} alt={dietKey} width={15} height={15} />
-        </Pane>
-        <Text size={300} color={theme.colors.gray900}>
-          {dietKey}
-        </Text>
-        {isHalalOrKosher && (
-          <Popover
-            position={Position.TOP}
-            content={
-              <Pane padding={majorScale(2)} maxWidth={250}>
-                <Text size={300}>
-                  This tag might not be correct. Please double check with chefs.
-                </Text>
-              </Pane>
-            }
-          >
-            <Text
-              size={300}
-              cursor='help'
-              marginLeft={minorScale(1)}
-              title='This tag might not be correct. Please double check with chefs.'
-            >
-              *
-            </Text>
-          </Popover>
-        )}
       </Pane>
     );
   };
@@ -294,7 +224,7 @@ export default function FilterSidebar({
             background={theme.colors.gray100}
             marginBottom={minorScale(1)}
             className='rounded-sm w-fit py-1 px-2 -ml-2 -mt-2 space-x-1 transition-colors duration-200 hover:bg-gray-200'
-            >
+          >
             <UndoIcon size={14} color={theme.colors.gray700} />
             <Text marginLeft={minorScale(1)} size={300} color={theme.colors.gray700}>
               Reset
@@ -318,24 +248,7 @@ export default function FilterSidebar({
           />
         </Pane>
 
-        {/* Show Nutrition Toggle */}
         <Pane className='px-4 pt-4'>
-          {/* <Pane
-            display='flex'
-            alignItems='center'
-            justifyContent='space-between'
-            marginBottom={minorScale(3)}
-          >
-            <Text size={300} fontWeight={600} color={theme.colors.gray800}>
-              Show Nutrition
-            </Text>
-            <Switch
-              checked={showNutrition}
-              onChange={toggleShowNutrition}
-              className="[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none"
-            />
-          </Pane> */}
-
           {/* Sort dropdown */}
           <Pane
             display='flex'
@@ -409,59 +322,9 @@ export default function FilterSidebar({
                 marginBottom={minorScale(2)}
               />
 
-              {/* Control which dietary tags are displayed */}
-              <Pane
-                display='flex'
-                alignItems='center'
-                justifyContent='space-between'
-              >
-                <Text size={300} fontWeight={600} color={theme.colors.gray800}>
-                  Dietary Tags
-                </Text>
-                <Switch
-                  checked={showDietaryTags}
-                  onChange={toggleShowDietaryTags}
-                  className="[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none"
-                />
-              </Pane>
-              <Text className="text-xs" color={theme.colors.gray600} marginBottom={minorScale(1)}>
-                Only show items that are:
-              </Text>
-              <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                {DIETARY_TAGS.filter(tag => tag !== 'Halal' && tag !== 'Kosher').map((dietKey: DietaryTag) => (
-                  <DietaryTagRow
-                    key={dietKey}
-                    dietKey={dietKey}
-                    checked={dietaryRestrictions.includes(dietKey)}
-                    onChange={() => toggleDietaryRestriction(dietKey)}
-                  />
-                ))}
-              </Pane>
-
-              <Pane
-                borderBottom={`1px solid ${theme.colors.gray200}`}
-                marginBottom={minorScale(2)}
-              />
-
               {/* Control which allergens are not displayed */}
-              <Pane
-                display='flex'
-                alignItems='center'
-                justifyContent='space-between'
-              >
-                <Text size={300} fontWeight={600} color={theme.colors.gray800}>
-                  Allergen Tags
-                </Text>
-                <Switch
-                  checked={showAllergenTags}
-                  onChange={toggleShowAllergenTags}
-                  className="[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none"
-                />
-              </Pane>
-              <Text className="text-xs" color={theme.colors.gray600} marginBottom={minorScale(1)}>
-                Exclude items containing:
-              </Text>
-              <Pane display='flex' flexDirection='column'>
+              <Text size={300} fontWeight={600} color={theme.colors.gray800}>Allergen Tags</Text>
+              <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
                 {ALLERGENS.map((allergen: Allergen) => (
                   <AllergenRow
                     key={allergen}
