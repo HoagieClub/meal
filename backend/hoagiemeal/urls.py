@@ -17,67 +17,67 @@ This software is provided "as-is", without warranty of any kind.
 
 from django.contrib import admin
 from django.urls import path
-from hoagiemeal.api.locations import get_dining_locations, get_all_dining_locations
-from hoagiemeal.api.menu import (
-    get_dining_menu_item,
-    get_dining_menu_items,
-    get_dining_menu,
-    get_dining_menus_for_locations,
-    get_dining_menus_for_locations_and_day,
-    get_dining_menus_for_locations_and_days,
-)
-from hoagiemeal.api.interactions import (
-    get_user_menu_item_interaction,
-    get_user_menu_item_interactions,
-    record_user_menu_item_view,
-    update_user_menu_item_interaction,
-    get_menu_item_metrics,
-    get_menu_items_metrics,
-)
-from hoagiemeal.api.user import (
-    verify_and_get_or_create_user,
-)
-from hoagiemeal.api.recommendations import get_menu_item_score, get_menu_items_score
+# from hoagiemeal.api.locations import get_dining_locations, get_all_dining_locations
+# from hoagiemeal.api.menu import (
+#     get_dining_menu_item,
+#     get_dining_menu_items,
+#     get_dining_menu,
+#     get_dining_menus_for_locations,
+#     get_dining_menus_for_locations_and_day,
+#     get_dining_menus_for_locations_and_days,
+# )
+# from hoagiemeal.api.interactions import (
+#     get_user_menu_item_interaction,
+#     get_user_menu_item_interactions,
+#     record_user_menu_item_view,
+#     update_user_menu_item_interaction,
+#     get_menu_item_metrics,
+#     get_menu_items_metrics,
+# )
+# from hoagiemeal.api.user import (
+#     verify_and_get_or_create_user,
+# )
+# from hoagiemeal.api.recommendations import get_menu_item_score, get_menu_items_score
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # Location API Endpoints
-    path("api/dining/locations/", get_dining_locations, name="dining-locations"),
-    path("api/dining/locations/all/", get_all_dining_locations, name="all-dining-locations"),
-    # Menu fetching endpoints
-    path("api/dining/menus/", get_dining_menu, name="dining-menu"),
-    path(
-        "api/dining/menus/locations/",
-        get_dining_menus_for_locations,
-        name="dining-menus-for-locations",
-    ),
-    path(
-        "api/dining/menus/locations/day/",
-        get_dining_menus_for_locations_and_day,
-        name="dining-menus-for-locations-and-day",
-    ),
-    path(
-        "api/dining/menus/locations/days/",
-        get_dining_menus_for_locations_and_days,
-        name="dining-menus-for-locations-and-days",
-    ),
-    # Menu items fetching endpoints
-    path("api/dining/menu-items/", get_dining_menu_item, name="dining-menu-item"),
-    path("api/dining/menu-items/batch/", get_dining_menu_items, name="dining-menu-items"),
-    # Interaction API Endpoints
-    path("api/interactions/user/menu-item/", get_user_menu_item_interaction, name="get-user-menu-item-interaction"),
-    path("api/interactions/user/menu-items/", get_user_menu_item_interactions, name="get-user-menu-item-interactions"),
-    path("api/interactions/user/menu-item/view/", record_user_menu_item_view, name="record-user-menu-item-view"),
-    path(
-        "api/interactions/user/menu-item/update/",
-        update_user_menu_item_interaction,
-        name="update-user-menu-item-interaction",
-    ),
-    path("api/interactions/menu-item/metrics/", get_menu_item_metrics, name="get-menu-item-metrics"),
-    path("api/interactions/menu-items/metrics/", get_menu_items_metrics, name="get-menu-items-metrics"),
-    # Recommendation API Endpoints
-    path("api/recommend/menu-item/", get_menu_item_score, name="get-menu-item-score"),
-    path("api/recommend/menu-items/", get_menu_items_score, name="get-menu-items-score"),
-    # User API Endpoints
-    path("api/user/verify/", verify_and_get_or_create_user, name="verify-and-get-or-create-user"),
+    # # Location API Endpoints
+    # path("api/dining/locations/", get_dining_locations, name="dining-locations"),
+    # path("api/dining/locations/all/", get_all_dining_locations, name="all-dining-locations"),
+    # # Menu fetching endpoints
+    # path("api/dining/menus/", get_dining_menu, name="dining-menu"),
+    # path(
+    #     "api/dining/menus/locations/",
+    #     get_dining_menus_for_locations,
+    #     name="dining-menus-for-locations",
+    # ),
+    # path(
+    #     "api/dining/menus/locations/day/",
+    #     get_dining_menus_for_locations_and_day,
+    #     name="dining-menus-for-locations-and-day",
+    # ),
+    # path(
+    #     "api/dining/menus/locations/days/",
+    #     get_dining_menus_for_locations_and_days,
+    #     name="dining-menus-for-locations-and-days",
+    # ),
+    # # Menu items fetching endpoints
+    # path("api/dining/menu-items/", get_dining_menu_item, name="dining-menu-item"),
+    # path("api/dining/menu-items/batch/", get_dining_menu_items, name="dining-menu-items"),
+    # # Interaction API Endpoints
+    # path("api/interactions/user/menu-item/", get_user_menu_item_interaction, name="get-user-menu-item-interaction"),
+    # path("api/interactions/user/menu-items/", get_user_menu_item_interactions, name="get-user-menu-item-interactions"),
+    # path("api/interactions/user/menu-item/view/", record_user_menu_item_view, name="record-user-menu-item-view"),
+    # path(
+    #     "api/interactions/user/menu-item/update/",
+    #     update_user_menu_item_interaction,
+    #     name="update-user-menu-item-interaction",
+    # ),
+    # path("api/interactions/menu-item/metrics/", get_menu_item_metrics, name="get-menu-item-metrics"),
+    # path("api/interactions/menu-items/metrics/", get_menu_items_metrics, name="get-menu-items-metrics"),
+    # # Recommendation API Endpoints
+    # path("api/recommend/menu-item/", get_menu_item_score, name="get-menu-item-score"),
+    # path("api/recommend/menu-items/", get_menu_items_score, name="get-menu-items-score"),
+    # # User API Endpoints
+    # path("api/user/verify/", verify_and_get_or_create_user, name="verify-and-get-or-create-user"),
 ]

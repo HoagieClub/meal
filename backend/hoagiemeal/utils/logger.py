@@ -30,7 +30,7 @@ init(autoreset=True)
 #################### File Blacklist #########################
 # Add filenames (without path) to this set to prevent logging from those files.
 # Example: LOGGER_FILE_BLACKLIST = {"migrations.py", "test_file.py"}
-LOGGER_FILE_BLACKLIST = {"student_app.py"}
+LOGGER_FILE_BLACKLIST = {"scraper.py"}
 
 #################### Log File Settings #########################
 # Toggle to enable/disable saving logs to file

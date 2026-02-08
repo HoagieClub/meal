@@ -1,4 +1,4 @@
-"""Django models related to user engagement.
+"""Django models related to dining menus.
 
 Copyright © 2021-2025 Hoagie Club and affiliates.
 
@@ -17,235 +17,164 @@ This software is provided "as-is", without warranty of any kind.
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.core.validators import MinValueValidator, MaxValueValidator
-from pgvector.django import VectorField
-
 from hoagiemeal.models.user import CustomUser
-from hoagiemeal.models.menu import MenuItem
+from django.contrib.auth import get_user_model
+from hoagiemeal.models.menu_item import MenuItem
+from hoagiemeal.models.menu import ResidentialMenu, RetailMenu
+from hoagiemeal.models.dining import DiningLocation
+
+User = get_user_model()
 
 
-# class UserStreak(models.Model):
-#     """Tracks a user's app usage streaks and engagement metrics.
+class MenuItemInteraction(models.Model):
+    """Represents user interactions with a menu item.
 
-#     Attributes:
-#         user (CustomUser): The user whose streak is being tracked.
-#         current_streak_days (int): Current consecutive days of app usage.
-#         longest_streak_days (int): Longest streak achieved.
-#         last_activity_date (date): Date of the user's last activity.
-#         total_days_active (int): Total number of days the user has been active.
-#         current_week_active_days (int): Number of active days in the current week.
-#         streak_start_date (date): When the current streak started.
+    Attributes:
+        user (CustomUser): The user who interacted with the menu item.
+        menu_item (MenuItem): The menu item that was interacted with.
 
-#     """
+        viewed (bool): Whether the menu item was viewed.
+        view_count (int): The number of times the menu item was viewed.
+        first_viewed_at (datetime): The date and time the menu item was first viewed.
+        last_viewed_at (datetime): The date and time the menu item was last viewed.
+        liked (bool): Whether the menu item was liked.
+        favorited (bool): Whether the menu item was favorited.
+        saved_for_later (bool): Whether the menu item was saved for later.
+        would_eat_again (str): Whether the menu item would be eaten again.
 
-#     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="streak")
-#     current_streak_days = models.PositiveIntegerField(default=0)
-#     longest_streak_days = models.PositiveIntegerField(default=0)
-#     last_activity_date = models.DateField(null=True, blank=True)
-#     total_days_active = models.PositiveIntegerField(default=0)
-#     current_week_active_days = models.PositiveIntegerField(default=0)
-#     streak_start_date = models.DateField(null=True, blank=True)
+        created_at (datetime): The date and time the interaction was created.
+        updated_at (datetime): The date and time the interaction was last updated.
 
-#     class Meta:
-#         """Meta class for the UserStreak model."""
+    """
 
-#         db_table = "user_streaks"
-#         indexes = [
-#             models.Index(fields=["current_streak_days"]),
-#             models.Index(fields=["longest_streak_days"]),
-#             models.Index(fields=["last_activity_date"]),
-#         ]
+    class WouldEatAgain(models.TextChoices):
+        """Would eat again choices for the MenuItemInteraction model."""
 
-#     def __str__(self):
-#         """Return the string representation of the UserStreak instance.
+        YES = "Y", _("Yes")
+        NO = "N", _("No")
+        MAYBE = "M", _("Maybe")
 
-#         Returns:
-#             str: A description of the user's streak.
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="menu_item_interactions",
+    )
+    menu_item = models.ForeignKey(
+        MenuItem,
+        on_delete=models.CASCADE,
+        related_name="user_interactions",
+    )
 
-#         """
-#         return f"{self.user.get_full_name()} - {self.current_streak_days} day streak"
+    viewed = models.BooleanField(default=False)
+    view_count = models.PositiveSmallIntegerField(default=0)
+    first_viewed_at = models.DateTimeField(null=True, blank=True)
+    last_viewed_at = models.DateTimeField(null=True, blank=True)
+    liked = models.BooleanField(null=True, blank=True)
+    favorited = models.BooleanField(default=False)
+    saved_for_later = models.BooleanField(default=False)
+    would_eat_again = models.CharField(max_length=1, choices=WouldEatAgain.choices, null=True, blank=True)
 
-#     def record_activity(self, activity_date=None):
-#         """Record user activity and update streak information.
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-#         Args:
-#             activity_date: The date of the activity (defaults to today).
+    class Meta:
+        """Meta class for the MenuItemInteraction model."""
 
-#         Returns:
-#             bool: Whether the streak was incremented.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "menu_item"],
+                name="user_menu_item_interaction",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["menu_item"]),
+        ]
 
-#         """
-#         from datetime import date, timedelta
-
-#         today = activity_date or date.today()
-
-#         # First activity ever
-#         if not self.last_activity_date:
-#             self.current_streak_days = 1
-#             self.longest_streak_days = 1
-#             self.total_days_active = 1
-#             self.current_week_active_days = 1
-#             self.streak_start_date = today
-#             self.last_activity_date = today
-#             self.save()
-#             return True
-
-#         # Already recorded activity today
-#         if self.last_activity_date == today:
-#             return False
-
-#         # Calculate days since last activity
-#         days_since_last = (today - self.last_activity_date).days
-
-#         # Continuing streak (activity yesterday)
-#         if days_since_last == 1:
-#             self.current_streak_days += 1
-#             self.total_days_active += 1
-
-#             # Update longest streak if current is longer
-#             if self.current_streak_days > self.longest_streak_days:
-#                 self.longest_streak_days = self.current_streak_days
-
-#         # Missed a day, but still active
-#         elif days_since_last > 1:
-#             # Reset streak
-#             self.current_streak_days = 1
-#             self.streak_start_date = today
-#             self.total_days_active += 1
-
-#         # Update week counter
-#         start_of_week = today - timedelta(days=today.weekday())
-#         if self.last_activity_date < start_of_week:
-#             self.current_week_active_days = 1
-#         else:
-#             self.current_week_active_days += 1
-
-#         self.last_activity_date = today
-#         self.save()
-#         return True
+    def __str__(self):
+        """Return the string representation of the MenuItemInteraction instance."""
+        return f"User {self.user.id} interacted with menu item {self.menu_item.id}"
 
 
-# class UserPreferenceSnapshot(models.Model):
-#     """Captures a snapshot of user preferences at a point in time.
+class MenuItemMetrics(models.Model):
+    """Aggregate metrics and cached computations for menu items.
 
-#     Used to track how preferences change over time and adapt recommendations accordingly.
+    Attributes:
+        menu_item (MenuItem): The menu item that the metrics are for.
 
-#     Attributes:
-#         user (CustomUser): The user whose preferences are captured.
-#         timestamp (datetime): When this snapshot was taken.
-#         preference_vector (VectorField): Vector embedding of preferences.
-#         active_interests (list): List of active interests at this time.
-#         context (dict): Contextual information about when this snapshot was taken.
-#         snapshot_type (str): Type of snapshot (periodic, event-triggered, etc.).
+        view_count (int): The number of times the menu item was viewed.
+        unique_view_count (int): The number of unique users who viewed the menu item.
+        like_count (int): The number of times the menu item was liked.
+        dislike_count (int): The number of times the menu item was disliked.
+        average_like_score (float): The average score of the menu item's likes.
+        favorite_count (int): The number of times the menu item was favorited.
+        saved_for_later_count (int): The number of times the menu item was saved for later.
+        would_eat_again_yes (int): The number of times the menu item was would eat again yes.
+        would_eat_again_no (int): The number of times the menu item was would eat again no.
+        would_eat_again_maybe (int): The number of times the menu item was would eat again maybe.
+        average_would_eat_again_score (float): The average score of the menu item's would eat again.
 
-#     """
+        updated_at (datetime): The date and time the metrics were last updated.
+        created_at (datetime): The date and time the metrics were created.
 
-#     class SnapshotType(models.TextChoices):
-#         """Snapshot type choices for the UserPreferenceSnapshot model."""
+    """
 
-#         PERIODIC = "PE", _("Periodic")
-#         EVENT_TRIGGERED = "ET", _("Event Triggered")
-#         SEASONAL = "SE", _("Seasonal")
-#         MAJOR_CHANGE = "MC", _("Major Change Detected")
+    menu_item = models.OneToOneField(
+        MenuItem,
+        on_delete=models.CASCADE,
+        related_name="metrics",
+    )
 
-#     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="preference_snapshots")
-#     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-#     preference_vector = VectorField(
-#         dimensions=384,  # Matching other vector dimensions
-#         help_text=_("Vector embedding of preferences"),
-#     )
-#     active_interests = models.JSONField(
-#         help_text=_("List of active interests at this time"),
-#     )
-#     context = models.JSONField(
-#         default=dict,
-#         blank=True,
-#         help_text=_("Contextual information about when this snapshot was taken"),
-#     )
-#     snapshot_type = models.CharField(
-#         max_length=2,
-#         choices=SnapshotType.choices,
-#         default=SnapshotType.PERIODIC,
-#     )
+    view_count = models.PositiveIntegerField(default=0)
+    unique_view_count = models.PositiveIntegerField(default=0)
 
-#     class Meta:
-#         """Meta class for the UserPreferenceSnapshot model."""
+    like_count = models.PositiveIntegerField(default=0)
+    dislike_count = models.PositiveIntegerField(default=0)
+    average_like_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    favorite_count = models.PositiveIntegerField(default=0)
+    saved_for_later_count = models.PositiveIntegerField(default=0)
 
-#         db_table = "user_preference_snapshots"
-#         indexes = [
-#             models.Index(
-#                 fields=["preference_vector"], name="preference_snapshot_vector_idx", opclasses=["vector_ops"]
-#             ),
-#             models.Index(fields=["user", "timestamp"]),
-#             models.Index(fields=["snapshot_type"]),
-#         ]
+    would_eat_again_yes = models.PositiveIntegerField(default=0)
+    would_eat_again_no = models.PositiveIntegerField(default=0)
+    would_eat_again_maybe = models.PositiveIntegerField(default=0)
+    average_would_eat_again_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
 
-#     def __str__(self):
-#         """Return the string representation of the UserPreferenceSnapshot instance.
+    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-#         Returns:
-#             str: A description of the snapshot.
+    class Meta:
+        """Meta class for the MenuItemMetrics model."""
 
-#         """
-#         return f"Preference snapshot for {self.user.get_full_name()} at {self.timestamp}"
+        db_table = "menu_item_metrics"
+        unique_together = ["menu_item"]
+
+    def __str__(self):
+        """Return the string representation of the MenuItemMetrics instance."""
+        return f"Metrics for menu item {self.menu_item.id}"
 
 
-# class PreferenceChangeEvent(models.Model):
-#     """Records significant changes in user preferences.
+class MenuItemSimilarity(models.Model):
+    """Represents the similarity between two menu items.
 
-#     Attributes:
-#         user (CustomUser): The user whose preferences changed.
-#         timestamp (datetime): When the change was detected.
-#         previous_snapshot (UserPreferenceSnapshot): Snapshot before the change.
-#         current_snapshot (UserPreferenceSnapshot): Snapshot after the change.
-#         change_magnitude (float): Magnitude of the change (0.0-1.0).
-#         change_description (str): Human-readable description of the change.
-#         affected_interests (list): Interests affected by this change.
+    Attributes:
+        menu_item_a (MenuItem): The first menu item.
+        menu_item_b (MenuItem): The second menu item.
+        score (float): The similarity score between the two menu items.
 
-#     """
+    """
 
-#     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="preference_changes")
-#     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-#     previous_snapshot = models.ForeignKey(
-#         UserPreferenceSnapshot,
-#         on_delete=models.SET_NULL,
-#         null=True,
-#         related_name="changes_after",
-#     )
-#     current_snapshot = models.ForeignKey(
-#         UserPreferenceSnapshot,
-#         on_delete=models.SET_NULL,
-#         null=True,
-#         related_name="changes_before",
-#     )
-#     change_magnitude = models.FloatField(
-#         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
-#         help_text=_("Magnitude of the change (0.0-1.0)"),
-#     )
-#     change_description = models.TextField(
-#         blank=True,
-#         help_text=_("Human-readable description of the change"),
-#     )
-#     affected_interests = models.JSONField(
-#         default=list,
-#         blank=True,
-#         help_text=_("Interests affected by this change"),
-#     )
+    menu_item_a = models.ForeignKey(MenuItem, on_delete=models.CASCADE, related_name="+")
+    menu_item_b = models.ForeignKey(MenuItem, on_delete=models.CASCADE, related_name="+")
+    score = models.FloatField()
 
-#     class Meta:
-#         """Meta class for the PreferenceChangeEvent model."""
+    class Meta:
+        """Meta class for the MenuItemSimilarity model."""
 
-#         db_table = "preference_change_events"
-#         indexes = [
-#             models.Index(fields=["user", "timestamp"]),
-#             models.Index(fields=["change_magnitude"]),
-#         ]
+        unique_together = ("menu_item_a", "menu_item_b")
+        indexes = [
+            models.Index(fields=["menu_item_a", "menu_item_b"]),
+        ]
 
-#     def __str__(self):
-#         """Return the string representation of the PreferenceChangeEvent instance.
-
-#         Returns:
-#             str: A description of the preference change event.
-
-#         """
-#         return f"Preference change for {self.user.get_full_name()} at {self.timestamp} (magnitude: {self.change_magnitude:.2f})"
+    def __str__(self):
+        """Return the string representation of the MenuItemSimilarity instance."""
+        return f"Similarity between {self.menu_item_a.name} and {self.menu_item_b.name} is {self.score}"

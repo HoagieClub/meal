@@ -26,13 +26,13 @@ from rest_framework.response import Response
 from rest_framework import status
 from hoagiemeal.utils.logger import logger
 from hoagiemeal.api.user import get_user_from_request
-from hoagiemeal.models.menu import (
+from hoagiemeal.models.engagement import (
     MenuItemInteraction,
     MenuItemSimilarity,
 )
 
 
-#################### RecommendationService #########################
+#################### RecommendationService class for managing recommendations business logic #########################
 
 
 class RecommendationService:
@@ -45,71 +45,13 @@ class RecommendationService:
         disliked_items: set,
         similarity_map: Dict[str, Dict[str, float]],
     ) -> float:
-        """Calculate recommendation score for a single menu item. Formula: score = sum(similarity_score for liked items) - sum(similarity_score for disliked items).
-
-        Args:
-            menu_item_api_id (str): Menu item API ID to score.
-            liked_items (set): Set of liked menu item API IDs.
-            disliked_items (set): Set of disliked menu item API IDs.
-            similarity_map (dict): Map of item_a -> item_b -> similarity score.
-
-        Returns:
-            float: Recommendation score for the menu item.
-
-        """
+        """Calculate recommendation score for a single menu item. Formula: score = sum(similarity_score for liked items) - sum(similarity_score for disliked items)."""
         score = 0.0
         for liked in liked_items:
             score += similarity_map.get(liked, {}).get(menu_item_api_id, 0.0)
         for disliked in disliked_items:
             score -= similarity_map.get(disliked, {}).get(menu_item_api_id, 0.0)
         return score
-
-    def get_menu_item_score(
-        self,
-        user: Any,
-        menu_item_api_id: str,
-    ) -> float:
-        """Get recommendation score for a single menu item.
-
-        Args:
-            user (User): Authenticated user.
-            menu_item_api_id (str): Menu item API ID to score.
-
-        Returns:
-            float: Recommendation score for the menu item.
-
-        """
-        logger.info(f"Getting score for menu item {menu_item_api_id} for user_id={user.id}.")
-        try:
-            # Get user likes and dislikes
-            liked_items = set(
-                MenuItemInteraction.objects.filter(user=user, liked=True).values_list("menu_item__api_id", flat=True)
-            )
-            disliked_items = set(
-                MenuItemInteraction.objects.filter(user=user, liked=False).values_list("menu_item__api_id", flat=True)
-            )
-
-            # Cold start: no interactions, return 0.0
-            if not liked_items and not disliked_items:
-                logger.info(f"No interaction history for user_id={user.id}, returning score 0.0.")
-                return 0.0
-
-            # Fetch similarity rows for relevant items
-            similarities = MenuItemSimilarity.objects.filter(item_a__api_id__in=liked_items | disliked_items)
-
-            # Create similarity map and calculate score
-            similarity_map = defaultdict(dict)
-            for sim in similarities:
-                similarity_map[sim.item_a.api_id][sim.item_b.api_id] = sim.score
-
-            score = self._calculate_score(menu_item_api_id, liked_items, disliked_items, similarity_map)
-            logger.info(
-                f"Successfully calculated score {score} for menu item {menu_item_api_id} for user_id={user.id}."
-            )
-            return score
-        except Exception as e:
-            logger.error(f"Error calculating score for menu item {menu_item_api_id} for user_id={user.id}: {e}")
-            return 0.0
 
     def get_menu_items_score(
         self,
@@ -171,54 +113,6 @@ recommendation_service = RecommendationService()
 
 
 @api_view(["POST"])
-def get_menu_item_score(request):
-    """Django view function to get recommendation score for a single menu item.
-
-    Args:
-        request (Request): The HTTP request object.
-        menu_item_api_id (str): Menu item API ID.
-
-    Returns:
-        Response: Recommendation score for the menu item.
-
-    """
-    logger.info(f"Getting menu item score for request: {request}")
-
-    try:
-        # Authenticate user
-        user = get_user_from_request(request)
-        if not user:
-            return Response(
-                {"data": None, "message": "Authentication required", "error": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        # Get menu item API ID
-        menu_item_api_id = request.data.get("menu_item_api_id")
-        if menu_item_api_id is None:
-            return Response(
-                {"data": None, "message": "menu_item_api_id is required", "error": "menu_item_api_id is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Get score
-        score = recommendation_service.get_menu_item_score(user, menu_item_api_id)
-
-        # Return score
-        logger.info(f"Returning score {score} for menu item {menu_item_api_id} for user_id={user.id}.")
-        return Response(
-            {"data": score, "message": "Menu item score retrieved successfully.", "error": None},
-            status=status.HTTP_200_OK,
-        )
-    except Exception as e:
-        logger.error(f"Error in get_menu_item_score view: {e}")
-        return Response(
-            {"data": None, "message": f"Error getting menu item score: {str(e)}", "error": str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-
-@api_view(["POST"])
 def get_menu_items_score(request):
     """Django view function to get recommendation scores for multiple menu items.
 
@@ -231,7 +125,6 @@ def get_menu_items_score(request):
 
     """
     logger.info(f"Getting menu items scores for request: {request}")
-
     try:
         # Authenticate user
         user = get_user_from_request(request)
