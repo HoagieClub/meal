@@ -125,9 +125,6 @@ class MenuItemMetrics(models.Model):
         related_name="metrics",
     )
 
-    view_count = models.PositiveIntegerField(default=0)
-    unique_view_count = models.PositiveIntegerField(default=0)
-
     like_count = models.PositiveIntegerField(default=0)
     dislike_count = models.PositiveIntegerField(default=0)
     average_like_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)

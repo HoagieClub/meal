@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch all dining locations data.
+ * @overview Next.js Route Handler to get or cache menu items.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -13,27 +13,43 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getAllDiningLocations } from '@/lib/endpoints';
+import { getMenuItems } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches all dining locations data.
+ * Gets or caches menu items.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with all dining locations data.
+ * @returns A NextResponse object with the menu items data.
  */
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   try {
-    // Fetch all dining locations data from the backend.
-    const res = await getAllDiningLocations();
+    // Get the request body and extract the IDs.
+    const body = await req.json();
+    const ids = body.ids;
 
-    // If no locations are found, return a 404 response.
+    // If the IDs are not provided, return a 400 response.
+    if (!ids) {
+      return NextResponse.json(
+        {
+          status: 400,
+          message: 'Missing ids in request body',
+          data: null,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Fetch menu items data from the backend.
+    const res = await getMenuItems({ ids });
+
+    // If no menu items are found, return a 404 response.
     if (!res.data) {
       return NextResponse.json(
         {
           status: 404,
-          message: 'No dining locations found',
+          message: 'No menu items found',
           data: null,
         },
         { status: 404 }
@@ -43,7 +59,7 @@ export async function GET(req: Request) {
     // Return the response from the backend.
     return NextResponse.json({
       status: 200,
-      message: 'Successfully fetched all dining locations',
+      message: 'Successfully fetched menu items',
       data: res.data,
     });
   } catch (error: unknown) {
@@ -58,3 +74,4 @@ export async function GET(req: Request) {
     );
   }
 }
+

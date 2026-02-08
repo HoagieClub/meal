@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch dining locations data.
+ * @overview Next.js Route Handler to get or cache all locations.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -13,44 +13,27 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getDiningLocations } from '@/lib/endpoints';
+import { getAllLocations } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches dining locations data.
+ * Gets or caches all locations.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the dining locations data.
+ * @returns A NextResponse object with the locations data.
  */
 export async function GET(req: Request) {
   try {
-    // Get the query parameters from the request.
-    const { searchParams } = new URL(req.url);
-    const fmt = searchParams.get('fmt') ?? 'xml';
-    const categoryId = searchParams.get('category_id') ?? '2';
-
-    // If the category_id is not valid, return a 400 response.
-    if (!categoryId || !['2', '3'].includes(categoryId)) {
-      return NextResponse.json(
-        {
-          status: 400,
-          message: 'Invalid category_id',
-          data: null,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Fetch dining locations data from the backend.
-    const res = await getDiningLocations({ category_id: categoryId, fmt });
+    // Fetch locations data from the backend.
+    const res = await getAllLocations();
 
     // If no locations are found, return a 404 response.
     if (!res.data) {
       return NextResponse.json(
         {
           status: 404,
-          message: `No dining locations found for category_id ${categoryId}`,
+          message: 'No locations found',
           data: null,
         },
         { status: 404 }
@@ -60,7 +43,7 @@ export async function GET(req: Request) {
     // Return the response from the backend.
     return NextResponse.json({
       status: 200,
-      message: 'Successfully fetched dining locations',
+      message: 'Successfully fetched all locations',
       data: res.data,
     });
   } catch (error: unknown) {
@@ -75,3 +58,4 @@ export async function GET(req: Request) {
     );
   }
 }
+

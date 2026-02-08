@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch dining menu with menu items for a specific location.
+ * @overview Next.js Route Handler to get or cache all menus for a date.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -13,44 +13,43 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getDiningMenu } from '@/lib/endpoints';
+import { getAllMenusForDate } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches dining menu with menu items for a specific location.
+ * Gets or caches all menus for a date.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the menu data.
+ * @returns A NextResponse object with the menus data.
  */
 export async function GET(req: Request) {
   try {
     // Get the query parameters from the request.
     const { searchParams } = new URL(req.url);
-    const locationId = searchParams.get('location_id');
-    const menuId = searchParams.get('menu_id');
+    const date = searchParams.get('date');
 
-    // If the location_id or menu_id is not provided, return a 400 response.
-    if (!locationId || !menuId) {
+    // If the date is not provided, return a 400 response.
+    if (!date) {
       return NextResponse.json(
         {
           status: 400,
-          message: 'Missing location_id or menu_id parameter',
+          message: 'Missing date parameter',
           data: null,
         },
         { status: 400 }
       );
     }
 
-    // Fetch menu data from the backend.
-    const res = await getDiningMenu({ location_id: locationId, menu_id: menuId });
+    // Fetch menus data from the backend.
+    const res = await getAllMenusForDate({ date });
 
-    // If no menu is found, return a 404 response.
+    // If no menus are found, return a 404 response.
     if (!res.data) {
       return NextResponse.json(
         {
           status: 404,
-          message: `No menu found for location_id ${locationId} and menu_id ${menuId}`,
+          message: `No menus found for date ${date}`,
           data: null,
         },
         { status: 404 }
@@ -59,9 +58,9 @@ export async function GET(req: Request) {
 
     // Return the response from the backend.
     return NextResponse.json({
-      data: res.data,
-      message: `Successfully fetched menu for location_id ${locationId} and menu_id ${menuId}`,
       status: 200,
+      message: `Successfully fetched all menus for date ${date}`,
+      data: res.data,
     });
   } catch (error: unknown) {
     // If an error occurs, return a error response.
@@ -75,3 +74,4 @@ export async function GET(req: Request) {
     );
   }
 }
+

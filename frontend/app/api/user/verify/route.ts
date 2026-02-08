@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to record a user menu item view.
+ * @overview Next.js Route Handler to verify and get or create user.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -14,15 +14,15 @@
 
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { recordUserMenuItemView } from '@/lib/endpoints';
+import { verifyUser } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Records a user menu item view.
+ * Verifies and gets or creates a user.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object.
+ * @returns A NextResponse object with the user data.
  */
 export async function POST(req: Request) {
   try {
@@ -39,31 +39,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get the request body and extract the menu item API ID.
-    const body = await req.json();
-    const menuItemApiId = body.menu_item_api_id;
+    // Verify and get or create the user.
+    const res = await verifyUser(accessToken);
 
-    // If the menu item API ID is not provided, return a 400 response.
-    if (!menuItemApiId) {
-      return NextResponse.json(
-        {
-          status: 400,
-          message: 'Missing menu_item_api_id in request body',
-          data: null,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Record the user menu item view.
-    const res = await recordUserMenuItemView(accessToken, { menu_item_api_id: menuItemApiId });
-
-    // If the view recording failed, return a error response.
+    // If the user verification failed, return a error response.
     if (res.status !== 200) {
       return NextResponse.json(
         {
           status: res.status,
-          message: 'View recording failed',
+          message: 'Failed to get or create user',
           data: null,
         },
         { status: res.status }
@@ -73,7 +57,7 @@ export async function POST(req: Request) {
     // Return the response from the backend.
     return NextResponse.json({
       data: res.data,
-      message: 'Successfully recorded menu item view',
+      message: 'User fetched or created successfully',
       status: 200,
     });
   } catch (error: unknown) {
@@ -88,3 +72,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

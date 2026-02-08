@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to get menu item metrics.
+ * @overview Next.js Route Handler to get or cache residential menus for a date.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -13,43 +13,43 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getMenuItemMetrics } from '@/lib/endpoints';
+import { getResidentialMenusForDate } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Gets metrics for a menu item.
+ * Gets or caches residential menus for a date.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the metrics data.
+ * @returns A NextResponse object with the menus data.
  */
 export async function GET(req: Request) {
   try {
     // Get the query parameters from the request.
     const { searchParams } = new URL(req.url);
-    const menuItemApiId = searchParams.get('menu_item_api_id');
+    const date = searchParams.get('date');
 
-    // If the menu_item_api_id is not provided, return a 400 response.
-    if (!menuItemApiId) {
+    // If the date is not provided, return a 400 response.
+    if (!date) {
       return NextResponse.json(
         {
           status: 400,
-          message: 'Missing menu_item_api_id parameter',
+          message: 'Missing date parameter',
           data: null,
         },
         { status: 400 }
       );
     }
 
-    // Fetch metrics data from the backend.
-    const res = await getMenuItemMetrics({ menu_item_api_id: menuItemApiId });
+    // Fetch menus data from the backend.
+    const res = await getResidentialMenusForDate({ date });
 
-    // If no metrics are found, return a 404 response.
+    // If no menus are found, return a 404 response.
     if (!res.data) {
       return NextResponse.json(
         {
           status: 404,
-          message: `No metrics found for menu_item_api_id ${menuItemApiId}`,
+          message: `No residential menus found for date ${date}`,
           data: null,
         },
         { status: 404 }
@@ -58,9 +58,9 @@ export async function GET(req: Request) {
 
     // Return the response from the backend.
     return NextResponse.json({
-      data: res.data,
-      message: `Successfully fetched metrics for menu_item_api_id ${menuItemApiId}`,
       status: 200,
+      message: `Successfully fetched residential menus for date ${date}`,
+      data: res.data,
     });
   } catch (error: unknown) {
     // If an error occurs, return a error response.
@@ -74,3 +74,4 @@ export async function GET(req: Request) {
     );
   }
 }
+

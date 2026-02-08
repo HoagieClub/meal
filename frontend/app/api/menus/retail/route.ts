@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch dining menus for all locations for a date range.
+ * @overview Next.js Route Handler to get or cache retail menus for a date.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -13,54 +13,54 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getDiningMenusForLocationsAndDays } from '@/lib/endpoints';
+import { getRetailMenusForDate } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches dining menus for all locations for a date range.
+ * Gets or caches retail menus for a date.
  *
  * @param req - The HTTP request object.
  * @returns A NextResponse object with the menus data.
  */
 export async function GET(req: Request) {
   try {
-    // Get the query parameters from the request and extract the start and end dates.
+    // Get the query parameters from the request.
     const { searchParams } = new URL(req.url);
-    const startDate = searchParams.get('start_date');
-    const endDate = searchParams.get('end_date');
+    const date = searchParams.get('date');
 
-    // If the start or end date is not provided, return a 400 response.
-    if (!startDate || !endDate) {
+    // If the date is not provided, return a 400 response.
+    if (!date) {
       return NextResponse.json(
         {
           status: 400,
-          message: 'Missing start_date or end_date parameter',
+          message: 'Missing date parameter',
           data: null,
         },
         { status: 400 }
       );
     }
 
-    // Get the dining menus for all locations for the date range from the backend.
-    const res = await getDiningMenusForLocationsAndDays({
-      start_date: startDate,
-      end_date: endDate,
-    });
+    // Fetch menus data from the backend.
+    const res = await getRetailMenusForDate({ date });
 
     // If no menus are found, return a 404 response.
     if (!res.data) {
       return NextResponse.json(
-        { status: 404, message: 'No menus found', data: null },
+        {
+          status: 404,
+          message: `No retail menus found for date ${date}`,
+          data: null,
+        },
         { status: 404 }
       );
     }
 
     // Return the response from the backend.
     return NextResponse.json({
-      data: res.data,
-      message: `Successfully fetched menus for all locations for date range ${startDate} to ${endDate}`,
       status: 200,
+      message: `Successfully fetched retail menus for date ${date}`,
+      data: res.data,
     });
   } catch (error: unknown) {
     // If an error occurs, return a error response.
@@ -74,3 +74,4 @@ export async function GET(req: Request) {
     );
   }
 }
+

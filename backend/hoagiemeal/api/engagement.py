@@ -108,12 +108,6 @@ class MenuItemInteractionsService:
 
             # Update metrics with transaction
             with transaction.atomic():
-                # Aggregate view data
-                total_view_count = sum(interaction.view_count for interaction in interactions)
-                unique_view_count = interactions.filter(viewed=True).count()
-                metrics.view_count = total_view_count
-                metrics.unique_view_count = unique_view_count
-
                 # Aggregate like data
                 like_count = interactions.filter(liked=True).count()
                 dislike_count = interactions.filter(liked=False).count()
@@ -152,43 +146,6 @@ class MenuItemInteractionsService:
             return True
         except Exception as e:
             logger.error(f"Error updating metrics for menu_item_api_id: {menu_item_api_id}: {e}")
-            return False
-
-    def record_user_menu_item_view(self, user: Any, menu_item_api_id: str) -> bool:
-        """Record a user menu item view.
-
-        Args:
-            user (Any): The user.
-            menu_item_api_id (str): The menu item API ID.
-
-        Returns:
-            bool: True if the user menu item view was recorded successfully, False otherwise.
-
-        """
-        logger.info(f"Recording user menu item view for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
-        try:
-            # Get menu item and create user menu item interaction
-            menu_item = MenuItem.objects.get(api_id=menu_item_api_id)
-            interaction, _ = MenuItemInteraction.objects.get_or_create(user=user, menu_item=menu_item)
-
-            # Update menu item interaction
-            now = timezone.now()
-            with transaction.atomic():
-                interaction.viewed = True
-                interaction.view_count += 1
-                if interaction.first_viewed_at is None:
-                    interaction.first_viewed_at = now
-                interaction.last_viewed_at = now
-                interaction.save()
-
-            # Update metrics after recording view
-            self.update_menu_item_metrics(menu_item_api_id)
-            logger.info(f"Recorded user menu item view for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
-            return True
-        except Exception as e:
-            logger.error(
-                f"Error recording user menu item view for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}: {e}"
-            )
             return False
 
     def update_user_menu_item_interaction(
@@ -299,56 +256,6 @@ def get_user_menu_item_interactions(request):
         logger.error(f"Error in get_user_menu_item_interactions view: {e}")
         return Response(
             {"data": None, "message": f"Error fetching user menu item interactions: {str(e)}", "error": str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-
-@api_view(["POST"])
-def record_user_menu_item_view(request):
-    """Django view function to record a user menu item view.
-
-    Args:
-        request (Request): The HTTP request object.
-        menu_item_api_id (str): The menu item API ID.
-
-    Returns:
-        Response: The HTTP response object.
-
-    """
-    logger.info(f"Recording view for request: {request}")
-    try:
-        # Authenticate user
-        user = get_user_from_request(request)
-        if not user:
-            return Response(
-                {"message": "Authentication required", "error": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        # Get menu item API ID
-        menu_item_api_id = request.data.get("menu_item_api_id")
-        if not menu_item_api_id:
-            return Response(
-                {"message": "menu_item_api_id is required", "error": "menu_item_api_id is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Record user menu item view
-        recorded_view = interactions_service.record_user_menu_item_view(user, menu_item_api_id)
-        if not recorded_view:
-            return Response(
-                {"message": "Failed to record user menu item view", "error": "Failed to record user menu item view"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-        return Response(
-            {"data": recorded_view, "message": "User menu item view recorded successfully.", "error": None},
-            status=status.HTTP_200_OK,
-        )
-    except Exception as e:
-        logger.error(f"Error in record_user_menu_item_view view: {e}")
-        return Response(
-            {"message": f"Error recording user menu item view: {str(e)}", "error": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 

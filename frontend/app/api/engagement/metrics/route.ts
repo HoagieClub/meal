@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch dining menus for all locations.
+ * @overview Next.js Route Handler to get metrics for multiple menu items.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -13,43 +13,43 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getDiningMenusForLocations } from '@/lib/endpoints';
+import { getMenuItemsMetrics } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches dining menus for all locations for a specific menu ID.
+ * Gets metrics for multiple menu items.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the menus data.
+ * @returns A NextResponse object with the metrics data.
  */
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   try {
-    // Get the query parameters from the request.
-    const { searchParams } = new URL(req.url);
-    const menuId = searchParams.get('menu_id');
+    // Get the request body and extract the menu item API IDs.
+    const body = await req.json();
+    const menuItemApiIds = body.menu_item_api_ids;
 
-    // If the menu_id is not provided, return a 400 response.
-    if (!menuId) {
+    // If the menu item API IDs are not provided, return a 400 response.
+    if (!menuItemApiIds) {
       return NextResponse.json(
         {
           status: 400,
-          message: 'Missing menu_id parameter',
+          message: 'Missing menu_item_api_ids in request body',
           data: null,
         },
         { status: 400 }
       );
     }
 
-    // Fetch menus data from the backend.
-    const res = await getDiningMenusForLocations({ menu_id: menuId });
+    // Get the metrics from the backend.
+    const res = await getMenuItemsMetrics({ menu_item_api_ids: menuItemApiIds });
 
-    // If no menus are found, return a 404 response.
+    // If no metrics are found, return a 404 response.
     if (!res.data) {
       return NextResponse.json(
         {
           status: 404,
-          message: `No menus found for menu_id ${menuId}`,
+          message: 'No metrics found',
           data: null,
         },
         { status: 404 }
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
     // Return the response from the backend.
     return NextResponse.json({
       data: res.data,
-      message: `Successfully fetched menus for menu_id ${menuId}`,
+      message: 'Successfully fetched menu items metrics',
       status: 200,
     });
   } catch (error: unknown) {
@@ -74,3 +74,4 @@ export async function GET(req: Request) {
     );
   }
 }
+

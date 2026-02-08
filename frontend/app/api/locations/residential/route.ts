@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to fetch multiple dining menu items.
+ * @overview Next.js Route Handler to get or cache residential locations.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -13,43 +13,27 @@
  */
 
 import { NextResponse } from 'next/server';
-import { toCamelCase } from '@/utils/toCamelCase';
-import { getDiningMenuItems } from '@/lib/endpoints';
+import { getResidentialLocations } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Fetches multiple dining menu items by API IDs.
+ * Gets or caches residential locations.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the menu items data.
+ * @returns A NextResponse object with the residential locations data.
  */
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
-    const body = await req.json();
-    const apiIds = body.api_ids;
+    // Fetch residential locations data from the backend.
+    const res = await getResidentialLocations();
 
-    // If the api_ids are not provided, return a 400 response.
-    if (!apiIds) {
-      return NextResponse.json(
-        {
-          status: 400,
-          message: 'Missing api_ids in request body',
-          data: null,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Fetch menu items data from the backend.
-    const res = await getDiningMenuItems({ api_ids: apiIds });
-
-    // If no menu items are found, return a 404 response.
+    // If no locations are found, return a 404 response.
     if (!res.data) {
       return NextResponse.json(
         {
           status: 404,
-          message: `No menu items found for api_ids ${apiIds}`,
+          message: 'No residential locations found',
           data: null,
         },
         { status: 404 }
@@ -59,7 +43,7 @@ export async function POST(req: Request) {
     // Return the response from the backend.
     return NextResponse.json({
       status: 200,
-      message: 'Successfully fetched menu items',
+      message: 'Successfully fetched residential locations',
       data: res.data,
     });
   } catch (error: unknown) {
@@ -74,3 +58,4 @@ export async function POST(req: Request) {
     );
   }
 }
+
