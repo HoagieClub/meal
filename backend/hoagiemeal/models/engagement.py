@@ -32,16 +32,10 @@ class MenuItemInteraction(models.Model):
     Attributes:
         user (CustomUser): The user who interacted with the menu item.
         menu_item (MenuItem): The menu item that was interacted with.
-
-        viewed (bool): Whether the menu item was viewed.
-        view_count (int): The number of times the menu item was viewed.
-        first_viewed_at (datetime): The date and time the menu item was first viewed.
-        last_viewed_at (datetime): The date and time the menu item was last viewed.
         liked (bool): Whether the menu item was liked.
         favorited (bool): Whether the menu item was favorited.
         saved_for_later (bool): Whether the menu item was saved for later.
         would_eat_again (str): Whether the menu item would be eaten again.
-
         created_at (datetime): The date and time the interaction was created.
         updated_at (datetime): The date and time the interaction was last updated.
 
@@ -64,16 +58,10 @@ class MenuItemInteraction(models.Model):
         on_delete=models.CASCADE,
         related_name="user_interactions",
     )
-
-    viewed = models.BooleanField(default=False)
-    view_count = models.PositiveSmallIntegerField(default=0)
-    first_viewed_at = models.DateTimeField(null=True, blank=True)
-    last_viewed_at = models.DateTimeField(null=True, blank=True)
     liked = models.BooleanField(null=True, blank=True)
     favorited = models.BooleanField(default=False)
     saved_for_later = models.BooleanField(default=False)
     would_eat_again = models.CharField(max_length=1, choices=WouldEatAgain.choices, null=True, blank=True)
-
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -101,9 +89,6 @@ class MenuItemMetrics(models.Model):
 
     Attributes:
         menu_item (MenuItem): The menu item that the metrics are for.
-
-        view_count (int): The number of times the menu item was viewed.
-        unique_view_count (int): The number of unique users who viewed the menu item.
         like_count (int): The number of times the menu item was liked.
         dislike_count (int): The number of times the menu item was disliked.
         average_like_score (float): The average score of the menu item's likes.
@@ -113,7 +98,6 @@ class MenuItemMetrics(models.Model):
         would_eat_again_no (int): The number of times the menu item was would eat again no.
         would_eat_again_maybe (int): The number of times the menu item was would eat again maybe.
         average_would_eat_again_score (float): The average score of the menu item's would eat again.
-
         updated_at (datetime): The date and time the metrics were last updated.
         created_at (datetime): The date and time the metrics were created.
 
@@ -124,18 +108,15 @@ class MenuItemMetrics(models.Model):
         on_delete=models.CASCADE,
         related_name="metrics",
     )
-
     like_count = models.PositiveIntegerField(default=0)
     dislike_count = models.PositiveIntegerField(default=0)
     average_like_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     favorite_count = models.PositiveIntegerField(default=0)
     saved_for_later_count = models.PositiveIntegerField(default=0)
-
     would_eat_again_yes = models.PositiveIntegerField(default=0)
     would_eat_again_no = models.PositiveIntegerField(default=0)
     would_eat_again_maybe = models.PositiveIntegerField(default=0)
     average_would_eat_again_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

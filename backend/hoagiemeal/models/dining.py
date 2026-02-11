@@ -28,7 +28,6 @@ class DiningLocation(models.Model):
         category (str): The category ID of the dining venue.
         name (str): The name of the dining venue.
         url (str): The URL of the dining venue.
-
         created_at (DateTimeField): The date and time the dining location was created.
         updated_at (DateTimeField): The date and time the dining location was last updated.
 
@@ -38,7 +37,6 @@ class DiningLocation(models.Model):
     category = models.CharField(max_length=50, help_text=_("The category ID of the dining venue"))
     name = models.CharField(max_length=255, help_text=_("The name of the dining venue"))
     url = models.URLField(max_length=500, help_text=_("The URL of the dining venue"))
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

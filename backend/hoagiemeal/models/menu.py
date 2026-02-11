@@ -34,7 +34,6 @@ class ResidentialMenu(models.Model):
         date (DateField): The date of the menu.
         meal (CharField): The meal type of the menu.
         menu_items (JSONField): The menu items that are on the menu.
-
         created_at (DateTimeField): The date and time the menu was created.
         updated_at (DateTimeField): The date and time the menu was last updated.
 
@@ -44,7 +43,6 @@ class ResidentialMenu(models.Model):
     date = models.DateField(default=timezone.now, db_index=True)
     meal = models.CharField(max_length=50, db_index=True)
     menu_items = models.JSONField(default=dict)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -69,7 +67,6 @@ class RetailMenu(models.Model):
         dining_location (DiningLocation): The dining location that the menu is for.
         date (DateField): The date of the menu.
         menu_items (JSONField): The menu items that are on the menu.
-
         created_at (DateTimeField): The date and time the menu was created.
         updated_at (DateTimeField): The date and time the menu was last updated.
 
@@ -78,7 +75,6 @@ class RetailMenu(models.Model):
     dining_location = models.ForeignKey(DiningLocation, on_delete=models.CASCADE, related_name="retail_menus")
     date = models.DateField(default=timezone.now, db_index=True)
     menu_items = models.JSONField(default=dict)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

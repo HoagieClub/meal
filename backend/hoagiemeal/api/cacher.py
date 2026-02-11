@@ -48,6 +48,7 @@ from django.db import transaction
 from django.utils import timezone
 from hoagiemeal.models.menu import ResidentialMenu, RetailMenu
 from hoagiemeal.models.menu_item import MenuItem, MenuItemNutrition
+from hoagiemeal.models.engagement import MenuItemMetrics, MenuItemInteraction
 from hoagiemeal.api.scraper import Scraper, get_menu_item_ids_from_menus_for_all_locations_and_date
 from hoagiemeal.serializers import (
     DiningLocationSerializer,
@@ -151,48 +152,52 @@ def cache_menu_items(menu_items: dict) -> bool:
     logger.info(f"Caching {len(menu_items)} menu items.")
     try:
         for menu_item in menu_items.values():
-            menu_item_obj = MenuItem.objects.create(
-                id=menu_item["id"],
-                name=menu_item["name"],
-                url=menu_item["url"],
-            )
+            try:
+                with transaction.atomic():
+                    menu_item_obj = MenuItem.objects.create(
+                        id=menu_item["id"],
+                        name=menu_item["name"],
+                        url=menu_item["url"],
+                    )
 
-            nutrition = menu_item["nutrition"]
-            MenuItemNutrition.objects.create(
-                menu_item=menu_item_obj,
-                servings_per_container=nutrition["servings_per_container"],
-                serving_size=nutrition["serving_size"],
-                calories=nutrition["calories"],
-                total_fat=nutrition["total_fat"],
-                total_fat_dv=nutrition["total_fat_dv"],
-                saturated_fat=nutrition["saturated_fat"],
-                saturated_fat_dv=nutrition["saturated_fat_dv"],
-                trans_fat=nutrition["trans_fat"],
-                cholesterol=nutrition["cholesterol"],
-                cholesterol_dv=nutrition["cholesterol_dv"],
-                sodium=nutrition["sodium"],
-                sodium_dv=nutrition["sodium_dv"],
-                total_carbs=nutrition["total_carbs"],
-                total_carbs_dv=nutrition["total_carbs_dv"],
-                dietary_fiber=nutrition["dietary_fiber"],
-                dietary_fiber_dv=nutrition["dietary_fiber_dv"],
-                total_sugars=nutrition["total_sugars"],
-                added_sugars_dv=nutrition["added_sugars_dv"],
-                added_sugars=nutrition["added_sugars"],
-                protein=nutrition["protein"],
-                protein_dv=nutrition["protein_dv"],
-                vitamin_d=nutrition["vitamin_d"],
-                vitamin_d_dv=nutrition["vitamin_d_dv"],
-                calcium=nutrition["calcium"],
-                calcium_dv=nutrition["calcium_dv"],
-                iron=nutrition["iron"],
-                iron_dv=nutrition["iron_dv"],
-                potassium=nutrition["potassium"],
-                potassium_dv=nutrition["potassium_dv"],
-                ingredients=nutrition["ingredients"],
-                allergens=nutrition["allergens"],
-            )
-
+                    nutrition = menu_item["nutrition"]
+                    MenuItemNutrition.objects.create(
+                        menu_item=menu_item_obj,
+                        servings_per_container=nutrition["servings_per_container"],
+                        serving_size=nutrition["serving_size"],
+                        calories=nutrition["calories"],
+                        total_fat=nutrition["total_fat"],
+                        total_fat_dv=nutrition["total_fat_dv"],
+                        saturated_fat=nutrition["saturated_fat"],
+                        saturated_fat_dv=nutrition["saturated_fat_dv"],
+                        trans_fat=nutrition["trans_fat"],
+                        cholesterol=nutrition["cholesterol"],
+                        cholesterol_dv=nutrition["cholesterol_dv"],
+                        sodium=nutrition["sodium"],
+                        sodium_dv=nutrition["sodium_dv"],
+                        total_carbs=nutrition["total_carbs"],
+                        total_carbs_dv=nutrition["total_carbs_dv"],
+                        dietary_fiber=nutrition["dietary_fiber"],
+                        dietary_fiber_dv=nutrition["dietary_fiber_dv"],
+                        total_sugars=nutrition["total_sugars"],
+                        added_sugars_dv=nutrition["added_sugars_dv"],
+                        added_sugars=nutrition["added_sugars"],
+                        protein=nutrition["protein"],
+                        protein_dv=nutrition["protein_dv"],
+                        vitamin_d=nutrition["vitamin_d"],
+                        vitamin_d_dv=nutrition["vitamin_d_dv"],
+                        calcium=nutrition["calcium"],
+                        calcium_dv=nutrition["calcium_dv"],
+                        iron=nutrition["iron"],
+                        iron_dv=nutrition["iron_dv"],
+                        potassium=nutrition["potassium"],
+                        potassium_dv=nutrition["potassium_dv"],
+                        ingredients=nutrition["ingredients"],
+                        allergens=nutrition["allergens"],
+                    )
+            except Exception as e:
+                logger.error(f"Error caching menu item: {e}.")
+                continue
         return True
     except Exception as e:
         logger.error(f"Error caching menu items: {e}.")

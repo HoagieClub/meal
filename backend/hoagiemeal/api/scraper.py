@@ -138,51 +138,39 @@ def add_inferred_daily_values(items_map: dict) -> dict:
         logger.info(f"Adding inferred daily value percentages for nutrition fields for item data: {item_data}.")
         nutrition = item_data.get("nutrition", {})
 
-        # Total Fat
         if nutrition.get("total_fat") is not None and nutrition.get("total_fat_dv") is None:
             nutrition["total_fat_dv"] = calculate_dv(nutrition["total_fat"], DV_STANDARDS["total_fat"])
 
-        # Saturated Fat
         if nutrition.get("saturated_fat") is not None and nutrition.get("saturated_fat_dv") is None:
             nutrition["saturated_fat_dv"] = calculate_dv(nutrition["saturated_fat"], DV_STANDARDS["saturated_fat"])
 
-        # Cholesterol
         if nutrition.get("cholesterol") is not None and nutrition.get("cholesterol_dv") is None:
             nutrition["cholesterol_dv"] = calculate_dv(nutrition["cholesterol"], DV_STANDARDS["cholesterol"])
 
-        # Sodium
         if nutrition.get("sodium") is not None and nutrition.get("sodium_dv") is None:
             nutrition["sodium_dv"] = calculate_dv(nutrition["sodium"], DV_STANDARDS["sodium"])
 
-        # Total Carbohydrate
         if nutrition.get("total_carbs") is not None and nutrition.get("total_carbs_dv") is None:
             nutrition["total_carbs_dv"] = calculate_dv(nutrition["total_carbs"], DV_STANDARDS["total_carbs"])
 
-        # Dietary Fiber
         if nutrition.get("dietary_fiber") is not None and nutrition.get("dietary_fiber_dv") is None:
             nutrition["dietary_fiber_dv"] = calculate_dv(nutrition["dietary_fiber"], DV_STANDARDS["dietary_fiber"])
 
-        # Added Sugars
         if nutrition.get("added_sugars") is not None and nutrition.get("added_sugars_dv") is None:
             nutrition["added_sugars_dv"] = calculate_dv(nutrition["added_sugars"], DV_STANDARDS["added_sugars"])
 
-        # Protein
         if nutrition.get("protein") is not None and nutrition.get("protein_dv") is None:
             nutrition["protein_dv"] = calculate_dv(nutrition["protein"], DV_STANDARDS["protein"])
 
-        # Vitamin D
         if nutrition.get("vitamin_d") is not None and nutrition.get("vitamin_d_dv") is None:
             nutrition["vitamin_d_dv"] = calculate_dv(nutrition["vitamin_d"], DV_STANDARDS["vitamin_d"])
 
-        # Calcium
         if nutrition.get("calcium") is not None and nutrition.get("calcium_dv") is None:
             nutrition["calcium_dv"] = calculate_dv(nutrition["calcium"], DV_STANDARDS["calcium"])
 
-        # Iron
         if nutrition.get("iron") is not None and nutrition.get("iron_dv") is None:
             nutrition["iron_dv"] = calculate_dv(nutrition["iron"], DV_STANDARDS["iron"])
 
-        # Potassium
         if nutrition.get("potassium") is not None and nutrition.get("potassium_dv") is None:
             nutrition["potassium_dv"] = calculate_dv(nutrition["potassium"], DV_STANDARDS["potassium"])
 
@@ -219,14 +207,12 @@ def extract_locations(soup: BeautifulSoup) -> Optional[dict]:
                     if not link:
                         continue
 
-                    # Get location name and href
                     location_name = link.get_text(strip=True)
                     href = link.get("href")
                     location_url = None
                     if href:
                         location_url = f"https://menus.princeton.edu/dining/_Foodpro/online-menu/{href}"
 
-                    # Special case for location names
                     if location_name == "Rockefeller College":
                         continue
                     if location_name == "Mathey College":
@@ -271,7 +257,6 @@ def extract_menus(soup: BeautifulSoup) -> Optional[dict]:
             if not meal_name_el:
                 continue
 
-            # Extract meal name
             meal_name = meal_name_el.contents[0].get_text(strip=True)
             meal_data = {}
             current_station = None
@@ -280,7 +265,6 @@ def extract_menus(soup: BeautifulSoup) -> Optional[dict]:
             if not body:
                 continue
 
-            # Extract menu items from the body
             for element in body.select(".mealStation, .accordion-item"):
                 classes = element.get("class") or []
 
@@ -328,19 +312,16 @@ def extract_menu_items(ids: "list[str]") -> dict:
         logger.info(f"Extracting menu item from id: {id}.")
         nutrition_url = build_nutrition_url(id)
         try:
-            # Fetch nutrition label page
             soup = fetch_page_soup(nutrition_url)
             if not soup:
                 logger.warning(f"Failed to fetch nutrition label for menu item id: {id}")
                 continue
 
-            # Extract item name
             item_name = "Unknown"
             name_el = soup.select_one("#mobile-label .h5.text-center")
             if name_el:
                 item_name = name_el.get_text(strip=True)
 
-            # Initialize nutrition data with all fields as None
             nutrition_data = {
                 "servings_per_container": None,
                 "serving_size": None,
@@ -376,14 +357,12 @@ def extract_menu_items(ids: "list[str]") -> dict:
             }
 
             try:
-                # Servings per container
                 servings_text = soup.find(text=re.compile(r"\d+\s+servings per container"))
                 if servings_text:
                     match = re.search(r"(\d+)\s+servings per container", servings_text.strip())  # type: ignore
                     if match:
                         nutrition_data["servings_per_container"] = int(match.group(1))  # type: ignore
 
-                # Serving size - look for the strong tag after "Serving size"
                 serving_rows = soup.select(".row.ms-0.me-0")
                 for row in serving_rows:
                     if "Serving size" in row.get_text():
@@ -392,20 +371,16 @@ def extract_menu_items(ids: "list[str]") -> dict:
                             nutrition_data["serving_size"] = serving_strong.get_text(strip=True)  # type: ignore
                         break
 
-                # Calories - look in the specific calories section
                 calories_section = soup.find("div", class_="h4 m-0 p-0")
                 if calories_section and "Calories" in calories_section.get_text():
                     calories_row = calories_section.find_parent("div", class_="row")
                     if calories_row:
-                        # Look for the div with font-size: 2em
                         calories_div = calories_row.select_one("div[style*='font-size: 2em']")
                         if calories_div:
                             cal_text = calories_div.get_text(strip=True)
-                            # Handle dashes
                             if cal_text and not re.match(r"^-+$", cal_text):
                                 nutrition_data["calories"] = parse_numeric(cal_text)  # type: ignore
 
-                # Parse all nutrition rows with col-9 and col-3 structure
                 all_rows = soup.select("#mobile-label .card-body .row.ms-0.me-0")
 
                 for row in all_rows:
@@ -416,14 +391,11 @@ def extract_menu_items(ids: "list[str]") -> dict:
 
                     label_text = col_9.get_text(strip=True)
                     dv_text = col_3.get_text(strip=True) if col_3 else ""
-
-                    # Clean dv_text - if it's just dashes or empty, set to None
                     if dv_text and not re.match(r"^-+$", dv_text):
                         dv_value = parse_numeric(dv_text)
                     else:
                         dv_value = None
 
-                    # Total Fat
                     if "Total Fat" in label_text and "Saturated" not in label_text and "Trans" not in label_text:
                         match = re.search(r"([\d.]+)g", label_text)
                         if match:
@@ -432,7 +404,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["total_fat"] = None
 
-                    # Saturated Fat
                     elif "Saturated Fat" in label_text:
                         match = re.search(r"([\d.]+)g", label_text)
                         if match:
@@ -441,7 +412,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["saturated_fat"] = None
 
-                    # Trans Fat
                     elif "Trans" in label_text and "Fat" in label_text:
                         match = re.search(r"([\d.]+)g", label_text)
                         if match:
@@ -449,7 +419,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["trans_fat"] = None
 
-                    # Cholesterol
                     elif "Cholesterol" in label_text and label_text.index("Cholesterol") < 5:
                         match = re.search(r"([\d.]+)mg", label_text)
                         if match:
@@ -458,7 +427,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["cholesterol"] = None
 
-                    # Sodium
                     elif "Sodium" in label_text and label_text.index("Sodium") < 5:
                         match = re.search(r"([\d.]+)mg", label_text)
                         if match:
@@ -467,7 +435,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["sodium"] = None
 
-                    # Total Carbohydrate
                     elif "Total Carbohydrate" in label_text:
                         match = re.search(r"([\d.]+)g", label_text)
                         if match:
@@ -476,7 +443,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["total_carbs"] = None
 
-                    # Dietary Fiber
                     elif "Dietary Fiber" in label_text:
                         match = re.search(r"([\d.]+)g", label_text)
                         if match:
@@ -485,7 +451,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["dietary_fiber"] = None
 
-                    # Total Sugars
                     elif "Total Sugars" in label_text:
                         match = re.search(r"([\d.]+)g", label_text)
                         if match:
@@ -493,7 +458,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["total_sugars"] = None
 
-                    # Added Sugars - check for "Includes" and "Added Sugars"
                     elif "Added Sugars" in label_text:
                         match = re.search(r"([\d.]+)g", label_text)
                         if match:
@@ -502,7 +466,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["added_sugars"] = None
 
-                    # Protein
                     elif "Protein" in label_text and label_text.index("Protein") < 5:
                         match = re.search(r"([\d.]+)g", label_text)
                         if match:
@@ -511,7 +474,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["protein"] = None
 
-                    # Vitamin D
                     elif "Vitamin D" in label_text:
                         match = re.search(r"([\d.]+)mcg", label_text)
                         if match:
@@ -520,7 +482,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["vitamin_d"] = None
 
-                    # Calcium
                     elif "Calcium" in label_text and label_text.index("Calcium") < 5:
                         match = re.search(r"([\d.]+)mg", label_text)
                         if match:
@@ -529,7 +490,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["calcium"] = None
 
-                    # Iron
                     elif "Iron" in label_text and label_text.index("Iron") < 5:
                         match = re.search(r"([\d.]+)mg", label_text)
                         if match:
@@ -538,7 +498,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["iron"] = None
 
-                    # Potassium
                     elif "Potassium" in label_text and label_text.index("Potassium") < 5:
                         match = re.search(r"([\d.]+)mg", label_text)
                         if match:
@@ -547,14 +506,12 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         elif re.search(r"-\s*-\s*-", label_text):
                             nutrition_data["potassium"] = None
 
-                # Extract ingredients
                 ingredients_div = soup.find("strong", string="INGREDIENTS:")
                 if ingredients_div and ingredients_div.parent:
                     ingredients_text = ingredients_div.parent.get_text(strip=True)
                     cleaned = ingredients_text.replace("INGREDIENTS:", "").strip()
                     nutrition_data["ingredients"] = cleaned if cleaned else None  # type: ignore
 
-                # Extract allergens
                 allergens_div = soup.find("strong", string="ALLERGENS:")
                 if allergens_div and allergens_div.parent:
                     allergens_text = allergens_div.parent.get_text(strip=True)
@@ -563,7 +520,6 @@ def extract_menu_items(ids: "list[str]") -> dict:
 
             except Exception as e:
                 logger.warning(f"Error parsing nutrition details for menu item id: {id}: {e}")
-
             if item_name == "Unknown":
                 logger.warning(f"Unknown item name for menu item id: {id}")
                 continue
@@ -590,15 +546,12 @@ class Scraper:
     def get_all_locations(self) -> Optional[dict]:
         """Get all locations."""
         logger.info("Getting all locations from main menu page.")
-
-        # Fetch main menu page
         url = "https://menus.princeton.edu/dining/_Foodpro/online-menu/default.asp"
         soup = fetch_page_soup(url)
         if not soup:
             logger.error("Failed to fetch main menu page")
             return None
 
-        # Extract locations
         locations = extract_locations(soup)
         if not locations:
             logger.error("Failed to extract locations")
@@ -611,14 +564,12 @@ class Scraper:
         """Get the menus for a given location and date."""
         logger.info(f"Getting menus for location: {location_id} and date: {date}.")
 
-        # Build menu URL
         url = build_menu_url(date, location_id)
         soup = fetch_page_soup(url)
         if not soup:
             logger.error(f"Failed to fetch page soup for {url}")
             return None
 
-        # Extract menus
         menus = extract_menus(soup)
         if not menus:
             logger.error(f"Failed to extract menus for {url}")
@@ -630,13 +581,11 @@ class Scraper:
         """Get the menus for all locations and date."""
         logger.info(f"Getting menus for all locations and date: {date}.")
 
-        # Get all locations
         locations = self.get_all_locations()
         if not locations:
             logger.error("Failed to get all locations")
             return None
 
-        # Get menus for all locations
         all_menus = {}
         for location_id in locations.keys():
             menus = self.get_menus_for_location_and_date(location_id, date)
@@ -656,13 +605,11 @@ class Scraper:
         """Get the menu items for a given ids."""
         logger.info(f"Getting menu items for ids: {ids}.")
 
-        # Extract menu items
         menu_items = extract_menu_items(ids)
         if not menu_items:
             logger.error(f"Failed to extract menu items for {ids}")
             return None
 
-        # Add inferred daily values
         menu_items = add_inferred_daily_values(menu_items)
         if not menu_items:
             logger.error(f"Failed to add inferred daily values for {ids}")
@@ -680,15 +627,12 @@ scraper = Scraper()
 def test_scrape_all_locations():
     """Test scraping all locations."""
     logger.info("Testing scraping all locations.")
-
-    # Get all locations
     locations = scraper.get_all_locations()
     if not locations:
         logger.error("Failed to get all locations")
         return None
     pprint.pprint(locations)
 
-    # Save locations to file
     os.makedirs("data", exist_ok=True)
     with open("data/locations.json", "w") as f:
         json.dump(locations, f, indent=2)
@@ -697,29 +641,24 @@ def test_scrape_all_locations():
 def test_scrape_menu_with_menu_items():
     """Test scraping menu items."""
     logger.info("Testing scraping menu items.")
-
-    # Get menus
     date = datetime.date.today()
     menus = scraper.get_menus_for_all_locations_and_date(date)
     if not menus:
         logger.error(f"Failed to get menus for all locations and date: {date}")
         return None
 
-    # Get menu item ids
     ids = get_menu_item_ids_from_menus_for_all_locations_and_date(menus)
     if not ids:
         logger.error(f"Failed to get menu item ids for all locations and date: {date}")
         return None
     pprint.pprint(ids)
 
-    # Get menu items
     menu_items = scraper.get_menu_items(ids)
     if not menu_items:
         logger.error(f"Failed to get menu items for {ids}")
         return None
     pprint.pprint(menu_items)
 
-    # Save menus and menu items to files
     folder_name = f"data/{datetime.date.today().strftime('%Y-%m-%d')}"
     os.makedirs(folder_name, exist_ok=True)
     with open(f"{folder_name}/menus.json", "w") as f:

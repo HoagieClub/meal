@@ -24,9 +24,7 @@ import {
   getMenuItemsScore,
 } from '@/lib/next-endpoints';
 
-// Hook for fetching menu-related data from Next.js API endpoints.
 export const useMenuApi = () => {
-  // Extract all unique 6-digit menu item IDs from a menu structure.
   const extractMenuItemIds = useCallback((menus: any) => {
     const menuString = JSON.stringify(menus);
     const matches = menuString.match(/"\d{6}"/g) || [];
@@ -34,29 +32,30 @@ export const useMenuApi = () => {
     return Array.from(ids);
   }, []);
 
-  // Fetch all data for a specific date.
   const fetchAll = useCallback(async (date: string, menuItemIds?: string[]) => {
-    const locationsResponse = await getAllLocations();
-    const locations = locationsResponse.data || {};
+    const [locationsResponse, menusResponse] = await Promise.all([
+      getAllLocations(),
+      getAllMenusForDate({ date }),
+    ]);
 
-    const menusResponse = await getAllMenusForDate({ date });
+    const locations = locationsResponse.data || {};
     const menus = menusResponse.data || {};
     const itemIds = menuItemIds || extractMenuItemIds(menus);
 
-    // Fetch menu items, interactions, metrics, and recommendations in parallel
-    const [menuItemsResponse, interactionsResponse, metricsResponse, recommendationsResponse] =
-      await Promise.all([
-        itemIds.length > 0 ? getMenuItems({ ids: itemIds }) : Promise.resolve({ data: {} }),
-        itemIds.length > 0
-          ? getUserMenuItemsInteractions({ menu_item_api_ids: itemIds })
-          : Promise.resolve({ data: {} }),
-        itemIds.length > 0
-          ? getMenuItemsMetrics({ menu_item_api_ids: itemIds })
-          : Promise.resolve({ data: {} }),
-        itemIds.length > 0
-          ? getMenuItemsScore({ menu_item_api_ids: itemIds })
-          : Promise.resolve({ data: {} }),
-      ]);
+    const menuItemsResponse =
+      itemIds.length > 0 ? await getMenuItems({ ids: itemIds }) : { data: {} };
+
+    const [metricsResponse, interactionsResponse, recommendationsResponse] = await Promise.all([
+      itemIds.length > 0
+        ? getMenuItemsMetrics({ menu_item_api_ids: itemIds })
+        : Promise.resolve({ data: {} }),
+      itemIds.length > 0
+        ? getUserMenuItemsInteractions({ menu_item_api_ids: itemIds })
+        : Promise.resolve({ data: {} }),
+      itemIds.length > 0
+        ? getMenuItemsScore({ menu_item_api_ids: itemIds })
+        : Promise.resolve({ data: {} }),
+    ]);
 
     return {
       locations,

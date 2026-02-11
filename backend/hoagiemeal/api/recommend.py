@@ -58,40 +58,25 @@ class RecommendationService:
         user: Any,
         menu_item_api_ids: List[str],
     ) -> Dict[str, float]:
-        """Get recommendation scores for multiple menu items.
-
-        Args:
-            user (User): Authenticated user.
-            menu_item_api_ids (list[str]): Menu item API IDs to score.
-
-        Returns:
-            dict[str, float]: Dictionary mapping menu item API IDs to their scores.
-
-        """
+        """Get recommendation scores for multiple menu items."""
         logger.info(f"Getting scores for {len(menu_item_api_ids)} menu items for user_id={user.id}.")
         try:
-            # Get user likes and dislikes (only fetch once for efficiency)
             liked_items = set(
-                MenuItemInteraction.objects.filter(user=user, liked=True).values_list("menu_item__api_id", flat=True)
+                MenuItemInteraction.objects.filter(user=user, liked=True).values_list("menu_item__id", flat=True)
             )
             disliked_items = set(
-                MenuItemInteraction.objects.filter(user=user, liked=False).values_list("menu_item__api_id", flat=True)
+                MenuItemInteraction.objects.filter(user=user, liked=False).values_list("menu_item__id", flat=True)
             )
 
-            # Cold start: no interactions, return all 0.0
             if not liked_items and not disliked_items:
                 logger.info(f"No interaction history for user_id={user.id}, returning all scores as 0.0.")
                 return {item_id: 0.0 for item_id in menu_item_api_ids}
 
-            # Fetch similarity rows for relevant items (only fetch once)
-            similarities = MenuItemSimilarity.objects.filter(item_a__api_id__in=liked_items | disliked_items)
-
-            # Create similarity map
+            similarities = MenuItemSimilarity.objects.filter(item_a__id__in=liked_items | disliked_items)
             similarity_map = defaultdict(dict)
             for sim in similarities:
-                similarity_map[sim.item_a.api_id][sim.item_b.api_id] = sim.score
+                similarity_map[sim.item_a.id][sim.item_b.id] = sim.score
 
-            # Score each menu item
             scores = {}
             for item_id in menu_item_api_ids:
                 score = self._calculate_score(item_id, liked_items, disliked_items, similarity_map)
@@ -114,19 +99,9 @@ recommendation_service = RecommendationService()
 
 @api_view(["POST"])
 def get_menu_items_score(request):
-    """Django view function to get recommendation scores for multiple menu items.
-
-    Args:
-        request (Request): The HTTP request object.
-        menu_item_api_ids (list[str]): List of menu item API IDs.
-
-    Returns:
-        Response: Dictionary mapping menu item API IDs to their scores.
-
-    """
+    """Django view function to get recommendation scores for multiple menu items."""
     logger.info(f"Getting menu items scores for request: {request}")
     try:
-        # Authenticate user
         user = get_user_from_request(request)
         if not user:
             return Response(
@@ -134,7 +109,6 @@ def get_menu_items_score(request):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        # Get menu item API IDs
         menu_item_api_ids = request.data.get("menu_item_api_ids")
         if not menu_item_api_ids:
             return Response(
@@ -142,7 +116,6 @@ def get_menu_items_score(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Get scores
         scores = recommendation_service.get_menu_items_score(user, menu_item_api_ids)
         if not scores:
             return Response(
@@ -150,7 +123,6 @@ def get_menu_items_score(request):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Return scores
         logger.info(f"Returning scores for {len(scores)} menu items for user_id={user.id}.")
         return Response(
             {"data": scores, "message": "Menu items scores retrieved successfully."}, status=status.HTTP_200_OK
