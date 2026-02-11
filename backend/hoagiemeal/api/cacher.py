@@ -367,6 +367,11 @@ class CacherService:
                         menus[menu.dining_location.id] = menu.menu_items
                 return dict(menus)
 
+            locations = self.get_or_cache_all_locations()
+            if not locations:
+                logger.error(f"Error getting or caching locations before caching menus for date: {date}.")
+                return None
+
             api_menus = self.SCRAPER.get_menus_for_all_locations_and_date(date)
             if not api_menus:
                 logger.error(f"No all menus found for date: {date}.")
@@ -409,14 +414,11 @@ class CacherService:
             cached_ids = set(menu_item.id for menu_item in cached_menu_items)
             missing_ids = list(set(ids) - cached_ids)
             api_menu_items = self.SCRAPER.get_menu_items(missing_ids)
-            if not api_menu_items:
-                logger.error(f"No menu items found for IDs: {missing_ids}.")
-                return None
-
-            cached_success = cache_menu_items(api_menu_items)
-            if not cached_success:
-                logger.error(f"Error caching menu items for IDs: {missing_ids}.")
-                return None
+            if api_menu_items:
+                cached_success = cache_menu_items(api_menu_items)
+                if not cached_success:
+                    logger.error(f"Error caching menu items for IDs: {missing_ids}.")
+                    return None
 
             logger.info(f"Found {len(cached_ids)} existing cached menu items, cached {len(missing_ids)} menu items.")
             cached_menu_items = MenuItem.objects.filter(id__in=ids)

@@ -45,22 +45,13 @@ class MenuItemInteractionsService:
     def get_or_create_user_menu_item_interactions(
         self, user: Any, menu_item_api_ids: List[str]
     ) -> Optional[Dict[str, Optional[Dict]]]:
-        """Get or create user menu item interactions for multiple menu items.
-
-        Args:
-            user: The user.
-            menu_item_api_ids: The list of menu item API IDs.
-
-        Returns:
-            Optional[Dict[str, Optional[Dict]]]: The dictionary of user menu item interactions.
-
-        """
+        """Get or create user menu item interactions for multiple menu items."""
         logger.info(
             f"Getting or creating user menu item interactions for user_id: {user.id}, menu_item_api_ids: {menu_item_api_ids}."
         )
         try:
             # Get or create user menu item interactions for all menu items
-            interactions = MenuItemInteraction.objects.filter(user=user, menu_item__api_id__in=menu_item_api_ids)
+            interactions = MenuItemInteraction.objects.filter(user=user, menu_item_id__in=menu_item_api_ids)
             return {
                 interaction.menu_item.api_id: MenuItemInteractionSerializer(interaction).data
                 for interaction in interactions
@@ -72,19 +63,11 @@ class MenuItemInteractionsService:
             return None
 
     def get_or_create_menu_items_metrics(self, menu_item_api_ids: List[str]) -> Optional[Dict[str, Optional[Dict]]]:
-        """Get or create metrics for multiple menu items.
-
-        Args:
-            menu_item_api_ids (list[str]): List of menu item API IDs.
-
-        Returns:
-            Optional[Dict[str, Optional[Dict]]]: Dictionary mapping menu_item_api_id to metrics data.
-
-        """
+        """Get or create metrics for multiple menu items."""
         logger.info(f"Getting metrics for {len(menu_item_api_ids)} menu items.")
         try:
-            metrics = MenuItemMetrics.objects.filter(menu_item__api_id__in=menu_item_api_ids)
-            return {metric.menu_item.api_id: MenuItemMetricsSerializer(metric).data for metric in metrics}
+            metrics = MenuItemMetrics.objects.filter(menu_item_id__in=menu_item_api_ids)
+            return {metric.menu_item_id: MenuItemMetricsSerializer(metric).data for metric in metrics}
         except Exception as e:
             logger.error(f"Error getting metrics for multiple menu items: {e}")
             return None
@@ -102,7 +85,7 @@ class MenuItemInteractionsService:
         logger.info(f"Updating metrics for menu_item_api_id: {menu_item_api_id}.")
         try:
             # Get menu item and all interactions for menu item
-            menu_item = MenuItem.objects.get(api_id=menu_item_api_id)
+            menu_item = MenuItem.objects.get(id=menu_item_api_id)
             interactions = MenuItemInteraction.objects.filter(menu_item=menu_item)
             metrics, _ = MenuItemMetrics.objects.get_or_create(menu_item=menu_item)
 
@@ -174,7 +157,7 @@ class MenuItemInteractionsService:
         logger.info(f"Updating interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
         try:
             # Get menu item and create user menu item interaction
-            menu_item = MenuItem.objects.get(api_id=menu_item_api_id)
+            menu_item = MenuItem.objects.get(id=menu_item_api_id)
             interaction, _ = MenuItemInteraction.objects.get_or_create(user=user, menu_item=menu_item)
 
             # Update menu item interaction
@@ -247,7 +230,7 @@ def get_user_menu_item_interactions(request):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Return serialized user menu item interactions data
+        logger.info("User menu item interactions fetched successfully")
         return Response(
             {"data": interactions, "message": "User menu item interactions fetched successfully.", "error": None},
             status=status.HTTP_200_OK,

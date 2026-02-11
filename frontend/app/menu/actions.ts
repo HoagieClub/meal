@@ -13,21 +13,10 @@
  */
 
 import {
-  LocationMap,
-  MenuItemInteractionMap,
-  MenuItemMap,
-  MenuItemMetricsMap,
-  MenuItemScoreMap,
-  MenusForLocations,
-  MenusForMealAndLocations,
+  LocationsCache,
   DiningHall,
-  DietaryTag,
   Allergen,
-  MenuItem,
   MenuSortOption,
-  ApiId,
-  Meal,
-  DateKey,
 } from '@/types/types';
 import {
   getMenuItems,
@@ -52,17 +41,10 @@ import {
  * @param userMenuItemInteractions - The user menu item interactions.
  */
 interface BuildDisplayDataProps {
-  menusForLocations: MenusForLocations;
-  locationItems: LocationMap;
+  locationItems: LocationsCache;
   appliedDiningHalls: DiningHall[];
-  appliedDietaryRestrictions: DietaryTag[];
   appliedAllergens: Allergen[];
   searchTerm: string;
-  pinnedHalls: DiningHall[];
-  menuItems: MenuItemMap;
-  menuItemMetrics: MenuItemMetricsMap;
-  userMenuItemInteractions: MenuItemInteractionMap;
-  menuItemScores: MenuItemScoreMap;
   sortOption: MenuSortOption;
 }
 

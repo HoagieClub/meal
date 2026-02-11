@@ -51,8 +51,6 @@ export default function MenuPage() {
     diningHalls,
     allergens,
     pinnedHalls,
-    showNutrition,
-    toggleShowNutrition,
     toggleDiningHall,
     toggleAllergen,
     togglePinnedHall,
@@ -70,30 +68,26 @@ export default function MenuPage() {
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeader = useMediaQuery('(max-width: 880px)');
 
-  //   // Build display data for the current meal
-  //   const displayMenusForLocations = useMemo(
-  //     () =>
-  //       buildDisplayData({
-  //         appliedDiningHalls: diningHalls,
-  //         appliedDietaryRestrictions: dietaryRestrictions,
-  //         appliedAllergens: allergens,
-  //         searchTerm,
-  //         pinnedHalls: pinnedHalls,
-  //         sortOption,
-  //       }),
-  //     [
-  //       diningHalls,
-  //       dietaryRestrictions,
-  //       allergens,
-  //       searchTerm,
-  //       pinnedHalls,
-  //       meal,
-  //       dateKey,
-  //       sortOption,
-  //     ]
-  //   );
-
-  const displayMenusForLocations = [] as any[];
+  // Build display data for the current meal
+  const displayMenusForLocations = useMemo(
+    () =>
+      buildDisplayData({
+        appliedDiningHalls: diningHalls,
+        appliedAllergens: allergens,
+        searchTerm,
+        pinnedHalls: pinnedHalls,
+        sortOption,
+      }),
+    [
+      diningHalls,
+      allergens,
+      searchTerm,
+      pinnedHalls,
+      meal,
+      dateKey,
+      sortOption,
+    ]
+  );
 
   // Render skeleton cards while loading
   const DiningHallSkeletonCards = () => {
@@ -159,7 +153,6 @@ export default function MenuPage() {
             <DiningHallCard
               key={diningHall.name}
               diningHall={diningHall}
-              showNutrition={showNutrition}
               isPinned={isPinned}
               onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
             />
@@ -182,8 +175,6 @@ export default function MenuPage() {
           <FilterSidebar
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            showNutrition={showNutrition}
-            toggleShowNutrition={toggleShowNutrition}
             sortOption={sortOption}
             setSortOption={setSortOption}
             diningHalls={diningHalls}
@@ -248,10 +239,6 @@ export default function MenuPage() {
               <FilterSidebar
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
-                showNutrition={showNutrition}
-                toggleShowNutrition={toggleShowNutrition}
-                showAllergenTags={showAllergenTags}
-                toggleShowAllergenTags={toggleShowAllergenTags}
                 sortOption={sortOption}
                 setSortOption={setSortOption}
                 diningHalls={diningHalls}
@@ -264,11 +251,7 @@ export default function MenuPage() {
             )}
 
             {/* Render the correct content depending on the loading/data states */}
-            {loading.menusForLocations ||
-              loading.menuItems ||
-              loading.locations ||
-              loading.menuItemMetrics ||
-              loading.userMenuItemInteractions ? (
+            {preferencesLoading ? (
               <DiningHallSkeletonCards />
             ) : displayMenusForLocations.length === 0 ? (
               <NoMenusFoundCard />

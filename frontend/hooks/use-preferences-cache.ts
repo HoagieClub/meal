@@ -28,14 +28,12 @@ const CACHE_KEYS = {
   PINNED_HALLS: 'diningPinnedHalls',
   DINING_HALLS: 'diningHallsPreferences',
   ALLERGENS: 'allergensPreferences',
-  SHOW_NUTRITION: 'showNutritionPreference',
 } as const;
 
 // Default values for each preference type
 const DEFAULT_PINNED_HALLS: DiningHall[] = [];
 const DEFAULT_DINING_HALLS: DiningHall[] = DINING_HALLS;
 const DEFAULT_ALLERGENS: Allergen[] = [];
-const DEFAULT_SHOW_NUTRITION: boolean = true;
 
 /**
  * Hook for managing user dining preferences cache
@@ -61,18 +59,11 @@ export function usePreferencesCache() {
     initialValue: DEFAULT_ALLERGENS,
   });
 
-  // Show nutrition preference cache
-  const [showNutrition, setShowNutrition, showNutritionLoading] = useLocalStorage<boolean>({
-    key: CACHE_KEYS.SHOW_NUTRITION,
-    initialValue: DEFAULT_SHOW_NUTRITION,
-  });
-
   // Loading state
   const loading =
     pinnedHallsLoading ||
     diningHallsLoading ||
-    allergensLoading ||
-    showNutritionLoading;
+    allergensLoading;
 
   // Check if a dining hall is pinned
   const isPinned = (diningHall: DiningHall): boolean => {
@@ -87,11 +78,6 @@ export function usePreferencesCache() {
   // Check if an allergen is in preferences
   const hasAllergen = (allergen: Allergen): boolean => {
     return allergens.includes(allergen);
-  };
-
-  // Check if show nutrition is enabled
-  const isShowNutritionEnabled = (): boolean => {
-    return showNutrition;
   };
 
   // Add a dining hall to pinned halls
@@ -185,11 +171,6 @@ export function usePreferencesCache() {
     }
   };
 
-  // Toggle show nutrition
-  const toggleShowNutrition = (): void => {
-    setShowNutrition((prev) => !prev);
-  };
-
   // Clear all pinned halls
   const clearPinnedHalls = (): void => {
     setPinnedHalls(DEFAULT_PINNED_HALLS);
@@ -205,17 +186,11 @@ export function usePreferencesCache() {
     setAllergens(DEFAULT_ALLERGENS);
   };
 
-  // Clear show nutrition preference
-  const clearShowNutrition = (): void => {
-    setShowNutrition(DEFAULT_SHOW_NUTRITION);
-  };
-
   // Clear all preferences
   const clearAll = (): void => {
     clearPinnedHalls();
     clearDiningHalls();
     clearAllergens();
-    clearShowNutrition();
   };
 
   return {
@@ -224,25 +199,21 @@ export function usePreferencesCache() {
     pinnedHalls,
     diningHalls,
     allergens,
-    showNutrition,
 
     // Checkers
     isPinned,
     hasDiningHall,
     hasAllergen,
-    isShowNutritionEnabled,
 
     // Togglers
     togglePinnedHall,
     toggleDiningHall,
     toggleAllergen,
-    toggleShowNutrition,
 
     // Clearers
     clearPinnedHalls,
     clearDiningHalls,
     clearAllergens,
-    clearShowNutrition,
     clearAll,
   };
 }

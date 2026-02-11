@@ -22,13 +22,13 @@ import { toCamelCase } from '@/utils/toCamelCase';
  * @returns API response with all locations
  */
 export const getAllLocations = async () => {
-    const url = '/api/locations/';
-    return request
-        .get<any>()(url, {})
-        .then((res) => ({
-            ...res,
-            data: res.data ? toCamelCase(res.data) : null,
-        }));
+  const url = '/api/locations/';
+  return request
+    .get<any>()(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 
@@ -39,16 +39,16 @@ export const getAllLocations = async () => {
  * @returns API response with menu items data
  */
 export const getMenuItems = async (params: { ids: string | string[] }) => {
-    const url = '/api/menu-items/';
-    const ids = Array.isArray(params.ids) ? params.ids.join(',') : params.ids;
-    return request
-        .post<any>()(url, {
-            arg: { ids },
-        })
-        .then((res) => ({
-            ...res,
-            data: res.data ? toCamelCase(res.data) : null,
-        }));
+  const url = '/api/menu-items/';
+  const ids = Array.isArray(params.ids) ? params.ids.join(',') : params.ids;
+  return request
+    .post<any>()(url, {
+      arg: { ids },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -58,14 +58,14 @@ export const getMenuItems = async (params: { ids: string | string[] }) => {
  * @returns API response with menus data
  */
 export const getAllMenusForDate = async (params: { date: string }) => {
-    const queryParams = new URLSearchParams({ date: params.date });
-    const url = `/api/menus/?${queryParams.toString()}`;
-    return request
-        .get<any>()(url, {})
-        .then((res) => ({
-            ...res,
-            data: res.data ? toCamelCase(res.data) : null,
-        }));
+  const queryParams = new URLSearchParams({ date: params.date });
+  const url = `/api/menus/?${queryParams.toString()}`;
+  return request
+    .get<any>()(url, {})
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -76,18 +76,18 @@ export const getAllMenusForDate = async (params: { date: string }) => {
  * @returns API response with interactions data dictionary
  */
 export const getUserMenuItemsInteractions = async (
-    accessToken: string,
-    params: { menu_item_api_ids: string[] }
+  accessToken: string,
+  params: { menu_item_api_ids: string[] }
 ) => {
-    const url = '/api/engagement/interactions/';
-    return request
-        .postAuth(accessToken)(url, {
-            arg: { menu_item_api_ids: params.menu_item_api_ids },
-        })
-        .then((res) => ({
-            ...res,
-            data: res.data ? toCamelCase(res.data) : null,
-        }));
+  const url = '/api/engagement/interactions/';
+  return request
+    .postAuth(accessToken)(url, {
+      arg: { menu_item_api_ids: params.menu_item_api_ids },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -98,30 +98,30 @@ export const getUserMenuItemsInteractions = async (
  * @returns API response with updated interaction data
  */
 export const patchUserMenuItemInteraction = async (
-    accessToken: string,
-    params: {
-        menu_item_api_id: string;
-        liked?: boolean | null;
-        favorited?: boolean;
-        saved_for_later?: boolean;
-        would_eat_again?: string;
-    }
+  accessToken: string,
+  params: {
+    menu_item_api_id: string;
+    liked?: boolean | null;
+    favorited?: boolean;
+    saved_for_later?: boolean;
+    would_eat_again?: string;
+  }
 ) => {
-    const url = '/api/engagement/interaction/';
-    return request
-        .patchAuth(accessToken)(url, {
-            arg: {
-                menu_item_api_id: params.menu_item_api_id,
-                liked: params.liked,
-                favorited: params.favorited,
-                saved_for_later: params.saved_for_later,
-                would_eat_again: params.would_eat_again,
-            },
-        })
-        .then((res) => ({
-            ...res,
-            data: res.data ? toCamelCase(res.data) : null,
-        }));
+  const url = '/api/engagement/interaction/';
+  return request
+    .patchAuth(accessToken)(url, {
+      arg: {
+        menu_item_api_id: params.menu_item_api_id,
+        liked: params.liked,
+        favorited: params.favorited,
+        saved_for_later: params.saved_for_later,
+        would_eat_again: params.would_eat_again,
+      },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -131,15 +131,15 @@ export const patchUserMenuItemInteraction = async (
  * @returns API response with metrics data dictionary
  */
 export const getMenuItemsMetrics = async (params: { menu_item_api_ids: string[] }) => {
-    const url = '/api/engagement/metrics/';
-    return request
-        .post<any>()(url, {
-            arg: { menu_item_api_ids: params.menu_item_api_ids },
-        })
-        .then((res) => ({
-            ...res,
-            data: res.data ? toCamelCase(res.data) : null,
-        }));
+  const url = '/api/engagement/metrics/';
+  return request
+    .post<any>()(url, {
+      arg: { menu_item_api_ids: params.menu_item_api_ids },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -150,18 +150,18 @@ export const getMenuItemsMetrics = async (params: { menu_item_api_ids: string[] 
  * @returns API response with dictionary mapping menu item API IDs to scores
  */
 export const getMenuItemsScore = async (
-    accessToken: string,
-    params: { menu_item_api_ids: string[] }
+  accessToken: string,
+  params: { menu_item_api_ids: string[] }
 ) => {
-    const url = '/api/recommend/';
-    return request
-        .postAuth(accessToken)(url, {
-            arg: { menu_item_api_ids: params.menu_item_api_ids },
-        })
-        .then((res) => ({
-            ...res,
-            data: res.data ? toCamelCase(res.data) : null,
-        }));
+  const url = '/api/recommend/';
+  return request
+    .postAuth(accessToken)(url, {
+      arg: { menu_item_api_ids: params.menu_item_api_ids },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
 
 /**
@@ -171,11 +171,11 @@ export const getMenuItemsScore = async (
  * @returns API response with user data
  */
 export const verifyUser = async (accessToken: string) => {
-    const url = '/api/user/';
-    return request
-        .postAuth(accessToken)(url, { arg: {} })
-        .then((res) => ({
-            ...res,
-            data: res.data ? toCamelCase(res.data) : null,
-        }));
+  const url = '/api/user/';
+  return request
+    .postAuth(accessToken)(url, { arg: {} })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
 };
