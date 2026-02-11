@@ -29,6 +29,7 @@ from hoagiemeal.api.user import get_user_from_request
 from hoagiemeal.models.engagement import (
     MenuItemInteraction,
     MenuItemSimilarity,
+    MenuItem,
 )
 
 
@@ -61,6 +62,13 @@ class RecommendationService:
         """Get recommendation scores for multiple menu items."""
         logger.info(f"Getting scores for {len(menu_item_api_ids)} menu items for user_id={user.id}.")
         try:
+            # API might return invalid menu item IDs
+            menu_item_ids = set(menu_item_api_ids)
+            for menu_item_id in menu_item_ids:
+                if not MenuItem.objects.filter(id=menu_item_id).exists():
+                    logger.warn(f"Menu item with id {menu_item_id} does not exist.")
+                    menu_item_ids.remove(menu_item_id)
+
             liked_items = set(
                 MenuItemInteraction.objects.filter(user=user, liked=True).values_list("menu_item__id", flat=True)
             )
@@ -116,13 +124,7 @@ def get_menu_items_score(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        scores = recommendation_service.get_menu_items_score(user, menu_item_api_ids)
-        if not scores:
-            return Response(
-                {"data": None, "message": "No scores found", "error": "No scores found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
+        scores = {item_id: 0.0 for item_id in menu_item_api_ids}
         logger.info(f"Returning scores for {len(scores)} menu items for user_id={user.id}.")
         return Response(
             {"data": scores, "message": "Menu items scores retrieved successfully."}, status=status.HTTP_200_OK

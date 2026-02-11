@@ -78,7 +78,7 @@ def cache_locations(locations: dict) -> bool:
     try:
         with transaction.atomic():
             for location in locations.values():
-                DiningLocation.objects.create(
+                DiningLocation.objects.get_or_create(
                     id=location["id"],
                     category=location["category"],
                     name=location["name"],
@@ -97,7 +97,7 @@ def cache_residential_menus_for_locations_and_date(date: datetime.date, menus: d
         for location_id, meal_menus in menus.items():
             dining_location = DiningLocation.objects.get(id=location_id)
             for meal, menu_items in meal_menus.items():
-                ResidentialMenu.objects.create(
+                ResidentialMenu.objects.get_or_create(
                     dining_location=dining_location,
                     date=date,
                     meal=meal,
@@ -115,7 +115,7 @@ def cache_retail_menus_for_locations_and_date(date: datetime.date, menus: dict) 
     try:
         for location_id, menu_items in menus.items():
             dining_location = DiningLocation.objects.get(id=location_id)
-            RetailMenu.objects.create(
+            RetailMenu.objects.get_or_create(
                 dining_location=dining_location,
                 date=date,
                 menu_items=menu_items,
@@ -154,14 +154,14 @@ def cache_menu_items(menu_items: dict) -> bool:
         for menu_item in menu_items.values():
             try:
                 with transaction.atomic():
-                    menu_item_obj = MenuItem.objects.create(
+                    menu_item_obj, created = MenuItem.objects.get_or_create(
                         id=menu_item["id"],
                         name=menu_item["name"],
                         url=menu_item["url"],
                     )
 
                     nutrition = menu_item["nutrition"]
-                    MenuItemNutrition.objects.create(
+                    MenuItemNutrition.objects.get_or_create(
                         menu_item=menu_item_obj,
                         servings_per_container=nutrition["servings_per_container"],
                         serving_size=nutrition["serving_size"],

@@ -87,7 +87,7 @@ def get_or_create_user(auth0_claims: dict) -> Optional[Any]:
         username = email.split("@")[0] if email else ""
         last_login = timezone.now()
 
-        user = User.objects.create(
+        user, created = User.objects.get_or_create(
             auth0_id=auth0_id,
             email=email,
             first_name=first_name,

@@ -59,7 +59,7 @@ class MenuItemInteractionsService:
                 # API might return invalid menu item IDs
                 try:
                     menu_item = MenuItem.objects.get(id=menu_item_api_id)
-                    MenuItemInteraction.objects.create(user=user, menu_item=menu_item)
+                    MenuItemInteraction.objects.get_or_create(user=user, menu_item=menu_item)
                 except MenuItem.DoesNotExist:
                     logger.warn(f"Menu item with id {menu_item_api_id} does not exist.")
                     continue
@@ -86,7 +86,7 @@ class MenuItemInteractionsService:
                 # API might return invalid menu item IDs
                 try:
                     menu_item = MenuItem.objects.get(id=menu_item_api_id)
-                    MenuItemMetrics.objects.create(menu_item=menu_item)
+                    MenuItemMetrics.objects.get_or_create(menu_item=menu_item)
                 except MenuItem.DoesNotExist:
                     logger.warn(f"Menu item with id {menu_item_api_id} does not exist.")
                     continue

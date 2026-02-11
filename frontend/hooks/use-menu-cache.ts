@@ -1,5 +1,5 @@
 /**
- * @overview Simple hook for managing menu, location, and menu item caches in local storage.
+ * @overview Simple hook for managing menu, location, menu item, interaction, metrics, and recommendation caches in local storage.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -15,187 +15,229 @@
 'use client';
 
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { MenuItem, Location } from '@/types/types';
-
-// Menu structure: date -> locationId -> meal -> station -> menuItemIds[]
-type MenuStructure = {
-    [locationId: string]: {
-        [meal: string]: {
-            [station: string]: string[];
-        };
-    };
-};
-
-type MenusCache = {
-    [date: string]: MenuStructure;
-};
-
-type LocationsCache = {
-    [locationId: string]: Location;
-};
-
-type MenuItemsCache = {
-    [menuItemId: string]: MenuItem;
-};
 
 const CACHE_KEYS = {
-    MENUS: 'menusCache',
-    LOCATIONS: 'locationsCache',
-    MENU_ITEMS: 'menuItemsCache',
+  RESIDENTIAL_MENUS: 'residentialMenusCache',
+  RETAIL_MENUS: 'retailMenusCache',
+  LOCATIONS: 'locationsCache',
+  MENU_ITEMS: 'menuItemsCache',
+  INTERACTIONS: 'interactionsCache',
+  METRICS: 'metricsCache',
+  RECOMMENDATIONS: 'recommendationsCache',
 } as const;
 
-/**
- * Hook for managing menus cache.
- * Structure: date (YYYY-MM-DD) -> locationId -> meal -> station -> menuItemIds[]
- */
-export function useMenusCache() {
-    const [menusCache, setMenusCache, menusCacheLoading] = useLocalStorage<MenusCache>({
-        key: CACHE_KEYS.MENUS,
-        initialValue: {},
-    });
+export function useResidentialMenusCache() {
+  const [cache, setCache] = useLocalStorage({
+    key: CACHE_KEYS.RESIDENTIAL_MENUS,
+    initialValue: {},
+    expiryInMs: 7 * 24 * 60 * 60 * 1000, // 1 week
+  });
 
-    // Get menus for a specific date
-    const getMenusForDate = (date: string): MenuStructure | undefined => {
-        return menusCache[date];
-    };
+  const setMenusForDate = (date: any, menus: any) => {
+    setCache((prev) => ({
+      ...prev,
+      [date]: menus,
+    }));
+  };
 
-    // Set menus for a specific date
-    const setMenusForDate = (date: string, menus: MenuStructure): void => {
-        setMenusCache((prev) => ({
-            ...prev,
-            [date]: menus,
-        }));
-    };
+  const getMenusForDate = (date: any) => {
+    return cache[date as keyof typeof cache];
+  };
 
-    // Check if menus exist for a date
-    const hasMenusForDate = (date: string): boolean => {
-        return date in menusCache && menusCache[date] !== undefined;
-    };
+  const getMenusForDateAndMeal = (date: any, meal: any) => {
+    const menus = getMenusForDate(date);
+    return menus[meal as keyof typeof menus];
+  };
 
-    // Clear all menus
-    const clearAllMenus = (): void => {
-        setMenusCache({});
-    };
-
-    return {
-        menusCache,
-        menusCacheLoading,
-        getMenusForDate,
-        setMenusForDate,
-        hasMenusForDate,
-        clearAllMenus,
-    };
+  return {
+    residentialMenusCache: cache,
+    setResidentialMenusForDate: setMenusForDate,
+    getResidentialMenusForDate: getMenusForDate,
+    getResidentialMenusForDateAndMeal: getMenusForDateAndMeal,
+  };
 }
 
-/**
- * Hook for managing locations cache.
- * Structure: locationId -> Location
- */
+export function useRetailMenusCache() {
+  const [cache, setCache] = useLocalStorage({
+    key: CACHE_KEYS.RETAIL_MENUS,
+    initialValue: {},
+    expiryInMs: 7 * 24 * 60 * 60 * 1000, // 1 week
+  });
+
+  const setMenusForDate = (date: any, menus: any) => {
+    setCache((prev) => ({
+      ...prev,
+      [date]: menus,
+    }));
+  };
+
+  const getMenusForDate = (date: any) => {
+    return cache[date as keyof typeof cache];
+  };
+
+  return {
+    retailMenusCache: cache,
+    setRetailMenusForDate: setMenusForDate,
+    getRetailMenusForDate: getMenusForDate,
+  };
+}
+
 export function useLocationsCache() {
-    const [locationsCache, setLocationsCache, locationsCacheLoading] = useLocalStorage<LocationsCache>({
-        key: CACHE_KEYS.LOCATIONS,
-        initialValue: {},
-    });
+  const [cache, setCache] = useLocalStorage({
+    key: CACHE_KEYS.LOCATIONS,
+    initialValue: {},
+    expiryInMs: 7 * 24 * 60 * 60 * 1000, // 1 week
+  });
 
-    // Get a location by ID
-    const getLocation = (locationId: string): Location | undefined => {
-        return locationsCache[locationId];
-    };
+  const setLocations = (locations: any) => {
+    setCache((prev) => ({
+      ...prev,
+      ...locations,
+    }));
+  };
 
-    // Get all locations
-    const getAllLocations = (): LocationsCache => {
-        return locationsCache;
-    };
+  const getLocation = (locationId: any) => {
+    return cache[locationId as keyof typeof cache];
+  };
 
-    // Set multiple locations
-    const setLocations = (locations: LocationsCache): void => {
-        setLocationsCache((prev) => ({
-            ...prev,
-            ...locations,
-        }));
-    };
+  const getLocations = (locationIds: any[]) => {
+    return locationIds.map((locationId) => getLocation(locationId));
+  };
 
-    // Check if a location exists
-    const hasLocation = (locationId: string): boolean => {
-        return locationId in locationsCache && locationsCache[locationId] !== undefined;
-    };
+  const getResidentialLocations = () => {
+    return Object.values(cache).filter((location: any) => location.category === 'residential');
+  };
 
-    // Clear all locations
-    const clearAllLocations = (): void => {
-        setLocationsCache({});
-    };
+  const getRetailLocations = () => {
+    return Object.values(cache).filter((location: any) => location.category === 'retail');
+  };
 
-    return {
-        locationsCache,
-        locationsCacheLoading,
-        getLocation,
-        getAllLocations,
-        setLocations,
-        hasLocation,
-        clearAllLocations,
-    };
+  return {
+    locationsCache: cache,
+    setLocations,
+    getLocation,
+    getLocations,
+    getResidentialLocations,
+    getRetailLocations,
+  };
 }
 
-/**
- * Hook for managing menu items cache.
- * Structure: menuItemId -> MenuItem
- */
 export function useMenuItemsCache() {
-    const [menuItemsCache, setMenuItemsCache, menuItemsCacheLoading] = useLocalStorage<MenuItemsCache>({
-        key: CACHE_KEYS.MENU_ITEMS,
-        initialValue: {},
-    });
+  const [cache, setCache] = useLocalStorage({
+    key: CACHE_KEYS.MENU_ITEMS,
+    initialValue: {},
+    expiryInMs: 7 * 24 * 60 * 60 * 1000, // 1 week
+  });
 
-    // Get a menu item by ID
-    const getMenuItem = (menuItemId: string): MenuItem | undefined => {
-        return menuItemsCache[menuItemId];
-    };
+  const setMenuItems = (menuItems: any) => {
+    setCache((prev) => ({
+      ...prev,
+      ...menuItems,
+    }));
+  };
 
-    // Get multiple menu items by IDs
-    const getMenuItems = (menuItemIds: string[]): MenuItemsCache => {
-        const items: MenuItemsCache = {};
-        menuItemIds.forEach((id) => {
-            if (menuItemsCache[id]) {
-                items[id] = menuItemsCache[id];
-            }
-        });
-        return items;
-    };
+  const getMenuItem = (apiId: any) => {
+    return cache[apiId as keyof typeof cache];
+  };
 
-    // Set a menu item
-    const setMenuItem = (menuItemId: string, menuItem: MenuItem): void => {
-        setMenuItemsCache((prev) => ({
-            ...prev,
-            [menuItemId]: menuItem,
-        }));
-    };
+  const getMenuItems = (apiIds: any[]) => {
+    return apiIds.map((apiId) => getMenuItem(apiId));
+  };
 
-    // Set multiple menu items
-    const setMenuItems = (menuItems: MenuItemsCache): void => {
-        setMenuItemsCache((prev) => ({
-            ...prev,
-            ...menuItems,
-        }));
-    };
+  return {
+    menuItemsCache: cache,
+    setMenuItems,
+    getMenuItem,
+    getMenuItems,
+  };
+}
 
-    // Check if a menu item exists
-    const hasMenuItem = (menuItemId: string): boolean => {
-        return menuItemId in menuItemsCache && menuItemsCache[menuItemId] !== undefined;
-    };
+export function useInteractionsCache() {
+  const [cache, setCache] = useLocalStorage({
+    key: CACHE_KEYS.INTERACTIONS,
+    initialValue: {},
+    expiryInMs: 30 * 60 * 1000, // 30 minutes
+  });
 
-    // Clear all menu items
-    const clearAllMenuItems = (): void => {
-        setMenuItemsCache({});
-    };
+  const setInteractions = (interactions: any) => {
+    setCache((prev) => ({
+      ...prev,
+      ...interactions,
+    }));
+  };
 
-    return {
-        menuItemsCache,
-        menuItemsCacheLoading,
-        getMenuItem,
-        getMenuItems,
-        setMenuItem,
-        setMenuItems,
-        hasMenuItem,
-        clearAllMenuItems,
-    };
+  const getInteraction = (interactionId: any) => {
+    return cache[interactionId as keyof typeof cache];
+  };
+
+  const getInteractions = (interactionIds: any[]) => {
+    return interactionIds.map((interactionId) => getInteraction(interactionId));
+  };
+
+  return {
+    interactionsCache: cache,
+    setInteractions,
+    getInteraction,
+    getInteractions,
+  };
+}
+
+export function useMetricsCache() {
+  const [cache, setCache] = useLocalStorage({
+    key: CACHE_KEYS.METRICS,
+    initialValue: {},
+    expiryInMs: 30 * 60 * 1000, // 30 minutes
+  });
+
+  const setMetrics = (metrics: any) => {
+    setCache((prev) => ({
+      ...prev,
+      ...metrics,
+    }));
+  };
+
+  const getMetric = (metricId: any) => {
+    return cache[metricId as keyof typeof cache];
+  };
+
+  const getMetrics = (metricIds: any[]) => {
+    return metricIds.map((metricId) => getMetric(metricId));
+  };
+
+  return {
+    metricsCache: cache,
+    setMetrics,
+    getMetric,
+    getMetrics,
+  };
+}
+
+export function useRecommendationsCache() {
+  const [cache, setCache] = useLocalStorage({
+    key: CACHE_KEYS.RECOMMENDATIONS,
+    initialValue: {},
+    expiryInMs: 30 * 60 * 1000, // 30 minutes
+  });
+
+  const setRecommendations = (recommendations: any) => {
+    setCache((prev) => ({
+      ...prev,
+      ...recommendations,
+    }));
+  };
+
+  const getRecommendation = (recommendationId: any) => {
+    return cache[recommendationId as keyof typeof cache];
+  };
+
+  const getRecommendations = (recommendationIds: any[]) => {
+    return recommendationIds.map((recommendationId) => getRecommendation(recommendationId));
+  };
+
+  return {
+    recommendationsCache: cache,
+    setRecommendations,
+    getRecommendation,
+    getRecommendations,
+  };
 }
