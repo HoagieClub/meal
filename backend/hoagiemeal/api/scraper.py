@@ -274,6 +274,13 @@ def extract_menus(soup: BeautifulSoup) -> Optional[dict]:
                     continue
 
                 if ITEM_CLASS in classes and current_station:
+                    accordion_body = element.select_one("div.accordion-body.p-2")
+                    if accordion_body:
+                        body_text = accordion_body.get_text()
+                        if "nutritional information is not available" in body_text.lower():
+                            logger.info("Skipping menu item with unavailable nutritional information")
+                            continue
+
                     nutrition_link = element.select_one(NUTRITION_LINK_CLASS)
                     if nutrition_link:
                         href = nutrition_link.get("href")

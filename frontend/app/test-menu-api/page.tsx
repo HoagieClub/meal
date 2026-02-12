@@ -22,6 +22,7 @@ import {
   Button,
   Spinner,
   TextInput,
+  Select,
   majorScale,
   minorScale,
   useTheme,
@@ -29,6 +30,8 @@ import {
   TabNavigation,
 } from 'evergreen-ui';
 import { useMenuApi } from '@/hooks/use-menu-api';
+import { useBuildDisplayData } from '@/hooks/use-build-display-data';
+import { MenuSortOption } from '@/types/types';
 
 interface DataSectionProps {
   title: string;
@@ -59,7 +62,7 @@ function DataSection({ title, content, count, renderContent, renderCount }: Data
         padding={majorScale(2)}
         overflow='auto'
         border
-        maxHeight={majorScale(60)}
+        maxHeight={majorScale(40)}
       >
         <Text size={300} fontFamily='mono'>
           <pre style={{ margin: 0, fontSize: '12px' }}>{displayContent}</pre>
@@ -81,13 +84,16 @@ interface TabData {
 
 export default function TestMenuApiPage() {
   const theme = useTheme();
-  const fetchAll = useMenuApi();
+  const { fetchAll } = useMenuApi();
   const [tabs, setTabs] = useState<Map<string, TabData>>(new Map());
   const [activeDate, setActiveDate] = useState<string | null>(null);
   const [date, setDate] = useState<string>(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
+  const [meal, setMeal] = useState<string>('Lunch');
+  const [sortOption, setSortOption] = useState<MenuSortOption>('Best');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   const handleFetch = async () => {
     setTabs((prev) => {
@@ -131,6 +137,21 @@ export default function TestMenuApiPage() {
   const activeTab = activeDate ? tabs.get(activeDate) : null;
   const tabDates = Array.from(tabs.keys()).sort();
 
+  const builtDisplayData = useBuildDisplayData({
+    locations: activeTab?.data?.locations || {},
+    residentialMenus: activeTab?.data?.residentialMenus || {},
+    menuItems: activeTab?.data?.menuItems || {},
+    interactions: activeTab?.data?.interactions || {},
+    metrics: activeTab?.data?.metrics || {},
+    recommendations: activeTab?.data?.recommendations || {},
+    appliedDiningHalls: [],
+    appliedAllergens: [],
+    searchTerm,
+    pinnedHalls: [],
+    meal,
+    sortOption,
+  });
+
   return (
     <Pane maxWidth={1200} marginX='auto' paddingX={majorScale(4)} paddingY={majorScale(6)}>
       <Heading size={900} marginBottom={majorScale(4)}>
@@ -143,27 +164,71 @@ export default function TestMenuApiPage() {
         padding={majorScale(3)}
         marginBottom={majorScale(4)}
       >
-        <Pane display='flex' alignItems='flex-end' gap={majorScale(2)}>
-          <Pane flex={1}>
-            <Text size={400} fontWeight={500} marginBottom={minorScale(1)} display='block'>
-              Date (YYYY-MM-DD)
-            </Text>
-            <TextInput
-              type='date'
-              value={date}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDate(e.target.value)}
-              width='100%'
-            />
+        <Pane display='flex' flexDirection='column' gap={majorScale(3)}>
+          <Pane display='flex' alignItems='flex-end' gap={majorScale(2)}>
+            <Pane flex={1}>
+              <Text size={400} fontWeight={500} marginBottom={minorScale(1)} display='block'>
+                Date (YYYY-MM-DD)
+              </Text>
+              <TextInput
+                type='date'
+                value={date}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDate(e.target.value)}
+                width='100%'
+              />
+            </Pane>
+            <Pane marginTop={majorScale(3)}>
+              <Button
+                appearance='primary'
+                onClick={handleFetch}
+                disabled={tabs.get(date)?.loading || false}
+                background={theme.colors.green600}
+              >
+                {tabs.get(date)?.loading ? 'Loading...' : 'Fetch Data'}
+              </Button>
+            </Pane>
           </Pane>
-          <Pane marginTop={majorScale(3)}>
-            <Button
-              appearance='primary'
-              onClick={handleFetch}
-              disabled={tabs.get(date)?.loading || false}
-              background={theme.colors.green600}
-            >
-              {tabs.get(date)?.loading ? 'Loading...' : 'Fetch Data'}
-            </Button>
+          <Pane display='flex' gap={majorScale(2)}>
+            <Pane flex={1}>
+              <Text size={400} fontWeight={500} marginBottom={minorScale(1)} display='block'>
+                Meal
+              </Text>
+              <Select
+                value={meal}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setMeal(e.target.value)}
+                width='100%'
+              >
+                <option value='Breakfast'>Breakfast</option>
+                <option value='Lunch'>Lunch</option>
+                <option value='Dinner'>Dinner</option>
+              </Select>
+            </Pane>
+            <Pane flex={1}>
+              <Text size={400} fontWeight={500} marginBottom={minorScale(1)} display='block'>
+                Sort Option
+              </Text>
+              <Select
+                value={sortOption}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortOption(e.target.value as MenuSortOption)}
+                width='100%'
+              >
+                <option value='Best'>Best</option>
+                <option value='Recommended'>Recommended</option>
+                <option value='Most Liked'>Most Liked</option>
+                <option value='Category'>Category</option>
+              </Select>
+            </Pane>
+            <Pane flex={1}>
+              <Text size={400} fontWeight={500} marginBottom={minorScale(1)} display='block'>
+                Search Term
+              </Text>
+              <TextInput
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                placeholder='Search...'
+                width='100%'
+              />
+            </Pane>
           </Pane>
         </Pane>
       </Pane>
@@ -221,9 +286,15 @@ export default function TestMenuApiPage() {
           />
 
           <DataSection
-            title='Menus'
-            content={activeTab.data.menus}
-            count={Object.keys(activeTab.data.menus || {}).length}
+            title='Residential Menus'
+            content={activeTab.data.residentialMenus}
+            count={Object.keys(activeTab.data.residentialMenus || {}).length}
+          />
+
+          <DataSection
+            title='Retail Menus'
+            content={activeTab.data.retailMenus}
+            count={Object.keys(activeTab.data.retailMenus || {}).length}
           />
 
           <DataSection
@@ -248,27 +319,6 @@ export default function TestMenuApiPage() {
           />
 
           <DataSection
-            title='Failed Menu Items'
-            renderContent={() => {
-              const menuString = JSON.stringify(activeTab.data.menus);
-              const matches = menuString.match(/"\d{6}"/g) || [];
-              const menuItemIds = new Set(matches.map((match) => match.replace(/"/g, '')));
-              const returnedMenuItemIds = new Set(Object.keys(activeTab.data.menuItems || {}));
-              const missingIds = Array.from(menuItemIds)
-                .filter((id) => !returnedMenuItemIds.has(id))
-                .sort();
-              return JSON.stringify(missingIds, null, 2);
-            }}
-            renderCount={() => {
-              const menuString = JSON.stringify(activeTab.data.menus);
-              const matches = menuString.match(/"\d{6}"/g) || [];
-              const menuItemIds = new Set(matches.map((match) => match.replace(/"/g, '')));
-              const returnedMenuItemIds = new Set(Object.keys(activeTab.data.menuItems || {}));
-              return Array.from(menuItemIds).filter((id) => !returnedMenuItemIds.has(id)).length;
-            }}
-          />
-
-          <DataSection
             title='Interactions'
             content={activeTab.data.interactions}
             count={Object.keys(activeTab.data.interactions || {}).length}
@@ -285,9 +335,88 @@ export default function TestMenuApiPage() {
             content={activeTab.data.recommendations}
             count={Object.keys(activeTab.data.recommendations || {}).length}
           />
+
+          <DataSection
+            title='Full Local Storage Data'
+            renderContent={() => {
+              const cacheKeys = [
+                'residentialMenusCache',
+                'retailMenusCache',
+                'locationsCache',
+                'menuItemsCache',
+                'interactionsCache',
+                'metricsCache',
+                'recommendationsCache',
+              ];
+
+              const localStorageData: any = {};
+              for (const key of cacheKeys) {
+                try {
+                  const item = localStorage.getItem(key);
+                  if (item) {
+                    localStorageData[key] = JSON.parse(item);
+                  }
+                } catch (e) {
+                  localStorageData[key] = `Error parsing: ${e}`;
+                }
+              }
+
+              return JSON.stringify(localStorageData, null, 2);
+            }}
+            renderCount={() => {
+              const cacheKeys = [
+                'residentialMenusCache',
+                'retailMenusCache',
+                'locationsCache',
+                'menuItemsCache',
+                'interactionsCache',
+                'metricsCache',
+                'recommendationsCache',
+              ];
+              let totalKeys = 0;
+              for (const key of cacheKeys) {
+                try {
+                  const item = localStorage.getItem(key);
+                  if (item) {
+                    const parsed = JSON.parse(item);
+                    if (typeof parsed === 'object' && parsed !== null) {
+                      totalKeys += Object.keys(parsed).length;
+                    }
+                  }
+                } catch (e) {
+                }
+              }
+              return totalKeys;
+            }}
+          />
+        </Pane>
+      )}
+
+      {activeTab?.data && (
+        <Pane>
+          <DataSection
+            title='Built Display Data'
+            renderContent={() => {
+              if (!activeTab?.data) {
+                return 'No data available';
+              }
+
+              return JSON.stringify(builtDisplayData, null, 2);
+            }}
+            renderCount={() => {
+              if (!activeTab?.data) {
+                return 0;
+              }
+
+              const totalMenuItems = builtDisplayData.reduce((sum: number, location: any) => {
+                return sum + (location.menu?.length || 0);
+              }, 0);
+
+              return totalMenuItems;
+            }}
+          />
         </Pane>
       )}
     </Pane>
   );
 }
-

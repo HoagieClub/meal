@@ -24,9 +24,6 @@ import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { MenuSortOption } from '@/types/types';
-import {
-  useMenusCache,
-} from '@/hooks/use-menu-cache';
 import { MEAL_RANGES } from '@/data';
 import { MEAL_COLOR_MAP } from '@/styles';
 import {
@@ -34,6 +31,8 @@ import {
   DiningHall,
 } from '@/types/types';
 import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
+import { useMenuApi } from '@/hooks/use-menu-api';
+import { useBuildDisplayData } from '@/hooks/use-build-display-data';
 
 /**
  * Menu page component.
@@ -43,10 +42,30 @@ import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-conte
 export default function MenuPage() {
   const theme = useTheme();
 
-  // Get the date related information from the useDate hook
   const { currentMeal, dateKey, formattedDateForDisplay, goToPreviousDay, goToNextDay, isWeekend, selectedDate, goToDate } = useDate();
+  const [retailMenus, setRetailMenus] = useState<any>({});
+  const [residentialMenus, setResidentialMenus] = useState<any>({});
+  const [locations, setLocations] = useState<any>({});
+  const [menuItems, setMenuItems] = useState<any>({});
+  const [interactions, setInteractions] = useState<any>({});
+  const [metrics, setMetrics] = useState<any>({});
+  const [recommendations, setRecommendations] = useState<any>({});
+  const { fetchAll } = useMenuApi();
 
-  // Get the preferences for the menu page from local storage
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await fetchAll(dateKey);
+      setLocations(result.locations || {});
+      setResidentialMenus(result.menus.residential || {});
+      setRetailMenus(result.menus.retail || {});
+      setMenuItems(result.menuItems || {});
+      setInteractions(result.interactions || {});
+      setMetrics(result.metrics || {});
+      setRecommendations(result.recommendations || {});
+    };
+    fetchData();
+  }, [dateKey, fetchAll]);
+
   const {
     diningHalls,
     allergens,
@@ -58,38 +77,28 @@ export default function MenuPage() {
     loading: preferencesLoading,
   } = usePreferencesCache();
 
-  // Create state for the meal, search term, modal hall, and sort option
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<MenuSortOption>('Best');
-
-  // Media query flags
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeader = useMediaQuery('(max-width: 880px)');
 
-  // Build display data for the current meal
-  const displayMenusForLocations = useMemo(
-    () =>
-      buildDisplayData({
-        appliedDiningHalls: diningHalls,
-        appliedAllergens: allergens,
-        searchTerm,
-        pinnedHalls: pinnedHalls,
-        sortOption,
-      }),
-    [
-      diningHalls,
-      allergens,
-      searchTerm,
-      pinnedHalls,
-      meal,
-      dateKey,
-      sortOption,
-    ]
-  );
+  const displayMenusForLocations = useBuildDisplayData({
+    locations,
+    residentialMenus,
+    menuItems,
+    interactions,
+    metrics,
+    recommendations,
+    appliedDiningHalls: diningHalls,
+    appliedAllergens: allergens,
+    searchTerm,
+    pinnedHalls: pinnedHalls,
+    meal,
+    sortOption,
+  });
 
-  // Render skeleton cards while loading
   const DiningHallSkeletonCards = () => {
     return (
       <Pane
@@ -110,7 +119,6 @@ export default function MenuPage() {
     );
   };
 
-  // Render empty state if no menu items are found
   const NoMenusFoundCard = () => (
     <Pane
       display='flex'
@@ -135,7 +143,6 @@ export default function MenuPage() {
     </Pane>
   );
 
-  // Render dining hall cards
   const DiningHallCards = () => {
     return (
       <Pane
@@ -154,6 +161,7 @@ export default function MenuPage() {
               key={diningHall.name}
               diningHall={diningHall}
               isPinned={isPinned}
+              showNutrition={true}
               onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
             />
           );
@@ -162,7 +170,6 @@ export default function MenuPage() {
     );
   };
 
-  // Render the menu page
   return (
     <NutritionAccordionProvider>
       <Pane
@@ -170,7 +177,6 @@ export default function MenuPage() {
         className='sm:flex-row overflow-hidden min-h-screen flex-col transition-colors duration-300'
         background={MEAL_COLOR_MAP(theme)[meal]}
       >
-        {/* Filter sidebar for desktop*/}
         {!hideFilterSidebar && (
           <FilterSidebar
             searchTerm={searchTerm}
@@ -192,7 +198,6 @@ export default function MenuPage() {
           paddingRight={hideSidebar ? 0 : majorScale(3)}
           paddingLeft={hideFilterSidebar ? majorScale(3) : 0}
         >
-          {/* Header for the menu page */}
           <Pane>
             <Pane
               display='flex'
@@ -201,7 +206,6 @@ export default function MenuPage() {
               marginY={majorScale(1)}
               className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
             >
-              {/* Render the meal header */}
               <Pane width={240}>
                 <Heading className='text-5xl' color={theme.colors.green700} fontWeight={900}>
                   {meal.toUpperCase()}
@@ -211,7 +215,6 @@ export default function MenuPage() {
                 </Text>
               </Pane>
 
-              {/* Render the date and meal selector */}
               <DateMealSelector
                 meal={meal}
                 setMeal={setMeal}
@@ -223,7 +226,6 @@ export default function MenuPage() {
                 goToDate={goToDate}
               />
 
-              {/* Render the sort and filter options */}
               <Pane
                 display='flex'
                 flexDirection='column'
@@ -234,7 +236,6 @@ export default function MenuPage() {
               ></Pane>
             </Pane>
 
-            {/* Render the filter sidebar for mobile */}
             {hideFilterSidebar && (
               <FilterSidebar
                 searchTerm={searchTerm}
@@ -250,7 +251,6 @@ export default function MenuPage() {
               />
             )}
 
-            {/* Render the correct content depending on the loading/data states */}
             {preferencesLoading ? (
               <DiningHallSkeletonCards />
             ) : displayMenusForLocations.length === 0 ? (

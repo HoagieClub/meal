@@ -201,6 +201,8 @@ export const useMenuApi = () => {
     return {
       locations,
       menus: allMenus,
+      residentialMenus: menus.residential || {},
+      retailMenus: menus.retail || {},
       menuItems,
       interactions,
       metrics,
