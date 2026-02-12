@@ -155,7 +155,7 @@ export default function TestMenuApiPage() {
   return (
     <Pane maxWidth={1200} marginX='auto' paddingX={majorScale(4)} paddingY={majorScale(6)}>
       <Heading size={900} marginBottom={majorScale(4)}>
-        Test Menu API Hook
+        Test Menu API/Cache + Build Display Data
       </Heading>
       <Pane
         background='white'
