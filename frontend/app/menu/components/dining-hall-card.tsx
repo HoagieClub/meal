@@ -48,7 +48,6 @@ interface DiningHallCardProps {
  */
 const DiningHallCard = ({
   diningHall,
-  showNutrition,
   isPinned,
   onPinToggle,
 }: DiningHallCardProps) => {
@@ -108,7 +107,7 @@ const DiningHallCard = ({
           <img src={imageSrc?.src} className='h-full my-auto w-auto' alt={diningHall.name} />
         </Pane>
       </Pane>
-      <MenuSection items={diningHall.menu ?? []} showNutrition={showNutrition} diningHallId={diningHall.name} />
+      <MenuSection items={diningHall.menu ?? []} diningHallId={diningHall.name} />
     </Pane>
   );
 };

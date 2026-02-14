@@ -22,18 +22,14 @@ import MenuItemRow from './menu-item-row';
  * Menu section component.
  *
  * @param items - The items to display in the menu section.
- * @param fullMenu - Whether the menu is a full menu.
  * @returns The menu section component.
  */
 const MenuSection = ({
   items,
-  fullMenu,
   diningHallId,
 }: {
   items: any[];
-  showNutrition?: boolean;
-  fullMenu?: boolean;
-  diningHallId?: string;
+  diningHallId: string;
 }) => {
   const theme = useTheme();
 
@@ -67,7 +63,7 @@ const MenuSection = ({
             <Pane>
               {items.map((item) => (
                 <MenuItemRow
-                  key={`${diningHallId}-${item.apiId}`}
+                  key={item.id}
                   item={item}
                   diningHallId={diningHallId}
                 />

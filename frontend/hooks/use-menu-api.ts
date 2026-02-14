@@ -56,14 +56,16 @@ export const useMenuApi = () => {
     }
     const response = await getAllLocations();
     const locations = response.data || {};
-    locationsCache.setLocations(locations);
+    if (Object.keys(locations).length > 0) {
+      locationsCache.setLocations(locations);
+    }
     return locations;
   }, [locationsCache]);
 
   const fetchMenusForDate = useCallback(async (date: string) => {
     const cachedResidential = residentialMenusCache.getResidentialMenusForDate(date);
     const cachedRetail = retailMenusCache.getRetailMenusForDate(date);
-    if (cachedResidential && cachedRetail) {
+    if (cachedResidential && Object.keys(cachedResidential).length > 0 && cachedRetail && Object.keys(cachedRetail).length > 0) {
       return {
         residential: cachedResidential,
         retail: cachedRetail,
@@ -187,10 +189,10 @@ export const useMenuApi = () => {
     return result;
   }, [recommendationsCache]);
 
-  const fetchAll = useCallback(async (date: string, menuItemIds?: string[]) => {
+  const fetchAll = useCallback(async (date: string) => {
     const [locations, menus] = await Promise.all([fetchLocations(), fetchMenusForDate(date)]);
     const allMenus = { ...menus.residential, ...menus.retail };
-    const itemIds = menuItemIds || extractMenuItemIds(allMenus);
+    const itemIds = extractMenuItemIds(allMenus);
     const menuItems = await fetchMenuItems(itemIds);
     const [interactions, metrics, recommendations] = await Promise.all([
       fetchInteractions(itemIds),

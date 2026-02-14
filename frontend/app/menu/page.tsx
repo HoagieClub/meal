@@ -20,7 +20,6 @@ import DiningHallCard from '@/app/menu/components/dining-hall-card';
 import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
 import FilterSidebar from '@/app/menu/components/filter-sidebar';
 import DateMealSelector from '@/app/menu/components/date-meal-selector';
-import { useDate } from '@/hooks/use-date';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { MenuSortOption } from '@/types/types';
@@ -34,6 +33,28 @@ import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-conte
 import { useMenuApi } from '@/hooks/use-menu-api';
 import { useBuildDisplayData } from '@/hooks/use-build-display-data';
 
+const getToday = (): Date => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+const getDateKey = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+const getCurrentMeal = (): Meal => {
+  const now = new Date();
+  const hour = now.getHours();
+  if (hour < 11) {
+    return 'Breakfast';
+  } else if (hour < 17) {
+    return 'Lunch';
+  } else {
+    return 'Dinner';
+  }
+};
+
 /**
  * Menu page component.
  *
@@ -42,26 +63,32 @@ import { useBuildDisplayData } from '@/hooks/use-build-display-data';
 export default function MenuPage() {
   const theme = useTheme();
 
-  const { currentMeal, dateKey, formattedDateForDisplay, goToPreviousDay, goToNextDay, isWeekend, selectedDate, goToDate } = useDate();
-  const [retailMenus, setRetailMenus] = useState<any>({});
-  const [residentialMenus, setResidentialMenus] = useState<any>({});
+  const [selectedDate, setSelectedDate] = useState<Date>(getToday());
+  const dateKey = getDateKey(selectedDate);
+  const currentMeal = getCurrentMeal();
   const [locations, setLocations] = useState<any>({});
+  const [residentialMenus, setResidentialMenus] = useState<any>({});
   const [menuItems, setMenuItems] = useState<any>({});
   const [interactions, setInteractions] = useState<any>({});
   const [metrics, setMetrics] = useState<any>({});
   const [recommendations, setRecommendations] = useState<any>({});
+  const [loading, setLoading] = useState(true);
   const { fetchAll } = useMenuApi();
 
   useEffect(() => {
     const fetchData = async () => {
-      const result = await fetchAll(dateKey);
-      setLocations(result.locations || {});
-      setResidentialMenus(result.menus.residential || {});
-      setRetailMenus(result.menus.retail || {});
-      setMenuItems(result.menuItems || {});
-      setInteractions(result.interactions || {});
-      setMetrics(result.metrics || {});
-      setRecommendations(result.recommendations || {});
+      setLoading(true);
+      try {
+        const result = await fetchAll(dateKey);
+        setLocations(result.locations || {});
+        setResidentialMenus(result.residentialMenus || {});
+        setMenuItems(result.menuItems || {});
+        setInteractions(result.interactions || {});
+        setMetrics(result.metrics || {});
+        setRecommendations(result.recommendations || {});
+      } finally {
+        setLoading(false);
+      }
     };
     fetchData();
   }, [dateKey, fetchAll]);
@@ -74,7 +101,6 @@ export default function MenuPage() {
     toggleAllergen,
     togglePinnedHall,
     clearAll: clearPreferences,
-    loading: preferencesLoading,
   } = usePreferencesCache();
 
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
@@ -98,77 +124,6 @@ export default function MenuPage() {
     meal,
     sortOption,
   });
-
-  const DiningHallSkeletonCards = () => {
-    return (
-      <Pane
-        display='grid'
-        overflowY='auto'
-        paddingBottom={majorScale(6)}
-        paddingRight={majorScale(3)}
-        gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
-        gap={majorScale(2)}
-        className='h-full no-scrollbar'
-      >
-        {Array(6)
-          .fill(0)
-          .map((_, i) => (
-            <SkeletonDiningHallCard key={i} />
-          ))}
-      </Pane>
-    );
-  };
-
-  const NoMenusFoundCard = () => (
-    <Pane
-      display='flex'
-      alignItems='center'
-      justifyContent='center'
-      paddingY={majorScale(8)}
-      flexDirection='column'
-      width='100%'
-      background={theme.colors.gray100}
-      borderRadius={12}
-      border={`2px dashed ${theme.colors.green400}`}
-      marginTop={majorScale(2)}
-      className='h-full'
-    >
-      <SearchIcon color={theme.colors.gray600} size={32} marginBottom={majorScale(2)} />
-      <Heading size={500} color={theme.colors.gray800} marginBottom={minorScale(1)}>
-        No Dishes Found
-      </Heading>
-      <Text size={400} color='muted' textAlign='center'>
-        Try adjusting your search terms or filters.
-      </Text>
-    </Pane>
-  );
-
-  const DiningHallCards = () => {
-    return (
-      <Pane
-        display='grid'
-        overflowY='auto'
-        paddingBottom={majorScale(6)}
-        paddingRight={majorScale(3)}
-        gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
-        gap={majorScale(2)}
-        className='h-full no-scrollbar'
-      >
-        {displayMenusForLocations.map((diningHall) => {
-          const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
-          return (
-            <DiningHallCard
-              key={diningHall.name}
-              diningHall={diningHall}
-              isPinned={isPinned}
-              showNutrition={true}
-              onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
-            />
-          );
-        })}
-      </Pane>
-    );
-  };
 
   return (
     <NutritionAccordionProvider>
@@ -214,18 +169,12 @@ export default function MenuPage() {
                   {MEAL_RANGES[meal]}
                 </Text>
               </Pane>
-
               <DateMealSelector
                 meal={meal}
                 setMeal={setMeal}
-                formattedDateForDisplay={formattedDateForDisplay}
-                goToPreviousDay={goToPreviousDay}
-                goToNextDay={goToNextDay}
-                isWeekend={isWeekend}
                 selectedDate={selectedDate}
-                goToDate={goToDate}
+                setSelectedDate={setSelectedDate}
               />
-
               <Pane
                 display='flex'
                 flexDirection='column'
@@ -251,12 +200,66 @@ export default function MenuPage() {
               />
             )}
 
-            {preferencesLoading ? (
-              <DiningHallSkeletonCards />
+            {loading ? (
+              <Pane
+                display='grid'
+                overflowY='auto'
+                paddingBottom={majorScale(6)}
+                paddingRight={majorScale(3)}
+                gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
+                gap={majorScale(2)}
+                className='h-full no-scrollbar'
+              >
+                {Array(6)
+                  .fill(0)
+                  .map((_, i) => (
+                    <SkeletonDiningHallCard key={i} />
+                  ))}
+              </Pane>
             ) : displayMenusForLocations.length === 0 ? (
-              <NoMenusFoundCard />
+              <Pane
+                display='flex'
+                alignItems='center'
+                justifyContent='center'
+                paddingY={majorScale(8)}
+                flexDirection='column'
+                width='100%'
+                background={theme.colors.gray100}
+                borderRadius={12}
+                border={`2px dashed ${theme.colors.green400}`}
+                marginTop={majorScale(2)}
+                className='h-full'
+              >
+                <SearchIcon color={theme.colors.gray600} size={32} marginBottom={majorScale(2)} />
+                <Heading size={500} color={theme.colors.gray800} marginBottom={minorScale(1)}>
+                  No Dishes Found
+                </Heading>
+                <Text size={400} color='muted' textAlign='center'>
+                  Try adjusting your search terms or filters.
+                </Text>
+              </Pane>
             ) : (
-              <DiningHallCards />
+              <Pane
+                display='grid'
+                overflowY='auto'
+                paddingBottom={majorScale(6)}
+                paddingRight={majorScale(3)}
+                gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
+                gap={majorScale(2)}
+                className='h-full no-scrollbar'
+              >
+                {displayMenusForLocations.map((diningHall) => {
+                  const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
+                  return (
+                    <DiningHallCard
+                      key={diningHall.name}
+                      diningHall={diningHall}
+                      isPinned={isPinned}
+                      onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
+                    />
+                  );
+                })}
+              </Pane>
             )}
           </Pane>
         </Pane>

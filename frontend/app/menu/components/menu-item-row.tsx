@@ -35,7 +35,7 @@ export default function MenuItemRow({
   diningHallId,
 }: {
   item: any;
-  diningHallId?: string;
+  diningHallId: string;
 }) {
   const { expandedItemId, setExpandedItemId } = useNutritionAccordion();
   const menuItemApiId = item?.apiId;

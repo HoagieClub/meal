@@ -18,7 +18,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Pane, minorScale } from 'evergreen-ui';
 import { MenuItem } from '@/types/types';
-import { useMenuItemFavoriteBookmark } from '@/hooks/use-menu-item-favorite-bookmark';
+import { useMenuItemInteractions } from '@/hooks/use-menu-item-interactions';
 
 /**
  * Mini favorite button component.
@@ -28,9 +28,10 @@ import { useMenuItemFavoriteBookmark } from '@/hooks/use-menu-item-favorite-book
  * @returns A React component.
  */
 export const MiniFavoriteButton = ({ item }: { item: MenuItem }) => {
-  const { favorited, handleFavorite } = useMenuItemFavoriteBookmark(
+  const { favorited, handleFavorite } = useMenuItemInteractions(
     item.apiId,
-    item.userInteraction
+    item.userInteraction,
+    item.metrics
   );
 
   return (

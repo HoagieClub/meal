@@ -16,7 +16,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Pane, Text, useTheme, minorScale } from 'evergreen-ui';
 import { MenuItem } from '@/types/types';
-import { useMenuItemLikeDislike } from '@/hooks/use-menu-item-like-dislike';
+import { useMenuItemInteractions } from '@/hooks/use-menu-item-interactions';
 
 /**
  * Mini like/dislike buttons component.
@@ -28,8 +28,8 @@ import { useMenuItemLikeDislike } from '@/hooks/use-menu-item-like-dislike';
 export const MiniLikeDislikeButtons = ({ item }: { item: MenuItem }) => {
   const theme = useTheme();
 
-  // Get the like/dislike state and handlers from the useMenuItemLikeDislike hook
-  const { userLiked, likeCount, dislikeCount, handleLike, handleDislike } = useMenuItemLikeDislike(
+  // Get the like/dislike state and handlers from the useMenuItemInteractions hook
+  const { userLiked, likeCount, dislikeCount, handleLike, handleDislike } = useMenuItemInteractions(
     item.apiId,
     item.userInteraction,
     item.metrics

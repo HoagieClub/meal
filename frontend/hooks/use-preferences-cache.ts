@@ -42,28 +42,25 @@ const DEFAULT_ALLERGENS: Allergen[] = [];
  */
 export function usePreferencesCache() {
   // Pinned halls cache
-  const [pinnedHalls, setPinnedHalls, pinnedHallsLoading] = useLocalStorage<DiningHall[]>({
+  const [pinnedHalls, setPinnedHalls] = useLocalStorage<DiningHall[]>({
     key: CACHE_KEYS.PINNED_HALLS,
     initialValue: DEFAULT_PINNED_HALLS,
+    expiryInMs: 30 * 24 * 60 * 60 * 1000, // 1 month
   });
 
   // Dining halls preferences cache
-  const [diningHalls, setDiningHalls, diningHallsLoading] = useLocalStorage<DiningHall[]>({
+  const [diningHalls, setDiningHalls] = useLocalStorage<DiningHall[]>({
     key: CACHE_KEYS.DINING_HALLS,
     initialValue: DEFAULT_DINING_HALLS,
+    expiryInMs: 30 * 24 * 60 * 60 * 1000, // 1 month
   });
 
   // Allergens preferences cache
-  const [allergens, setAllergens, allergensLoading] = useLocalStorage<Allergen[]>({
+  const [allergens, setAllergens] = useLocalStorage<Allergen[]>({
     key: CACHE_KEYS.ALLERGENS,
     initialValue: DEFAULT_ALLERGENS,
+    expiryInMs: 30 * 24 * 60 * 60 * 1000, // 1 month
   });
-
-  // Loading state
-  const loading =
-    pinnedHallsLoading ||
-    diningHallsLoading ||
-    allergensLoading;
 
   // Check if a dining hall is pinned
   const isPinned = (diningHall: DiningHall): boolean => {
@@ -80,95 +77,38 @@ export function usePreferencesCache() {
     return allergens.includes(allergen);
   };
 
-  // Add a dining hall to pinned halls
-  const addPinnedHall = (diningHall: DiningHall): void => {
-    setPinnedHalls((prev) => {
-      if (prev.includes(diningHall)) {
-        return prev;
-      }
-      return [...prev, diningHall];
-    });
-  };
-
-  // Add a dining hall to preferences
-  const addDiningHall = (diningHall: DiningHall): void => {
-    setDiningHalls((prev) => {
-      if (prev.includes(diningHall)) {
-        return prev;
-      }
-      return [...prev, diningHall];
-    });
-  };
-
-  // Add an allergen to preferences
-  const addAllergen = (allergen: Allergen): void => {
-    setAllergens((prev) => {
-      if (prev.includes(allergen)) {
-        return prev;
-      }
-      return [...prev, allergen];
-    });
-  };
-
-  // Remove a dining hall from pinned halls
-  const removePinnedHall = (diningHall: DiningHall): void => {
-    setPinnedHalls((prev) => {
-      if (!prev.includes(diningHall)) {
-        return prev;
-      }
-      return prev.filter((hall) => hall !== diningHall);
-    });
-  };
-
-  // Remove a dining hall from preferences
-  const removeDiningHall = (diningHall: DiningHall): void => {
-    setDiningHalls((prev) => {
-      if (!prev.includes(diningHall)) {
-        return prev;
-      }
-      const filtered = prev.filter((hall) => hall !== diningHall);
-      if (filtered.length === 0) {
-        return DEFAULT_DINING_HALLS;
-      }
-      return filtered;
-    });
-  };
-
-  // Remove an allergen from preferences
-  const removeAllergen = (allergen: Allergen): void => {
-    setAllergens((prev) => {
-      if (!prev.includes(allergen)) {
-        return prev;
-      }
-      return prev.filter((a) => a !== allergen);
-    });
-  };
-
   // Toggle a dining hall's pinned status
   const togglePinnedHall = (diningHall: DiningHall): void => {
-    if (isPinned(diningHall)) {
-      removePinnedHall(diningHall);
-    } else {
-      addPinnedHall(diningHall);
-    }
+    setPinnedHalls((prev) => {
+      if (prev.includes(diningHall)) {
+        return prev.filter((hall) => hall !== diningHall);
+      }
+      return [...prev, diningHall];
+    });
   };
 
   // Toggle a dining hall in preferences
   const toggleDiningHall = (diningHall: DiningHall): void => {
-    if (hasDiningHall(diningHall)) {
-      removeDiningHall(diningHall);
-    } else {
-      addDiningHall(diningHall);
-    }
+    setDiningHalls((prev) => {
+      if (prev.includes(diningHall)) {
+        const filtered = prev.filter((hall) => hall !== diningHall);
+        if (filtered.length === 0) {
+          return DEFAULT_DINING_HALLS;
+        }
+        return filtered;
+      }
+      return [...prev, diningHall];
+    });
   };
 
   // Toggle an allergen in preferences
   const toggleAllergen = (allergen: Allergen): void => {
-    if (hasAllergen(allergen)) {
-      removeAllergen(allergen);
-    } else {
-      addAllergen(allergen);
-    }
+    setAllergens((prev) => {
+      if (prev.includes(allergen)) {
+        return prev.filter((a) => a !== allergen);
+      }
+      return [...prev, allergen];
+    });
   };
 
   // Clear all pinned halls
@@ -195,7 +135,6 @@ export function usePreferencesCache() {
 
   return {
     // State
-    loading,
     pinnedHalls,
     diningHalls,
     allergens,

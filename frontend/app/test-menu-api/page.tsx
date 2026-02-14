@@ -39,11 +39,20 @@ interface DataSectionProps {
   count?: number;
   renderContent?: () => string;
   renderCount?: () => number;
+  fileName?: string;
 }
 
-function DataSection({ title, content, count, renderContent, renderCount }: DataSectionProps) {
+function DataSection({ title, content, count, renderContent, renderCount, fileName }: DataSectionProps) {
   const displayContent = renderContent ? renderContent() : JSON.stringify(content, null, 2);
   const displayCount = renderCount ? renderCount() : count ?? 0;
+
+  const handleOpenInNewTab = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const blob = new Blob([displayContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  };
 
   return (
     <Pane
@@ -54,9 +63,38 @@ function DataSection({ title, content, count, renderContent, renderCount }: Data
       padding={majorScale(3)}
       marginBottom={majorScale(3)}
     >
-      <Heading size={600} marginBottom={majorScale(2)}>
-        {title}
-      </Heading>
+      <Pane display='flex' alignItems='center' gap={minorScale(2)} marginBottom={majorScale(2)}>
+        <Heading size={600}>{title}</Heading>
+        <Pane
+          onClick={handleOpenInNewTab}
+          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+          title='Open full data in new tab'
+        >
+          <svg
+            width='16'
+            height='16'
+            viewBox='0 0 16 16'
+            fill='none'
+            xmlns='http://www.w3.org/2000/svg'
+            style={{ display: 'block' }}
+          >
+            <path
+              d='M10 2H14V6M14 2L8 8M14 2V6H10'
+              stroke='currentColor'
+              strokeWidth='1.5'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            />
+            <path
+              d='M6 2H4C3.44772 2 3 2.44772 3 3V12C3 12.5523 3.44772 13 4 13H12C12.5523 13 13 12.5523 13 12V10'
+              stroke='currentColor'
+              strokeWidth='1.5'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            />
+          </svg>
+        </Pane>
+      </Pane>
       <Pane
         borderRadius={4}
         padding={majorScale(2)}
@@ -283,18 +321,21 @@ export default function TestMenuApiPage() {
             title='Locations'
             content={activeTab.data.locations}
             count={Object.keys(activeTab.data.locations || {}).length}
+            fileName={`locations-${activeDate || 'data'}.txt`}
           />
 
           <DataSection
             title='Residential Menus'
             content={activeTab.data.residentialMenus}
             count={Object.keys(activeTab.data.residentialMenus || {}).length}
+            fileName={`residential-menus-${activeDate || 'data'}.txt`}
           />
 
           <DataSection
             title='Retail Menus'
             content={activeTab.data.retailMenus}
             count={Object.keys(activeTab.data.retailMenus || {}).length}
+            fileName={`retail-menus-${activeDate || 'data'}.txt`}
           />
 
           <DataSection
@@ -310,30 +351,35 @@ export default function TestMenuApiPage() {
               const matches = menuString.match(/"\d{6}"/g) || [];
               return new Set(matches.map((match) => match.replace(/"/g, ''))).size;
             }}
+            fileName={`unique-menu-item-ids-${activeDate || 'data'}.txt`}
           />
 
           <DataSection
             title='Menu Items'
             content={activeTab.data.menuItems}
             count={Object.keys(activeTab.data.menuItems || {}).length}
+            fileName={`menu-items-${activeDate || 'data'}.txt`}
           />
 
           <DataSection
             title='Interactions'
             content={activeTab.data.interactions}
             count={Object.keys(activeTab.data.interactions || {}).length}
+            fileName={`interactions-${activeDate || 'data'}.txt`}
           />
 
           <DataSection
             title='Metrics'
             content={activeTab.data.metrics}
             count={Object.keys(activeTab.data.metrics || {}).length}
+            fileName={`metrics-${activeDate || 'data'}.txt`}
           />
 
           <DataSection
             title='Recommendations'
             content={activeTab.data.recommendations}
             count={Object.keys(activeTab.data.recommendations || {}).length}
+            fileName={`recommendations-${activeDate || 'data'}.txt`}
           />
 
           <DataSection
@@ -388,6 +434,7 @@ export default function TestMenuApiPage() {
               }
               return totalKeys;
             }}
+            fileName={`full-local-storage-data-${activeDate || 'data'}.txt`}
           />
         </Pane>
       )}
@@ -414,6 +461,7 @@ export default function TestMenuApiPage() {
 
               return totalMenuItems;
             }}
+            fileName={`built-display-data-${activeDate || 'data'}-${meal.toLowerCase()}.txt`}
           />
         </Pane>
       )}

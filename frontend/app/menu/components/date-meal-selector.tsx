@@ -11,26 +11,32 @@ import {
 } from 'evergreen-ui';
 import { Meal } from '@/types/types';
 
+const formatDateForDisplay = (date: Date): string => {
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+const isWeekend = (date: Date): boolean => {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+};
+
 /**
  * Date and meal selector component props.
  *
  * @param meal - The current meal.
  * @param setMeal - The function to set the meal.
- * @param formattedDateForDisplay - The formatted date for display.
- * @param goToPreviousDay - The function to go to the previous day.
- * @param goToNextDay - The function to go to the next day.
  * @param selectedDate - The currently selected date.
- * @param goToDate - The function to go to a specific date.
+ * @param setSelectedDate - The function to set the selected date.
  */
 interface DateMealSelectorProps {
   meal: Meal;
   setMeal: (meal: Meal) => void;
-  formattedDateForDisplay: string;
-  goToPreviousDay: () => void;
-  goToNextDay: () => void;
-  isWeekend: boolean;
   selectedDate: Date;
-  goToDate: (date: Date) => void;
+  setSelectedDate: (date: Date) => void;
 }
 
 // Generate the next 7 days starting from today
@@ -65,16 +71,30 @@ const isSameDay = (a: Date, b: Date): boolean => {
 export default function DateMealSelector({
   meal,
   setMeal,
-  formattedDateForDisplay,
-  goToPreviousDay,
-  goToNextDay,
-  isWeekend,
   selectedDate,
-  goToDate,
+  setSelectedDate,
 }: DateMealSelectorProps) {
   const theme = useTheme();
-  const meals = isWeekend ? ["Lunch", "Dinner"] : ["Breakfast", "Lunch", "Dinner"];
+  const formattedDateForDisplay = formatDateForDisplay(selectedDate);
+  const isWeekendDay = isWeekend(selectedDate);
+  const meals = isWeekendDay ? ["Lunch", "Dinner"] : ["Breakfast", "Lunch", "Dinner"];
   const next7Days = getNext7Days();
+
+  const goToPreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const goToNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+  };
+
+  const goToDate = (date: Date) => {
+    setSelectedDate(date);
+  };
 
   // Render the date and meal selector.
   return (

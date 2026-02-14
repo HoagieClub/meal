@@ -1,5 +1,5 @@
 /**
- * @overview Custom hook for managing menu item like/dislike interactions.
+ * @overview Custom hook for managing menu item interactions (like/dislike and favorite).
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -19,37 +19,32 @@ import { MenuItemInteraction, MenuItemMetrics } from '@/types/types';
 import { patchUserMenuItemInteraction } from '@/lib/next-endpoints';
 
 /**
- * Hook return type for useMenuItemLikeDislike.
- *
- * @param userLiked - The user's liked status.
- * @param likeCount - The like count.
- * @param dislikeCount - The dislike count.
- * @param updating - Whether an update is in progress.
- * @param handleLike - The function to handle like button click.
- * @param handleDislike - The function to handle dislike button click.
+ * Hook return type for useMenuItemInteractions.
  */
-export interface UseMenuItemLikeDislikeReturn {
+export interface UseMenuItemInteractions {
   userLiked: boolean | null;
   likeCount: number;
   dislikeCount: number;
+  favorited: boolean;
   updating: boolean;
   handleLike: () => void;
   handleDislike: () => void;
+  handleFavorite: () => void;
 }
 
 /**
- * Custom hook for managing menu item like/dislike interactions.
+ * Custom hook for managing menu item interactions (like/dislike and favorite).
  *
  * @param menuItemApiId - The API ID of the menu item.
  * @param initialInteraction - Initial interaction data for the menu item (optional).
  * @param initialMetrics - Initial metrics data for the menu item (optional).
- * @returns Object containing state and handlers for like/dislike interactions.
+ * @returns Object containing state and handlers for interactions.
  */
-export const useMenuItemLikeDislike = (
+export const useMenuItemInteractions = (
   menuItemApiId: string,
   initialInteraction?: MenuItemInteraction | null,
   initialMetrics?: MenuItemMetrics | null
-): UseMenuItemLikeDislikeReturn => {
+): UseMenuItemInteractions => {
   const { user, isLoading: userLoading } = useUser();
   const router = useRouter();
   const [userLiked, setUserLiked] = useState<boolean | null>(
@@ -57,15 +52,14 @@ export const useMenuItemLikeDislike = (
   );
   const [likeCount, setLikeCount] = useState<number>(initialMetrics?.likeCount ?? 0);
   const [dislikeCount, setDislikeCount] = useState<number>(initialMetrics?.dislikeCount ?? 0);
+  const [favorited, setFavorited] = useState<boolean>(initialInteraction?.favorited || false);
   const [updating, setUpdating] = useState(false);
 
   /**
    * Handles when user clicks like button.
    */
   const handleLike = async () => {
-    // Check if user is signed in
     if (!userLoading && !user) {
-      // Redirect to login with current page as callback
       const currentPath =
         typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
       router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
@@ -79,41 +73,33 @@ export const useMenuItemLikeDislike = (
     let optimisticLikeCount: number;
     let optimisticDislikeCount: number;
 
-    // Update like status and optimistic counts
     if (userLiked === true) {
-      // Already liked, remove like
       newLikeStatus = null;
       optimisticLikeCount = likeCount - 1;
       optimisticDislikeCount = dislikeCount;
     } else if (userLiked === false) {
-      // Currently disliked, switch to liked
       newLikeStatus = true;
       optimisticLikeCount = likeCount + 1;
       optimisticDislikeCount = dislikeCount - 1;
     } else {
-      // Neutral, add like
       newLikeStatus = true;
       optimisticLikeCount = likeCount + 1;
       optimisticDislikeCount = dislikeCount;
     }
 
-    // Backup previous values for rollback
     const previousLikedBackup = userLiked;
     const previousLikeCountBackup = likeCount;
     const previousDislikeCountBackup = dislikeCount;
 
-    // Optimistically update state
     setUserLiked(newLikeStatus);
     setLikeCount(optimisticLikeCount);
     setDislikeCount(optimisticDislikeCount);
 
-    // Update interaction in the API
     const updatedSuccessfully = await patchUserMenuItemInteraction({
       menu_item_api_id: menuItemApiId,
       liked: newLikeStatus,
     });
     if (updatedSuccessfully.status !== 200) {
-      // Rollback state if error occurs
       setUserLiked(previousLikedBackup);
       setLikeCount(previousLikeCountBackup);
       setDislikeCount(previousDislikeCountBackup);
@@ -125,9 +111,7 @@ export const useMenuItemLikeDislike = (
    * Handles when user clicks dislike button.
    */
   const handleDislike = async () => {
-    // Check if user is signed in
     if (!userLoading && !user) {
-      // Redirect to login with current page as callback
       const currentPath =
         typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
       router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
@@ -141,44 +125,58 @@ export const useMenuItemLikeDislike = (
     let optimisticLikeCount: number;
     let optimisticDislikeCount: number;
 
-    // Update like status and optimistic counts
     if (userLiked === false) {
-      // Already disliked, remove dislike
       newLikeStatus = null;
       optimisticLikeCount = likeCount;
       optimisticDislikeCount = dislikeCount - 1;
     } else if (userLiked === true) {
-      // Currently liked, switch to disliked
       newLikeStatus = false;
       optimisticLikeCount = likeCount - 1;
       optimisticDislikeCount = dislikeCount + 1;
     } else {
-      // Neutral, add dislike
       newLikeStatus = false;
       optimisticLikeCount = likeCount;
       optimisticDislikeCount = dislikeCount + 1;
     }
 
-    // Backup previous values for rollback
     const previousLikedBackup = userLiked;
     const previousLikeCountBackup = likeCount;
     const previousDislikeCountBackup = dislikeCount;
 
-    // Optimistically update state
     setUserLiked(newLikeStatus);
     setLikeCount(optimisticLikeCount);
     setDislikeCount(optimisticDislikeCount);
 
-    // Update interaction in the API
     const updatedSuccessfully = await patchUserMenuItemInteraction({
       menu_item_api_id: menuItemApiId,
       liked: newLikeStatus,
     });
     if (updatedSuccessfully.status !== 200) {
-      // Rollback state if error occurs
       setUserLiked(previousLikedBackup);
       setLikeCount(previousLikeCountBackup);
       setDislikeCount(previousDislikeCountBackup);
+    }
+    setUpdating(false);
+  };
+
+  /**
+   * Handles when user clicks favorite button.
+   */
+  const handleFavorite = async () => {
+    if (updating) return;
+    setUpdating(true);
+
+    const newFavoritedStatus = !favorited;
+    const previousFavoritedBackup = favorited;
+
+    setFavorited(newFavoritedStatus);
+
+    const updatedSuccessfully = await patchUserMenuItemInteraction({
+      menu_item_api_id: menuItemApiId,
+      favorited: newFavoritedStatus,
+    });
+    if (updatedSuccessfully.status !== 200) {
+      setFavorited(previousFavoritedBackup);
     }
     setUpdating(false);
   };
@@ -187,8 +185,11 @@ export const useMenuItemLikeDislike = (
     userLiked,
     likeCount,
     dislikeCount,
+    favorited,
     updating,
     handleLike,
     handleDislike,
+    handleFavorite,
   };
 };
+
