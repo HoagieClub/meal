@@ -33,12 +33,14 @@ import { DINING_HALL_DISPLAY_NAMES } from '@/data';
  * @param showNutrition - Whether to show nutrition information
  * @param isPinned - Whether the dining hall is pinned
  * @param onPinToggle - The function to call when the pin is toggled
+ * @param sortOption - The current sort option
  */
 interface DiningHallCardProps {
   diningHall: any;
-  showNutrition: boolean;
+  showNutrition?: boolean;
   isPinned: boolean;
   onPinToggle: () => void;
+  sortOption: string;
 }
 
 /**
@@ -50,9 +52,15 @@ const DiningHallCard = ({
   diningHall,
   isPinned,
   onPinToggle,
+  sortOption,
 }: DiningHallCardProps) => {
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
+
+  const menuItems = diningHall.menu ?? [];
+  const categories: string[] = sortOption === 'Category'
+    ? [...new Set(menuItems.map((item: any) => item.category || 'Other'))] as string[]
+    : [];
 
   return (
     <Pane
@@ -68,7 +76,7 @@ const DiningHallCard = ({
       <Pane
         display='flex'
         alignItems='center'
-        marginBottom={majorScale(2)}
+        marginBottom={majorScale(1)}
         background={theme.colors.gray100}
         className='py-2 border relative border-gray-300 rounded-md flex items-center'
       >
@@ -107,7 +115,21 @@ const DiningHallCard = ({
           <img src={imageSrc?.src} className='h-full my-auto w-auto' alt={diningHall.name} />
         </Pane>
       </Pane>
-      <MenuSection items={diningHall.menu ?? []} diningHallId={diningHall.name} />
+      {sortOption === 'Category' ? (
+        categories.map((category: string) => {
+          const items = menuItems.filter((item: any) => item.category === category);
+          return (
+            <MenuSection
+              key={category}
+              items={items}
+              diningHallId={diningHall.name}
+              title={category}
+            />
+          );
+        })
+      ) : (
+        <MenuSection items={menuItems} diningHallId={diningHall.name} title="Meal" />
+      )}
     </Pane>
   );
 };

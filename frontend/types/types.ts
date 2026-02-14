@@ -116,12 +116,12 @@ export interface TeamMember {
 }
 
 // Options to sort the menu.
-export type MenuSortOption = 'Best' | 'Most Viewed' | 'Most Liked' | 'Recommended';
+export type MenuSortOption = 'Best' | 'Category' | 'Most Liked' | 'Recommended';
 
 // Options to sort the menu.
 export const MENU_SORT_OPTIONS: MenuSortOption[] = [
   'Best',
-  'Most Viewed',
+  'Category',
   'Most Liked',
   'Recommended',
 ];

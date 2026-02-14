@@ -91,7 +91,7 @@ export default function MenuPage() {
       }
     };
     fetchData();
-  }, [dateKey, fetchAll]);
+  }, [dateKey]);
 
   const {
     diningHalls,
@@ -256,6 +256,7 @@ export default function MenuPage() {
                       diningHall={diningHall}
                       isPinned={isPinned}
                       onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
+                      sortOption={sortOption}
                     />
                   );
                 })}

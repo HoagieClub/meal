@@ -38,34 +38,39 @@ export default function MenuItemRow({
   diningHallId: string;
 }) {
   const { expandedItemId, setExpandedItemId } = useNutritionAccordion();
-  const menuItemApiId = item?.apiId;
+  const menuItemId = item?.id
+  if (!menuItemId) {
+    console.warn('MenuItemRow: item missing id', item);
+  }
 
-  const handleRowClick = () => {
-    const itemValue = `${diningHallId}-${menuItemApiId}`;
-    setExpandedItemId(expandedItemId === itemValue ? '' : itemValue);
-  };
+  const itemValue = `${diningHallId}-${menuItemId || 'unknown'}`;
+  const isExpanded = expandedItemId === itemValue;
+
+  const searchText = `${item?.allergens || ''} ${item?.nutrition?.allergens || ''} ${item?.ingredients || ''} ${item?.nutrition?.ingredients || ''}`.toLowerCase();
+  const foundAllergens = (Object.keys(ALLERGEN_ICON_MAP) as Allergen[]).filter(
+    allergen => searchText.includes(allergen.toLowerCase())
+  );
 
   return (
     <Accordion
       type="single"
       collapsible
-      value={expandedItemId}
-      onValueChange={setExpandedItemId}
+      value={isExpanded ? itemValue : ''}
+      onValueChange={(value) => setExpandedItemId(value || '')}
       className="border-none"
     >
-      <AccordionItem value={`${diningHallId}-${menuItemApiId}`} className="border-none">
+      <AccordionItem value={itemValue} className="border-none">
         <Pane
           display='grid'
-          gridTemplateColumns='2fr 1fr auto 1fr'
+          gridTemplateColumns='2fr 1fr'
           rowGap={minorScale(1)}
           columnGap={minorScale(2)}
-          onClick={handleRowClick}
           cursor="pointer"
         >
           <Pane marginY={majorScale(1)} style={{ fontSize: 14, fontWeight: 500, color: 'black', lineHeight: 1.2 }}>
             {/* Display the menu item name and dietary/allergen icons. */}
             <span style={{ paddingRight: minorScale(1) }}>{item.name}</span>{' '}
-            {item.allergens && item.allergens.map((allergen: Allergen) => (
+            {foundAllergens.map((allergen: Allergen) => (
               <img key={allergen} src={ALLERGEN_ICON_MAP[allergen]} alt={allergen} title={allergen} width={14} height={14} style={{ display: 'inline', marginRight: minorScale(1), verticalAlign: 'middle' }} />
             ))}
           </Pane>
@@ -81,8 +86,8 @@ export default function MenuItemRow({
           >
             <MiniFavoriteButton item={item} />
             <MiniLikeDislikeButtons item={item} />
+            <AccordionTrigger className="p-0 hover:no-underline [&>svg]:h-4 [&>svg]:w-4 cursor-pointer" />
           </Pane>
-          <AccordionTrigger className="p-0 hover:no-underline [&>svg]:h-4 [&>svg]:w-4 cursor-pointer" />
         </Pane>
 
         {/* Accordion content with nutrition info */}
