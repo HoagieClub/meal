@@ -12,9 +12,9 @@ export function Ingredients({ ingredients }: IngredientsProps) {
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className='flex flex-col gap-1'>
       <SectionTitle>Ingredients</SectionTitle>
-      <p className="text-[10px] text-[#6b6b6b] leading-tight font-light">{ingredients}</p>
+      <p className='text-[10px] text-[#6b6b6b] leading-tight font-light'>{ingredients}</p>
     </div>
   );
 }

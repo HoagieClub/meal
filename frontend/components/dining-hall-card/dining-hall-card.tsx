@@ -1,40 +1,11 @@
-/**
- * @overview Dining hall card component.
- *
- * Copyright © 2021-2025 Hoagie Club and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this tree or at
- *
- *    https://github.com/hoagieclub/meal/LICENSE.
- *
- * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
- */
-
 'use client';
 
-import {
-  majorScale,
-  minorScale,
-  Pane,
-  Text,
-  useTheme,
-} from 'evergreen-ui';
+import { majorScale, minorScale, Pane, Text, useTheme } from 'evergreen-ui';
 import React from 'react';
-import MenuSection from './menu-selection';
+import MenuSection from './menu-section';
 import { HALL_BANNER_MAP } from '@/styles';
 import { DINING_HALL_DISPLAY_NAMES } from '@/data';
 
-/**
- * Props for the DiningHallCard component.
- *
- * @param diningHall - The dining hall to display
- * @param showNutrition - Whether to show nutrition information
- * @param isPinned - Whether the dining hall is pinned
- * @param onPinToggle - The function to call when the pin is toggled
- * @param sortOption - The current sort option
- */
 interface DiningHallCardProps {
   diningHall: any;
   showNutrition?: boolean;
@@ -48,19 +19,15 @@ interface DiningHallCardProps {
  *
  * @returns The dining hall card component
  */
-const DiningHallCard = ({
-  diningHall,
-  isPinned,
-  onPinToggle,
-  sortOption,
-}: DiningHallCardProps) => {
+const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption }: DiningHallCardProps) => {
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
 
   const menuItems = diningHall.menu ?? [];
-  const categories: string[] = sortOption === 'Category'
-    ? [...new Set(menuItems.map((item: any) => item.category || 'Other'))] as string[]
-    : [];
+  const categories: string[] =
+    sortOption === 'Category'
+      ? ([...new Set(menuItems.map((item: any) => item.category || 'Other'))] as string[])
+      : [];
 
   return (
     <Pane
@@ -80,7 +47,6 @@ const DiningHallCard = ({
         background={theme.colors.gray100}
         className='py-2 border relative border-gray-300 rounded-md flex items-center'
       >
-        {/* Render the dining hall name. */}
         <Pane
           display='flex'
           alignItems='center'
@@ -89,11 +55,10 @@ const DiningHallCard = ({
           paddingY={minorScale(1)}
         >
           <Text size={600} fontWeight={600} color={theme.colors.gray900}>
-            {DINING_HALL_DISPLAY_NAMES[diningHall.name as keyof typeof DINING_HALL_DISPLAY_NAMES] ?? diningHall.name}
+            {DINING_HALL_DISPLAY_NAMES[diningHall.name as keyof typeof DINING_HALL_DISPLAY_NAMES] ??
+              diningHall.name}
           </Text>
         </Pane>
-
-        {/* Render the pin icon. */}
         <Pane className='flex items-center right-[-1rem] h-[140%] absolute'>
           <Pane
             onClick={onPinToggle}
@@ -128,7 +93,7 @@ const DiningHallCard = ({
           );
         })
       ) : (
-        <MenuSection items={menuItems} diningHallId={diningHall.name} title="Meal" />
+        <MenuSection items={menuItems} diningHallId={diningHall.name} title='Meal' />
       )}
     </Pane>
   );

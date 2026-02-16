@@ -42,9 +42,16 @@ interface DataSectionProps {
   fileName?: string;
 }
 
-function DataSection({ title, content, count, renderContent, renderCount, fileName }: DataSectionProps) {
+function DataSection({
+  title,
+  content,
+  count,
+  renderContent,
+  renderCount,
+  fileName,
+}: DataSectionProps) {
   const displayContent = renderContent ? renderContent() : JSON.stringify(content, null, 2);
-  const displayCount = renderCount ? renderCount() : count ?? 0;
+  const displayCount = renderCount ? renderCount() : (count ?? 0);
 
   const handleOpenInNewTab = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -247,7 +254,9 @@ export default function TestMenuApiPage() {
               </Text>
               <Select
                 value={sortOption}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortOption(e.target.value as MenuSortOption)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setSortOption(e.target.value as MenuSortOption)
+                }
                 width='100%'
               >
                 <option value='Best'>Best</option>
@@ -343,7 +352,9 @@ export default function TestMenuApiPage() {
             renderContent={() => {
               const menuString = JSON.stringify(activeTab.data.menus);
               const matches = menuString.match(/"\d{6}"/g) || [];
-              const ids = Array.from(new Set(matches.map((match) => match.replace(/"/g, '')))).sort();
+              const ids = Array.from(
+                new Set(matches.map((match) => match.replace(/"/g, '')))
+              ).sort();
               return JSON.stringify(ids, null, 2);
             }}
             renderCount={() => {
@@ -429,8 +440,7 @@ export default function TestMenuApiPage() {
                       totalKeys += Object.keys(parsed).length;
                     }
                   }
-                } catch (e) {
-                }
+                } catch (e) {}
               }
               return totalKeys;
             }}

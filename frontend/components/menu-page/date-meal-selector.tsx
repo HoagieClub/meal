@@ -57,9 +57,11 @@ const formatDayAbbrev = (date: Date): string => {
 
 // Check if two dates are the same day
 const isSameDay = (a: Date, b: Date): boolean => {
-  return a.getFullYear() === b.getFullYear()
-    && a.getMonth() === b.getMonth()
-    && a.getDate() === b.getDate();
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 };
 
 /**
@@ -77,7 +79,7 @@ export default function DateMealSelector({
   const theme = useTheme();
   const formattedDateForDisplay = formatDateForDisplay(selectedDate);
   const isWeekendDay = isWeekend(selectedDate);
-  const meals = isWeekendDay ? ["Lunch", "Dinner"] : ["Breakfast", "Lunch", "Dinner"];
+  const meals = isWeekendDay ? ['Lunch', 'Dinner'] : ['Breakfast', 'Lunch', 'Dinner'];
   const next7Days = getNext7Days();
 
   const goToPreviousDay = () => {
@@ -100,7 +102,7 @@ export default function DateMealSelector({
   return (
     <Pane display='flex' gap={minorScale(2)} className='mx-2 flex-col flex justify-center my-4'>
       {/* Date selector */}
-      <Pane display='flex' alignItems='center' justifyContent='center' gap={minorScale(2)} >
+      <Pane display='flex' alignItems='center' justifyContent='center' gap={minorScale(2)}>
         {/* Render the button to go to the previous day. */}
         <Button
           background='white'
@@ -115,7 +117,10 @@ export default function DateMealSelector({
         </Button>
 
         {/* Render the formatted date for display. */}
-        <Text className='text-2xl text-center w-[17rem] truncate font-semibold' color={theme.colors.green700}>
+        <Text
+          className='text-2xl text-center w-[17rem] truncate font-semibold'
+          color={theme.colors.green700}
+        >
           {formattedDateForDisplay}
         </Text>
 

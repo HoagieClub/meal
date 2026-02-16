@@ -14,18 +14,18 @@ export interface NutrientCellProps {
 type NutrientType = 'limit' | 'good' | 'neutral';
 
 const NUTRIENT_TYPES: Record<string, NutrientType> = {
-  'Sodium': 'limit',
+  Sodium: 'limit',
   'Total Fat': 'limit',
   'Saturated Fat': 'limit',
   'Trans Fat': 'limit',
-  'Sugars': 'limit',
-  'Cholesterol': 'limit',
-  'Protein': 'good',
+  Sugars: 'limit',
+  Cholesterol: 'limit',
+  Protein: 'good',
   'Dietary Fiber': 'good',
   'Vitamin D': 'good',
-  'Calcium': 'good',
-  'Iron': 'good',
-  'Potassium': 'good',
+  Calcium: 'good',
+  Iron: 'good',
+  Potassium: 'good',
   'Total Carbs': 'neutral',
 };
 
@@ -58,15 +58,13 @@ export function NutrientCell({ label, amount, unit, rdvPercent, className }: Nut
   return (
     <div className={`flex flex-col gap-[2px] ${className ?? ''}`}>
       <SectionTitle>{label}</SectionTitle>
-      <div className="flex flex-col items-baseline gap-2">
-        <MetricValue>
-          {amount != null ? `${formatAmount(amount)} ${unit}` : '-'}
-        </MetricValue>
+      <div className='flex flex-col items-baseline gap-2'>
+        <MetricValue>{amount != null ? `${formatAmount(amount)} ${unit}` : '-'}</MetricValue>
         {rdvPercent != null && (
-          <div className="text-[8px] text-[#6A6868] leading-1">
+          <div className='text-[8px] text-[#6A6868] leading-1'>
             <span>{formatAmount(rdvPercent)}%</span>
             <span
-              className="inline-block w-[15px] h-[2px] mx-1 align-middle rounded"
+              className='inline-block w-[15px] h-[2px] mx-1 align-middle rounded'
               style={{ backgroundColor: getRdvColor(label, rdvPercent) }}
             />
             <span>RDV</span>

@@ -16,19 +16,16 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon } from 'evergreen-ui';
-import DiningHallCard from '@/app/menu/components/dining-hall-card';
-import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
-import FilterSidebar from '@/app/menu/components/filter-sidebar';
-import DateMealSelector from '@/app/menu/components/date-meal-selector';
+import DiningHallCard from '@/components/dining-hall-card/dining-hall-card';
+import SkeletonDiningHallCard from '@/components/dining-hall-card/dining-hall-card-skeleton';
+import FilterSidebar from '@/components/filter-sidebar/filter-sidebar';
+import DateMealSelector from '@/components/menu-page/date-meal-selector';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { MenuSortOption } from '@/types/types';
 import { MEAL_RANGES } from '@/data';
 import { MEAL_COLOR_MAP } from '@/styles';
-import {
-  Meal,
-  DiningHall,
-} from '@/types/types';
+import { Meal, DiningHall } from '@/types/types';
 import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
 import { useMenuApi } from '@/hooks/use-menu-api';
 import { useBuildDisplayData } from '@/hooks/use-build-display-data';

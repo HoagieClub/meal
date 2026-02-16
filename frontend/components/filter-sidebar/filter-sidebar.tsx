@@ -1,17 +1,3 @@
-/**
- * @overview Filter sidebar component for menu page.
- *
- * Copyright © 2021-2025 Hoagie Club and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this tree or at
- *
- *    https://github.com/hoagieclub/meal/LICENSE.
- *
- * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
- */
-
 'use client';
 
 import React, { useState } from 'react';
@@ -21,44 +7,22 @@ import {
   majorScale,
   minorScale,
   useTheme,
-  Checkbox,
   SearchInput,
-  Switch,
   UndoIcon,
   ChevronDownIcon,
-  Popover,
-  Position,
+  Select,
 } from 'evergreen-ui';
-import { ALLERGEN_ICON_MAP, DIET_ICON_MAP, DINING_HALL_DISPLAY_NAMES } from '@/data';
-import { HALL_ICON_MAP } from '@/styles';
 import {
   DiningHall,
-  DietaryTag,
   Allergen,
   DINING_HALLS,
   ALLERGENS,
-  DIETARY_TAGS,
+  MenuSortOption,
+  MENU_SORT_OPTIONS,
 } from '@/types/types';
-import SortDropdown from './sort-dropdown';
+import DiningHallRow from './dining-hall-row';
+import AllergenRow from './allergen-row';
 
-/**
- * Filter sidebar component props.
- *
- * @param searchTerm - The search term.
- * @param setSearchTerm - The function to set the search term.
- * @param showNutrition - Whether to show nutrition.
- * @param toggleShowNutrition - The function to toggle the show nutrition.
- * @param sortOption - The sort option.
- * @param setSortOption - The function to set the sort option.
- * @param diningHalls - The dining halls.
- * @param dietaryRestrictions - The dietary restrictions.
- * @param allergens - The allergens.
- * @param toggleDiningHall - The function to toggle the dining hall.
- * @param toggleDietaryRestriction - The function to toggle the dietary restriction.
- * @param toggleAllergen - The function to toggle the allergen.
- * @param clearPreferences - The function to clear the preferences.
- * @param variant - The variant.
- */
 interface FilterSidebarProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
@@ -93,113 +57,49 @@ export default function FilterSidebar({
   const theme = useTheme();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  /**
-   * Dining hall row component.
-   *
-   * @param diningHall - The dining hall to display
-   * @param checked - Whether the dining hall is checked
-   * @param onChange - The function to call when the dining hall is changed
-   * @returns The dining hall row component
-   */
-  const DiningHallRow = ({
-    diningHall,
-    checked,
-    onChange,
-  }: {
-    diningHall: DiningHall;
-    checked: boolean;
-    onChange: () => void;
-  }) => {
-    const diningHallText = DINING_HALL_DISPLAY_NAMES[diningHall] ?? diningHall;
-
-    // Render the dining hall row.
-    return (
-      <Pane display='flex' alignItems='center' height={30} cursor='pointer' onClick={onChange}>
-        <Checkbox checked={checked} onChange={onChange} className="[&_input:checked+div]:!bg-green-700" />
-        <Pane marginLeft={minorScale(2)} marginRight={minorScale(1)}>
-          <img src={HALL_ICON_MAP[diningHall]} alt={diningHall} width={15} height={15} />
-        </Pane>
-        <Text size={300} color={theme.colors.gray900}>
-          {diningHallText}
-        </Text>
-      </Pane>
-    );
-  };
-
-  /**
-   * Allergen row component.
-   *
-   * @param allergen - The allergen to display
-   * @param checked - Whether the allergen is checked
-   * @param onChange - The function to call when the allergen is changed
-   * @returns The allergen row component
-   */
-  const AllergenRow = ({
-    allergen,
-    checked,
-    onChange,
-  }: {
-    allergen: Allergen;
-    checked: boolean;
-    onChange: () => void;
-  }) => {
-    // Render the allergen row.
-    return (
-      <Pane display='flex' alignItems='center' height={30} cursor='pointer' onClick={onChange}>
-        <Checkbox checked={checked} onChange={onChange} className="[&_input:checked+div]:!bg-green-700" />
-        <Pane marginLeft={minorScale(2)} marginRight={minorScale(1)}>
-          <img src={ALLERGEN_ICON_MAP[allergen]} alt={allergen} width={15} height={15} />
-        </Pane>
-        <Text size={300} color={theme.colors.gray900}>
-          {allergen}
-        </Text>
-      </Pane>
-    );
-  };
-
   // Determine container styles based on variant
   const containerProps =
     variant === 'sidebar'
       ? {
-        flexDirection: 'column' as const,
-        width: 280,
-        padding: majorScale(3),
-        className: 'max-w-[100%] hidden sm:inline z-20',
-      }
+          flexDirection: 'column' as const,
+          width: 280,
+          padding: majorScale(3),
+          className: 'max-w-[100%] hidden sm:inline z-20',
+        }
       : {};
 
   // Determine inner container styles based on variant
   const innerContainerProps =
     variant === 'sidebar'
       ? {
-        display: 'flex' as const,
-        background: 'white',
-        maxHeight: '100%',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        className: 'fixed sm:relative overflow-hidden flex-col select-none',
-        borderRadius: 12,
-      }
+          display: 'flex' as const,
+          background: 'white',
+          maxHeight: '100%',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          className: 'fixed sm:relative overflow-hidden flex-col select-none',
+          borderRadius: 12,
+        }
       : {
-        display: 'flex' as const,
-        background: 'white',
-        className: 'flex-col mb-4 select-none',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        marginBottom: majorScale(2),
-        borderRadius: 12,
-      };
+          display: 'flex' as const,
+          background: 'white',
+          className: 'flex-col mb-4 select-none',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          marginBottom: majorScale(2),
+          borderRadius: 12,
+        };
 
   // Determine filters container styles based on variant
   const filtersContainerProps =
     variant === 'sidebar'
       ? {
-        className: 'p-4',
-        overflowY: 'auto' as const,
-        height: '100%' as const,
-      }
+          className: 'p-4',
+          overflowY: 'auto' as const,
+          height: '100%' as const,
+        }
       : {
-        className: 'p-4',
-        overflowY: 'auto' as const,
-      };
+          className: 'p-4',
+          overflowY: 'auto' as const,
+        };
 
   // Render the filter sidebar.
   return (
@@ -260,7 +160,19 @@ export default function FilterSidebar({
               Sort By
             </Text>
             <Pane width='65%'>
-              <SortDropdown sortOption={sortOption} setSortOption={setSortOption} />
+              <Select
+                width='100%'
+                value={sortOption}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setSortOption(e.target.value as MenuSortOption)
+                }
+              >
+                {MENU_SORT_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </Select>
             </Pane>
           </Pane>
           <Pane borderBottom={`1px solid ${theme.colors.gray200}`} />
@@ -292,11 +204,8 @@ export default function FilterSidebar({
           />
 
           {/* Render the filters with collapse animation */}
-          <div
-            className="filter-collapse-wrapper"
-            data-state={filtersOpen ? 'open' : 'closed'}
-          >
-            <Pane className="filter-collapse-inner">
+          <div className='filter-collapse-wrapper' data-state={filtersOpen ? 'open' : 'closed'}>
+            <Pane className='filter-collapse-inner'>
               {/* Control which dining halls are displayed */}
               <Text
                 size={300}
@@ -323,7 +232,9 @@ export default function FilterSidebar({
               />
 
               {/* Control which allergens are not displayed */}
-              <Text size={300} fontWeight={600} color={theme.colors.gray800}>Allergen Tags</Text>
+              <Text size={300} fontWeight={600} color={theme.colors.gray800}>
+                Allergen Tags
+              </Text>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
                 {ALLERGENS.map((allergen: Allergen) => (
                   <AllergenRow

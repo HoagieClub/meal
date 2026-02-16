@@ -1,17 +1,3 @@
-/**
- * @overview Menu section component.
- *
- * Copyright © 2021-2025 Hoagie Club and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this tree or at
- *
- *    https://github.com/hoagieclub/meal/LICENSE.
- *
- * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
- */
-
 'use client';
 
 import React from 'react';
@@ -35,7 +21,6 @@ const MenuSection = ({
   title: string;
 }) => {
   const theme = useTheme();
-
   return (
     <Pane marginTop={majorScale(1)}>
       <Pane overflow='visible'>
@@ -60,11 +45,7 @@ const MenuSection = ({
           ) : (
             <Pane>
               {items.map((item) => (
-                <MenuItemRow
-                  key={item.id}
-                  item={item}
-                  diningHallId={diningHallId}
-                />
+                <MenuItemRow key={item.id} item={item} diningHallId={diningHallId} />
               ))}
             </Pane>
           )}
@@ -75,4 +56,3 @@ const MenuSection = ({
 };
 
 export default MenuSection;
-

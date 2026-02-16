@@ -51,7 +51,6 @@ async function Content({ children }: { children: ReactNode }): Promise<React.JSX
 
   const tabs = [
     { title: 'Menu', href: '/menu' },
-    { title: 'About', href: '/about' },
     // { title: 'Profile', href: '/profile' },
   ];
 
