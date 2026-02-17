@@ -28,7 +28,7 @@ import { MEAL_COLOR_MAP } from '@/styles';
 import { Meal, DiningHall } from '@/types/types';
 import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
 import { useMenuApi } from '@/hooks/use-menu-api';
-import { useBuildDisplayData } from '@/hooks/use-build-display-data';
+import { useBuildResidentialDisplayData } from '@/hooks/use-build-display-data';
 
 const getToday = (): Date => {
   const today = new Date();
@@ -112,7 +112,7 @@ export default function MenuPage() {
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeader = useMediaQuery('(max-width: 880px)');
 
-  const displayMenusForLocations = useBuildDisplayData({
+  const displayMenusForLocations = useBuildResidentialDisplayData({
     locations,
     residentialMenus,
     menuItems,

@@ -13,6 +13,7 @@ export const DINING_HALLS = [
   'Whitman & Butler Colleges',
   'Yeh College & NCW',
   'Center for Jewish Life',
+  'Graduate College',
 ] as const;
 export type DiningHall = (typeof DINING_HALLS)[number];
 

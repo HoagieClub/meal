@@ -19,10 +19,12 @@ import whitmanButlerIcon from '@/public/images/icons/whitman-butler.png';
 import yehIcon from '@/public/images/icons/yeh.png';
 import rockyIcon from '@/public/images/icons/rocky.png';
 import cjlBanner from '@/public/images/banners/cjl-banner.png';
+import gradIcon from '@/public/images/icons/grad.png';
 import forbesBanner from '@/public/images/banners/forbesbanner.png';
 import matheyBanner from '@/public/images/banners/rockybanner.png';
 import whitmanBanner from '@/public/images/banners/whitmanbutlerbanner.png';
 import yehBanner from '@/public/images/banners/yehbanner.png';
+import gradBanner from '@/public/images/banners/gradbanner.png';
 import { Meal, Allergen, DiningHall } from '@/types/types';
 import { Theme } from 'evergreen-ui';
 import { StaticImageData } from 'next/image';
@@ -82,6 +84,7 @@ export const HALL_ICON_MAP: Record<DiningHall, string> = {
   'Whitman & Butler Colleges': whitmanButlerIcon.src,
   'Yeh College & NCW': yehIcon.src,
   'Mathey & Rockefeller Colleges': rockyIcon.src,
+  'Graduate College': gradIcon.src,
 };
 
 // Hall banner map that maps from dining hall type to their corresponding banner image.
@@ -91,6 +94,7 @@ export const HALL_BANNER_MAP: Record<DiningHall, StaticImageData> = {
   'Whitman & Butler Colleges': whitmanBanner,
   'Yeh College & NCW': yehBanner,
   'Center for Jewish Life': cjlBanner,
+  'Graduate College': gradBanner,
 };
 
 // Meal color map that maps from meal type to their corresponding color.

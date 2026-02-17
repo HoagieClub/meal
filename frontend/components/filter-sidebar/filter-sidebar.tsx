@@ -186,7 +186,7 @@ export default function FilterSidebar({
           <div className='filter-collapse-wrapper' data-state={filtersOpen ? 'open' : 'closed'}>
             <Pane className='filter-collapse-inner'>
               {/* Control which dining halls are displayed */}
-              <Text
+              {/* <Text
                 size={300}
                 fontWeight={600}
                 color={theme.colors.gray800}
@@ -208,7 +208,7 @@ export default function FilterSidebar({
               <Pane
                 borderBottom={`1px solid ${theme.colors.gray200}`}
                 marginBottom={minorScale(2)}
-              />
+              /> */}
 
               {/* Control which allergens are not displayed */}
               <Text size={300} fontWeight={600} color={theme.colors.gray800}>

@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react';
 
-function buildLocationMenuShape(
+/** Residential: locationId -> meal (Breakfast/Lunch/Dinner) -> category -> itemIds */
+function buildResidentialLocationMenuShape(
   locations: any,
   residentialMenus: any,
   menuItems: any,
@@ -37,6 +38,77 @@ function buildLocationMenuShape(
           metrics: metrics?.[menuItemId] || null,
           userInteraction: interactions?.[menuItemId] || null,
         });
+      }
+    }
+
+    if (menu.length > 0) {
+      result.push({
+        ...location,
+        menu,
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Retail: locationId -> area -> category -> itemIds[]
+ * e.g. { "15": { "Grill": { "Breakfast Grill": ["600907", ...] } } }
+ */
+function buildRetailLocationMenuShape(
+  locations: any,
+  retailMenus: any,
+  menuItems: any,
+  interactions: any,
+  metrics: any
+) {
+  const result: any[] = [];
+
+  for (const locationId in retailMenus) {
+    const location = locations[locationId];
+    if (!location || location.category !== 'retail') {
+      continue;
+    }
+    const locationMenus = retailMenus[locationId];
+    if (!locationMenus || typeof locationMenus !== 'object') {
+      continue;
+    }
+
+    const menu: any[] = [];
+    for (const areaKey in locationMenus) {
+      const areaVal = locationMenus[areaKey];
+      if (!areaVal || typeof areaVal !== 'object') continue;
+
+      if (Array.isArray(areaVal)) {
+        // Flat fallback: areaKey as category
+        for (const menuItemId of areaVal) {
+          const menuItem = menuItems[menuItemId];
+          if (!menuItem || !menuItem.name) continue;
+          menu.push({
+            ...menuItem,
+            category: areaKey,
+            metrics: metrics?.[menuItemId] || null,
+            userInteraction: interactions?.[menuItemId] || null,
+          });
+        }
+      } else {
+        // locationId -> area -> category -> [ids]; category = "area - category"
+        for (const categoryKey in areaVal) {
+          const itemIds = areaVal[categoryKey];
+          if (!Array.isArray(itemIds)) continue;
+          const categoryLabel = `${areaKey} - ${categoryKey}`;
+          for (const menuItemId of itemIds) {
+            const menuItem = menuItems[menuItemId];
+            if (!menuItem || !menuItem.name) continue;
+            menu.push({
+              ...menuItem,
+              category: categoryLabel,
+              metrics: metrics?.[menuItemId] || null,
+              userInteraction: interactions?.[menuItemId] || null,
+            });
+          }
+        }
       }
     }
 
@@ -158,7 +230,7 @@ function sortLocations(locations: any[], pinnedHalls: string[]) {
   return locationsCopy;
 }
 
-export const useBuildDisplayData = ({
+export const useBuildResidentialDisplayData = ({
   locations,
   residentialMenus,
   menuItems,
@@ -176,7 +248,7 @@ export const useBuildDisplayData = ({
     if (!locations || !residentialMenus || !menuItems) {
       return [];
     }
-    const shapedData = buildLocationMenuShape(
+    const shapedData = buildResidentialLocationMenuShape(
       locations,
       residentialMenus,
       menuItems,
@@ -199,8 +271,8 @@ export const useBuildDisplayData = ({
       })
       .filter((location) => location !== null) as any[];
 
-    const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
-    const sortedLocations = sortLocations(filteredLocations, pinnedHalls);
+    // const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
+    const sortedLocations = sortLocations(filteredAndSorted, pinnedHalls);
     return sortedLocations;
   }, [
     locations,
@@ -214,6 +286,65 @@ export const useBuildDisplayData = ({
     searchTerm,
     pinnedHalls,
     meal,
+    sortOption,
+  ]);
+
+  return displayData;
+};
+
+export const useBuildRetailDisplayData = ({
+  locations,
+  retailMenus,
+  menuItems,
+  interactions,
+  metrics,
+  recommendations,
+  appliedDiningHalls,
+  appliedAllergens,
+  searchTerm,
+  pinnedHalls,
+  sortOption,
+}: any) => {
+  const displayData = useMemo(() => {
+    if (!locations || !retailMenus || !menuItems) {
+      return [];
+    }
+    const shapedData = buildRetailLocationMenuShape(
+      locations,
+      retailMenus,
+      menuItems,
+      interactions,
+      metrics
+    );
+
+    const filteredAndSorted = shapedData
+      .map((location) => {
+        const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
+        if (filteredMenu.length === 0) {
+          return null;
+        }
+        const sortedMenu = sortMenuItems(filteredMenu, sortOption, recommendations);
+        return {
+          ...location,
+          menu: sortedMenu,
+        };
+      })
+      .filter((location) => location !== null) as any[];
+
+    // const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
+    const sortedLocations = sortLocations(filteredAndSorted, pinnedHalls);
+    return sortedLocations;
+  }, [
+    locations,
+    retailMenus,
+    menuItems,
+    interactions,
+    metrics,
+    recommendations,
+    appliedDiningHalls,
+    appliedAllergens,
+    searchTerm,
+    pinnedHalls,
     sortOption,
   ]);
 

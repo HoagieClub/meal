@@ -44,6 +44,7 @@ export const DINING_HALL_DISPLAY_NAMES: Record<DiningHall, string> = {
   'Whitman & Butler Colleges': 'Whitman / Butler',
   'Yeh College & NCW': 'Yeh / NCW',
   'Center for Jewish Life': 'CJL',
+  'Graduate College': 'Grad',
 };
 
 

@@ -30,7 +30,7 @@ import {
   TabNavigation,
 } from 'evergreen-ui';
 import { useMenuApi } from '@/hooks/use-menu-api';
-import { useBuildDisplayData } from '@/hooks/use-build-display-data';
+import { useBuildResidentialDisplayData, useBuildRetailDisplayData } from '@/hooks/use-build-display-data';
 import { MenuSortOption } from '@/types/types';
 
 interface DataSectionProps {
@@ -182,7 +182,7 @@ export default function TestMenuApiPage() {
   const activeTab = activeDate ? tabs.get(activeDate) : null;
   const tabDates = Array.from(tabs.keys()).sort();
 
-  const builtDisplayData = useBuildDisplayData({
+  const builtResidentialDisplayData = useBuildResidentialDisplayData({
     locations: activeTab?.data?.locations || {},
     residentialMenus: activeTab?.data?.residentialMenus || {},
     menuItems: activeTab?.data?.menuItems || {},
@@ -194,6 +194,20 @@ export default function TestMenuApiPage() {
     searchTerm,
     pinnedHalls: [],
     meal,
+    sortOption,
+  });
+
+  const builtRetailDisplayData = useBuildRetailDisplayData({
+    locations: activeTab?.data?.locations || {},
+    retailMenus: activeTab?.data?.retailMenus || {},
+    menuItems: activeTab?.data?.menuItems || {},
+    interactions: activeTab?.data?.interactions || {},
+    metrics: activeTab?.data?.metrics || {},
+    recommendations: activeTab?.data?.recommendations || {},
+    appliedDiningHalls: [],
+    appliedAllergens: [],
+    searchTerm,
+    pinnedHalls: [],
     sortOption,
   });
 
@@ -452,26 +466,49 @@ export default function TestMenuApiPage() {
       {activeTab?.data && (
         <Pane>
           <DataSection
-            title='Built Display Data'
+            title='Built Residential Display Data'
             renderContent={() => {
               if (!activeTab?.data) {
                 return 'No data available';
               }
 
-              return JSON.stringify(builtDisplayData, null, 2);
+              return JSON.stringify(builtResidentialDisplayData, null, 2);
             }}
             renderCount={() => {
               if (!activeTab?.data) {
                 return 0;
               }
 
-              const totalMenuItems = builtDisplayData.reduce((sum: number, location: any) => {
+              const totalMenuItems = builtResidentialDisplayData.reduce((sum: number, location: any) => {
                 return sum + (location.menu?.length || 0);
               }, 0);
 
               return totalMenuItems;
             }}
-            fileName={`built-display-data-${activeDate || 'data'}-${meal.toLowerCase()}.txt`}
+            fileName={`built-residential-display-data-${activeDate || 'data'}-${meal.toLowerCase()}.txt`}
+          />
+
+          <DataSection
+            title='Displayed Retail Menu Data'
+            renderContent={() => {
+              if (!activeTab?.data) {
+                return 'No data available';
+              }
+
+              return JSON.stringify(builtRetailDisplayData, null, 2);
+            }}
+            renderCount={() => {
+              if (!activeTab?.data) {
+                return 0;
+              }
+
+              const totalMenuItems = builtRetailDisplayData.reduce((sum: number, location: any) => {
+                return sum + (location.menu?.length || 0);
+              }, 0);
+
+              return totalMenuItems;
+            }}
+            fileName={`displayed-retail-menu-data-${activeDate || 'data'}.txt`}
           />
         </Pane>
       )}
