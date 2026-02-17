@@ -29,6 +29,8 @@ interface DateMealSelectorProps {
   setMeal: (meal: Meal) => void;
   selectedDate: Date;
   setSelectedDate: (date: Date) => void;
+  locationType?: string;
+  setLocationType?: any;
 }
 
 // Generate the next 7 days starting from today
@@ -67,6 +69,8 @@ export default function DateMealSelector({
   setMeal,
   selectedDate,
   setSelectedDate,
+  locationType = 'residential',
+  setLocationType,
 }: DateMealSelectorProps) {
   const theme = useTheme();
   const formattedDateForDisplay = formatDateForDisplay(selectedDate);
@@ -132,7 +136,7 @@ export default function DateMealSelector({
         </Button>
       </Pane>
 
-      <Pane display='flex' justifyContent='center' gap={majorScale(2)} marginBottom={minorScale(1)}>
+      <Pane display='flex' justifyContent='center' gap={majorScale(2)} marginBottom={minorScale(2)}>
         {next7Days.map((date) => {
           const isSelected = isSameDay(date, selectedDate);
           return (
@@ -150,6 +154,7 @@ export default function DateMealSelector({
         })}
       </Pane>
 
+      {/* Residential / Retail tab */}
       <Pane
         display='flex'
         borderRadius={999}
@@ -157,38 +162,82 @@ export default function DateMealSelector({
         overflow='hidden'
         boxShadow='0 2px 8px rgba(0,0,0,0.08)'
         position='relative'
+        marginBottom={majorScale(1)}
       >
         <Pane
           position='absolute'
           top={0}
           bottom={0}
-          left={`${(meals.indexOf(meal) / meals.length) * 100}%`}
-          width={`${100 / meals.length}%`}
+          left={`${(locationType === 'retail' ? 1 : 0) * 50}%`}
+          width='50%'
           background={theme.colors.green700}
           borderRadius={999}
           className='transition-all duration-300 ease-in-out'
         />
-        {meals.map((mealOption: string) => {
-          const isSelectedMeal = meal === mealOption;
-          const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
-          const displayLabel = isWeekendDay && mealOption === 'Lunch' ? 'Brunch' : mealOption;
+        {(['residential', 'retail'] as const).map((type) => {
+          const isSelected = locationType === type;
+          const label = type.charAt(0).toUpperCase() + type.slice(1);
+          const textColor = isSelected ? 'white' : theme.colors.green800;
           return (
             <Pane
-              key={mealOption}
+              key={type}
               flex={1}
               textAlign='center'
               paddingY={minorScale(1)}
-              cursor='pointer'
+              cursor={setLocationType ? 'pointer' : 'default'}
               color={textColor}
               className='text-xs px-4 transition-colors duration-300 relative z-10'
               fontWeight={300}
-              onClick={() => setMeal(mealOption as string as Meal)}
+              onClick={() => setLocationType?.(type)}
             >
-              {displayLabel}
+              {label}
             </Pane>
           );
         })}
       </Pane>
+
+      {/* Meal tabs - only show when residential is selected */}
+      {locationType === 'residential' && (
+        <Pane
+          display='flex'
+          borderRadius={999}
+          background={theme.colors.green25}
+          overflow='hidden'
+          boxShadow='0 2px 8px rgba(0,0,0,0.08)'
+          position='relative'
+        >
+          <Pane
+            position='absolute'
+            top={0}
+            bottom={0}
+            left={`${(meals.indexOf(meal) / meals.length) * 100}%`}
+            width={`${100 / meals.length}%`}
+            background={theme.colors.green700}
+            borderRadius={999}
+            className='transition-all duration-300 ease-in-out'
+          />
+          {meals.map((mealOption: string) => {
+            const isSelectedMeal = meal === mealOption;
+            const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
+            const displayLabel = isWeekendDay && mealOption === 'Lunch' ? 'Brunch' : mealOption;
+            return (
+              <Pane
+                key={mealOption}
+                flex={1}
+                textAlign='center'
+                paddingY={minorScale(1)}
+                cursor='pointer'
+                color={textColor}
+                className='text-xs px-4 transition-colors duration-300 relative z-10'
+                fontWeight={300}
+                onClick={() => setMeal(mealOption as string as Meal)}
+              >
+                {displayLabel}
+              </Pane>
+            );
+          })}
+        </Pane>
+      )}
     </Pane>
   );
 }

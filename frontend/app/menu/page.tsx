@@ -28,7 +28,7 @@ import { MEAL_COLOR_MAP } from '@/styles';
 import { Meal, DiningHall } from '@/types/types';
 import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
 import { useMenuApi } from '@/hooks/use-menu-api';
-import { useBuildResidentialDisplayData } from '@/hooks/use-build-display-data';
+import { useBuildResidentialDisplayData, useBuildRetailDisplayData } from '@/hooks/use-build-display-data';
 
 const getToday = (): Date => {
   const today = new Date();
@@ -70,6 +70,7 @@ export default function MenuPage() {
   const currentMeal = getCurrentMeal();
   const [locations, setLocations] = useState<any>({});
   const [residentialMenus, setResidentialMenus] = useState<any>({});
+  const [retailMenus, setRetailMenus] = useState<any>({});
   const [menuItems, setMenuItems] = useState<any>({});
   const [interactions, setInteractions] = useState<any>({});
   const [metrics, setMetrics] = useState<any>({});
@@ -84,6 +85,7 @@ export default function MenuPage() {
         const result = await fetchAll(dateKey);
         setLocations(result.locations || {});
         setResidentialMenus(result.residentialMenus || {});
+        setRetailMenus(result.retailMenus || {});
         setMenuItems(result.menuItems || {});
         setInteractions(result.interactions || {});
         setMetrics(result.metrics || {});
@@ -106,13 +108,14 @@ export default function MenuPage() {
   } = usePreferencesCache();
 
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
+  const [locationType, setLocationType] = useState<'residential' | 'retail'>('residential');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<MenuSortOption>('Category');
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeader = useMediaQuery('(max-width: 880px)');
 
-  const displayMenusForLocations = useBuildResidentialDisplayData({
+  const residentialDisplayData = useBuildResidentialDisplayData({
     locations,
     residentialMenus,
     menuItems,
@@ -126,6 +129,22 @@ export default function MenuPage() {
     meal,
     sortOption,
   });
+
+  const retailDisplayData = useBuildRetailDisplayData({
+    locations,
+    retailMenus,
+    menuItems,
+    interactions,
+    metrics,
+    recommendations,
+    appliedDiningHalls: diningHalls,
+    appliedAllergens: allergens,
+    searchTerm,
+    pinnedHalls: pinnedHalls,
+    sortOption,
+  });
+
+  const displayMenusForLocations = locationType === 'retail' ? retailDisplayData : residentialDisplayData;
 
   return (
     <NutritionAccordionProvider>
@@ -165,10 +184,14 @@ export default function MenuPage() {
             >
               <Pane width={240}>
                 <Heading className='text-5xl' color={theme.colors.green700} fontWeight={900}>
-                  {meal === 'Lunch' && isWeekend(selectedDate) ? 'Brunch' : meal}
+                  {locationType === 'retail'
+                    ? 'Retail'
+                    : meal === 'Lunch' && isWeekend(selectedDate)
+                      ? 'Brunch'
+                      : meal}
                 </Heading>
                 <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
-                  {MEAL_RANGES[meal]}
+                  {locationType === 'retail' ? 'All day' : MEAL_RANGES[meal]}
                 </Text>
               </Pane>
               <DateMealSelector
@@ -176,6 +199,8 @@ export default function MenuPage() {
                 setMeal={setMeal}
                 selectedDate={selectedDate}
                 setSelectedDate={setSelectedDate}
+                locationType={locationType}
+                setLocationType={setLocationType}
               />
               <Pane
                 display='flex'
