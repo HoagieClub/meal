@@ -74,20 +74,27 @@ export default function DateMealSelector({
   const meals = isWeekendDay ? ['Lunch', 'Dinner'] : ['Breakfast', 'Lunch', 'Dinner'];
   const next7Days = getNext7Days();
 
+  const handleDateChange = (newDate: Date) => {
+    setSelectedDate(newDate);
+    if (isWeekend(newDate) && meal === 'Breakfast') {
+      setMeal('Lunch');
+    }
+  };
+
   const goToPreviousDay = () => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() - 1);
-    setSelectedDate(newDate);
+    handleDateChange(newDate);
   };
 
   const goToNextDay = () => {
     const newDate = new Date(selectedDate);
     newDate.setDate(newDate.getDate() + 1);
-    setSelectedDate(newDate);
+    handleDateChange(newDate);
   };
 
   const goToDate = (date: Date) => {
-    setSelectedDate(date);
+    handleDateChange(date);
   };
 
   // Render the date and meal selector.
@@ -164,6 +171,7 @@ export default function DateMealSelector({
         {meals.map((mealOption: string) => {
           const isSelectedMeal = meal === mealOption;
           const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
+          const displayLabel = isWeekendDay && mealOption === 'Lunch' ? 'Brunch' : mealOption;
           return (
             <Pane
               key={mealOption}
@@ -176,7 +184,7 @@ export default function DateMealSelector({
               fontWeight={300}
               onClick={() => setMeal(mealOption as string as Meal)}
             >
-              {mealOption}
+              {displayLabel}
             </Pane>
           );
         })}

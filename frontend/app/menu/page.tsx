@@ -52,6 +52,11 @@ const getCurrentMeal = (): Meal => {
   }
 };
 
+const isWeekend = (date: Date): boolean => {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+};
+
 /**
  * Menu page component.
  *
@@ -160,7 +165,7 @@ export default function MenuPage() {
             >
               <Pane width={240}>
                 <Heading className='text-5xl' color={theme.colors.green700} fontWeight={900}>
-                  {meal.toUpperCase()}
+                  {meal === 'Lunch' && isWeekend(selectedDate) ? 'Brunch' : meal}
                 </Heading>
                 <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
                   {MEAL_RANGES[meal]}

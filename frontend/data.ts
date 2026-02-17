@@ -12,13 +12,14 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { Meal, Allergen, DiningHall } from '@/types/types';
+import { Allergen, DiningHall } from '@/types/types';
 
 // Meal ranges that maps from meal type to their corresponding range.
-export const MEAL_RANGES: Record<Meal, string> = {
+export const MEAL_RANGES: Record<string, string> = {
   Breakfast: '7:30 AM – 10:30 AM',
   Lunch: '11:30 AM – 2:00 PM',
   Dinner: '5:00 PM – 8:00 PM',
+  Brunch: '10:00 AM – 2:00 PM',
 };
 
 // Allergen emoji map that maps from allergen type to their corresponding emoji.
@@ -34,14 +35,6 @@ export const ALLERGEN_EMOJI_MAP: Record<Allergen, string> = {
   Fish: '🐟',
   Sesame: '🍔',
   Gluten: '🍞',
-};
-
-// Icon path map for dietary tags.
-export const DIET_ICON_MAP: Record<DietaryTag, string> = {
-  Vegetarian: '/images/icons/vegetarian.svg',
-  Vegan: '/images/icons/vegan.svg',
-  Halal: '/images/icons/halal.svg',
-  Kosher: '/images/icons/kosher.svg',
 };
 
 // Icon path map for allergens.
