@@ -16,7 +16,7 @@ export const DINING_HALLS = [
 ] as const;
 export type DiningHall = (typeof DINING_HALLS)[number];
 
-export const MENU_SORT_OPTIONS = ['Category', 'Most Liked', 'Recommended'] as const;
+export const MENU_SORT_OPTIONS = ['Category', 'Most Liked'] as const;
 export type MenuSortOption = (typeof MENU_SORT_OPTIONS)[number];
 
 export const MEAL_ICONS = ['🍂', '🥜', '🥚', '🥛', '🌱', '🥜'] as const;

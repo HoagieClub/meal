@@ -38,9 +38,9 @@ export const useMenuApi = () => {
   const residentialMenusCache = useResidentialMenusCache();
   const retailMenusCache = useRetailMenusCache();
   const menuItemsCache = useMenuItemsCache();
-  const interactionsCache = useInteractionsCache();
   const metricsCache = useMetricsCache();
-  const recommendationsCache = useRecommendationsCache();
+  // const interactionsCache = useInteractionsCache();
+  // const recommendationsCache = useRecommendationsCache();
 
   const extractMenuItemIds = useCallback((menus: any) => {
     const menuString = JSON.stringify(menus);
@@ -126,23 +126,23 @@ export const useMenuApi = () => {
     if (menuItemIds.length === 0) {
       return {};
     }
-    const cached: any = interactionsCache.interactionsCache;
-    const missingIds = menuItemIds.filter((id) => !cached[id]);
-    if (missingIds.length === 0) {
-      const result: any = {};
-      menuItemIds.forEach((id) => {
-        result[id] = cached[id];
-      });
-      return result;
-    }
+    // const cached: any = interactionsCache.interactionsCache;
+    // const missingIds = menuItemIds.filter((id) => !cached[id]);
+    // if (missingIds.length === 0) {
+    //   const result: any = {};
+    //   menuItemIds.forEach((id) => {
+    //     result[id] = cached[id];
+    //   });
+    //   return result;
+    // }
 
-    const response = await getUserMenuItemsInteractions({ menu_item_api_ids: missingIds });
+    const response = await getUserMenuItemsInteractions({ menu_item_api_ids: menuItemIds });
     const interactions = response.data || {};
-    interactionsCache.setInteractions(interactions);
-    const result: any = { ...cached };
-    Object.assign(result, interactions);
-    return result;
-  }, [interactionsCache]);
+    // interactionsCache.setInteractions(interactions);
+    // const result: any = { ...cached };
+    // Object.assign(result, interactions);
+    return interactions;
+  }, []);
 
   const fetchMetrics = useCallback(async (menuItemIds: string[]) => {
     if (menuItemIds.length === 0) {
@@ -170,24 +170,24 @@ export const useMenuApi = () => {
     if (menuItemIds.length === 0) {
       return {};
     }
-    const cached: any = recommendationsCache.recommendationsCache;
-    const missingIds = menuItemIds.filter((id) => cached[id] === undefined);
+    // const cached: any = recommendationsCache.recommendationsCache;
+    // const missingIds = menuItemIds.filter((id) => cached[id] === undefined);
 
-    if (missingIds.length === 0) {
-      const result: any = {};
-      menuItemIds.forEach((id) => {
-        result[id] = cached[id];
-      });
-      return result;
-    }
+    // if (missingIds.length === 0) {
+    //   const result: any = {};
+    //   menuItemIds.forEach((id) => {
+    //     result[id] = cached[id];
+    //   });
+    //   return result;
+    // }
 
-    const response = await getMenuItemsScore({ menu_item_api_ids: missingIds });
+    const response = await getMenuItemsScore({ menu_item_api_ids: menuItemIds });
     const recommendations = response.data || {};
-    recommendationsCache.setRecommendations(recommendations);
-    const result: any = { ...cached };
-    Object.assign(result, recommendations);
-    return result;
-  }, [recommendationsCache]);
+    // recommendationsCache.setRecommendations(recommendations);
+    // const result: any = { ...cached };
+    // Object.assign(result, recommendations);
+    return recommendations;
+  }, []);
 
   const fetchAll = useCallback(async (date: string) => {
     const [locations, menus] = await Promise.all([fetchLocations(), fetchMenusForDate(date)]);

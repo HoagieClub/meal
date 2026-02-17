@@ -22,21 +22,6 @@ export const MEAL_RANGES: Record<string, string> = {
   Brunch: '10:00 AM – 2:00 PM',
 };
 
-// Allergen emoji map that maps from allergen type to their corresponding emoji.
-export const ALLERGEN_EMOJI_MAP: Record<Allergen, string> = {
-  Peanut: '🥜',
-  Coconut: '🌰',
-  Eggs: '🥚',
-  Milk: '🥛',
-  Wheat: '🌾',
-  Soybeans: '🌱',
-  Crustacean: '🦞',
-  Alcohol: '🍺',
-  Fish: '🐟',
-  Sesame: '🍔',
-  Gluten: '🍞',
-};
-
 // Icon path map for allergens.
 export const ALLERGEN_ICON_MAP: Record<Allergen, string> = {
   Peanut: '/images/icons/peanut.svg',

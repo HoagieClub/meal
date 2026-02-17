@@ -15,7 +15,7 @@ export const LikeDislikeButtons = ({ item }: { item: any }) => {
 
   // Get the like/dislike state and handlers from the useMenuItemInteractions hook
   const { userLiked, likeCount, dislikeCount, handleLike, handleDislike } = useMenuItemInteractions(
-    item.apiId,
+    item.id,
     item.userInteraction,
     item.metrics
   );

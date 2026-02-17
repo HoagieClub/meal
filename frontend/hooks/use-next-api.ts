@@ -46,6 +46,7 @@ async function apiRequest<T>({
     // Make the API request
     const res = await fetch(endpoint, {
       method,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(headers || {}),

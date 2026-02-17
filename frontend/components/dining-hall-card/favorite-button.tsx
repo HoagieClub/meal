@@ -14,7 +14,7 @@ import { useMenuItemInteractions } from '@/hooks/use-menu-item-interactions';
  */
 export const FavoriteButton = ({ item }: { item: any }) => {
   const { favorited, handleFavorite } = useMenuItemInteractions(
-    item.apiId,
+    item.id,
     item.userInteraction,
     item.metrics
   );

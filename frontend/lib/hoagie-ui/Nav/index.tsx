@@ -161,6 +161,11 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
                           {tab.title}
                         </Menu.Item>
                       ))}
+                      {!user && (
+                        <Menu.Item onSelect={() => router.push('/api/auth/login')}>
+                          Login
+                        </Menu.Item>
+                      )}
                     </Menu.Group>
                   </Menu>
                 }
@@ -181,6 +186,17 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
                     {tab.title}
                   </Tab>
                 ))}
+                {!user && (
+                  <Tab
+                    id='Login'
+                    isSelected={false}
+                    appearance='primary'
+                    onSelect={() => router.push('/api/auth/login')}
+                    fontSize={14}
+                  >
+                    Login
+                  </Tab>
+                )}
               </TabNavigation>
             )}
 
