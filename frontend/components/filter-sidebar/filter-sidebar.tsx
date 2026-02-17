@@ -57,51 +57,30 @@ export default function FilterSidebar({
   const theme = useTheme();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Determine container styles based on variant
-  const containerProps =
-    variant === 'sidebar'
-      ? {
-          flexDirection: 'column' as const,
-          width: 280,
-          padding: majorScale(3),
-          className: 'max-w-[100%] hidden sm:inline z-20',
-        }
-      : {};
+  const isSidebar = variant === 'sidebar';
+  const containerProps = isSidebar
+    ? {
+        flexDirection: 'column' as const,
+        width: 280,
+        padding: majorScale(3),
+        className: 'max-w-[100%] hidden sm:inline z-20',
+      }
+    : {};
+  const innerContainerProps = {
+    display: 'flex' as const,
+    background: 'white',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+    borderRadius: 12,
+    ...(isSidebar
+      ? { maxHeight: '100%', className: 'fixed sm:relative overflow-hidden flex-col select-none' }
+      : { className: 'flex-col mb-4 select-none', marginBottom: majorScale(2) }),
+  };
+  const filtersContainerProps = {
+    className: 'p-4',
+    overflowY: 'auto' as const,
+    ...(isSidebar && { height: '100%' as const }),
+  };
 
-  // Determine inner container styles based on variant
-  const innerContainerProps =
-    variant === 'sidebar'
-      ? {
-          display: 'flex' as const,
-          background: 'white',
-          maxHeight: '100%',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          className: 'fixed sm:relative overflow-hidden flex-col select-none',
-          borderRadius: 12,
-        }
-      : {
-          display: 'flex' as const,
-          background: 'white',
-          className: 'flex-col mb-4 select-none',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          marginBottom: majorScale(2),
-          borderRadius: 12,
-        };
-
-  // Determine filters container styles based on variant
-  const filtersContainerProps =
-    variant === 'sidebar'
-      ? {
-          className: 'p-4',
-          overflowY: 'auto' as const,
-          height: '100%' as const,
-        }
-      : {
-          className: 'p-4',
-          overflowY: 'auto' as const,
-        };
-
-  // Render the filter sidebar.
   return (
     <Pane {...containerProps}>
       <Pane {...innerContainerProps}>

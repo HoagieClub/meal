@@ -89,11 +89,17 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption }: Dinin
               items={items}
               diningHallId={diningHall.name}
               title={category}
+              sortOption={sortOption}
             />
           );
         })
       ) : (
-        <MenuSection items={menuItems} diningHallId={diningHall.name} title='Meal' />
+        <MenuSection
+          items={menuItems}
+          diningHallId={diningHall.name}
+          title='Meal'
+          sortOption={sortOption}
+        />
       )}
     </Pane>
   );

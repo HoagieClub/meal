@@ -31,7 +31,7 @@ from datetime import datetime
 from typing import TypedDict, List
 from django.utils import timezone
 from hoagiemeal.serializers import UserSerializer
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -87,16 +87,21 @@ def get_or_create_user(auth0_claims: dict) -> Optional[Any]:
         username = email.split("@")[0] if email else ""
         last_login = timezone.now()
 
-        user, created = User.objects.get_or_create(
-            auth0_id=auth0_id,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            username=username,
-            last_login=last_login,
-        )
-
-        logger.info(f"User created for auth0_id: {auth0_id}")
+        try:
+            user, created = User.objects.get_or_create(
+                auth0_id=auth0_id,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                username=username,
+                last_login=last_login,
+            )
+            logger.info(f"User created for auth0_id: {auth0_id}")
+        except IntegrityError:
+            user = User.objects.get(auth0_id=auth0_id)
+            user.last_login = timezone.now()
+            user.save()
+            logger.info(f"User found for auth0_id (concurrent create): {auth0_id}")
         return user
     except Exception as e:
         logger.error(f"Failed to get or create user for auth0_id: {auth0_id}: {e}")
@@ -130,10 +135,18 @@ def verify_and_get_or_create_user(request):
     user = get_user_from_request(request)
     if not user:
         return Response(
-            {"data": None, "message": "Failed to get or create user", "error": "Failed to get or create user"},
+            {
+                "data": None,
+                "message": "Failed to get or create user",
+                "error": "Failed to get or create user",
+            },
             status=500,
         )
     return Response(
-        {"data": UserSerializer(user).data, "message": "User fetched or created successfully.", "error": None},
+        {
+            "data": UserSerializer(user).data,
+            "message": "User fetched or created successfully.",
+            "error": None,
+        },
         status=200,
     )

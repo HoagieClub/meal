@@ -22,7 +22,6 @@ export function AllergensDisplay({ allergens }: AllergensDisplayProps) {
     };
 
     checkScrollable();
-
     const resizeObserver = new ResizeObserver(checkScrollable);
     if (scrollRef.current) {
       resizeObserver.observe(scrollRef.current);

@@ -23,7 +23,7 @@ import forbesBanner from '@/public/images/banners/forbesbanner.png';
 import matheyBanner from '@/public/images/banners/rockybanner.png';
 import whitmanBanner from '@/public/images/banners/whitmanbutlerbanner.png';
 import yehBanner from '@/public/images/banners/yehbanner.png';
-import { Meal, Allergen, DietaryTag, DiningHall } from '@/types/types';
+import { Meal, Allergen, DiningHall } from '@/types/types';
 import { Theme } from 'evergreen-ui';
 import { StaticImageData } from 'next/image';
 
@@ -69,6 +69,10 @@ export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<Allergen, any> => ({
     bg: theme.colors.orange100,
     color: theme.colors.orange900,
   },
+  Gluten: {
+    bg: theme.colors.orange100,
+    color: theme.colors.orange900,
+  },
 });
 
 // Hall icon map that maps from dining hall type to their corresponding icon image.
@@ -95,22 +99,3 @@ export const MEAL_COLOR_MAP = (theme: Theme): Record<Meal, string> => ({
   Lunch: "#daefe8",
   Dinner: "#cae6dc",
 });
-
-// Diet style map that maps from dietary tag type to their corresponding style.
-export const DIET_STYLE_MAP = (theme: Theme): Record<DietaryTag, any> => ({
-  Vegetarian: {
-    bg: theme.colors.green100,
-    color: theme.colors.green900,
-  },
-  Vegan: { bg: theme.colors.green50, color: theme.colors.green800 },
-  Halal: { bg: theme.colors.blue100, color: theme.colors.blue900 },
-  Kosher: {
-    bg: theme.colors.purple100,
-    color: theme.colors.purple900,
-  },
-  'Gluten Free': {
-    bg: theme.colors.orange100,
-    color: theme.colors.orange900,
-  },
-});
-

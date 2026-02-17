@@ -127,7 +127,8 @@ def get_menu_items_score(request):
         scores = {item_id: 0.0 for item_id in menu_item_api_ids}
         logger.info(f"Returning scores for {len(scores)} menu items for user_id={user.id}.")
         return Response(
-            {"data": scores, "message": "Menu items scores retrieved successfully."}, status=status.HTTP_200_OK
+            {"data": scores, "message": "Menu items scores retrieved successfully."},
+            status=status.HTTP_200_OK,
         )
     except Exception as e:
         logger.error(f"Error in get_menu_items_score view: {e}")

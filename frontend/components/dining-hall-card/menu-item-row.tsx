@@ -5,7 +5,6 @@ import { Pane, minorScale, majorScale } from 'evergreen-ui';
 import { ALLERGEN_ICON_MAP } from '@/data';
 import { Allergen } from '@/types/types';
 import { LikeDislikeButtons } from '@/components/dining-hall-card/like-dislike-button';
-import { FavoriteButton } from '@/components/dining-hall-card/favorite-button';
 import {
   Accordion,
   AccordionItem,
@@ -19,9 +18,19 @@ import NutritionAccordionContent from '../nutrition/nutrition-accordion-content'
  * Menu item row component.
  *
  * @param item - The menu item to display.
+ * @param diningHallId - The dining hall id.
+ * @param sortOption - The sort option.
  * @returns The menu item row component
  */
-export default function MenuItemRow({ item, diningHallId }: { item: any; diningHallId: string }) {
+export default function MenuItemRow({
+  item,
+  diningHallId,
+  sortOption,
+}: {
+  item: any;
+  diningHallId: string;
+  sortOption: string;
+}) {
   const { expandedItemId, setExpandedItemId } = useNutritionAccordion();
   const menuItemId = item?.id;
   if (!menuItemId) {
@@ -47,13 +56,13 @@ export default function MenuItemRow({ item, diningHallId }: { item: any; diningH
       <AccordionItem value={itemValue} className='border-none'>
         <Pane
           display='grid'
-          gridTemplateColumns='2fr 1fr'
+          gridTemplateColumns='auto auto'
           rowGap={minorScale(1)}
-          columnGap={minorScale(2)}
+          columnGap={minorScale(0)}
           cursor='pointer'
         >
           <Pane
-            marginY={majorScale(1)}
+            marginY={sortOption === 'Category' ? minorScale(1) : majorScale(1)}
             style={{ fontSize: 14, fontWeight: 500, color: 'black', lineHeight: 1.2 }}
           >
             <span style={{ paddingRight: minorScale(1) }}>{item.name}</span>{' '}
@@ -77,7 +86,6 @@ export default function MenuItemRow({ item, diningHallId }: { item: any; diningH
             gap={minorScale(1)}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-            <FavoriteButton item={item} />
             <LikeDislikeButtons item={item} />
             <AccordionTrigger className='p-0 hover:no-underline [&>svg]:h-4 [&>svg]:w-4 cursor-pointer' />
           </Pane>

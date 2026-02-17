@@ -44,7 +44,7 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from hoagiemeal.models.dining import DiningLocation
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.utils import timezone
 from hoagiemeal.models.menu import ResidentialMenu, RetailMenu
 from hoagiemeal.models.menu_item import MenuItem, MenuItemNutrition
@@ -78,12 +78,15 @@ def cache_locations(locations: dict) -> bool:
     try:
         with transaction.atomic():
             for location in locations.values():
-                DiningLocation.objects.get_or_create(
-                    id=location["id"],
-                    category=location["category"],
-                    name=location["name"],
-                    url=location["url"],
-                )
+                try:
+                    DiningLocation.objects.get_or_create(
+                        id=location["id"],
+                        category=location["category"],
+                        name=location["name"],
+                        url=location["url"],
+                    )
+                except IntegrityError:
+                    pass  # created by concurrent request
         return True
     except Exception as e:
         logger.error(f"Error caching locations: {e}.")
@@ -97,12 +100,15 @@ def cache_residential_menus_for_locations_and_date(date: datetime.date, menus: d
         for location_id, meal_menus in menus.items():
             dining_location = DiningLocation.objects.get(id=location_id)
             for meal, menu_items in meal_menus.items():
-                ResidentialMenu.objects.get_or_create(
-                    dining_location=dining_location,
-                    date=date,
-                    meal=meal,
-                    menu_items=menu_items,
-                )
+                try:
+                    ResidentialMenu.objects.get_or_create(
+                        dining_location=dining_location,
+                        date=date,
+                        meal=meal,
+                        menu_items=menu_items,
+                    )
+                except IntegrityError:
+                    pass  # created by concurrent request
         return True
     except Exception as e:
         logger.error(f"Error caching residential menus for date: {date}: {e}.")
@@ -115,11 +121,14 @@ def cache_retail_menus_for_locations_and_date(date: datetime.date, menus: dict) 
     try:
         for location_id, menu_items in menus.items():
             dining_location = DiningLocation.objects.get(id=location_id)
-            RetailMenu.objects.get_or_create(
-                dining_location=dining_location,
-                date=date,
-                menu_items=menu_items,
-            )
+            try:
+                RetailMenu.objects.get_or_create(
+                    dining_location=dining_location,
+                    date=date,
+                    menu_items=menu_items,
+                )
+            except IntegrityError:
+                pass  # created by concurrent request
         return True
     except Exception as e:
         logger.error(f"Error caching retail menus for date: {date}: {e}.")
@@ -154,47 +163,53 @@ def cache_menu_items(menu_items: dict) -> bool:
         for menu_item in menu_items.values():
             try:
                 with transaction.atomic():
-                    menu_item_obj, created = MenuItem.objects.get_or_create(
-                        id=menu_item["id"],
-                        name=menu_item["name"],
-                        url=menu_item["url"],
-                    )
+                    try:
+                        menu_item_obj, created = MenuItem.objects.get_or_create(
+                            id=menu_item["id"],
+                            name=menu_item["name"],
+                            url=menu_item["url"],
+                        )
+                    except IntegrityError:
+                        menu_item_obj = MenuItem.objects.get(id=menu_item["id"])
 
                     nutrition = menu_item["nutrition"]
-                    MenuItemNutrition.objects.get_or_create(
-                        menu_item=menu_item_obj,
-                        servings_per_container=nutrition["servings_per_container"],
-                        serving_size=nutrition["serving_size"],
-                        calories=nutrition["calories"],
-                        total_fat=nutrition["total_fat"],
-                        total_fat_dv=nutrition["total_fat_dv"],
-                        saturated_fat=nutrition["saturated_fat"],
-                        saturated_fat_dv=nutrition["saturated_fat_dv"],
-                        trans_fat=nutrition["trans_fat"],
-                        cholesterol=nutrition["cholesterol"],
-                        cholesterol_dv=nutrition["cholesterol_dv"],
-                        sodium=nutrition["sodium"],
-                        sodium_dv=nutrition["sodium_dv"],
-                        total_carbs=nutrition["total_carbs"],
-                        total_carbs_dv=nutrition["total_carbs_dv"],
-                        dietary_fiber=nutrition["dietary_fiber"],
-                        dietary_fiber_dv=nutrition["dietary_fiber_dv"],
-                        total_sugars=nutrition["total_sugars"],
-                        added_sugars_dv=nutrition["added_sugars_dv"],
-                        added_sugars=nutrition["added_sugars"],
-                        protein=nutrition["protein"],
-                        protein_dv=nutrition["protein_dv"],
-                        vitamin_d=nutrition["vitamin_d"],
-                        vitamin_d_dv=nutrition["vitamin_d_dv"],
-                        calcium=nutrition["calcium"],
-                        calcium_dv=nutrition["calcium_dv"],
-                        iron=nutrition["iron"],
-                        iron_dv=nutrition["iron_dv"],
-                        potassium=nutrition["potassium"],
-                        potassium_dv=nutrition["potassium_dv"],
-                        ingredients=nutrition["ingredients"],
-                        allergens=nutrition["allergens"],
-                    )
+                    try:
+                        MenuItemNutrition.objects.get_or_create(
+                            menu_item=menu_item_obj,
+                            servings_per_container=nutrition["servings_per_container"],
+                            serving_size=nutrition["serving_size"],
+                            calories=nutrition["calories"],
+                            total_fat=nutrition["total_fat"],
+                            total_fat_dv=nutrition["total_fat_dv"],
+                            saturated_fat=nutrition["saturated_fat"],
+                            saturated_fat_dv=nutrition["saturated_fat_dv"],
+                            trans_fat=nutrition["trans_fat"],
+                            cholesterol=nutrition["cholesterol"],
+                            cholesterol_dv=nutrition["cholesterol_dv"],
+                            sodium=nutrition["sodium"],
+                            sodium_dv=nutrition["sodium_dv"],
+                            total_carbs=nutrition["total_carbs"],
+                            total_carbs_dv=nutrition["total_carbs_dv"],
+                            dietary_fiber=nutrition["dietary_fiber"],
+                            dietary_fiber_dv=nutrition["dietary_fiber_dv"],
+                            total_sugars=nutrition["total_sugars"],
+                            added_sugars_dv=nutrition["added_sugars_dv"],
+                            added_sugars=nutrition["added_sugars"],
+                            protein=nutrition["protein"],
+                            protein_dv=nutrition["protein_dv"],
+                            vitamin_d=nutrition["vitamin_d"],
+                            vitamin_d_dv=nutrition["vitamin_d_dv"],
+                            calcium=nutrition["calcium"],
+                            calcium_dv=nutrition["calcium_dv"],
+                            iron=nutrition["iron"],
+                            iron_dv=nutrition["iron_dv"],
+                            potassium=nutrition["potassium"],
+                            potassium_dv=nutrition["potassium_dv"],
+                            ingredients=nutrition["ingredients"],
+                            allergens=nutrition["allergens"],
+                        )
+                    except IntegrityError:
+                        pass  # created by concurrent request
             except Exception as e:
                 logger.error(f"Error caching menu item: {e}.")
                 continue

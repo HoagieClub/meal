@@ -102,7 +102,7 @@ export default function MenuPage() {
 
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOption, setSortOption] = useState<MenuSortOption>('Best');
+  const [sortOption, setSortOption] = useState<MenuSortOption>('Category');
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeader = useMediaQuery('(max-width: 880px)');

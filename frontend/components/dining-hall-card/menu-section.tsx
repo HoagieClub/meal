@@ -9,16 +9,19 @@ import MenuItemRow from './menu-item-row';
  *
  * @param items - The items to display in the menu section.
  * @param title - The title for the menu section.
+ * @param sortOption - The sort option.
  * @returns The menu section component.
  */
 const MenuSection = ({
   items,
   diningHallId,
   title,
+  sortOption,
 }: {
   items: any[];
   diningHallId: string;
   title: string;
+  sortOption: string;
 }) => {
   const theme = useTheme();
   return (
@@ -32,8 +35,15 @@ const MenuSection = ({
             rowGap={minorScale(1)}
             borderBottom={`1px solid ${theme.colors.green300}`}
             paddingBottom={minorScale(1)}
+            marginBottom={minorScale(1)}
           >
-            <Text size={300} fontWeight={500} textAlign='left' className='my-auto'>
+            <Text
+              size={400}
+              fontWeight={600}
+              textAlign='left'
+              className='my-auto'
+              textTransform='uppercase'
+            >
               {title}
             </Text>
             <Pane />
@@ -45,7 +55,7 @@ const MenuSection = ({
           ) : (
             <Pane>
               {items.map((item) => (
-                <MenuItemRow key={item.id} item={item} diningHallId={diningHallId} />
+                <MenuItemRow key={item.id} item={item} diningHallId={diningHallId} sortOption={sortOption} />
               ))}
             </Pane>
           )}

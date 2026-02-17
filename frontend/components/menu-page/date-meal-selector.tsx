@@ -24,14 +24,6 @@ const isWeekend = (date: Date): boolean => {
   return day === 0 || day === 6;
 };
 
-/**
- * Date and meal selector component props.
- *
- * @param meal - The current meal.
- * @param setMeal - The function to set the meal.
- * @param selectedDate - The currently selected date.
- * @param setSelectedDate - The function to set the selected date.
- */
 interface DateMealSelectorProps {
   meal: Meal;
   setMeal: (meal: Meal) => void;
@@ -101,9 +93,7 @@ export default function DateMealSelector({
   // Render the date and meal selector.
   return (
     <Pane display='flex' gap={minorScale(2)} className='mx-2 flex-col flex justify-center my-4'>
-      {/* Date selector */}
       <Pane display='flex' alignItems='center' justifyContent='center' gap={minorScale(2)}>
-        {/* Render the button to go to the previous day. */}
         <Button
           background='white'
           border={`1px solid ${theme.colors.gray300}`}
@@ -116,15 +106,12 @@ export default function DateMealSelector({
           <ChevronLeftIcon size={20} />
         </Button>
 
-        {/* Render the formatted date for display. */}
         <Text
           className='text-2xl text-center w-[17rem] truncate font-semibold'
           color={theme.colors.green700}
         >
           {formattedDateForDisplay}
         </Text>
-
-        {/* Render the button to go to the next day. */}
         <Button
           background='white'
           border={`1px solid ${theme.colors.gray300}`}
@@ -138,7 +125,6 @@ export default function DateMealSelector({
         </Button>
       </Pane>
 
-      {/* Quick day selector */}
       <Pane display='flex' justifyContent='center' gap={majorScale(2)} marginBottom={minorScale(1)}>
         {next7Days.map((date) => {
           const isSelected = isSameDay(date, selectedDate);
@@ -157,7 +143,6 @@ export default function DateMealSelector({
         })}
       </Pane>
 
-      {/* Control which meal is displayed */}
       <Pane
         display='flex'
         borderRadius={999}
@@ -166,7 +151,6 @@ export default function DateMealSelector({
         boxShadow='0 2px 8px rgba(0,0,0,0.08)'
         position='relative'
       >
-        {/* Sliding indicator */}
         <Pane
           position='absolute'
           top={0}
@@ -177,12 +161,9 @@ export default function DateMealSelector({
           borderRadius={999}
           className='transition-all duration-300 ease-in-out'
         />
-        {/* Render each meal option. */}
         {meals.map((mealOption: string) => {
           const isSelectedMeal = meal === mealOption;
           const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
-
-          // Render the meal option.
           return (
             <Pane
               key={mealOption}

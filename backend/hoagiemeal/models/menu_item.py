@@ -44,7 +44,7 @@ class MenuItem(models.Model):
 
     class Meta:
         """Meta class for the MenuItem model."""
-        
+
         db_table = "menu_items"
         indexes = [
             models.Index(fields=["id"]),
