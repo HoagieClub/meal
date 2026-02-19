@@ -32,7 +32,7 @@ const CACHE_KEYS = {
 
 // Default values for each preference type
 const DEFAULT_PINNED_HALLS: DiningHall[] = [];
-const DEFAULT_DINING_HALLS: DiningHall[] = DINING_HALLS;
+const DEFAULT_DINING_HALLS: DiningHall[] = Array.from(DINING_HALLS);
 const DEFAULT_ALLERGENS: Allergen[] = [];
 
 /**

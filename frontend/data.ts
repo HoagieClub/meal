@@ -45,6 +45,11 @@ export const DINING_HALL_DISPLAY_NAMES: Record<DiningHall, string> = {
   'Yeh College & NCW': 'Yeh / NCW',
   'Center for Jewish Life': 'CJL',
   'Graduate College': 'Grad',
+  'Chemistry CaFe': 'Chemistry',
+  'EQuad Cafe': 'EQuad',
+  'Frist Gallery': 'Frist',
+  'Genomics Cafe': 'Genomics',
+  'Shultz Cafe': 'Shultz',
 };
 
 

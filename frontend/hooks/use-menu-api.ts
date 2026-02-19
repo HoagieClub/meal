@@ -199,9 +199,13 @@ export const useMenuApi = () => {
       fetchMetrics(itemIds),
       fetchRecommendations(itemIds),
     ]);
+    
+    const residentialLocations = Object.fromEntries(Object.entries(locations).filter(([key, value]: [string, any]) => value.category === 'residential'));
+    const retailLocations = Object.fromEntries(Object.entries(locations).filter(([key, value]: [string, any]) => value.category === 'retail'));
 
     return {
-      locations,
+      residentialLocations,
+      retailLocations,
       menus: allMenus,
       residentialMenus: menus.residential || {},
       retailMenus: menus.retail || {},

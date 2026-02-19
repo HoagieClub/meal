@@ -25,7 +25,7 @@ import matheyBanner from '@/public/images/banners/rockybanner.png';
 import whitmanBanner from '@/public/images/banners/whitmanbutlerbanner.png';
 import yehBanner from '@/public/images/banners/yehbanner.png';
 import gradBanner from '@/public/images/banners/gradbanner.png';
-import { Meal, Allergen, DiningHall } from '@/types/types';
+import { Meal, DiningHall } from '@/types/types';
 import { Theme } from 'evergreen-ui';
 import { StaticImageData } from 'next/image';
 
@@ -33,48 +33,6 @@ import { StaticImageData } from 'next/image';
 export const HALL_EMOJI_STYLE = (theme: Theme) => ({
   bg: theme.colors.gray100,
   color: theme.colors.gray700,
-});
-
-// Allergen style map that maps from allergen type to their corresponding style.
-export const ALLERGEN_STYLE_MAP = (theme: Theme): Record<Allergen, any> => ({
-  Peanut: {
-    bg: theme.colors.yellow100,
-    color: theme.colors.yellow900,
-  },
-  Coconut: {
-    bg: theme.colors.orange100,
-    color: theme.colors.orange900,
-  },
-  Eggs: {
-    bg: theme.colors.yellow100,
-    color: theme.colors.yellow900,
-  },
-  Milk: {
-    bg: theme.colors.blue100,
-    color: theme.colors.blue900,
-  },
-  Wheat: {
-    bg: theme.colors.yellow100,
-    color: theme.colors.yellow900,
-  },
-  Soybeans: {
-    bg: theme.colors.green100,
-    color: theme.colors.green900,
-  },
-  Crustacean: { bg: theme.colors.red100, color: theme.colors.red900 },
-  Alcohol: {
-    bg: theme.colors.purple100,
-    color: theme.colors.purple900,
-  },
-  Fish: { bg: theme.colors.blue100, color: theme.colors.blue900 },
-  Sesame: {
-    bg: theme.colors.orange100,
-    color: theme.colors.orange900,
-  },
-  Gluten: {
-    bg: theme.colors.orange100,
-    color: theme.colors.orange900,
-  },
 });
 
 // Hall icon map that maps from dining hall type to their corresponding icon image.

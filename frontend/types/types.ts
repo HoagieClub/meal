@@ -14,11 +14,25 @@ export const DINING_HALLS = [
   'Yeh College & NCW',
   'Center for Jewish Life',
   'Graduate College',
+  'Chemistry CaFe',
+  'EQuad Cafe',
+  'Frist Gallery',
+  'Genomics Cafe',
+  'Shultz Cafe'
 ] as const;
 export type DiningHall = (typeof DINING_HALLS)[number];
 
+export const RETAIL_LOCATIONS = [
+  'Chemistry CaFe',
+  'EQuad Cafe',
+  'Frist Gallery',
+  'Genomics Cafe',
+  'Shultz Cafe'
+] as const;
+export type RetailLocation = (typeof RETAIL_LOCATIONS)[number];
+
+export const RESIDENTIAL_LOCATIONS = DINING_HALLS.filter((location: DiningHall) => !RETAIL_LOCATIONS.includes(location as RetailLocation));
+export type ResidentialLocation = (typeof RESIDENTIAL_LOCATIONS)[number];
+
 export const MENU_SORT_OPTIONS = ['Category', 'Most Liked'] as const;
 export type MenuSortOption = (typeof MENU_SORT_OPTIONS)[number];
-
-export const MEAL_ICONS = ['🍂', '🥜', '🥚', '🥛', '🌱', '🥜'] as const;
-export type MealIcon = (typeof MEAL_ICONS)[number];

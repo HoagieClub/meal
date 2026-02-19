@@ -19,11 +19,16 @@ import {
   ALLERGENS,
   MenuSortOption,
   MENU_SORT_OPTIONS,
+  RETAIL_LOCATIONS,
+  RetailLocation,
+  RESIDENTIAL_LOCATIONS,
+  ResidentialLocation,
 } from '@/types/types';
 import DiningHallRow from './dining-hall-row';
 import AllergenRow from './allergen-row';
 
 interface FilterSidebarProps {
+  locationType: 'residential' | 'retail';
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   sortOption: any;
@@ -43,6 +48,7 @@ interface FilterSidebarProps {
  * @returns The filter sidebar component
  */
 export default function FilterSidebar({
+  locationType,
   searchTerm,
   setSearchTerm,
   sortOption,
@@ -176,7 +182,6 @@ export default function FilterSidebar({
               className={`transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`}
             />
           </Pane>
-
           <Pane
             borderBottom={filtersOpen ? `1px solid ${theme.colors.gray200}` : undefined}
             marginBottom={minorScale(2)}
@@ -186,29 +191,48 @@ export default function FilterSidebar({
           <div className='filter-collapse-wrapper' data-state={filtersOpen ? 'open' : 'closed'}>
             <Pane className='filter-collapse-inner'>
               {/* Control which dining halls are displayed */}
-              {/* <Text
+              <Text
                 size={300}
                 fontWeight={600}
                 color={theme.colors.gray800}
                 marginBottom={minorScale(1)}
               >
-                Dining Halls
+                {locationType === 'residential' ? 'Dining Halls' : 'Retail Locations'}
               </Text>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                {DINING_HALLS.map((diningHall: DiningHall) => (
-                  <DiningHallRow
-                    key={diningHall}
-                    diningHall={diningHall}
-                    checked={diningHalls.includes(diningHall)}
-                    onChange={() => toggleDiningHall(diningHall)}
-                  />
-                ))}
+                {DINING_HALLS.map((diningHall: DiningHall) => {
+                  if (
+                    locationType === 'residential' &&
+                    RESIDENTIAL_LOCATIONS.includes(diningHall as ResidentialLocation)
+                  ) {
+                    return (
+                      <DiningHallRow
+                        key={diningHall}
+                        diningHall={diningHall}
+                        checked={diningHalls.includes(diningHall)}
+                        onChange={() => toggleDiningHall(diningHall)}
+                      />
+                    );
+                  } else if (
+                    locationType === 'retail' &&
+                    RETAIL_LOCATIONS.includes(diningHall as RetailLocation)
+                  ) {
+                    return (
+                      <DiningHallRow
+                        key={diningHall}
+                        diningHall={diningHall}
+                        checked={diningHalls.includes(diningHall)}
+                        onChange={() => toggleDiningHall(diningHall)}
+                      />
+                    );
+                  }
+                  return null;
+                })}
               </Pane>
-
               <Pane
                 borderBottom={`1px solid ${theme.colors.gray200}`}
                 marginBottom={minorScale(2)}
-              /> */}
+              />
 
               {/* Control which allergens are not displayed */}
               <Text size={300} fontWeight={600} color={theme.colors.gray800}>

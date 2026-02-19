@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { DINING_HALL_DISPLAY_NAMES } from '@/data';
 
 /** Residential: locationId -> meal (Breakfast/Lunch/Dinner) -> category -> itemIds */
 function buildResidentialLocationMenuShape(
@@ -135,8 +136,8 @@ function filterMenuItems(
 
   return menu.filter((menuItem) => {
     if (hasAllergenFilter) {
-      const itemAllergens = (menuItem.allergens || []).map((a: any) => a.toLowerCase().trim());
-      const hasBlockedAllergen = itemAllergens.some((a: any) => allergensLower.includes(a));
+      const ingredientsAllergensText = `${menuItem.nutrition?.ingredients} ${menuItem.nutrition?.allergens}`.toLowerCase();
+      const hasBlockedAllergen = allergensLower.some((a: any) => ingredientsAllergensText.includes(a));
       if (hasBlockedAllergen) {
         return false;
       }
@@ -157,10 +158,11 @@ function filterLocations(
   locations: any[],
   appliedDiningHalls: string[]
 ) {
+  console.log(appliedDiningHalls)
   if (!appliedDiningHalls || appliedDiningHalls.length === 0) {
     return locations;
   }
-  const diningHallsLower = appliedDiningHalls.map((h: any) => h.toLowerCase().trim());
+  const diningHallsLower = appliedDiningHalls.map((h: any) => String(h).toLowerCase().trim());
   return locations.filter((location) => {
     const locationNameLower = (location.name || '').toLowerCase().trim();
     return diningHallsLower.includes(locationNameLower);
@@ -271,8 +273,8 @@ export const useBuildResidentialDisplayData = ({
       })
       .filter((location) => location !== null) as any[];
 
-    // const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
-    const sortedLocations = sortLocations(filteredAndSorted, pinnedHalls);
+    const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
+    const sortedLocations = sortLocations(filteredLocations, pinnedHalls);
     return sortedLocations;
   }, [
     locations,
@@ -331,8 +333,8 @@ export const useBuildRetailDisplayData = ({
       })
       .filter((location) => location !== null) as any[];
 
-    // const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
-    const sortedLocations = sortLocations(filteredAndSorted, pinnedHalls);
+    const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
+    const sortedLocations = sortLocations(filteredLocations, pinnedHalls);
     return sortedLocations;
   }, [
     locations,

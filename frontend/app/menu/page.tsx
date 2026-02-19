@@ -28,7 +28,10 @@ import { MEAL_COLOR_MAP } from '@/styles';
 import { Meal, DiningHall } from '@/types/types';
 import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
 import { useMenuApi } from '@/hooks/use-menu-api';
-import { useBuildResidentialDisplayData, useBuildRetailDisplayData } from '@/hooks/use-build-display-data';
+import {
+  useBuildResidentialDisplayData,
+  useBuildRetailDisplayData,
+} from '@/hooks/use-build-display-data';
 
 const getToday = (): Date => {
   const today = new Date();
@@ -68,7 +71,8 @@ export default function MenuPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(getToday());
   const dateKey = getDateKey(selectedDate);
   const currentMeal = getCurrentMeal();
-  const [locations, setLocations] = useState<any>({});
+  const [residentialLocations, setResidentialLocations] = useState<any>({});
+  const [retailLocations, setRetailLocations] = useState<any>({});
   const [residentialMenus, setResidentialMenus] = useState<any>({});
   const [retailMenus, setRetailMenus] = useState<any>({});
   const [menuItems, setMenuItems] = useState<any>({});
@@ -83,7 +87,8 @@ export default function MenuPage() {
       setLoading(true);
       try {
         const result = await fetchAll(dateKey);
-        setLocations(result.locations || {});
+        setResidentialLocations(result.residentialLocations || {});
+        setRetailLocations(result.retailLocations || {});
         setResidentialMenus(result.residentialMenus || {});
         setRetailMenus(result.retailMenus || {});
         setMenuItems(result.menuItems || {});
@@ -116,7 +121,7 @@ export default function MenuPage() {
   const stackMenuHeader = useMediaQuery('(max-width: 880px)');
 
   const residentialDisplayData = useBuildResidentialDisplayData({
-    locations,
+    locations: residentialLocations,
     residentialMenus,
     menuItems,
     interactions,
@@ -131,7 +136,7 @@ export default function MenuPage() {
   });
 
   const retailDisplayData = useBuildRetailDisplayData({
-    locations,
+    locations: retailLocations,
     retailMenus,
     menuItems,
     interactions,
@@ -144,7 +149,8 @@ export default function MenuPage() {
     sortOption,
   });
 
-  const displayMenusForLocations = locationType === 'retail' ? retailDisplayData : residentialDisplayData;
+  const displayMenusForLocations =
+    locationType === 'retail' ? retailDisplayData : residentialDisplayData;
 
   return (
     <NutritionAccordionProvider>
@@ -155,6 +161,7 @@ export default function MenuPage() {
       >
         {!hideFilterSidebar && (
           <FilterSidebar
+            locationType={locationType}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             sortOption={sortOption}
