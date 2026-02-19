@@ -178,7 +178,7 @@ export default function MenuPage() {
         <Pane
           flex={1}
           className={`overflow-x-hidden h-full no-scrollbar`}
-          paddingRight={hideSidebar ? 0 : majorScale(3)}
+          paddingRight={majorScale(3)}
           paddingLeft={hideFilterSidebar ? majorScale(3) : 0}
         >
           <Pane>
