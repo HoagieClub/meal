@@ -30,7 +30,6 @@ interface DateMealSelectorProps {
   selectedDate: Date;
   setSelectedDate: (date: Date) => void;
   locationType?: string;
-  setLocationType?: any;
 }
 
 // Generate the next 7 days starting from today
@@ -70,7 +69,6 @@ export default function DateMealSelector({
   selectedDate,
   setSelectedDate,
   locationType = 'residential',
-  setLocationType,
 }: DateMealSelectorProps) {
   const theme = useTheme();
   const formattedDateForDisplay = formatDateForDisplay(selectedDate);
@@ -150,48 +148,6 @@ export default function DateMealSelector({
             >
               {formatDayAbbrev(date)}
             </Text>
-          );
-        })}
-      </Pane>
-
-      {/* Residential / Retail tab */}
-      <Pane
-        display='flex'
-        borderRadius={999}
-        background={theme.colors.green25}
-        overflow='hidden'
-        boxShadow='0 2px 8px rgba(0,0,0,0.08)'
-        position='relative'
-        marginBottom={majorScale(1)}
-      >
-        <Pane
-          position='absolute'
-          top={0}
-          bottom={0}
-          left={`${(locationType === 'retail' ? 1 : 0) * 50}%`}
-          width='50%'
-          background={theme.colors.green700}
-          borderRadius={999}
-          className='transition-all duration-300 ease-in-out'
-        />
-        {(['residential', 'retail'] as const).map((type) => {
-          const isSelected = locationType === type;
-          const label = type.charAt(0).toUpperCase() + type.slice(1);
-          const textColor = isSelected ? 'white' : theme.colors.green800;
-          return (
-            <Pane
-              key={type}
-              flex={1}
-              textAlign='center'
-              paddingY={minorScale(1)}
-              cursor={setLocationType ? 'pointer' : 'default'}
-              color={textColor}
-              className='text-xs px-4 transition-colors duration-300 relative z-10'
-              fontWeight={300}
-              onClick={() => setLocationType?.(type)}
-            >
-              {label}
-            </Pane>
           );
         })}
       </Pane>

@@ -20,6 +20,7 @@ import DiningHallCard from '@/components/dining-hall-card/dining-hall-card';
 import SkeletonDiningHallCard from '@/components/dining-hall-card/dining-hall-card-skeleton';
 import FilterSidebar from '@/components/filter-sidebar/filter-sidebar';
 import DateMealSelector from '@/components/menu-page/date-meal-selector';
+import LocationTypeToggle from '@/components/menu-page/location-type-toggle';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { MenuSortOption } from '@/types/types';
@@ -119,6 +120,7 @@ export default function MenuPage() {
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeader = useMediaQuery('(max-width: 880px)');
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
 
   const residentialDisplayData = useBuildResidentialDisplayData({
     locations: residentialLocations,
@@ -187,6 +189,7 @@ export default function MenuPage() {
               alignItems='center'
               justifyContent='space-between'
               marginY={majorScale(1)}
+              minHeight={160}
               className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
             >
               <Pane width={240}>
@@ -207,7 +210,6 @@ export default function MenuPage() {
                 selectedDate={selectedDate}
                 setSelectedDate={setSelectedDate}
                 locationType={locationType}
-                setLocationType={setLocationType}
               />
               <Pane
                 display='flex'
@@ -216,7 +218,13 @@ export default function MenuPage() {
                 width={240}
                 alignItems='flex-end'
                 justifyContent='flex-start'
-              ></Pane>
+              >
+                <LocationTypeToggle
+                  locationType={locationType}
+                  setLocationType={setLocationType}
+                  vertical={isDesktop}
+                />
+              </Pane>
             </Pane>
 
             {hideFilterSidebar && (
