@@ -11,7 +11,9 @@ import {
   UndoIcon,
   ChevronDownIcon,
   Select,
+  Switch,
 } from 'evergreen-ui';
+import { useNutritionAccordion } from '@/contexts/nutrition-accordion-context';
 import {
   DiningHall,
   Allergen,
@@ -58,15 +60,16 @@ export default function FilterSidebar({
 }: FilterSidebarProps) {
   const theme = useTheme();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const { hideAllergenTags, setHideAllergenTags } = useNutritionAccordion();
 
   const isSidebar = variant === 'sidebar';
   const containerProps = isSidebar
     ? {
-        flexDirection: 'column' as const,
-        width: 280,
-        padding: majorScale(3),
-        className: 'max-w-[100%] hidden sm:inline z-20',
-      }
+      flexDirection: 'column' as const,
+      width: 280,
+      padding: majorScale(3),
+      className: 'max-w-[100%] hidden sm:inline z-20',
+    }
     : {};
   const innerContainerProps = {
     display: 'flex' as const,
@@ -213,9 +216,25 @@ export default function FilterSidebar({
               />
 
               {/* Control which allergens are not displayed */}
-              <Text size={300} fontWeight={600} color={theme.colors.gray800}>
-                Allergen Tags
-              </Text>
+              <Pane
+                display='flex'
+                alignItems='center'
+                justifyContent='space-between'
+                marginBottom={minorScale(1)}
+              >
+                <Text size={300} fontWeight={600} color={theme.colors.gray800}>
+                  Allergen Tags
+                </Text>
+                <Switch
+                  checked={!hideAllergenTags}
+                  className="[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setHideAllergenTags(!e.target.checked)
+                  }
+                  height={20}
+                />
+              </Pane>
+              <span className="text-xs ub-fnt-sze_14px ub-f-wght_400 ub-ln-ht_20px ub-ltr-spc_-0-05px ub-fnt-fam_rbgzyu ub-color_808080 ub-mb_4px ub-box-szg_border-box">Exclude items containing:</span>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
                 {ALLERGENS.map((allergen: Allergen) => (
                   <AllergenRow

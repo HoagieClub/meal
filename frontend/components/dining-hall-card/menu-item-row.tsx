@@ -31,7 +31,7 @@ export default function MenuItemRow({
   diningHallId: string;
   sortOption: string;
 }) {
-  const { expandedItemId, setExpandedItemId } = useNutritionAccordion();
+  const { expandedItemId, setExpandedItemId, hideAllergenTags } = useNutritionAccordion();
   const menuItemId = item?.id;
   if (!menuItemId) {
     console.warn('MenuItemRow: item missing id', item);
@@ -68,7 +68,7 @@ export default function MenuItemRow({
             onClick={() => setExpandedItemId(isExpanded ? '' : itemValue)}
           >
             <span style={{ paddingRight: minorScale(1) }}>{item.name}</span>{' '}
-            {foundAllergens.map((allergen: Allergen) => (
+            {!hideAllergenTags && foundAllergens.map((allergen: Allergen) => (
               <img
                 key={allergen}
                 src={ALLERGEN_ICON_MAP[allergen]}
