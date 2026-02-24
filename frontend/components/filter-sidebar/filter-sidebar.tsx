@@ -15,15 +15,11 @@ import {
 import {
   DiningHall,
   Allergen,
-  DINING_HALLS,
   ALLERGENS,
   MenuSortOption,
   MENU_SORT_OPTIONS,
-  RETAIL_LOCATIONS,
-  RetailLocation,
-  RESIDENTIAL_LOCATIONS,
-  ResidentialLocation,
 } from '@/types/types';
+import { RESIDENTIAL_HALL_ORDER, RETAIL_LOCATION_ORDER } from '@/ordering';
 import DiningHallRow from './dining-hall-row';
 import AllergenRow from './allergen-row';
 
@@ -200,34 +196,16 @@ export default function FilterSidebar({
                 {locationType === 'residential' ? 'Dining Halls' : 'Retail Locations'}
               </Text>
               <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                {DINING_HALLS.map((diningHall: DiningHall) => {
-                  if (
-                    locationType === 'residential' &&
-                    RESIDENTIAL_LOCATIONS.includes(diningHall as ResidentialLocation)
-                  ) {
-                    return (
-                      <DiningHallRow
-                        key={diningHall}
-                        diningHall={diningHall}
-                        checked={diningHalls.includes(diningHall)}
-                        onChange={() => toggleDiningHall(diningHall)}
-                      />
-                    );
-                  } else if (
-                    locationType === 'retail' &&
-                    RETAIL_LOCATIONS.includes(diningHall as RetailLocation)
-                  ) {
-                    return (
-                      <DiningHallRow
-                        key={diningHall}
-                        diningHall={diningHall}
-                        checked={diningHalls.includes(diningHall)}
-                        onChange={() => toggleDiningHall(diningHall)}
-                      />
-                    );
-                  }
-                  return null;
-                })}
+                {(locationType === 'residential' ? RESIDENTIAL_HALL_ORDER : RETAIL_LOCATION_ORDER).map(
+                  (diningHall: DiningHall) => (
+                    <DiningHallRow
+                      key={diningHall}
+                      diningHall={diningHall}
+                      checked={diningHalls.includes(diningHall)}
+                      onChange={() => toggleDiningHall(diningHall)}
+                    />
+                  )
+                )}
               </Pane>
               <Pane
                 borderBottom={`1px solid ${theme.colors.gray200}`}

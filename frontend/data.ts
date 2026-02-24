@@ -16,10 +16,10 @@ import { Allergen, DiningHall } from '@/types/types';
 
 // Meal ranges that maps from meal type to their corresponding range.
 export const MEAL_RANGES: Record<string, string> = {
-  Breakfast: '7:30 AM – 10:30 AM',
-  Lunch: '11:30 AM – 2:00 PM',
-  Dinner: '5:00 PM – 8:00 PM',
-  Brunch: '10:00 AM – 2:00 PM',
+  Breakfast: '7:30 AM - 10:30 AM',
+  Lunch: '11:30 AM - 2:00 PM',
+  Dinner: '5:00 PM - 8:00 PM',
+  Brunch: '10:00 AM - 2:00 PM',
 };
 
 // Icon path map for allergens.

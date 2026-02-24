@@ -5,6 +5,7 @@ import React from 'react';
 import MenuSection from './menu-section';
 import { HALL_BANNER_MAP } from '@/styles';
 import { DINING_HALL_DISPLAY_NAMES } from '@/data';
+import { SECTION_TITLE_ORDER, canonicalIndex } from '@/ordering';
 
 interface DiningHallCardProps {
   diningHall: any;
@@ -26,7 +27,12 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption }: Dinin
   const menuItems = diningHall.menu ?? [];
   const categories: string[] =
     sortOption === 'Category'
-      ? ([...new Set(menuItems.map((item: any) => item.category || 'Other'))] as string[])
+      ? ([...new Set(menuItems.map((item: any) => item.category || 'Other'))] as string[]).sort(
+          (a, b) => {
+            const diff = canonicalIndex(a, SECTION_TITLE_ORDER) - canonicalIndex(b, SECTION_TITLE_ORDER);
+            return diff !== 0 ? diff : a.localeCompare(b);
+          }
+        )
       : [];
 
   return (

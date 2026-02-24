@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { canonicalIndex, RESIDENTIAL_HALL_ORDER, RETAIL_LOCATION_ORDER } from '@/ordering';
 
 /** Residential: locationId -> meal (Breakfast/Lunch/Dinner) -> category -> itemIds */
 function buildResidentialLocationMenuShape(
@@ -97,7 +98,7 @@ function buildRetailLocationMenuShape(
         for (const categoryKey in areaVal) {
           const itemIds = areaVal[categoryKey];
           if (!Array.isArray(itemIds)) continue;
-          const categoryLabel = `${areaKey} - ${categoryKey}`;
+          const categoryLabel = categoryKey;
           for (const menuItemId of itemIds) {
             const menuItem = menuItems[menuItemId];
             if (!menuItem || !menuItem.name) continue;
@@ -215,7 +216,7 @@ function sortMenuItems(menu: any[], sortOption: string, recommendations: any) {
   return menuCopy;
 }
 
-function sortLocations(locations: any[], pinnedHalls: string[]) {
+function sortLocations(locations: any[], pinnedHalls: string[], order: readonly string[]) {
   const locationsCopy = [...locations];
 
   locationsCopy.sort((a: any, b: any) => {
@@ -225,6 +226,9 @@ function sortLocations(locations: any[], pinnedHalls: string[]) {
     const bPinned = pinnedHalls && pinnedHalls.length > 0 && pinnedHalls.includes(bName);
     if (aPinned && !bPinned) return -1;
     if (!aPinned && bPinned) return 1;
+    const aIdx = canonicalIndex(aName, order);
+    const bIdx = canonicalIndex(bName, order);
+    if (aIdx !== bIdx) return aIdx - bIdx;
     return aName.localeCompare(bName, undefined, { sensitivity: 'base' });
   });
 
@@ -273,7 +277,7 @@ export const useBuildResidentialDisplayData = ({
       .filter((location) => location !== null) as any[];
 
     const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
-    const sortedLocations = sortLocations(filteredLocations, pinnedHalls);
+    const sortedLocations = sortLocations(filteredLocations, pinnedHalls, RESIDENTIAL_HALL_ORDER);
     return sortedLocations;
   }, [
     locations,
@@ -333,7 +337,7 @@ export const useBuildRetailDisplayData = ({
       .filter((location) => location !== null) as any[];
 
     const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
-    const sortedLocations = sortLocations(filteredLocations, pinnedHalls);
+    const sortedLocations = sortLocations(filteredLocations, pinnedHalls, RETAIL_LOCATION_ORDER);
     return sortedLocations;
   }, [
     locations,

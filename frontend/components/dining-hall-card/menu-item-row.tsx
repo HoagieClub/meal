@@ -56,14 +56,13 @@ export default function MenuItemRow({
       <AccordionItem value={itemValue} className='border-none'>
         <Pane
           marginX={majorScale(1)}
-          display='grid'
-          gridTemplateColumns='auto auto'
-          rowGap={minorScale(1)}
-          columnGap={minorScale(0)}
+          display='flex'
+          flexDirection='row'
           cursor='pointer'
           alignItems='start'
         >
           <Pane
+            flex={1}
             marginY={sortOption === 'Category' ? minorScale(1) : majorScale(1)}
             style={{ fontSize: 14, fontWeight: 400, color: 'black', lineHeight: 1.2 }}
             onClick={() => setExpandedItemId(isExpanded ? '' : itemValue)}
