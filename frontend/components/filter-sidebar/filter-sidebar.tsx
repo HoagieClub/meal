@@ -10,6 +10,7 @@ import {
   SearchInput,
   UndoIcon,
   ChevronDownIcon,
+  ChevronLeftIcon,
   Select,
   Switch,
 } from 'evergreen-ui';
@@ -37,6 +38,7 @@ interface FilterSidebarProps {
   toggleAllergen: (allergen: Allergen) => void;
   clearPreferences: () => void;
   variant?: 'sidebar' | 'mobile';
+  onClose?: () => void;
 }
 
 /**
@@ -57,18 +59,19 @@ export default function FilterSidebar({
   toggleAllergen,
   clearPreferences,
   variant = 'sidebar',
+  onClose,
 }: FilterSidebarProps) {
   const theme = useTheme();
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const { hideAllergenTags, setHideAllergenTags } = useNutritionAccordion();
 
   const isSidebar = variant === 'sidebar';
+  const [filtersOpen, setFiltersOpen] = useState(isSidebar);
   const containerProps = isSidebar
     ? {
       flexDirection: 'column' as const,
       width: 280,
       padding: majorScale(3),
-      className: 'max-w-[100%] hidden sm:inline z-20',
+      className: 'max-w-[100%] z-20',
     }
     : {};
   const innerContainerProps = {
@@ -96,23 +99,38 @@ export default function FilterSidebar({
           borderBottom={`1px solid ${theme.colors.gray200}`}
           className='relative flex flex-col p-4 border-radius-12'
         >
-          {/* Reset Filters button */}
-          <Pane
-            display='flex'
-            alignItems='center'
-            cursor='pointer'
-            onClick={() => {
-              clearPreferences();
-              setSearchTerm('');
-            }}
-            background={theme.colors.gray100}
-            marginBottom={minorScale(1)}
-            className='rounded-sm w-fit py-1 px-2 -ml-2 -mt-2 space-x-1 transition-colors duration-200 hover:bg-gray-200'
-          >
-            <UndoIcon size={14} color={theme.colors.gray700} />
-            <Text marginLeft={minorScale(1)} size={300} color={theme.colors.gray700}>
-              Reset
-            </Text>
+          {/* Reset Filters button + Hide button row */}
+          <Pane display='flex' alignItems='center' justifyContent='space-between' marginBottom={minorScale(1)}>
+            <Pane
+              display='flex'
+              alignItems='center'
+              cursor='pointer'
+              onClick={() => {
+                clearPreferences();
+                setSearchTerm('');
+              }}
+              background={theme.colors.gray100}
+              className='rounded-sm w-fit py-1 px-2 -ml-2 -mt-2 space-x-1 transition-colors duration-200 hover:bg-gray-200'
+            >
+              <UndoIcon size={14} color={theme.colors.gray700} />
+              <Text marginLeft={minorScale(1)} size={300} color={theme.colors.gray700}>
+                Reset
+              </Text>
+            </Pane>
+            {isSidebar && onClose && (
+              <Pane
+                display='flex'
+                alignItems='center'
+                cursor='pointer'
+                onClick={onClose}
+                className='rounded-sm py-1 px-2 -mr-2 -mt-2 space-x-1 transition-colors duration-200 hover:bg-gray-200'
+              >
+                <ChevronLeftIcon size={14} color={theme.colors.gray600} />
+                <Text marginLeft={minorScale(1)} size={300} color={theme.colors.gray600}>
+                  Hide
+                </Text>
+              </Pane>
+            )}
           </Pane>
           <Pane borderBottom={`1px solid ${theme.colors.gray200}`} marginBottom={minorScale(2)} />
 

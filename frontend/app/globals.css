@@ -191,6 +191,22 @@ body {
   animation: accordion-up 200ms ease-out;
 }
 
+/* Meal title entrance animation */
+@keyframes meal-title-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.meal-title-enter {
+  animation: meal-title-enter 200ms ease-out both;
+}
+
 /* Filter bar collapse/expand animation using CSS grid */
 .filter-collapse-wrapper {
   display: grid;
@@ -208,4 +224,10 @@ body {
 .filter-collapse-inner {
   overflow: hidden;
   min-height: 0;
+}
+
+/* Filter sidebar slide-in/out animation */
+.sidebar-slide-wrapper {
+  flex-shrink: 0;
+  transition: width 250ms ease, min-width 250ms ease, transform 250ms ease;
 }

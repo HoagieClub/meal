@@ -31,7 +31,7 @@ export default function LocationTypeToggle({ locationType, setLocationType, vert
 
   return (
     <div
-      className={`flex ${vertical ? 'flex-col rounded-[20px]' : 'rounded-full'} relative overflow-hidden bg-[#B3E9CB]`}
+      className={`flex ${vertical ? 'flex-col rounded-[20px]' : 'rounded-full'} relative overflow-hidden bg-[#a3d4b8]`}
     >
       <div
         className='absolute rounded-full transition-transform ease-in-out'

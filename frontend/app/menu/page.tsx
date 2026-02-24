@@ -15,7 +15,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon } from 'evergreen-ui';
+import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon, FilterListIcon } from 'evergreen-ui';
 import DiningHallCard from '@/components/dining-hall-card/dining-hall-card';
 import SkeletonDiningHallCard from '@/components/dining-hall-card/dining-hall-card-skeleton';
 import FilterSidebar from '@/components/filter-sidebar/filter-sidebar';
@@ -117,6 +117,7 @@ export default function MenuPage() {
   const [locationType, setLocationType] = useState<'residential' | 'retail'>('residential');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<MenuSortOption>('Category');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeader = useMediaQuery('(max-width: 880px)');
@@ -162,28 +163,38 @@ export default function MenuPage() {
         background={MEAL_COLOR_MAP(theme)[meal]}
       >
         {!hideFilterSidebar && (
-          <FilterSidebar
-            locationType={locationType}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            sortOption={sortOption}
-            setSortOption={setSortOption}
-            diningHalls={diningHalls}
-            allergens={allergens}
-            toggleDiningHall={toggleDiningHall}
-            toggleAllergen={toggleAllergen}
-            clearPreferences={clearPreferences}
-            variant='sidebar'
-          />
+          <div
+            className='sidebar-slide-wrapper'
+            style={{
+              width: sidebarOpen ? 280 : 0,
+              minWidth: sidebarOpen ? 280 : 0,
+              transform: `translateX(${sidebarOpen ? 0 : -280}px)`,
+            }}
+          >
+            <FilterSidebar
+              locationType={locationType}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              sortOption={sortOption}
+              setSortOption={setSortOption}
+              diningHalls={diningHalls}
+              allergens={allergens}
+              toggleDiningHall={toggleDiningHall}
+              toggleAllergen={toggleAllergen}
+              clearPreferences={clearPreferences}
+              variant='sidebar'
+              onClose={() => setSidebarOpen(false)}
+            />
+          </div>
         )}
 
         <Pane
           flex={1}
           className={`overflow-x-hidden h-full no-scrollbar`}
           paddingRight={majorScale(3)}
-          paddingLeft={hideFilterSidebar ? majorScale(3) : 0}
+          paddingLeft={(hideFilterSidebar || !sidebarOpen) ? majorScale(3) : 0}
         >
-          <Pane>
+          <Pane maxWidth={1200} marginX='auto' width='100%'>
             <Pane
               display='flex'
               alignItems='center'
@@ -192,17 +203,63 @@ export default function MenuPage() {
               minHeight={160}
               className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
             >
-              <Pane width={240}>
-                <Heading className='text-5xl' color={theme.colors.green700} fontWeight={900}>
-                  {locationType === 'retail'
+              <Pane width={240} className='flex flex-col items-start justify-start'>
+                {(() => {
+                  const displayedMeal = locationType === 'retail'
                     ? 'Retail'
                     : meal === 'Lunch' && isWeekend(selectedDate)
                       ? 'Brunch'
-                      : meal}
-                </Heading>
-                <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
-                  {locationType === 'retail' ? 'All day' : MEAL_RANGES[meal]}
-                </Text>
+                      : meal;
+                  return (
+                    <>
+                      <Heading
+                        key={displayedMeal}
+                        className='text-5xl meal-title-enter'
+                        color={theme.colors.green700}
+                        fontWeight={900}
+                      >
+                        {displayedMeal}
+                      </Heading>
+                      <Text
+                        key={`hours-${displayedMeal}`}
+                        className='text-xl meal-title-enter'
+                        color={theme.colors.green600}
+                        fontWeight={600}
+                        style={{ animationDelay: '30ms' }}
+                      >
+                        {locationType === 'retail' ? 'All day' : MEAL_RANGES[meal]}
+                      </Text>
+                    </>
+                  );
+                })()}
+                {!hideFilterSidebar && (
+                  <Pane
+                    display='inline-flex'
+                    alignItems='center'
+                    gap={minorScale(2)}
+                    cursor={sidebarOpen ? 'default' : 'pointer'}
+                    onClick={sidebarOpen ? undefined : () => setSidebarOpen(true)}
+                    borderRadius={999}
+                    className='select-none bg-[#A2D4B8]/50'
+                    style={{
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      opacity: sidebarOpen ? 0 : 1,
+                      maxWidth: sidebarOpen ? 0 : 200,
+                      height: sidebarOpen ? 0 : 28,
+                      marginTop: sidebarOpen ? 0 : 12,
+                      paddingLeft: sidebarOpen ? 0 : 12,
+                      paddingRight: sidebarOpen ? 0 : 12,
+                      pointerEvents: sidebarOpen ? 'none' : 'auto',
+                      transition: 'max-width 250ms ease, padding 250ms ease, height 250ms ease, margin-top 250ms ease, opacity 150ms ease',
+                    }}
+                  >
+                    <FilterListIcon size={12} className="text-[#156534]" />
+                    <Text fontSize={12} className="text-[#156534]" fontWeight={600}>
+                      Search & Filter
+                    </Text>
+                  </Pane>
+                )}
               </Pane>
               <DateMealSelector
                 meal={meal}
