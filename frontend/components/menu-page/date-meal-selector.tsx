@@ -112,7 +112,7 @@ export default function DateMealSelector({
           appearance='minimal'
           onClick={goToPreviousDay}
           transition='all 0.2s'
-          className='p-1 pr-[4px] hover:pr-[9px] pl-[1px] active:scale-90'
+          className='p-1 pl-[1px] hover:scale-110 active:scale-100'
         >
           <ChevronLeftIcon size={20} />
         </Button>
@@ -130,7 +130,7 @@ export default function DateMealSelector({
           appearance='minimal'
           onClick={goToNextDay}
           transition='all 0.2s'
-          className='p-1 pl-[4px] hover:pl-[9px] pr-[1px] active:scale-90'
+          className='p-1 pr-[1px] hover:scale-110 active:scale-100'
         >
           <ChevronRightIcon size={20} />
         </Button>

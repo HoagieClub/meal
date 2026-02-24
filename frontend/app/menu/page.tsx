@@ -239,7 +239,6 @@ export default function MenuPage() {
                 display='grid'
                 overflowY='auto'
                 paddingBottom={majorScale(6)}
-                paddingRight={majorScale(3)}
                 gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
                 gap={majorScale(2)}
                 className='h-full no-scrollbar'
@@ -277,7 +276,6 @@ export default function MenuPage() {
                 display='grid'
                 overflowY='auto'
                 paddingBottom={majorScale(6)}
-                paddingRight={majorScale(3)}
                 gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
                 gap={majorScale(2)}
                 className='h-full no-scrollbar'

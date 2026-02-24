@@ -64,6 +64,7 @@ export default function MenuItemRow({
           <Pane
             marginY={sortOption === 'Category' ? minorScale(1) : majorScale(1)}
             style={{ fontSize: 14, fontWeight: 400, color: 'black', lineHeight: 1.2 }}
+            onClick={() => setExpandedItemId(isExpanded ? '' : itemValue)}
           >
             <span style={{ paddingRight: minorScale(1) }}>{item.name}</span>{' '}
             {foundAllergens.map((allergen: Allergen) => (

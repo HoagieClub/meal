@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { DINING_HALL_DISPLAY_NAMES } from '@/data';
 
 /** Residential: locationId -> meal (Breakfast/Lunch/Dinner) -> category -> itemIds */
 function buildResidentialLocationMenuShape(
