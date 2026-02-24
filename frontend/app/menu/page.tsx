@@ -120,8 +120,9 @@ export default function MenuPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
-  const stackMenuHeader = useMediaQuery('(max-width: 880px)');
-  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const stackMenuHeaderMobile = useMediaQuery('(max-width: 763px)');
+  const stackMenuHeaderWithSidebar = useMediaQuery('(max-width: 1019px)');
+  const stackMenuHeader = (!hideFilterSidebar && sidebarOpen) ? stackMenuHeaderWithSidebar : stackMenuHeaderMobile;
 
   const residentialDisplayData = useBuildResidentialDisplayData({
     locations: residentialLocations,
@@ -201,9 +202,9 @@ export default function MenuPage() {
               justifyContent='space-between'
               marginY={majorScale(1)}
               minHeight={160}
-              className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
+              className={stackMenuHeader ? 'flex-col' : 'flex-row'}
             >
-              <Pane width={240} className='flex flex-col items-start justify-start'>
+              <Pane width={stackMenuHeader ? undefined : 240} className={`flex flex-col ${stackMenuHeader ? 'items-center text-center pt-5' : 'items-start'} justify-start`}>
                 {(() => {
                   const displayedMeal = locationType === 'retail'
                     ? 'Retail'
@@ -272,20 +273,22 @@ export default function MenuPage() {
                 display='flex'
                 flexDirection='column'
                 gap={majorScale(2)}
-                width={240}
-                alignItems='flex-end'
+                width={stackMenuHeader ? undefined : 240}
+                alignItems={stackMenuHeader ? 'center' : 'flex-end'}
                 justifyContent='flex-start'
+                className={stackMenuHeader ? 'order-last pt-2 pb-4' : undefined}
               >
                 <LocationTypeToggle
                   locationType={locationType}
                   setLocationType={setLocationType}
-                  vertical={isDesktop}
+                  vertical={!stackMenuHeader}
                 />
               </Pane>
             </Pane>
 
             {hideFilterSidebar && (
               <FilterSidebar
+                locationType={locationType}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 sortOption={sortOption}
