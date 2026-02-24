@@ -28,7 +28,7 @@ const MenuSection = ({
     <Pane marginTop={majorScale(1)}>
       <Pane overflow='visible'>
         <Pane minWidth={300} className='scrollbar-top' overflow='visible'>
-          <Pane
+            <Pane
             display='grid'
             gridTemplateColumns='2fr 1fr'
             columnGap={minorScale(2)}
@@ -36,20 +36,21 @@ const MenuSection = ({
             borderBottom={`1px solid ${theme.colors.green300}`}
             paddingBottom={minorScale(1)}
             marginBottom={minorScale(1)}
-          >
+            background={theme.colors.gray100}
+            className='rounded-t-lg'
+            >
             <Text
               size={400}
               fontWeight={600}
               textAlign='left'
-              className='my-auto'
+              className='pt-1 -mb-[2px] pl-2 col-span-2'
               textTransform='uppercase'
             >
               {title}
             </Text>
-            <Pane />
-          </Pane>
+            </Pane>
           {items.length === 0 ? (
-            <Text size={300} color='muted' fontStyle='italic' marginTop={minorScale(1)}>
+            <Text marginX={majorScale(1)} size={300} color='muted' fontStyle='italic' marginTop={minorScale(1)}>
               Nothing available
             </Text>
           ) : (

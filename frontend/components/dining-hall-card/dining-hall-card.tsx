@@ -44,7 +44,7 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption }: Dinin
         display='flex'
         alignItems='center'
         marginBottom={majorScale(1)}
-        background={theme.colors.gray100}
+        background={theme.colors.gray200}
         className='py-2 border relative border-gray-300 rounded-md flex items-center'
       >
         <Pane
@@ -54,7 +54,7 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption }: Dinin
           paddingX={majorScale(2)}
           paddingY={minorScale(1)}
         >
-          <Text size={600} fontWeight={600} color={theme.colors.gray900}>
+          <Text size={700} fontWeight={600} color={theme.colors.gray900}>
             {DINING_HALL_DISPLAY_NAMES[diningHall.name as keyof typeof DINING_HALL_DISPLAY_NAMES] ??
               diningHall.name}
           </Text>

@@ -55,11 +55,13 @@ export default function MenuItemRow({
     >
       <AccordionItem value={itemValue} className='border-none'>
         <Pane
+          marginX={majorScale(1)}
           display='grid'
           gridTemplateColumns='auto auto'
           rowGap={minorScale(1)}
           columnGap={minorScale(0)}
           cursor='pointer'
+          alignItems='start'
         >
           <Pane
             marginY={sortOption === 'Category' ? minorScale(1) : majorScale(1)}
