@@ -25,7 +25,7 @@ export function ServingCalories({ servingSize, servingUnit, calories }: ServingC
   const caloriesDisplay = calories != null ? formatAmount(calories) : '-';
 
   return (
-    <div className='flex flex-row justify-between items-center p-3 pb-[9px] pt-[7px] -ml-[9px] -mt-2 rounded-[5px] bg-[#E9E9E9]'>
+    <div className='flex flex-row justify-between items-center p-3 pb-[9px] pt-[7px] -ml-[9px] -mt-2 rounded-[5px] bg-gradient-to-b from-white to-[#E9E9E9]'>
       <div className='flex flex-col gap-1 shrink-0'>
         <SectionTitle>Serving Size</SectionTitle>
         <MetricValue>{servingDisplay}</MetricValue>

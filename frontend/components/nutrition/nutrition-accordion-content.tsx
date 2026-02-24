@@ -1,19 +1,24 @@
 'use client';
 
 import { calculateDVPercentage } from '@/utils/dining';
+import { ALLERGEN_ICON_MAP } from '@/data';
+import { Allergen } from '@/types/types';
 import { ServingCalories, AllergensDisplay, NutrientCell, Ingredients } from '.';
 
 export default function NutritionAccordionContent({ item }: any) {
   const nutrition = item.nutrition;
-  const ingredients = item.ingredients;
-  const allergens = item.allergens;
+  const ingredients = nutrition?.ingredients;
+  const allergens = nutrition?.allergens;
 
   if (!nutrition) {
     return <div className='p-4 text-gray-500'>No nutrition information available</div>;
   }
 
-  // Convert ingredients array to string if needed
-  const ingredientsString = ingredients?.join(', ') ?? '';
+  const ingredientsString = ingredients ?? '';
+  const searchText = `${allergens || ''} ${ingredientsString}`.toLowerCase();
+  const allergensArray = (Object.keys(ALLERGEN_ICON_MAP) as Allergen[]).filter((allergen) =>
+    searchText.includes(allergen.toLowerCase())
+  );
 
   return (
     <div
@@ -32,7 +37,7 @@ export default function NutritionAccordionContent({ item }: any) {
             calories={nutrition.calories}
           />
         </div>
-        <AllergensDisplay allergens={allergens ?? []} />
+        <AllergensDisplay allergens={allergensArray} />
         <NutrientCell
           label='Sodium'
           amount={nutrition.sodium}
