@@ -228,7 +228,7 @@ export default function MenuPage() {
                         fontWeight={600}
                         style={{ animationDelay: '30ms' }}
                       >
-                        {locationType === 'retail' ? 'All day' : MEAL_RANGES[meal]}
+                        {locationType === 'retail' ? 'Hours vary' : MEAL_RANGES[meal]}
                       </Text>
                     </>
                   );

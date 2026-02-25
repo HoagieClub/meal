@@ -1,6 +1,35 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+
+const readFromStorage = <T>(key: string, initialValue: T): T => {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return initialValue;
+
+    const parsed = JSON.parse(raw);
+
+    const valid =
+      parsed &&
+      typeof parsed.expiry === 'number' &&
+      parsed.value !== undefined;
+
+    if (!valid) {
+      window.localStorage.removeItem(key);
+      return initialValue;
+    }
+
+    if (Date.now() > parsed.expiry) {
+      window.localStorage.removeItem(key);
+      return initialValue;
+    }
+
+    return parsed.value as T;
+  } catch {
+    window.localStorage.removeItem(key);
+    return initialValue;
+  }
+};
 
 export function useLocalStorage<T>({
   key,
@@ -15,39 +44,15 @@ export function useLocalStorage<T>({
   const DEFAULT_EXPIRY_MS = 5 * 24 * 60 * 60 * 1000;
   const effectiveExpiryInMs = expiryInMs ?? DEFAULT_EXPIRY_MS;
 
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    if (typeof window === 'undefined') {
-      return initialValue;
-    }
+  // Always start with initialValue to match SSR output, then sync from
+  // localStorage in an effect so the client-side value is never lost to
+  // React hydration (which reuses the server-rendered state).
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
 
-    try {
-      const raw = window.localStorage.getItem(key);
-      if (!raw) return initialValue;
-
-      const parsed = JSON.parse(raw);
-
-      const valid =
-        parsed &&
-        typeof parsed.expiry === 'number' &&
-        parsed.value !== undefined;
-
-      if (!valid) {
-        window.localStorage.removeItem(key);
-        return initialValue;
-      }
-
-      // Expired
-      if (Date.now() > parsed.expiry) {
-        window.localStorage.removeItem(key);
-        return initialValue;
-      }
-
-      return parsed.value as T;
-    } catch {
-      window.localStorage.removeItem(key);
-      return initialValue;
-    }
-  });
+  useEffect(() => {
+    setStoredValue(readFromStorage(key, initialValue));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
 
   // Setter
   const setValue = useCallback(

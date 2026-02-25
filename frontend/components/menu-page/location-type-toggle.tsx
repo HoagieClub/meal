@@ -34,7 +34,7 @@ export default function LocationTypeToggle({ locationType, setLocationType, vert
       className={`flex ${vertical ? 'flex-col rounded-[20px]' : 'rounded-full'} relative overflow-hidden bg-[#a3d4b8]`}
     >
       <div
-        className='absolute rounded-full transition-transform ease-in-out'
+        className='absolute rounded-full transition-transform duration-300 ease-in-out'
         style={vertical
           ? { left: 0, right: 0, height: '50%', background: theme.colors.green700, transform: `translateY(${activeIndex * 100}%)` }
           : { top: 0, bottom: 0, width: '50%', background: theme.colors.green700, transform: `translateX(${activeIndex * 100}%)` }
@@ -53,7 +53,7 @@ export default function LocationTypeToggle({ locationType, setLocationType, vert
                 position='absolute'
                 top={0} left={0} right={0} bottom={0}
                 opacity={isActive ? 0 : 1}
-                className='transition-opacity ease-in-out'
+                className='transition-opacity duration-300 ease-in-out'
               >
                 <img src={defaultIcon} alt='' width={iconWidth} height={iconHeight} />
               </Pane>
@@ -61,12 +61,12 @@ export default function LocationTypeToggle({ locationType, setLocationType, vert
                 position='absolute'
                 top={0} left={0} right={0} bottom={0}
                 opacity={isActive ? 1 : 0}
-                className='transition-opacity ease-in-out'
+                className='transition-opacity duration-300 ease-in-out'
               >
                 <img src={selectedIcon} alt='' width={iconWidth} height={iconHeight} />
               </Pane>
             </Pane>
-            <span className={`font-bold select-none whitespace-nowrap transition-all ease-in-out ${isActive ? 'text-white' : 'text-[#156534]'}`}>
+            <span className={`font-bold select-none whitespace-nowrap transition-all duration-300 ease-in-out ${isActive ? 'text-white' : 'text-[#156534]'}`}>
               {label}
             </span>
           </button>
