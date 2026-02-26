@@ -21,6 +21,7 @@ import SkeletonDiningHallCard from '@/components/dining-hall-card/dining-hall-ca
 import FilterSidebar from '@/components/filter-sidebar/filter-sidebar';
 import DateMealSelector from '@/components/menu-page/date-meal-selector';
 import LocationTypeToggle from '@/components/menu-page/location-type-toggle';
+import MobileFilterBar from '@/components/menu-page/mobile-filter-bar';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { MenuSortOption } from '@/types/types';
@@ -118,6 +119,14 @@ export default function MenuPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<MenuSortOption>('Category');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [mobileScrolled, setMobileScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setMobileScrolled(window.scrollY > 4);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeaderMobile = useMediaQuery('(max-width: 763px)');
@@ -160,7 +169,7 @@ export default function MenuPage() {
     <NutritionAccordionProvider>
       <Pane
         display='flex'
-        className='sm:flex-row overflow-hidden min-h-screen flex-col transition-colors duration-300'
+        className='sm:flex-row sm:overflow-hidden min-h-screen flex-col transition-colors duration-300'
         background={MEAL_COLOR_MAP(theme)[meal]}
       >
         {!hideFilterSidebar && (
@@ -191,20 +200,51 @@ export default function MenuPage() {
 
         <Pane
           flex={1}
-          className={`overflow-x-hidden h-full no-scrollbar`}
-          paddingRight={majorScale(3)}
-          paddingLeft={(hideFilterSidebar || !sidebarOpen) ? majorScale(3) : 0}
+          className='h-full no-scrollbar'
+          style={{ overflowX: 'clip' }}
         >
-          <Pane maxWidth={1200} marginX='auto' width='100%'>
-            <Pane
-              display='flex'
-              alignItems='center'
-              justifyContent='space-between'
-              marginY={majorScale(1)}
-              minHeight={160}
-              className={stackMenuHeader ? 'flex-col' : 'flex-row'}
-            >
-              <Pane width={stackMenuHeader ? undefined : 240} className={`flex flex-col ${stackMenuHeader ? 'items-center text-center pt-5' : 'items-start'} justify-start`}>
+          {/* Mobile: sticky search/filter bar only */}
+          {hideFilterSidebar && (
+            <>
+              <div
+                className={`sticky top-0 z-50 transition-shadow duration-200${mobileScrolled ? ' shadow-[0px_4px_8px_rgba(0,0,0,0.1)]' : ''}`}
+                style={{ background: MEAL_COLOR_MAP(theme)[meal] }}
+              >
+                {/* Filter popover — slides down from top of sticky bar, overlays content */}
+                <div
+                  className='absolute top-0 left-0 right-0 z-[60]'
+                  style={{ pointerEvents: mobileFilterOpen ? 'auto' : 'none' }}
+                >
+                  <div className='mobile-filter-popover' data-state={mobileFilterOpen ? 'open' : 'closed'}>
+                    <div className='mobile-filter-popover-inner bg-white rounded-b-[20px] shadow-[0px_4px_8px_rgba(0,0,0,0.15)] max-h-[100dvh] overflow-y-auto'>
+                      <FilterSidebar
+                        variant='mobile-popover'
+                        locationType={locationType}
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        sortOption={sortOption}
+                        setSortOption={setSortOption}
+                        diningHalls={diningHalls}
+                        allergens={allergens}
+                        toggleDiningHall={toggleDiningHall}
+                        toggleAllergen={toggleAllergen}
+                        clearPreferences={clearPreferences}
+                        onClose={() => setMobileFilterOpen(false)}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <MobileFilterBar
+                  locationType={locationType}
+                  setLocationType={setLocationType}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  filterOpen={mobileFilterOpen}
+                  setFilterOpen={setMobileFilterOpen}
+                />
+              </div>
+              {/* Non-sticky: meal title + date selector scroll with page */}
+              <div className='flex flex-col items-center text-center px-4 pt-2'>
                 {(() => {
                   const displayedMeal = locationType === 'retail'
                     ? 'Retail'
@@ -215,7 +255,7 @@ export default function MenuPage() {
                     <>
                       <Heading
                         key={displayedMeal}
-                        className='text-5xl meal-title-enter'
+                        className='text-4xl meal-title-enter p-0'
                         color={theme.colors.green700}
                         fontWeight={900}
                       >
@@ -233,135 +273,177 @@ export default function MenuPage() {
                     </>
                   );
                 })()}
-                {!hideFilterSidebar && (
-                  <Pane
-                    display='inline-flex'
-                    alignItems='center'
-                    gap={minorScale(2)}
-                    cursor={sidebarOpen ? 'default' : 'pointer'}
-                    onClick={sidebarOpen ? undefined : () => setSidebarOpen(true)}
-                    borderRadius={999}
-                    className='select-none bg-[#A2D4B8]/50'
-                    style={{
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap',
-                      opacity: sidebarOpen ? 0 : 1,
-                      maxWidth: sidebarOpen ? 0 : 200,
-                      height: sidebarOpen ? 0 : 28,
-                      marginTop: sidebarOpen ? 0 : 12,
-                      paddingLeft: sidebarOpen ? 0 : 12,
-                      paddingRight: sidebarOpen ? 0 : 12,
-                      pointerEvents: sidebarOpen ? 'none' : 'auto',
-                      transition: 'max-width 250ms ease, padding 250ms ease, height 250ms ease, margin-top 250ms ease, opacity 150ms ease',
-                    }}
-                  >
-                    <FilterListIcon size={12} className="text-[#156534]" />
-                    <Text fontSize={12} className="text-[#156534]" fontWeight={600}>
-                      Search & Filter
-                    </Text>
-                  </Pane>
-                )}
-              </Pane>
-              <DateMealSelector
-                meal={meal}
-                setMeal={setMeal}
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                locationType={locationType}
-              />
-              <Pane
-                display='flex'
-                flexDirection='column'
-                gap={majorScale(2)}
-                width={stackMenuHeader ? undefined : 240}
-                alignItems={stackMenuHeader ? 'center' : 'flex-end'}
-                justifyContent='flex-start'
-                className={stackMenuHeader ? 'order-last pt-2 pb-4' : undefined}
-              >
-                <LocationTypeToggle
+              </div>
+              <div className='mx-4'>
+                <DateMealSelector
+                  meal={meal}
+                  setMeal={setMeal}
+                  selectedDate={selectedDate}
+                  setSelectedDate={setSelectedDate}
                   locationType={locationType}
-                  setLocationType={setLocationType}
-                  vertical={!stackMenuHeader}
                 />
-              </Pane>
-            </Pane>
+              </div>
+            </>
+          )}
 
-            {hideFilterSidebar && (
-              <FilterSidebar
-                locationType={locationType}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                sortOption={sortOption}
-                setSortOption={setSortOption}
-                diningHalls={diningHalls}
-                allergens={allergens}
-                toggleDiningHall={toggleDiningHall}
-                toggleAllergen={toggleAllergen}
-                clearPreferences={clearPreferences}
-                variant='mobile'
-              />
-            )}
-
-            {loading ? (
-              <Pane
-                display='grid'
-                overflowY='auto'
-                paddingBottom={majorScale(6)}
-                gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
-                gap={majorScale(2)}
-                className='h-full no-scrollbar'
-              >
-                {Array(6)
-                  .fill(0)
-                  .map((_, i) => (
-                    <SkeletonDiningHallCard key={i} />
-                  ))}
-              </Pane>
-            ) : displayMenusForLocations.length === 0 ? (
-              <Pane
-                display='flex'
-                alignItems='center'
-                justifyContent='center'
-                paddingY={majorScale(8)}
-                flexDirection='column'
-                width='100%'
-                background={theme.colors.gray100}
-                borderRadius={12}
-                border={`2px dashed ${theme.colors.green400}`}
-                marginTop={majorScale(2)}
-                className='h-full'
-              >
-                <SearchIcon color={theme.colors.gray600} size={32} marginBottom={majorScale(2)} />
-                <Heading size={500} color={theme.colors.gray800} marginBottom={minorScale(1)}>
-                  No Dishes Found
-                </Heading>
-                <Text size={400} color='muted' textAlign='center'>
-                  Try adjusting your search terms or filters.
-                </Text>
-              </Pane>
-            ) : (
-              <Pane
-                display='grid'
-                overflowY='auto'
-                paddingBottom={majorScale(6)}
-                gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
-                gap={majorScale(2)}
-                className='h-full no-scrollbar'
-              >
-                {displayMenusForLocations.map((diningHall) => {
-                  const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
-                  return (
-                    <DiningHallCard
-                      key={diningHall.name}
-                      diningHall={diningHall}
-                      isPinned={isPinned}
-                      onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
-                      sortOption={sortOption}
+          <Pane
+            paddingRight={majorScale(3)}
+            paddingLeft={(hideFilterSidebar || !sidebarOpen) ? majorScale(3) : 0}
+          >
+            <Pane maxWidth={1200} marginX='auto' width='100%'>
+              {/* Desktop: non-sticky header with meal title, date selector, location toggle */}
+              {!hideFilterSidebar && (
+                <Pane
+                  display='flex'
+                  alignItems='center'
+                  justifyContent='space-between'
+                  marginY={majorScale(1)}
+                  minHeight={160}
+                  className={stackMenuHeader ? 'flex-col' : 'flex-row'}
+                >
+                  <Pane width={stackMenuHeader ? undefined : 240} className={`flex flex-col ${stackMenuHeader ? 'items-center text-center pt-5' : 'items-start'} justify-start`}>
+                    {(() => {
+                      const displayedMeal = locationType === 'retail'
+                        ? 'Retail'
+                        : meal === 'Lunch' && isWeekend(selectedDate)
+                          ? 'Brunch'
+                          : meal;
+                      return (
+                        <>
+                          <Heading
+                            key={displayedMeal}
+                            className='text-5xl meal-title-enter'
+                            color={theme.colors.green700}
+                            fontWeight={900}
+                          >
+                            {displayedMeal}
+                          </Heading>
+                          <Text
+                            key={`hours-${displayedMeal}`}
+                            className='text-xl meal-title-enter'
+                            color={theme.colors.green600}
+                            fontWeight={600}
+                            style={{ animationDelay: '30ms' }}
+                          >
+                            {locationType === 'retail' ? 'Hours vary' : MEAL_RANGES[meal]}
+                          </Text>
+                        </>
+                      );
+                    })()}
+                    <Pane
+                      display='inline-flex'
+                      alignItems='center'
+                      gap={minorScale(2)}
+                      cursor={sidebarOpen ? 'default' : 'pointer'}
+                      onClick={sidebarOpen ? undefined : () => setSidebarOpen(true)}
+                      borderRadius={999}
+                      className='select-none bg-[#A2D4B8]/50'
+                      style={{
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        opacity: sidebarOpen ? 0 : 1,
+                        maxWidth: sidebarOpen ? 0 : 200,
+                        height: sidebarOpen ? 0 : 28,
+                        marginTop: sidebarOpen ? 0 : 12,
+                        paddingLeft: sidebarOpen ? 0 : 12,
+                        paddingRight: sidebarOpen ? 0 : 12,
+                        pointerEvents: sidebarOpen ? 'none' : 'auto',
+                        transition: 'max-width 250ms ease, padding 250ms ease, height 250ms ease, margin-top 250ms ease, opacity 150ms ease',
+                      }}
+                    >
+                      <FilterListIcon size={12} className="text-[#156534]" />
+                      <Text fontSize={12} className="text-[#156534]" fontWeight={600}>
+                        Search & Filter
+                      </Text>
+                    </Pane>
+                  </Pane>
+                  <DateMealSelector
+                    meal={meal}
+                    setMeal={setMeal}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                    locationType={locationType}
+                  />
+                  <Pane
+                    display='flex'
+                    flexDirection='column'
+                    gap={majorScale(2)}
+                    width={stackMenuHeader ? undefined : 240}
+                    alignItems={stackMenuHeader ? 'center' : 'flex-end'}
+                    justifyContent='flex-start'
+                    className={stackMenuHeader ? 'order-last pt-2 pb-4' : undefined}
+                  >
+                    <LocationTypeToggle
+                      locationType={locationType}
+                      setLocationType={setLocationType}
+                      vertical={!stackMenuHeader}
                     />
-                  );
-                })}
-              </Pane>
-            )}
+                  </Pane>
+                </Pane>
+              )}
+
+
+              {loading ? (
+                <Pane
+                  display='grid'
+                  overflowY='auto'
+                  paddingBottom={majorScale(6)}
+                  gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
+                  gap={majorScale(2)}
+                  className='h-full no-scrollbar'
+                >
+                  {Array(6)
+                    .fill(0)
+                    .map((_, i) => (
+                      <SkeletonDiningHallCard key={i} />
+                    ))}
+                </Pane>
+              ) : displayMenusForLocations.length === 0 ? (
+                <Pane
+                  display='flex'
+                  alignItems='center'
+                  justifyContent='center'
+                  paddingY={majorScale(8)}
+                  flexDirection='column'
+                  width='100%'
+                  background={theme.colors.gray100}
+                  borderRadius={12}
+                  border={`2px dashed ${theme.colors.green400}`}
+                  marginTop={majorScale(2)}
+                  className='h-full'
+                >
+                  <SearchIcon color={theme.colors.gray600} size={32} marginBottom={majorScale(2)} />
+                  <Heading size={500} color={theme.colors.gray800} marginBottom={minorScale(1)}>
+                    No Dishes Found
+                  </Heading>
+                  <Text size={400} color='muted' textAlign='center'>
+                    Try adjusting your search terms or filters.
+                  </Text>
+                </Pane>
+              ) : (
+                <Pane
+                  display='grid'
+                  overflowY='auto'
+                  paddingBottom={majorScale(6)}
+                  gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
+                  gap={majorScale(2)}
+                  className='h-full no-scrollbar'
+                >
+                  {displayMenusForLocations.map((diningHall) => {
+                    const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
+                    return (
+                      <DiningHallCard
+                        key={diningHall.name}
+                        diningHall={diningHall}
+                        isPinned={isPinned}
+                        onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
+                        sortOption={sortOption}
+                      />
+                    );
+                  })}
+                </Pane>
+              )}
+            </Pane>
           </Pane>
         </Pane>
       </Pane>

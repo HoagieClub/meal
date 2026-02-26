@@ -231,3 +231,22 @@ body {
   flex-shrink: 0;
   transition: width 250ms ease, min-width 250ms ease, transform 250ms ease;
 }
+
+/* Mobile filter popover slide-down animation */
+.mobile-filter-popover {
+  display: grid;
+  transition: grid-template-rows 250ms ease;
+}
+
+.mobile-filter-popover[data-state="closed"] {
+  grid-template-rows: 0fr;
+}
+
+.mobile-filter-popover[data-state="open"] {
+  grid-template-rows: 1fr;
+}
+
+.mobile-filter-popover-inner {
+  overflow: hidden;
+  min-height: 0;
+}

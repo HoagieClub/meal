@@ -181,10 +181,10 @@ export default function DateMealSelector({
                 key={mealOption}
                 flex={1}
                 textAlign='center'
-                paddingY={minorScale(1)}
+                paddingY={2}
                 cursor='pointer'
                 color={textColor}
-                className='text-xs px-4 transition-colors duration-300 relative z-10'
+                className='text-xs px-3 transition-colors duration-300 relative z-10'
                 fontWeight={300}
                 onClick={() => setMeal(mealOption as string as Meal)}
               >
