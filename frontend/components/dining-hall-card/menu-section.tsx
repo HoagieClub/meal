@@ -56,7 +56,7 @@ const MenuSection = ({
           ) : (
             <Pane>
               {items.map((item) => (
-                <MenuItemRow key={item.id} item={item} diningHallId={diningHallId} sortOption={sortOption} />
+                <MenuItemRow key={item.id} item={item} diningHallId={diningHallId} />
               ))}
             </Pane>
           )}

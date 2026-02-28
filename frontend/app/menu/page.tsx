@@ -15,7 +15,16 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon, FilterListIcon } from 'evergreen-ui';
+import {
+  Pane,
+  Heading,
+  Text,
+  majorScale,
+  minorScale,
+  useTheme,
+  SearchIcon,
+  FilterListIcon,
+} from 'evergreen-ui';
 import DiningHallCard from '@/components/dining-hall-card/dining-hall-card';
 import SkeletonDiningHallCard from '@/components/dining-hall-card/dining-hall-card-skeleton';
 import FilterSidebar from '@/components/filter-sidebar/filter-sidebar';
@@ -85,10 +94,12 @@ export default function MenuPage() {
   const { fetchAll } = useMenuApi();
 
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
       setLoading(true);
       try {
         const result = await fetchAll(dateKey);
+        if (cancelled) return;
         setResidentialLocations(result.residentialLocations || {});
         setRetailLocations(result.retailLocations || {});
         setResidentialMenus(result.residentialMenus || {});
@@ -98,10 +109,11 @@ export default function MenuPage() {
         setMetrics(result.metrics || {});
         setRecommendations(result.recommendations || {});
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchData();
+    return () => { cancelled = true; };
   }, [dateKey]);
 
   const {
@@ -131,7 +143,8 @@ export default function MenuPage() {
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeaderMobile = useMediaQuery('(max-width: 763px)');
   const stackMenuHeaderWithSidebar = useMediaQuery('(max-width: 1019px)');
-  const stackMenuHeader = (!hideFilterSidebar && sidebarOpen) ? stackMenuHeaderWithSidebar : stackMenuHeaderMobile;
+  const stackMenuHeader =
+    !hideFilterSidebar && sidebarOpen ? stackMenuHeaderWithSidebar : stackMenuHeaderMobile;
 
   const residentialDisplayData = useBuildResidentialDisplayData({
     locations: residentialLocations,
@@ -198,11 +211,7 @@ export default function MenuPage() {
           </div>
         )}
 
-        <Pane
-          flex={1}
-          className='h-full no-scrollbar'
-          style={{ overflowX: 'clip' }}
-        >
+        <Pane flex={1} className='h-full no-scrollbar' style={{ overflowX: 'clip' }}>
           {/* Mobile: sticky search/filter bar only */}
           {hideFilterSidebar && (
             <>
@@ -215,7 +224,10 @@ export default function MenuPage() {
                   className='absolute top-0 left-0 right-0 z-[60]'
                   style={{ pointerEvents: mobileFilterOpen ? 'auto' : 'none' }}
                 >
-                  <div className='mobile-filter-popover' data-state={mobileFilterOpen ? 'open' : 'closed'}>
+                  <div
+                    className='mobile-filter-popover'
+                    data-state={mobileFilterOpen ? 'open' : 'closed'}
+                  >
                     <div className='mobile-filter-popover-inner bg-white rounded-b-[20px] shadow-[0px_4px_8px_rgba(0,0,0,0.15)] max-h-[100dvh] overflow-y-auto'>
                       <FilterSidebar
                         variant='mobile-popover'
@@ -246,11 +258,12 @@ export default function MenuPage() {
               {/* Non-sticky: meal title + date selector scroll with page */}
               <div className='flex flex-col items-center text-center px-4 pt-2'>
                 {(() => {
-                  const displayedMeal = locationType === 'retail'
-                    ? 'Retail'
-                    : meal === 'Lunch' && isWeekend(selectedDate)
-                      ? 'Brunch'
-                      : meal;
+                  const displayedMeal =
+                    locationType === 'retail'
+                      ? 'Retail'
+                      : meal === 'Lunch' && isWeekend(selectedDate)
+                        ? 'Brunch'
+                        : meal;
                   return (
                     <>
                       <Heading
@@ -288,7 +301,7 @@ export default function MenuPage() {
 
           <Pane
             paddingRight={majorScale(3)}
-            paddingLeft={(hideFilterSidebar || !sidebarOpen) ? majorScale(3) : 0}
+            paddingLeft={hideFilterSidebar || !sidebarOpen ? majorScale(3) : 0}
           >
             <Pane maxWidth={1200} marginX='auto' width='100%'>
               {/* Desktop: non-sticky header with meal title, date selector, location toggle */}
@@ -301,13 +314,17 @@ export default function MenuPage() {
                   minHeight={160}
                   className={stackMenuHeader ? 'flex-col' : 'flex-row'}
                 >
-                  <Pane width={stackMenuHeader ? undefined : 240} className={`flex flex-col ${stackMenuHeader ? 'items-center text-center pt-5' : 'items-start'} justify-start`}>
+                  <Pane
+                    width={stackMenuHeader ? undefined : 240}
+                    className={`flex flex-col ${stackMenuHeader ? 'items-center text-center pt-5' : 'items-start'} justify-start`}
+                  >
                     {(() => {
-                      const displayedMeal = locationType === 'retail'
-                        ? 'Retail'
-                        : meal === 'Lunch' && isWeekend(selectedDate)
-                          ? 'Brunch'
-                          : meal;
+                      const displayedMeal =
+                        locationType === 'retail'
+                          ? 'Retail'
+                          : meal === 'Lunch' && isWeekend(selectedDate)
+                            ? 'Brunch'
+                            : meal;
                       return (
                         <>
                           <Heading
@@ -348,11 +365,12 @@ export default function MenuPage() {
                         paddingLeft: sidebarOpen ? 0 : 12,
                         paddingRight: sidebarOpen ? 0 : 12,
                         pointerEvents: sidebarOpen ? 'none' : 'auto',
-                        transition: 'max-width 250ms ease, padding 250ms ease, height 250ms ease, margin-top 250ms ease, opacity 150ms ease',
+                        transition:
+                          'max-width 250ms ease, padding 250ms ease, height 250ms ease, margin-top 250ms ease, opacity 150ms ease',
                       }}
                     >
-                      <FilterListIcon size={12} className="text-[#156534]" />
-                      <Text fontSize={12} className="text-[#156534]" fontWeight={600}>
+                      <FilterListIcon size={12} className='text-[#156534]' />
+                      <Text fontSize={12} className='text-[#156534]' fontWeight={600}>
                         Search & Filter
                       </Text>
                     </Pane>
@@ -381,7 +399,6 @@ export default function MenuPage() {
                   </Pane>
                 </Pane>
               )}
-
 
               {loading ? (
                 <Pane

@@ -14,7 +14,7 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { handleAuth, handleCallback } from '@auth0/nextjs-auth0';
+import { handleAuth, handleLogin, handleCallback } from '@auth0/nextjs-auth0';
 import { NextRequest } from 'next/server';
 import { verifyUser } from '@/lib/endpoints';
 
@@ -44,5 +44,6 @@ const afterCallback = async (req: NextRequest, session: any) => {
  */
 
 export const GET = handleAuth({
+  login: handleLogin({ returnTo: '/menu' }),
   callback: handleCallback({ afterCallback }),
 });
