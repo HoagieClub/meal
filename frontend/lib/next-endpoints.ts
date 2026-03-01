@@ -50,11 +50,9 @@ export const getAllMenusForDate = (params: { date: string }) => {
  * @returns API response with menu items data
  */
 export const getMenuItems = (params: { ids: string | string[] }) => {
-    const url = '/api/menu-items/';
     const ids = Array.isArray(params.ids) ? params.ids.join(',') : params.ids;
-    return api.post<{ data: Record<string, MenuItem> }>(url, {
-        ids,
-    });
+    const url = `/api/menu-items/?ids=${encodeURIComponent(ids)}`;
+    return api.get<{ data: Record<string, MenuItem> }>(url);
 };
 
 /**
@@ -100,10 +98,9 @@ export const patchUserMenuItemInteraction = (params: {
  * @returns API response with metrics data dictionary
  */
 export const getMenuItemsMetrics = (params: { menu_item_api_ids: string[] }) => {
-    const url = '/api/engagement/metrics/';
-    return api.post<{ data: Record<string, MenuItemMetrics | null> }>(url, {
-        menu_item_api_ids: params.menu_item_api_ids,
-    });
+    const ids = params.menu_item_api_ids.join(',');
+    const url = `/api/engagement/metrics/?menu_item_api_ids=${encodeURIComponent(ids)}`;
+    return api.get<{ data: Record<string, MenuItemMetrics | null> }>(url);
 };
 
 /**

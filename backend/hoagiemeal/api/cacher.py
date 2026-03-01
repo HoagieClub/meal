@@ -64,7 +64,6 @@ from rest_framework import status
 from django.views.decorators.cache import cache_page
 
 
-logger.setLevel(logging.DEBUG)
 session = requests.Session()
 CACHE_TIMEOUT = 60 * 5
 
@@ -229,11 +228,11 @@ class CacherService:
 
     def get_or_cache_all_locations(self) -> Optional[dict]:
         """Get or cache locations from the API."""
-        logger.info("Getting or caching all locations.")
+        logger.debug("Getting or caching all locations.")
         try:
             cached_locations = DiningLocation.objects.all()
             if len(cached_locations) > 0:
-                logger.info("Returning cached all locations.")
+                logger.debug("Returning cached all locations.")
                 return {location.id: DiningLocationSerializer(location).data for location in cached_locations}
 
             api_locations = self.SCRAPER.get_all_locations()
@@ -254,11 +253,11 @@ class CacherService:
 
     def get_or_cache_residential_locations(self) -> Optional[dict]:
         """Get or cache residential locations from the API."""
-        logger.info("Getting or caching residential locations.")
+        logger.debug("Getting or caching residential locations.")
         try:
             cached_locations = DiningLocation.objects.filter(category="residential")
             if len(cached_locations) > 0:
-                logger.info("Returning cached residential locations.")
+                logger.debug("Returning cached residential locations.")
                 return {location.id: DiningLocationSerializer(location).data for location in cached_locations}
 
             api_locations = self.SCRAPER.get_all_locations()
@@ -279,11 +278,11 @@ class CacherService:
 
     def get_or_cache_retail_locations(self) -> Optional[dict]:
         """Get or cache retail locations from the API."""
-        logger.info("Getting or caching retail locations.")
+        logger.debug("Getting or caching retail locations.")
         try:
             cached_locations = DiningLocation.objects.filter(category="retail")
             if len(cached_locations) > 0:
-                logger.info("Returning cached retail locations.")
+                logger.debug("Returning cached retail locations.")
                 return {location.id: DiningLocationSerializer(location).data for location in cached_locations}
 
             api_locations = self.SCRAPER.get_all_locations()
@@ -304,11 +303,11 @@ class CacherService:
 
     def get_or_cache_residential_menus_for_date(self, date: datetime.date) -> Optional[dict]:
         """Get or cache residential menus for a date."""
-        logger.info(f"Getting or caching residential menus for date: {date}.")
+        logger.debug(f"Getting or caching residential menus for date: {date}.")
         try:
             cached_menus = ResidentialMenu.objects.filter(date=date)
             if len(cached_menus) > 0:
-                logger.info(f"Returning cached residential menus for date: {date}.")
+                logger.debug(f"Returning cached residential menus for date: {date}.")
                 menus = defaultdict(dict)
                 for menu in cached_menus:
                     menus[menu.dining_location.id][menu.meal] = menu.menu_items
@@ -341,11 +340,11 @@ class CacherService:
 
     def get_or_cache_retail_menus_for_date(self, date: datetime.date) -> Optional[dict]:
         """Get or cache retail menus for a date."""
-        logger.info(f"Getting or caching retail menus for date: {date}.")
+        logger.debug(f"Getting or caching retail menus for date: {date}.")
         try:
             cached_menus = RetailMenu.objects.filter(date=date)
             if len(cached_menus) > 0:
-                logger.info(f"Returning cached retail menus for date: {date}.")
+                logger.debug(f"Returning cached retail menus for date: {date}.")
                 return {menu.dining_location.id: RetailMenuSerializer(menu).data for menu in cached_menus}
 
             api_menus = self.SCRAPER.get_menus_for_all_locations_and_date(date)
@@ -372,13 +371,13 @@ class CacherService:
 
     def get_or_cache_all_menus_for_date(self, date: datetime.date) -> Optional[dict]:
         """Get or cache all menus for a date."""
-        logger.info(f"Getting or caching all menus for date: {date}.")
+        logger.debug(f"Getting or caching all menus for date: {date}.")
         try:
             residential_menus = ResidentialMenu.objects.filter(date=date)
             retail_menus = RetailMenu.objects.filter(date=date)
             cached_menus = [*residential_menus, *retail_menus]
             if len(cached_menus) > 0:
-                logger.info(f"Returning cached all menus for date: {date}.")
+                logger.debug(f"Returning cached all menus for date: {date}.")
                 menus = defaultdict(dict)
                 for menu in cached_menus:
                     if menu.dining_location.category == "residential":
@@ -424,11 +423,11 @@ class CacherService:
 
     def get_or_cache_menu_items(self, ids: "list[str]") -> Optional[dict]:
         """Get or cache menu items for a list of IDs."""
-        logger.info(f"Getting or caching menu items for IDs: {ids}.")
+        logger.debug(f"Getting or caching menu items for {len(ids)} IDs.")
         try:
             cached_menu_items = MenuItem.objects.filter(id__in=ids)
             if len(cached_menu_items) == len(ids):
-                logger.info(f"Returning cached menu items for IDs: {ids}.")
+                logger.debug(f"Returning cached menu items for {len(ids)} IDs.")
                 return {menu_item.id: MenuItemSerializer(menu_item).data for menu_item in cached_menu_items}
 
             cached_ids = set(menu_item.id for menu_item in cached_menu_items)
@@ -497,11 +496,12 @@ def get_or_cache_all_menus_for_date(request):
         )
 
 
-@api_view(["POST"])
+@cache_page(CACHE_TIMEOUT)
+@api_view(["GET"])
 def get_or_cache_menu_items(request):
     """Get or cache menu items for a list of IDs."""
     try:
-        ids = request.data.get("ids")
+        ids = request.query_params.get("ids")
         if not ids:
             return Response(
                 {"data": None, "message": "IDs are required.", "error": "IDs are required."},

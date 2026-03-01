@@ -29,7 +29,6 @@ import time
 import json
 import os
 
-logger.setLevel(logging.DEBUG)
 session = requests.Session()
 
 
@@ -38,7 +37,7 @@ session = requests.Session()
 
 def get_menu_item_ids_from_menus_for_location_and_date(menus: dict) -> "list[str]":
     """Get unique menu item ids from a dictionary of menus."""
-    logger.info(f"Getting menu item ids from menus for location and date: {menus}.")
+    logger.debug(f"Getting menu item ids from menus for location and date: {menus}.")
     all_ids = []
     for _, meal_menus in menus.items():
         for _, ids in meal_menus.items():
@@ -50,7 +49,7 @@ def get_menu_item_ids_from_menus_for_location_and_date(menus: dict) -> "list[str
 
 def get_menu_item_ids_from_menus_for_all_locations_and_date(menus: dict) -> "list[str]":
     """Get unique menu item ids from a dictionary of menus for all locations and date."""
-    logger.info(f"Getting menu item ids from menus for all locations and date: {menus}.")
+    logger.debug(f"Getting menu item ids from menus for all locations and date.")
     all_ids = []
     for _, location_menus in menus.items():
         for _, meal_menus in location_menus.items():
@@ -63,7 +62,7 @@ def get_menu_item_ids_from_menus_for_all_locations_and_date(menus: dict) -> "lis
 
 def build_menu_url(date: datetime.date, location_id: str) -> str:
     """Build a URL for the Princeton dining menu page."""
-    logger.info(f"Building menu URL for date: {date}, location_id: {location_id}.")
+    logger.debug(f"Building menu URL for date: {date}, location_id: {location_id}.")
     date_str = f"{date.month}/{date.day}/{date.year}"
     base_url = "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp"
     params = {"myaction": "read", "dtdate": date_str, "locationNum": location_id}
@@ -83,7 +82,7 @@ def build_location_url(id: str) -> str:
 
 def fetch_page_soup(url: str) -> Optional[BeautifulSoup]:
     """Fetch a webpage and return a BeautifulSoup object."""
-    logger.info(f"Fetching page soup for URL: {url}.")
+    logger.debug(f"Fetching page soup for URL: {url}.")
     RETRY_COUNT = 5
     TIMEOUT = 8
     SLEEP_TIME = 1
@@ -108,7 +107,7 @@ def fetch_page_soup(url: str) -> Optional[BeautifulSoup]:
 
 def add_inferred_daily_values(items_map: dict) -> dict:
     """Add inferred daily value percentages for nutrition fields based on FDA guidelines for a 2000 calorie diet."""
-    logger.info(f"Adding inferred daily value percentages for nutrition fields for items map: {items_map}.")
+    logger.debug(f"Adding inferred daily values for {len(items_map)} items.")
     DV_STANDARDS = {
         "total_fat": 78,  # grams
         "saturated_fat": 20,  # grams
@@ -135,7 +134,7 @@ def add_inferred_daily_values(items_map: dict) -> dict:
             return None
 
     for _, item_data in items_map.items():
-        logger.info(f"Adding inferred daily value percentages for nutrition fields for item data: {item_data}.")
+        logger.debug(f"Adding inferred daily values for item: {item_data.get('id')}.")
         nutrition = item_data.get("nutrition", {})
 
         if nutrition.get("total_fat") is not None and nutrition.get("total_fat_dv") is None:
@@ -182,7 +181,7 @@ def add_inferred_daily_values(items_map: dict) -> dict:
 
 def extract_locations(soup: BeautifulSoup) -> Optional[dict]:
     """Extract all dining locations from a BeautifulSoup object."""
-    logger.info("Extracting locations from soup.")
+    logger.debug("Extracting locations from soup.")
     try:
         locations = {}
         residential_ul = soup.find("ul", id="residential")
@@ -242,7 +241,7 @@ def extract_locations(soup: BeautifulSoup) -> Optional[dict]:
 
 def extract_menus(soup: BeautifulSoup) -> Optional[dict]:
     """Extract menu data from a BeautifulSoup object."""
-    logger.info("Extracting menus from soup.")
+    logger.debug("Extracting menus from soup.")
     MEAL_CARD_CLASS = ".card.mealCard"
     HEADER_CLASS = ".card-header"
     BODY_CLASS = ".card-body"
@@ -278,7 +277,7 @@ def extract_menus(soup: BeautifulSoup) -> Optional[dict]:
                     if accordion_body:
                         body_text = accordion_body.get_text()
                         if "nutritional information is not available" in body_text.lower():
-                            logger.info("Skipping menu item with unavailable nutritional information")
+                            logger.debug("Skipping menu item with unavailable nutritional information.")
                             continue
 
                     nutrition_link = element.select_one(NUTRITION_LINK_CLASS)
@@ -300,7 +299,7 @@ def extract_menus(soup: BeautifulSoup) -> Optional[dict]:
 
 def extract_menu_items(ids: "list[str]") -> dict:
     """Extract detailed information for menu items by scraping their nutrition label pages."""
-    logger.info(f"Extracting menu items from ids: {ids}.")
+    logger.debug(f"Extracting menu items from {len(ids)} ids.")
     items_map = {}
 
     def parse_numeric(value: str) -> Optional[float]:
@@ -316,7 +315,7 @@ def extract_menu_items(ids: "list[str]") -> dict:
         return None
 
     for id in ids:
-        logger.info(f"Extracting menu item from id: {id}.")
+        logger.debug(f"Extracting menu item from id: {id}.")
         nutrition_url = build_nutrition_url(id)
         try:
             soup = fetch_page_soup(nutrition_url)
@@ -569,7 +568,7 @@ class Scraper:
 
     def get_menus_for_location_and_date(self, location_id: str, date: datetime.date) -> Optional[dict]:
         """Get the menus for a given location and date."""
-        logger.info(f"Getting menus for location: {location_id} and date: {date}.")
+        logger.debug(f"Getting menus for location: {location_id} and date: {date}.")
 
         url = build_menu_url(date, location_id)
         soup = fetch_page_soup(url)
@@ -610,7 +609,7 @@ class Scraper:
 
     def get_menu_items(self, ids: "list[str]") -> Optional[dict]:
         """Get the menu items for a given ids."""
-        logger.info(f"Getting menu items for ids: {ids}.")
+        logger.debug(f"Getting menu items for {len(ids)} ids.")
 
         menu_items = extract_menu_items(ids)
         if not menu_items:

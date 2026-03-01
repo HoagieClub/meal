@@ -39,12 +39,10 @@ export const getAllLocations = async () => {
  * @returns API response with menu items data
  */
 export const getMenuItems = async (params: { ids: string | string[] }) => {
-  const url = '/api/menu-items/';
   const ids = Array.isArray(params.ids) ? params.ids.join(',') : params.ids;
+  const url = `/api/menu-items/?ids=${encodeURIComponent(ids)}`;
   return request
-    .post<any>()(url, {
-      arg: { ids },
-    })
+    .get<any>()(url, {})
     .then((res) => ({
       ...res,
       data: res.data ? toCamelCase(res.data) : null,
@@ -130,12 +128,11 @@ export const patchUserMenuItemInteraction = async (
  * @param params - Request body (menu_item_api_ids - array of strings)
  * @returns API response with metrics data dictionary
  */
-export const getMenuItemsMetrics = async (params: { menu_item_api_ids: string[] }) => {
-  const url = '/api/engagement/metrics/';
+export const getMenuItemsMetrics = async (params: { menu_item_api_ids: string | string[] }) => {
+  const ids = Array.isArray(params.menu_item_api_ids) ? params.menu_item_api_ids.join(',') : params.menu_item_api_ids;
+  const url = `/api/engagement/metrics/?menu_item_api_ids=${encodeURIComponent(ids)}`;
   return request
-    .post<any>()(url, {
-      arg: { menu_item_api_ids: params.menu_item_api_ids },
-    })
+    .get<any>()(url, {})
     .then((res) => ({
       ...res,
       data: res.data ? toCamelCase(res.data) : null,

@@ -34,5 +34,5 @@ export type RetailLocation = (typeof RETAIL_LOCATIONS)[number];
 export const RESIDENTIAL_LOCATIONS = DINING_HALLS.filter((location: DiningHall) => !RETAIL_LOCATIONS.includes(location as RetailLocation));
 export type ResidentialLocation = (typeof RESIDENTIAL_LOCATIONS)[number];
 
-export const MENU_SORT_OPTIONS = ['Category', 'Most Liked'] as const;
+export const MENU_SORT_OPTIONS = ['Category', 'Most Liked', 'Favorited'] as const;
 export type MenuSortOption = (typeof MENU_SORT_OPTIONS)[number];

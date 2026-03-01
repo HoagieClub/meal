@@ -163,6 +163,13 @@ export const useMenuItemInteractions = (
    * Handles when user clicks favorite button.
    */
   const handleFavorite = async () => {
+    if (!userLoading && !user) {
+      const currentPath =
+        typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
+      router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+
     if (updating) return;
     setUpdating(true);
 

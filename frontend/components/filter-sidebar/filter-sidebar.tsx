@@ -141,7 +141,7 @@ export default function FilterSidebar({
             marginBottom={minorScale(3)}
           >
             <Text size={300} fontWeight={600} color={theme.colors.gray800}>
-              Sort By
+              Sort/Filter
             </Text>
             <Pane width='65%'>
               <Select
@@ -283,7 +283,7 @@ export default function FilterSidebar({
             marginBottom={minorScale(3)}
           >
             <Text size={300} fontWeight={600} color={theme.colors.gray800}>
-              Sort By
+              Sort/Filter
             </Text>
             <Pane width='65%'>
               <Select

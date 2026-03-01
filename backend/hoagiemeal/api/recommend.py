@@ -60,13 +60,13 @@ class RecommendationService:
         menu_item_api_ids: List[str],
     ) -> Dict[str, float]:
         """Get recommendation scores for multiple menu items."""
-        logger.info(f"Getting scores for {len(menu_item_api_ids)} menu items for user_id={user.id}.")
+        logger.debug(f"Getting scores for {len(menu_item_api_ids)} menu items for user_id={user.id}.")
         try:
             # API might return invalid menu item IDs
             menu_item_ids = set(menu_item_api_ids)
             for menu_item_id in menu_item_ids:
                 if not MenuItem.objects.filter(id=menu_item_id).exists():
-                    logger.warn(f"Menu item with id {menu_item_id} does not exist.")
+                    logger.warning(f"Menu item with id {menu_item_id} does not exist.")
                     menu_item_ids.remove(menu_item_id)
 
             liked_items = set(
@@ -77,7 +77,7 @@ class RecommendationService:
             )
 
             if not liked_items and not disliked_items:
-                logger.info(f"No interaction history for user_id={user.id}, returning all scores as 0.0.")
+                logger.debug(f"No interaction history for user_id={user.id}, returning all scores as 0.0.")
                 return {item_id: 0.0 for item_id in menu_item_api_ids}
 
             similarities = MenuItemSimilarity.objects.filter(item_a__id__in=liked_items | disliked_items)
@@ -90,9 +90,7 @@ class RecommendationService:
                 score = self._calculate_score(item_id, liked_items, disliked_items, similarity_map)
                 scores[item_id] = score
 
-            logger.info(
-                f"Successfully calculated scores for {len(menu_item_api_ids)} menu items for user_id={user.id}."
-            )
+            logger.debug(f"Calculated scores for {len(menu_item_api_ids)} items for user_id={user.id}.")
             return scores
         except Exception as e:
             logger.error(f"Error calculating scores for menu items for user_id={user.id}: {e}")
@@ -108,7 +106,7 @@ recommendation_service = RecommendationService()
 @api_view(["POST"])
 def get_menu_items_score(request):
     """Django view function to get recommendation scores for multiple menu items."""
-    logger.info(f"Getting menu items scores for request: {request}")
+    logger.debug("Getting menu items scores.")
     try:
         user = get_user_from_request(request)
         if not user:
@@ -125,7 +123,7 @@ def get_menu_items_score(request):
             )
 
         scores = {item_id: 0.0 for item_id in menu_item_api_ids}
-        logger.info(f"Returning scores for {len(scores)} menu items for user_id={user.id}.")
+        logger.debug(f"Returning scores for {len(scores)} items for user_id={user.id}.")
         return Response(
             {"data": scores, "message": "Menu items scores retrieved successfully."},
             status=status.HTTP_200_OK,

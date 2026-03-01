@@ -53,9 +53,7 @@ class MenuItemInteractionsService:
         self, user: Any, menu_item_api_ids: List[str]
     ) -> Optional[Dict[str, Optional[Dict]]]:
         """Get or create user menu item interactions for multiple menu items."""
-        logger.info(
-            f"Getting or creating user menu item interactions for user_id: {user.id}, menu_item_api_ids: {menu_item_api_ids}."
-        )
+        logger.debug(f"Getting or creating interactions for user_id={user.id}, {len(menu_item_api_ids)} items.")
         try:
             interactions = MenuItemInteraction.objects.filter(user=user, menu_item_id__in=menu_item_api_ids)
             missing_menu_item_api_ids = set(menu_item_api_ids) - set(
@@ -71,7 +69,7 @@ class MenuItemInteractionsService:
                     except IntegrityError:
                         pass  # created by concurrent request; refetch below
                 except MenuItem.DoesNotExist:
-                    logger.warn(f"Menu item with id {menu_item_api_id} does not exist.")
+                    logger.warning(f"Menu item with id {menu_item_api_id} does not exist.")
                     continue
 
             interactions = MenuItemInteraction.objects.filter(user=user, menu_item_id__in=menu_item_api_ids)
@@ -87,7 +85,7 @@ class MenuItemInteractionsService:
 
     def get_or_create_menu_items_metrics(self, menu_item_api_ids: List[str]) -> Optional[Dict[str, Optional[Dict]]]:
         """Get or create metrics for multiple menu items."""
-        logger.info(f"Getting metrics for {len(menu_item_api_ids)} menu items.")
+        logger.debug(f"Getting metrics for {len(menu_item_api_ids)} menu items.")
         try:
             metrics = MenuItemMetrics.objects.filter(menu_item_id__in=menu_item_api_ids)
             missing_menu_item_api_ids = set(menu_item_api_ids) - set(metric.menu_item_id for metric in metrics)
@@ -101,7 +99,7 @@ class MenuItemInteractionsService:
                     except IntegrityError:
                         pass  # created by concurrent request; refetch below
                 except MenuItem.DoesNotExist:
-                    logger.warn(f"Menu item with id {menu_item_api_id} does not exist.")
+                    logger.warning(f"Menu item with id {menu_item_api_id} does not exist.")
                     continue
 
             metrics = MenuItemMetrics.objects.filter(menu_item_id__in=menu_item_api_ids)
@@ -112,7 +110,7 @@ class MenuItemInteractionsService:
 
     def update_menu_item_metrics(self, menu_item_api_id: str) -> bool:
         """Update aggregated metrics for a menu item."""
-        logger.info(f"Updating metrics for menu_item_api_id: {menu_item_api_id}.")
+        logger.debug(f"Updating metrics for menu_item_api_id: {menu_item_api_id}.")
         try:
             menu_item = MenuItem.objects.get(id=menu_item_api_id)
             interactions = MenuItemInteraction.objects.filter(menu_item=menu_item)
@@ -155,7 +153,7 @@ class MenuItemInteractionsService:
                     metrics.average_would_eat_again_score = None
                 metrics.save()
 
-            logger.info(f"Updated metrics for menu_item_api_id: {menu_item_api_id}.")
+            logger.debug(f"Updated metrics for menu_item_api_id: {menu_item_api_id}.")
             return True
         except Exception as e:
             logger.error(f"Error updating metrics for menu_item_api_id: {menu_item_api_id}: {e}")
@@ -184,7 +182,7 @@ class MenuItemInteractionsService:
             bool: True if the interaction was updated successfully, False otherwise.
 
         """
-        logger.info(f"Updating interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
+        logger.debug(f"Updating interaction for user_id={user.id}, menu_item_api_id={menu_item_api_id}.")
         try:
             menu_item = MenuItem.objects.get(id=menu_item_api_id)
             try:
@@ -224,7 +222,7 @@ interactions_service = MenuItemInteractionsService()
 @api_view(["POST"])
 def get_user_menu_item_interactions(request):
     """Django view function to get user menu item interactions for multiple menu items."""
-    logger.info(f"Getting user menu item interactions for request: {request}")
+    logger.debug("Getting user menu item interactions.")
     try:
         user = get_user_from_request(request)
         if not user:
@@ -258,7 +256,7 @@ def get_user_menu_item_interactions(request):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        logger.info("User menu item interactions fetched successfully")
+        logger.debug("User menu item interactions fetched successfully.")
         return Response(
             {
                 "data": interactions,
@@ -295,7 +293,7 @@ def update_user_menu_item_interaction(request):
         Response: The HTTP response object.
 
     """
-    logger.info(f"Updating user menu item interaction for request: {request}")
+    logger.debug("Updating user menu item interaction.")
     try:
         user = get_user_from_request(request)
         if not user:
@@ -371,12 +369,14 @@ def update_user_menu_item_interaction(request):
         )
 
 
-@api_view(["POST"])
+@cache_page(60 * 5)
+@api_view(["GET"])
 def get_menu_items_metrics(request):
     """Django view function to get metrics for multiple menu items."""
-    logger.info(f"Getting menu items metrics for request: {request}")
+    logger.debug("Getting menu items metrics.")
     try:
-        menu_item_api_ids = request.data.get("menu_item_api_ids")
+        raw = request.query_params.get("menu_item_api_ids")
+        menu_item_api_ids = [id.strip() for id in raw.split(",")] if raw else None
         if not menu_item_api_ids:
             return Response(
                 {

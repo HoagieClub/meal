@@ -23,11 +23,10 @@ const DEBUG = process.env.NODE_ENV === 'development';
  * @param req - The HTTP request object.
  * @returns A NextResponse object with the metrics data.
  */
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
-    // Get the request body and extract the menu item API IDs.
-    const body = await req.json();
-    const menuItemApiIds = body.menu_item_api_ids;
+    // Get the menu item API IDs from query params.
+    const menuItemApiIds = new URL(req.url).searchParams.get('menu_item_api_ids');
 
     // If the menu item API IDs are not provided, return a 400 response.
     if (!menuItemApiIds) {

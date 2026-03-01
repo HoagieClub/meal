@@ -30,7 +30,7 @@ init(autoreset=True)
 #################### File Blacklist #########################
 # Add filenames (without path) to this set to prevent logging from those files.
 # Example: LOGGER_FILE_BLACKLIST = {"migrations.py", "test_file.py"}
-LOGGER_FILE_BLACKLIST = {"scraper.py"}
+LOGGER_FILE_BLACKLIST = set()
 
 #################### Log File Settings #########################
 # Toggle to enable/disable saving logs to file
@@ -149,8 +149,7 @@ def setup_logger():
 
     # Set to DEBUG to capture all logging levels
     DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
-    logger.setLevel(logging.DEBUG) if DEBUG else logger.setLevel(logging.WARNING)
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.DEBUG if DEBUG else logging.WARNING)
 
     # Console handler (stdout) with color formatter
     console_handler = logging.StreamHandler(sys.stdout)

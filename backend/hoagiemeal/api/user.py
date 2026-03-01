@@ -43,7 +43,7 @@ HOAGIE_IO_NAME_CLAIM = "https://hoagie.io/name"
 
 def decode_auth0_token(request: HttpRequest) -> Optional[dict]:
     """Decode the Auth0 token from the request."""
-    logger.info(f"Decoding Auth0 token from request: {request}")
+    logger.debug("Decoding Auth0 token.")
     try:
         auth_headers = request.headers.get("Authorization")
         auth0_token = auth_headers.split()[1].strip()
@@ -57,16 +57,16 @@ def decode_auth0_token(request: HttpRequest) -> Optional[dict]:
             options={"require": ["exp", "iat", "iss", "aud", "sub"]},
             leeway=5,
         )
-        logger.info(f"Auth0 token decoded successfully for request: {request}.")
+        logger.debug("Auth0 token decoded successfully.")
         return auth0_claims
     except Exception as e:
-        logger.error(f"Failed to decode Auth0 token from request: {request}: {e}")
+        logger.warning(f"Failed to decode Auth0 token: {e}")
         return None
 
 
 def get_or_create_user(auth0_claims: dict) -> Optional[Any]:
     """Get or create a user based on Auth0 token claims."""
-    logger.info(f"Getting or creating user based on Auth0 token claims: {auth0_claims}.")
+    logger.debug(f"Getting or creating user for auth0_id={auth0_claims.get('sub')}.")
     auth0_id = auth0_claims.get("sub")
     if not auth0_id:
         logger.error(f"Auth0 ID is required in Auth0 token claims: {auth0_claims}.")
@@ -113,15 +113,15 @@ def get_user_from_request(request: HttpRequest) -> Optional[Any]:
     try:
         auth0_claims = decode_auth0_token(request)
         if not auth0_claims:
-            logger.error(f"Failed to decode Auth0 token from request: {request}.")
+            logger.debug("Auth0 token decode failed (already logged).")
             return None
 
         user = get_or_create_user(auth0_claims)
         if not user:
-            logger.error(f"Failed to get or create user from request: {request}.")
+            logger.debug("User get/create failed (already logged).")
             return None
 
-        logger.info(f"User fetched from request: {request}.")
+        logger.debug("User fetched from request.")
         return user
     except Exception as e:
         logger.error(f"Error getting user from request: {request}: {e}")
@@ -131,7 +131,7 @@ def get_user_from_request(request: HttpRequest) -> Optional[Any]:
 @api_view(["POST"])
 def verify_and_get_or_create_user(request):
     """Verify if the user is authenticated and create the user if they don't exist."""
-    logger.info(f"Verifying and getting or creating user by Auth0 token from request: {request}")
+    logger.debug("Verifying user by Auth0 token.")
     user = get_user_from_request(request)
     if not user:
         return Response(

@@ -170,6 +170,10 @@ function filterLocations(
 }
 
 function sortMenuItems(menu: any[], sortOption: string, recommendations: any) {
+  if (sortOption === 'Favorited') {
+    return menu.filter((item) => item.userInteraction?.favorited === true);
+  }
+
   const menuCopy = [...menu];
 
   if (sortOption === 'Category') {

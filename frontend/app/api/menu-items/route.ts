@@ -23,11 +23,10 @@ const DEBUG = process.env.NODE_ENV === 'development';
  * @param req - The HTTP request object.
  * @returns A NextResponse object with the menu items data.
  */
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
-    // Get the request body and extract the IDs.
-    const body = await req.json();
-    const ids = body.ids;
+    // Get the IDs from the query params.
+    const ids = new URL(req.url).searchParams.get('ids');
 
     // If the IDs are not provided, return a 400 response.
     if (!ids) {
