@@ -431,10 +431,10 @@ export default function MenuPage() {
                 >
                   <SearchIcon color={theme.colors.gray600} size={32} marginBottom={majorScale(2)} />
                   <Heading size={500} color={theme.colors.gray800} marginBottom={minorScale(1)}>
-                    No Dishes Found
+                    No Locations Found
                   </Heading>
                   <Text size={400} color='muted' textAlign='center'>
-                    Try adjusting your search terms or filters.
+                    Try adjusting your filters.
                   </Text>
                 </Pane>
               ) : (

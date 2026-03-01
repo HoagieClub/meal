@@ -16,13 +16,7 @@ import {
   Switch,
 } from 'evergreen-ui';
 import { useNutritionAccordion } from '@/contexts/nutrition-accordion-context';
-import {
-  DiningHall,
-  Allergen,
-  ALLERGENS,
-  MenuSortOption,
-  MENU_SORT_OPTIONS,
-} from '@/types/types';
+import { DiningHall, Allergen, ALLERGENS, MenuSortOption, MENU_SORT_OPTIONS } from '@/types/types';
 import { RESIDENTIAL_HALL_ORDER, RETAIL_LOCATION_ORDER } from '@/ordering';
 import DiningHallRow from './dining-hall-row';
 import AllergenRow from './allergen-row';
@@ -67,14 +61,13 @@ export default function FilterSidebar({
 
   const isSidebar = variant === 'sidebar';
   const isMobilePopover = variant === 'mobile-popover';
-  const [filtersOpen, setFiltersOpen] = useState(isSidebar);
   const containerProps = isSidebar
     ? {
-      flexDirection: 'column' as const,
-      width: 280,
-      padding: majorScale(3),
-      className: 'max-w-[100%] z-20',
-    }
+        flexDirection: 'column' as const,
+        width: 280,
+        padding: majorScale(3),
+        className: 'max-w-[100%] z-20',
+      }
     : {};
   const innerContainerProps = {
     display: 'flex' as const,
@@ -163,7 +156,12 @@ export default function FilterSidebar({
         </Pane>
 
         <Pane className='p-4' overflowY='auto'>
-          <Text size={300} fontWeight={600} color={theme.colors.gray800} marginBottom={minorScale(1)}>
+          <Text
+            size={300}
+            fontWeight={600}
+            color={theme.colors.gray800}
+            marginBottom={minorScale(1)}
+          >
             {locationType === 'residential' ? 'Dining Halls' : 'Retail Locations'}
           </Text>
           <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
@@ -190,14 +188,16 @@ export default function FilterSidebar({
             </Text>
             <Switch
               checked={!hideAllergenTags}
-              className="[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none"
+              className='[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none'
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setHideAllergenTags(!e.target.checked)
               }
               height={20}
             />
           </Pane>
-          <span className="text-xs ub-fnt-sze_14px ub-f-wght_400 ub-ln-ht_20px ub-ltr-spc_-0-05px ub-fnt-fam_rbgzyu ub-color_808080 ub-mb_4px ub-box-szg_border-box">Exclude items containing:</span>
+          <span className='text-xs ub-fnt-sze_14px ub-f-wght_400 ub-ln-ht_20px ub-ltr-spc_-0-05px ub-fnt-fam_rbgzyu ub-color_808080 ub-mb_4px ub-box-szg_border-box'>
+            Exclude items containing:
+          </span>
           <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
             {ALLERGENS.map((allergen: Allergen) => (
               <AllergenRow
@@ -224,7 +224,12 @@ export default function FilterSidebar({
           className='relative flex flex-col p-4 border-radius-12'
         >
           {/* Reset Filters button + Hide button row */}
-          <Pane display='flex' alignItems='center' justifyContent='space-between' marginBottom={minorScale(1)}>
+          <Pane
+            display='flex'
+            alignItems='center'
+            justifyContent='space-between'
+            marginBottom={minorScale(1)}
+          >
             <Pane
               display='flex'
               alignItems='center'
@@ -305,90 +310,64 @@ export default function FilterSidebar({
         </Pane>
 
         <Pane {...filtersContainerProps}>
-          {/* Open and hide filters */}
-          <Pane
-            display='flex'
-            alignItems='center'
-            justifyContent='space-between'
-            cursor='pointer'
-            onClick={() => setFiltersOpen((prev) => !prev)}
-            marginBottom={filtersOpen ? minorScale(2) : 0}
-          >
-            <Text size={300} color={theme.colors.gray700}>
-              {filtersOpen ? 'Hide Filters' : 'Filter By'}
+          <Pane className='filter-collapse-inner'>
+            {/* Control which dining halls are displayed */}
+            <Text
+              size={300}
+              fontWeight={600}
+              color={theme.colors.gray800}
+              marginBottom={minorScale(1)}
+            >
+              {locationType === 'residential' ? 'Dining Halls' : 'Retail Locations'}
             </Text>
-            <ChevronDownIcon
-              size={16}
-              color='gray700'
-              className={`transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`}
-            />
-          </Pane>
-          <Pane
-            borderBottom={filtersOpen ? `1px solid ${theme.colors.gray200}` : undefined}
-            marginBottom={minorScale(2)}
-          />
-
-          {/* Render the filters with collapse animation */}
-          <div className='filter-collapse-wrapper' data-state={filtersOpen ? 'open' : 'closed'}>
-            <Pane className='filter-collapse-inner'>
-              {/* Control which dining halls are displayed */}
-              <Text
-                size={300}
-                fontWeight={600}
-                color={theme.colors.gray800}
-                marginBottom={minorScale(1)}
-              >
-                {locationType === 'residential' ? 'Dining Halls' : 'Retail Locations'}
-              </Text>
-              <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                {(locationType === 'residential' ? RESIDENTIAL_HALL_ORDER : RETAIL_LOCATION_ORDER).map(
-                  (diningHall: DiningHall) => (
-                    <DiningHallRow
-                      key={diningHall}
-                      diningHall={diningHall}
-                      checked={diningHalls.includes(diningHall)}
-                      onChange={() => toggleDiningHall(diningHall)}
-                    />
-                  )
-                )}
-              </Pane>
-              <Pane
-                borderBottom={`1px solid ${theme.colors.gray200}`}
-                marginBottom={minorScale(2)}
-              />
-
-              {/* Control which allergens are not displayed */}
-              <Pane
-                display='flex'
-                alignItems='center'
-                justifyContent='space-between'
-                marginBottom={minorScale(1)}
-              >
-                <Text size={300} fontWeight={600} color={theme.colors.gray800}>
-                  Allergen Tags
-                </Text>
-                <Switch
-                  checked={!hideAllergenTags}
-                  className="[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setHideAllergenTags(!e.target.checked)
-                  }
-                  height={20}
+            <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
+              {(locationType === 'residential'
+                ? RESIDENTIAL_HALL_ORDER
+                : RETAIL_LOCATION_ORDER
+              ).map((diningHall: DiningHall) => (
+                <DiningHallRow
+                  key={diningHall}
+                  diningHall={diningHall}
+                  checked={diningHalls.includes(diningHall)}
+                  onChange={() => toggleDiningHall(diningHall)}
                 />
-              </Pane>
-              <span className="text-xs ub-fnt-sze_14px ub-f-wght_400 ub-ln-ht_20px ub-ltr-spc_-0-05px ub-fnt-fam_rbgzyu ub-color_808080 ub-mb_4px ub-box-szg_border-box">Exclude items containing:</span>
-              <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
-                {ALLERGENS.map((allergen: Allergen) => (
-                  <AllergenRow
-                    key={allergen}
-                    allergen={allergen}
-                    checked={allergens.includes(allergen)}
-                    onChange={() => toggleAllergen(allergen)}
-                  />
-                ))}
-              </Pane>
+              ))}
             </Pane>
-          </div>
+            <Pane borderBottom={`1px solid ${theme.colors.gray200}`} marginBottom={minorScale(2)} />
+
+            {/* Control which allergens are not displayed */}
+            <Pane
+              display='flex'
+              alignItems='center'
+              justifyContent='space-between'
+              marginBottom={minorScale(1)}
+            >
+              <Text size={300} fontWeight={600} color={theme.colors.gray800}>
+                Allergen Tags
+              </Text>
+              <Switch
+                checked={!hideAllergenTags}
+                className='[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none'
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setHideAllergenTags(!e.target.checked)
+                }
+                height={20}
+              />
+            </Pane>
+            <span className='text-xs ub-fnt-sze_14px ub-f-wght_400 ub-ln-ht_20px ub-ltr-spc_-0-05px ub-fnt-fam_rbgzyu ub-color_808080 ub-mb_4px ub-box-szg_border-box'>
+              Exclude items containing:
+            </span>
+            <Pane display='flex' flexDirection='column' marginBottom={minorScale(3)}>
+              {ALLERGENS.map((allergen: Allergen) => (
+                <AllergenRow
+                  key={allergen}
+                  allergen={allergen}
+                  checked={allergens.includes(allergen)}
+                  onChange={() => toggleAllergen(allergen)}
+                />
+              ))}
+            </Pane>
+          </Pane>
         </Pane>
       </Pane>
     </Pane>

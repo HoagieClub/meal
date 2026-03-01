@@ -19,6 +19,7 @@ function buildResidentialLocationMenuShape(
     if (!location || location.category !== 'residential') {
       continue;
     }
+
     const locationMenus = residentialMenus[locationId];
     if (!locationMenus || !locationMenus[meal]) {
       continue;
@@ -80,7 +81,6 @@ function buildRetailLocationMenuShape(
       if (!areaVal || typeof areaVal !== 'object') continue;
 
       if (Array.isArray(areaVal)) {
-        // Flat fallback: areaKey as category
         for (const menuItemId of areaVal) {
           const menuItem = menuItems[menuItemId];
           if (!menuItem || !menuItem.name) continue;
@@ -272,6 +272,18 @@ export const useBuildResidentialDisplayData = ({
 
     const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
     const sortedLocations = sortLocations(filteredLocations, pinnedHalls, RESIDENTIAL_HALL_ORDER);
+
+    const missingDiningHalls = appliedDiningHalls.filter((diningHall: any) => !sortedLocations.some((location: any) => location.name === diningHall));
+    const filteredMissingDiningHalls = missingDiningHalls.filter((diningHall: any) => RESIDENTIAL_HALL_ORDER.includes(diningHall));
+    const orderedMissingDiningHalls = filteredMissingDiningHalls.sort((a: any, b: any) => {
+      return RESIDENTIAL_HALL_ORDER.indexOf(a) - RESIDENTIAL_HALL_ORDER.indexOf(b);
+    });
+    orderedMissingDiningHalls.forEach((diningHall: any) => {
+      sortedLocations.push({
+        name: diningHall,
+        menu: [],
+      });
+    });
     return sortedLocations;
   }, [
     locations,
@@ -327,6 +339,18 @@ export const useBuildRetailDisplayData = ({
 
     const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
     const sortedLocations = sortLocations(filteredLocations, pinnedHalls, RETAIL_LOCATION_ORDER);
+
+    const missingDiningHalls = appliedDiningHalls.filter((diningHall: any) => !sortedLocations.some((location: any) => location.name === diningHall));
+    const filteredMissingDiningHalls = missingDiningHalls.filter((diningHall: any) => RETAIL_LOCATION_ORDER.includes(diningHall));
+    const orderedMissingDiningHalls = filteredMissingDiningHalls.sort((a: any, b: any) => {
+      return RETAIL_LOCATION_ORDER.indexOf(a) - RETAIL_LOCATION_ORDER.indexOf(b);
+    });
+    orderedMissingDiningHalls.forEach((diningHall: any) => {
+      sortedLocations.push({
+        name: diningHall,
+        menu: [],
+      });
+    });
     return sortedLocations;
   }, [
     locations,

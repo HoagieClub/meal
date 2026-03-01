@@ -16,6 +16,14 @@
 
 import { ApiResponse, HttpMethod } from '@/types/http';
 
+const urlCache = new Map<string, { data: any; timestamp: number }>();
+const DEFAULT_TTL = 5 * 60 * 1000;   // 5 minutes
+const METRICS_TTL = 15 * 1000;        // 15 seconds
+
+function getCacheTTL(url: string): number {
+  return url.includes('/metrics') ? METRICS_TTL : DEFAULT_TTL;
+}
+
 /**
  * Interface for the API request props
  *
@@ -79,8 +87,18 @@ async function apiRequest<T>({
  * @returns The API response with consistent structure
  */
 export const api = {
-  get: <T>(endpoint: string, headers?: HeadersInit) =>
-    apiRequest<T>({ endpoint, method: 'GET', headers }),
+  get: <T>(endpoint: string, headers?: HeadersInit): Promise<ApiResponse<T>> => {
+    const cached = urlCache.get(endpoint);
+    if (cached && Date.now() - cached.timestamp < getCacheTTL(endpoint)) {
+      return Promise.resolve(cached.data as ApiResponse<T>);
+    }
+    return apiRequest<T>({ endpoint, method: 'GET', headers }).then((result) => {
+      if (!result.error) {
+        urlCache.set(endpoint, { data: result, timestamp: Date.now() });
+      }
+      return result;
+    });
+  },
 
   post: <T>(endpoint: string, body?: any, headers?: HeadersInit) =>
     apiRequest<T>({ endpoint, method: 'POST', body, headers }),
