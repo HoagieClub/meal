@@ -42,12 +42,10 @@ function buildResidentialLocationMenuShape(
       }
     }
 
-    if (menu.length > 0) {
-      result.push({
-        ...location,
-        menu,
-      });
-    }
+    result.push({
+      ...location,
+      menu,
+    });
   }
 
   return result;
@@ -113,12 +111,10 @@ function buildRetailLocationMenuShape(
       }
     }
 
-    if (menu.length > 0) {
-      result.push({
-        ...location,
-        menu,
-      });
-    }
+    result.push({
+      ...location,
+      menu,
+    });
   }
 
   return result;
@@ -158,7 +154,6 @@ function filterLocations(
   locations: any[],
   appliedDiningHalls: string[]
 ) {
-  console.log(appliedDiningHalls)
   if (!appliedDiningHalls || appliedDiningHalls.length === 0) {
     return locations;
   }
@@ -266,19 +261,14 @@ export const useBuildResidentialDisplayData = ({
       meal
     );
 
-    const filteredAndSorted = shapedData
-      .map((location) => {
-        const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
-        if (filteredMenu.length === 0) {
-          return null;
-        }
-        const sortedMenu = sortMenuItems(filteredMenu, sortOption, recommendations);
-        return {
-          ...location,
-          menu: sortedMenu,
-        };
-      })
-      .filter((location) => location !== null) as any[];
+    const filteredAndSorted = shapedData.map((location) => {
+      const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
+      const sortedMenu = sortMenuItems(filteredMenu, sortOption, recommendations);
+      return {
+        ...location,
+        menu: sortedMenu,
+      };
+    });
 
     const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
     const sortedLocations = sortLocations(filteredLocations, pinnedHalls, RESIDENTIAL_HALL_ORDER);
@@ -326,19 +316,14 @@ export const useBuildRetailDisplayData = ({
       metrics
     );
 
-    const filteredAndSorted = shapedData
-      .map((location) => {
-        const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
-        if (filteredMenu.length === 0) {
-          return null;
-        }
-        const sortedMenu = sortMenuItems(filteredMenu, sortOption, recommendations);
-        return {
-          ...location,
-          menu: sortedMenu,
-        };
-      })
-      .filter((location) => location !== null) as any[];
+    const filteredAndSorted = shapedData.map((location) => {
+      const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
+      const sortedMenu = sortMenuItems(filteredMenu, sortOption, recommendations);
+      return {
+        ...location,
+        menu: sortedMenu,
+      };
+    });
 
     const filteredLocations = filterLocations(filteredAndSorted, appliedDiningHalls);
     const sortedLocations = sortLocations(filteredLocations, pinnedHalls, RETAIL_LOCATION_ORDER);

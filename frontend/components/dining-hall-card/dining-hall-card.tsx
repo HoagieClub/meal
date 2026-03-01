@@ -86,7 +86,11 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption }: Dinin
           <img src={imageSrc?.src} className='h-full my-auto w-auto' alt={diningHall.name} />
         </Pane>
       </Pane>
-      {sortOption === 'Category' ? (
+      {menuItems.length === 0 ? (
+        <Text marginX={majorScale(1)} size={300} color='muted' fontStyle='italic' marginTop={minorScale(1)}>
+          Nothing available
+        </Text>
+      ) : sortOption === 'Category' ? (
         categories.map((category: string) => {
           const items = menuItems.filter((item: any) => item.category === category);
           return (

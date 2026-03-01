@@ -368,8 +368,7 @@ def update_user_menu_item_interaction(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-
-@cache_page(60 * 5)
+@cache_page(15)
 @api_view(["GET"])
 def get_menu_items_metrics(request):
     """Django view function to get metrics for multiple menu items."""
