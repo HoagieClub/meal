@@ -39,8 +39,6 @@ function getRdvColor(label: string, percent: number): string {
   }
 
   if (type === 'good') {
-    if (percent < 15) return '#FF8989'; // red
-    if (percent <= 40) return '#F6C77D'; // yellow
     return '#8BCF95'; // green
   }
 
