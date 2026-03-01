@@ -82,39 +82,15 @@ export default function MenuPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(getToday());
   const dateKey = getDateKey(selectedDate);
   const currentMeal = getCurrentMeal();
-  const [residentialLocations, setResidentialLocations] = useState<any>({});
-  const [retailLocations, setRetailLocations] = useState<any>({});
-  const [residentialMenus, setResidentialMenus] = useState<any>({});
-  const [retailMenus, setRetailMenus] = useState<any>({});
-  const [menuItems, setMenuItems] = useState<any>({});
-  const [interactions, setInteractions] = useState<any>({});
-  const [metrics, setMetrics] = useState<any>({});
-  const [recommendations, setRecommendations] = useState<any>({});
-  const [loading, setLoading] = useState(true);
-  const { fetchAll } = useMenuApi();
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const result = await fetchAll(dateKey);
-        if (cancelled) return;
-        setResidentialLocations(result.residentialLocations || {});
-        setRetailLocations(result.retailLocations || {});
-        setResidentialMenus(result.residentialMenus || {});
-        setRetailMenus(result.retailMenus || {});
-        setMenuItems(result.menuItems || {});
-        setInteractions(result.interactions || {});
-        setMetrics(result.metrics || {});
-        setRecommendations(result.recommendations || {});
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetchData();
-    return () => { cancelled = true; };
-  }, [dateKey]);
+  const { data, loading } = useMenuApi(dateKey);
+  const residentialLocations = data?.residentialLocations ?? {};
+  const retailLocations = data?.retailLocations ?? {};
+  const residentialMenus = data?.residentialMenus ?? {};
+  const retailMenus = data?.retailMenus ?? {};
+  const menuItems = data?.menuItems ?? {};
+  const interactions = data?.interactions ?? {};
+  const metrics = data?.metrics ?? {};
+  const recommendations = data?.recommendations ?? {};
 
   const {
     diningHalls,
@@ -423,9 +399,6 @@ export default function MenuPage() {
                   paddingY={majorScale(8)}
                   flexDirection='column'
                   width='100%'
-                  background={theme.colors.gray100}
-                  borderRadius={12}
-                  border={`2px dashed ${theme.colors.green400}`}
                   marginTop={majorScale(2)}
                   className='h-full'
                 >

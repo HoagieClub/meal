@@ -49,29 +49,12 @@ MISSING = object()
 class MenuItemInteractionsService:
     """Service for managing user interactions with menu items."""
 
-    def get_or_create_user_menu_item_interactions(
+    def get_user_menu_item_interactions(
         self, user: Any, menu_item_api_ids: List[str]
     ) -> Optional[Dict[str, Optional[Dict]]]:
-        """Get or create user menu item interactions for multiple menu items."""
-        logger.debug(f"Getting or creating interactions for user_id={user.id}, {len(menu_item_api_ids)} items.")
+        """Get existing user menu item interactions. Only returns rows that exist — no auto-creation."""
+        logger.debug(f"Getting interactions for user_id={user.id}, {len(menu_item_api_ids)} items.")
         try:
-            interactions = MenuItemInteraction.objects.filter(user=user, menu_item_id__in=menu_item_api_ids)
-            missing_menu_item_api_ids = set(menu_item_api_ids) - set(
-                interaction.menu_item_id for interaction in interactions
-            )
-
-            for menu_item_api_id in missing_menu_item_api_ids:
-                # API might return invalid menu item IDs
-                try:
-                    menu_item = MenuItem.objects.get(id=menu_item_api_id)
-                    try:
-                        MenuItemInteraction.objects.get_or_create(user=user, menu_item=menu_item)
-                    except IntegrityError:
-                        pass  # created by concurrent request; refetch below
-                except MenuItem.DoesNotExist:
-                    logger.warning(f"Menu item with id {menu_item_api_id} does not exist.")
-                    continue
-
             interactions = MenuItemInteraction.objects.filter(user=user, menu_item_id__in=menu_item_api_ids)
             return {
                 interaction.menu_item_id: MenuItemInteractionSerializer(interaction).data
@@ -79,7 +62,7 @@ class MenuItemInteractionsService:
             }
         except Exception as e:
             logger.error(
-                f"Error getting or creating user menu item interactions for user_id: {user.id}, menu_item_api_ids: {menu_item_api_ids}: {e}"
+                f"Error getting user menu item interactions for user_id: {user.id}, menu_item_api_ids: {menu_item_api_ids}: {e}"
             )
             return None
 
@@ -246,14 +229,15 @@ def get_user_menu_item_interactions(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        interactions = interactions_service.get_or_create_user_menu_item_interactions(user, menu_item_api_ids)
-        if not interactions:
+        interactions = interactions_service.get_user_menu_item_interactions(user, menu_item_api_ids)
+        if interactions is None:
             return Response(
                 {
-                    "message": "No user menu item interactions found",
-                    "error": "No user menu item interactions found",
+                    "data": None,
+                    "message": "Error fetching user menu item interactions",
+                    "error": "Error fetching user menu item interactions",
                 },
-                status=status.HTTP_404_NOT_FOUND,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         logger.debug("User menu item interactions fetched successfully.")

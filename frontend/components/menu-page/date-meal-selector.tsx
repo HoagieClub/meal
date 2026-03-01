@@ -5,7 +5,6 @@ import {
   majorScale,
   minorScale,
   useTheme,
-  Button,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'evergreen-ui';
@@ -103,17 +102,20 @@ export default function DateMealSelector({
   return (
     <Pane display='flex' gap={minorScale(2)} className='mx-2 flex-col flex justify-center my-4'>
       <Pane display='flex' alignItems='center' justifyContent='center' gap={minorScale(2)}>
-        <Button
-          background='white'
-          border={`1px solid ${theme.colors.gray300}`}
+        <Pane
+          display='flex'
+          alignItems='center'
+          justifyContent='center'
+          width={32}
+          height={32}
           borderRadius={999}
-          appearance='minimal'
+          background={theme.colors.green25}
+          cursor='pointer'
           onClick={goToPreviousDay}
-          transition='all 0.2s'
-          className='p-1 pl-[1px] hover:scale-110 active:scale-100'
+          className='transition-all hover:scale-110 active:scale-95 hover:brightness-95'
         >
-          <ChevronLeftIcon size={20} />
-        </Button>
+          <ChevronLeftIcon size={16} color={theme.colors.green700} />
+        </Pane>
 
         <Text
           className='text-2xl text-center w-[17rem] truncate font-semibold'
@@ -121,17 +123,21 @@ export default function DateMealSelector({
         >
           {formattedDateForDisplay}
         </Text>
-        <Button
-          background='white'
-          border={`1px solid ${theme.colors.gray300}`}
+
+        <Pane
+          display='flex'
+          alignItems='center'
+          justifyContent='center'
+          width={32}
+          height={32}
           borderRadius={999}
-          appearance='minimal'
+          background={theme.colors.green25}
+          cursor='pointer'
           onClick={goToNextDay}
-          transition='all 0.2s'
-          className='p-1 pr-[1px] hover:scale-110 active:scale-100'
+          className='transition-all hover:scale-110 active:scale-95 hover:brightness-95'
         >
-          <ChevronRightIcon size={20} />
-        </Button>
+          <ChevronRightIcon size={16} color={theme.colors.green700} />
+        </Pane>
       </Pane>
 
       <Pane display='flex' justifyContent='center' gap={majorScale(2)} marginBottom={minorScale(2)}>

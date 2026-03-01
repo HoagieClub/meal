@@ -17,11 +17,10 @@
 import { ApiResponse, HttpMethod } from '@/types/http';
 
 const urlCache = new Map<string, { data: any; timestamp: number }>();
-const DEFAULT_TTL = 5 * 60 * 1000;   // 5 minutes
-const METRICS_TTL = 15 * 1000;        // 15 seconds
+const DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 
-function getCacheTTL(url: string): number {
-  return url.includes('/metrics') ? METRICS_TTL : DEFAULT_TTL;
+function isCacheable(url: string): boolean {
+  return !url.includes('/metrics') && !url.includes('/engagement');
 }
 
 /**
@@ -88,12 +87,14 @@ async function apiRequest<T>({
  */
 export const api = {
   get: <T>(endpoint: string, headers?: HeadersInit): Promise<ApiResponse<T>> => {
-    const cached = urlCache.get(endpoint);
-    if (cached && Date.now() - cached.timestamp < getCacheTTL(endpoint)) {
-      return Promise.resolve(cached.data as ApiResponse<T>);
+    if (isCacheable(endpoint)) {
+      const cached = urlCache.get(endpoint);
+      if (cached && Date.now() - cached.timestamp < DEFAULT_TTL) {
+        return Promise.resolve(cached.data as ApiResponse<T>);
+      }
     }
     return apiRequest<T>({ endpoint, method: 'GET', headers }).then((result) => {
-      if (!result.error) {
+      if (!result.error && isCacheable(endpoint)) {
         urlCache.set(endpoint, { data: result, timestamp: Date.now() });
       }
       return result;

@@ -47,7 +47,6 @@ export const FavoriteButton = ({ item }: { item: any }) => {
         />
         <Image
           src='/images/icons/heart-solid.svg'
-          className='text-red-500'
           alt='Favorited'
           width={14}
           height={14}
