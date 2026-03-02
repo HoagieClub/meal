@@ -1,13 +1,5 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  ScrollView,
-} from "react-native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -41,7 +33,7 @@ function FilterIcon() {
 function ChevronLeftIcon() {
   return (
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Path d="M15 18l-6-6 6-6" stroke="#374151" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M15 18l-6-6 6-6" stroke="#166534" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -49,7 +41,7 @@ function ChevronLeftIcon() {
 function ChevronRightIcon() {
   return (
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Path d="M9 18l6-6-6-6" stroke="#374151" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M9 18l6-6-6-6" stroke="#166534" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -74,9 +66,9 @@ function HoagieLogoSvg() {
 // ─── Data & Helpers ───────────────────────────────────────────────────────────
 
 const MEAL_COLORS: Record<string, string> = {
-  Breakfast: "#e8f5ee",
-  Lunch: "#d5eddf",
-  Dinner: "#c2e5d0",
+  Breakfast: "#d0e9d8",
+  Lunch: "#bde0ca",
+  Dinner: "#a8d8bc",
 };
 
 const MEAL_RANGES: Record<string, string> = {
@@ -84,6 +76,13 @@ const MEAL_RANGES: Record<string, string> = {
   Lunch: "11:30 AM – 2:00 PM",
   Dinner: "5:00 – 8:00 PM",
   Brunch: "10:00 AM – 2:00 PM",
+};
+
+const MEAL_HOURS_SHORT: Record<string, string> = {
+  Breakfast: "7:30–10:30 AM",
+  Lunch: "11:30 AM–2 PM",
+  Dinner: "5:00–8:00 PM",
+  Brunch: "10:00 AM–2 PM",
 };
 
 const getToday = (): Date => {
@@ -111,15 +110,12 @@ const getNext7Days = (): Date[] => {
 };
 
 const isSameDay = (a: Date, b: Date): boolean =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 const formatDateLabel = (d: Date): string =>
   d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
-const formatDayAbbrev = (d: Date): string =>
-  d.toLocaleDateString("en-US", { weekday: "short" });
+const formatDayAbbrev = (d: Date): string => d.toLocaleDateString("en-US", { weekday: "short" });
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -135,10 +131,7 @@ export default function MenuScreen() {
   const mealColor = MEAL_COLORS[meal] ?? "#c2e5d0";
   const next7Days = getNext7Days();
 
-  const displayedMeal =
-    locationType === "retail" ? "Retail" : meal === "Lunch" && isWeekendDay ? "Brunch" : meal;
-  const hours =
-    locationType === "retail" ? "Hours vary by location" : MEAL_RANGES[displayedMeal] ?? MEAL_RANGES[meal];
+  const displayedMeal = locationType === "retail" ? "Retail" : meal === "Lunch" && isWeekendDay ? "Brunch" : meal;
 
   const shiftDay = (delta: number) => {
     const d = new Date(selectedDate);
@@ -183,60 +176,9 @@ export default function MenuScreen() {
       </View>
 
       {/* ── Scrollable content ── */}
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
-
-        {/* ── Context band: location + meal ── */}
-        <View style={[styles.contextBand, { backgroundColor: mealColor }]}>
-
-          {/* Location toggle */}
-          <View style={styles.segmentedControl}>
-            {(["residential", "retail"] as const).map((type) => {
-              const label = type === "residential" ? "Dining Halls" : "Retail";
-              const active = locationType === type;
-              return (
-                <TouchableOpacity
-                  key={type}
-                  style={[styles.segmentBtn, active && styles.segmentBtnActive]}
-                  onPress={() => setLocationType(type)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Meal toggle (residential only) */}
-          {locationType === "residential" && (
-            <View style={styles.mealPill}>
-              {meals.map((m) => {
-                const active = meal === m;
-                const label = isWeekendDay && m === "Lunch" ? "Brunch" : m;
-                return (
-                  <TouchableOpacity
-                    key={m}
-                    style={[styles.mealOption, active && styles.mealOptionActive]}
-                    onPress={() => setMeal(m)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.mealOptionText, active && styles.mealOptionTextActive]}>
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-
-          {/* Hours */}
-          <Text style={styles.hoursText}>{hours}</Text>
-        </View>
-
+      <ScrollView showsVerticalScrollIndicator={false} style={[styles.scroll, { backgroundColor: mealColor }]}>
         {/* ── Date strip ── */}
         <View style={styles.dateStrip}>
-
           {/* Date nav row */}
           <View style={styles.dateNavRow}>
             <TouchableOpacity style={styles.chevronBtn} onPress={() => shiftDay(-1)} activeOpacity={0.7}>
@@ -251,11 +193,7 @@ export default function MenuScreen() {
           </View>
 
           {/* Day chips */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.dayChipsRow}
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayChipsRow}>
             {next7Days.map((date) => {
               const selected = isSameDay(date, selectedDate);
               return (
@@ -263,18 +201,58 @@ export default function MenuScreen() {
                   key={date.toISOString()}
                   style={[styles.dayChip, selected && styles.dayChipSelected]}
                   onPress={() => setSelectedDate(date)}
-                  activeOpacity={0.7}
-                >
+                  activeOpacity={0.7}>
                   <Text style={[styles.dayChipAbbrev, selected && styles.dayChipTextSelected]}>
                     {formatDayAbbrev(date)}
                   </Text>
-                  <Text style={[styles.dayChipNum, selected && styles.dayChipTextSelected]}>
-                    {date.getDate()}
-                  </Text>
+                  <Text style={[styles.dayChipNum, selected && styles.dayChipTextSelected]}>{date.getDate()}</Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
+        </View>
+
+        {/* ── Context band: location + meal ── */}
+        <View style={styles.contextBand}>
+          <View style={styles.selectorGroup}>
+            {/* Location toggle */}
+            <View style={[styles.segmentedControl, locationType === "residential" && styles.segmentedControlDivider]}>
+              {(["residential", "retail"] as const).map((type) => {
+                const label = type === "residential" ? "Dining Halls" : "Retail";
+                const active = locationType === type;
+                return (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.segmentBtn, active && styles.segmentBtnActive]}
+                    onPress={() => setLocationType(type)}
+                    activeOpacity={0.8}>
+                    <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Meal toggle (residential only) — hours shown inside each option */}
+            {locationType === "residential" && (
+              <View style={styles.mealPill}>
+                {meals.map((m) => {
+                  const active = meal === m;
+                  const label = isWeekendDay && m === "Lunch" ? "Brunch" : m;
+                  const shortHours = MEAL_HOURS_SHORT[label] ?? MEAL_HOURS_SHORT[m];
+                  return (
+                    <TouchableOpacity
+                      key={m}
+                      style={[styles.mealOption, active && styles.mealOptionActive]}
+                      onPress={() => setMeal(m)}
+                      activeOpacity={0.8}>
+                      <Text style={[styles.mealOptionText, active && styles.mealOptionTextActive]}>{label}</Text>
+                      <Text style={[styles.mealOptionHours, active && styles.mealOptionHoursActive]}>{shortHours}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
         </View>
 
         {/* ── Cards ── */}
@@ -387,88 +365,13 @@ const styles = StyleSheet.create({
   // ── Scroll ──
   scroll: {
     flex: 1,
-    backgroundColor: "#f7f8f9",
-  },
-
-  // ── Context band ──
-  contextBand: {
-    paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 20,
-    gap: 12,
-  },
-  segmentedControl: {
-    flexDirection: "row",
-    backgroundColor: "rgba(0,0,0,0.1)",
-    borderRadius: 10,
-    padding: 3,
-  },
-  segmentBtn: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  segmentBtnActive: {
-    backgroundColor: "#ffffff",
-    shadowColor: "#000",
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  segmentText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 13,
-    color: "rgba(22,101,52,0.65)",
-  },
-  segmentTextActive: {
-    color: "#166534",
-  },
-  mealPill: {
-    flexDirection: "row",
-    backgroundColor: "rgba(0,0,0,0.1)",
-    borderRadius: 10,
-    padding: 3,
-  },
-  mealOption: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  mealOptionActive: {
-    backgroundColor: "#166534",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  mealOptionText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 13,
-    color: "rgba(22,101,52,0.65)",
-  },
-  mealOptionTextActive: {
-    color: "#ffffff",
-  },
-  hoursText: {
-    textAlign: "center",
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: "#15803d",
-    marginTop: -4,
   },
 
   // ── Date strip ──
   dateStrip: {
-    backgroundColor: "#ffffff",
     paddingTop: 16,
     paddingBottom: 14,
     gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
   },
   dateNavRow: {
     flexDirection: "row",
@@ -480,7 +383,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "rgba(255,255,255,0.55)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -489,7 +392,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontFamily: "Poppins_600SemiBold",
     fontSize: 15,
-    color: "#111827",
+    color: "#14532d",
   },
   dayChipsRow: {
     paddingHorizontal: 16,
@@ -500,7 +403,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 11,
     borderRadius: 10,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "rgba(255,255,255,0.45)",
     minWidth: 46,
   },
   dayChipSelected: {
@@ -509,15 +412,79 @@ const styles = StyleSheet.create({
   dayChipAbbrev: {
     fontFamily: "Poppins_400Regular",
     fontSize: 11,
-    color: "#6b7280",
+    color: "#166534",
   },
   dayChipNum: {
     fontFamily: "Poppins_700Bold",
     fontSize: 15,
-    color: "#111827",
+    color: "#14532d",
   },
   dayChipTextSelected: {
     color: "#ffffff",
+  },
+
+  // ── Context band ──
+  contextBand: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 6,
+    gap: 10,
+  },
+  selectorGroup: {
+    borderRadius: 11,
+    overflow: "hidden",
+  },
+  segmentedControl: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.45)",
+  },
+  segmentedControlDivider: {},
+  segmentBtn: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 9,
+  },
+  segmentBtnActive: {
+    backgroundColor: "#166534",
+  },
+  segmentText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 13,
+    color: "#166534",
+  },
+  segmentTextActive: {
+    color: "#ffffff",
+  },
+  mealPill: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.45)",
+  },
+  mealOption: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 9,
+    paddingHorizontal: 2,
+    gap: 2,
+  },
+  mealOptionActive: {
+    backgroundColor: "#1e8449",
+  },
+  mealOptionText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 12.5,
+    color: "#166534",
+  },
+  mealOptionTextActive: {
+    color: "#ffffff",
+  },
+  mealOptionHours: {
+    marginTop: -4,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 9.5,
+    color: "rgba(22,101,52,0.65)",
+  },
+  mealOptionHoursActive: {
+    color: "rgba(255,255,255,0.75)",
   },
 
   // ── Cards ──
