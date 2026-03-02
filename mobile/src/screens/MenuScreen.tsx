@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import DiningHallCard from "../components/DiningHallCard";
 import { DUMMY_DINING_HALL } from "../data/dummyMenu";
+import FilterSheet, { ALL_HALLS, ALL_ALLERGENS, MENU_SORT_OPTIONS, MenuSortOption } from "../components/FilterSheet";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -101,9 +102,9 @@ const getCurrentMeal = (): string => {
 
 const isWeekend = (d: Date): boolean => [0, 6].includes(d.getDay());
 
-const getNext7Days = (): Date[] => {
+const getNextNDays = (n: number): Date[] => {
   const today = getToday();
-  return Array.from({ length: 7 }, (_, i) => {
+  return Array.from({ length: n }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     return d;
@@ -126,12 +127,29 @@ export default function MenuScreen() {
   const [meal, setMeal] = useState<string>(getCurrentMeal());
   const [locationType, setLocationType] = useState<"residential" | "retail">("residential");
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortOption, setSortOption] = useState<MenuSortOption>("Category");
+  const [selectedHalls, setSelectedHalls] = useState<string[]>(ALL_HALLS);
+  const [excludedAllergens, setExcludedAllergens] = useState<string[]>([]);
+  const [allergensEnabled, setAllergensEnabled] = useState(true);
+
+  const toggleHall = (hall: string) =>
+    setSelectedHalls((prev) => prev.includes(hall) ? prev.filter((h) => h !== hall) : [...prev, hall]);
+
+  const toggleAllergen = (allergen: string) =>
+    setExcludedAllergens((prev) => prev.includes(allergen) ? prev.filter((a) => a !== allergen) : [...prev, allergen]);
+
+  const resetFilters = () => {
+    setSortOption("Category");
+    setSelectedHalls(ALL_HALLS);
+    setExcludedAllergens([]);
+    setAllergensEnabled(true);
+  };
 
   const isWeekendDay = isWeekend(selectedDate);
   const meals = isWeekendDay ? ["Lunch", "Dinner"] : ["Breakfast", "Lunch", "Dinner"];
   const mealColor = locationType === "retail" ? BG_COLORS.Retail : (BG_COLORS[meal] ?? "#bde0ca");
-  const next7Days = getNext7Days();
-
+  const next14Days = getNextNDays(14);
   const displayedMeal = locationType === "retail" ? "Retail" : meal === "Lunch" && isWeekendDay ? "Brunch" : meal;
 
   const shiftDay = (delta: number) => {
@@ -143,6 +161,19 @@ export default function MenuScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
+      <FilterSheet
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        sortOption={sortOption}
+        setSortOption={setSortOption}
+        selectedHalls={selectedHalls}
+        toggleHall={toggleHall}
+        excludedAllergens={excludedAllergens}
+        toggleAllergen={toggleAllergen}
+        allergensEnabled={allergensEnabled}
+        setAllergensEnabled={setAllergensEnabled}
+        onReset={resetFilters}
+      />
       {/* ── Top accent bar ── */}
       <View style={styles.topBar} />
 
@@ -171,7 +202,7 @@ export default function MenuScreen() {
             onChangeText={setSearchTerm}
           />
         </View>
-        <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7} onPress={() => setFilterOpen(true)}>
           <FilterIcon />
         </TouchableOpacity>
       </View>
@@ -192,7 +223,7 @@ export default function MenuScreen() {
             </TouchableOpacity>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayChipsRow}>
-            {next7Days.map((date) => {
+            {next14Days.map((date) => {
               const selected = isSameDay(date, selectedDate);
               return (
                 <TouchableOpacity
