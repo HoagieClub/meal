@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import Svg, { Path, Line } from "react-native-svg";
-import { DiningHallData, MenuItem } from "../data/dummyMenu";
+import Svg, { Path } from "react-native-svg";
+import { DiningHallData, MenuItem, Nutrition } from "../data/dummyMenu";
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
 
 function PinIcon({ pinned }: { pinned: boolean }) {
   return (
@@ -73,10 +75,181 @@ function ThumbDownIcon({ active }: { active: boolean }) {
   );
 }
 
-function MenuItemRow({ item }: { item: MenuItem }) {
+function ChevronDownIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <View style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}>
+      <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+        <Path d="M6 9l6 6 6-6" stroke="#9ca3af" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+    </View>
+  );
+}
+
+// ─── Nutrition helpers ────────────────────────────────────────────────────────
+
+type NutrientType = "limit" | "good" | "neutral";
+
+function calcDV(amount: number | null | undefined, dv: number): number | null {
+  if (amount == null || amount === 0) return null;
+  return Math.round((amount / dv) * 100);
+}
+
+function rdvBarColor(rdvPercent: number | null, type: NutrientType): string {
+  if (rdvPercent == null || type === "neutral") return "#C9C9C9";
+  if (type === "good") return "#8BCF95";
+  if (rdvPercent < 15) return "#8BCF95";
+  if (rdvPercent <= 40) return "#F6C77D";
+  return "#FF8989";
+}
+
+function fmt(n: number | null | undefined): string {
+  if (n == null) return "–";
+  return parseFloat(n.toFixed(1)).toString();
+}
+
+// ─── NutrientCell ─────────────────────────────────────────────────────────────
+
+function NutrientCell({
+  label,
+  amount,
+  unit,
+  rdvPercent,
+  type = "neutral",
+  style,
+}: {
+  label: string;
+  amount: number | null | undefined;
+  unit: string;
+  rdvPercent: number | null;
+  type?: NutrientType;
+  style?: any;
+}) {
+  const barColor = rdvBarColor(rdvPercent, type);
+  const displayValue = amount != null ? `${fmt(amount)} ${unit}` : "–";
+
+  return (
+    <View style={[styles.ncCell, style]}>
+      <Text style={styles.ncLabel} numberOfLines={1}>{label}</Text>
+      <Text style={styles.ncValue}>{displayValue}</Text>
+      {rdvPercent != null && (
+        <View style={styles.ncRdvRow}>
+          <Text style={styles.ncRdvText}>{rdvPercent}%</Text>
+          <View style={[styles.ncRdvBar, { backgroundColor: barColor }]} />
+          <Text style={styles.ncRdvText}>RDV</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ─── ServingCalories ──────────────────────────────────────────────────────────
+
+function ServingCalories({
+  servingSize,
+  servingUnit,
+  calories,
+}: {
+  servingSize: number | null | undefined;
+  servingUnit: string | null | undefined;
+  calories: number | null | undefined;
+}) {
+  const servDisplay =
+    servingSize != null ? `${fmt(servingSize)}${servingUnit ? ` ${servingUnit}` : ""}` : "–";
+
+  return (
+    <View style={styles.scContainer}>
+      <View style={styles.scCol}>
+        <Text style={styles.ncLabel}>Serving Size</Text>
+        <Text style={styles.scValue}>{servDisplay}</Text>
+      </View>
+      <View style={styles.scDivider} />
+      <View style={styles.scCol}>
+        <Text style={styles.ncLabel}>Calories</Text>
+        <Text style={styles.scValue}>{fmt(calories)}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ─── NutritionPanel ───────────────────────────────────────────────────────────
+
+function NutritionPanel({ nutrition }: { nutrition: Nutrition }) {
+  return (
+    <View style={styles.npPanel}>
+      {/* Row 1: Serving + Calories | Sodium */}
+      <View style={styles.npRow}>
+        <ServingCalories
+          servingSize={nutrition.servingSize}
+          servingUnit={nutrition.servingUnit}
+          calories={nutrition.calories}
+        />
+        <NutrientCell
+          label="Sodium"
+          amount={nutrition.sodium}
+          unit="mg"
+          rdvPercent={calcDV(nutrition.sodium, 2300)}
+          type="limit"
+          style={styles.npSideCell}
+        />
+      </View>
+
+      {/* Row 2: Fat group | Protein */}
+      <View style={styles.npRow}>
+        <View style={styles.npGroupBox}>
+          <NutrientCell label="Total Fat" amount={nutrition.totalFat} unit="g" rdvPercent={calcDV(nutrition.totalFat, 78)} type="limit" style={styles.npGroupCell} />
+          <NutrientCell label="Sat. Fat" amount={nutrition.saturatedFat} unit="g" rdvPercent={calcDV(nutrition.saturatedFat, 20)} type="limit" style={styles.npGroupCell} />
+          <NutrientCell label="Trans Fat" amount={nutrition.transFat} unit="g" rdvPercent={calcDV(nutrition.transFat, 2)} type="limit" style={styles.npGroupCell} />
+        </View>
+        <NutrientCell label="Protein" amount={nutrition.protein} unit="g" rdvPercent={calcDV(nutrition.protein, 50)} type="good" style={styles.npSideCell} />
+      </View>
+
+      {/* Row 3: Carbs group | Cholesterol */}
+      <View style={[styles.npRow, { marginBottom: 6 }]}>
+        <View style={styles.npGroupBox}>
+          <NutrientCell label="Total Carbs" amount={nutrition.totalCarbohydrates} unit="g" rdvPercent={calcDV(nutrition.totalCarbohydrates, 275)} type="neutral" style={styles.npGroupCell} />
+          <NutrientCell label="Fiber" amount={nutrition.dietaryFiber} unit="g" rdvPercent={calcDV(nutrition.dietaryFiber, 28)} type="good" style={styles.npGroupCell} />
+          <NutrientCell label="Sugars" amount={nutrition.sugars} unit="g" rdvPercent={calcDV(nutrition.sugars, 50)} type="limit" style={styles.npGroupCell} />
+        </View>
+        <NutrientCell label="Cholesterol" amount={nutrition.cholesterol} unit="mg" rdvPercent={calcDV(nutrition.cholesterol, 300)} type="limit" style={styles.npSideCell} />
+      </View>
+
+      <View style={styles.npDivider} />
+
+      {/* Row 4: Vitamins & Minerals */}
+      <View style={[styles.npRow, { marginBottom: 0 }]}>
+        <NutrientCell label="Vitamin D" amount={nutrition.vitaminD} unit="mcg" rdvPercent={calcDV(nutrition.vitaminD, 20)} type="good" style={styles.npEqualCell} />
+        <NutrientCell label="Calcium" amount={nutrition.calcium} unit="mg" rdvPercent={calcDV(nutrition.calcium, 1300)} type="good" style={styles.npEqualCell} />
+        <NutrientCell label="Iron" amount={nutrition.iron} unit="mg" rdvPercent={calcDV(nutrition.iron, 18)} type="good" style={styles.npEqualCell} />
+        <NutrientCell label="Potassium" amount={nutrition.potassium} unit="mg" rdvPercent={calcDV(nutrition.potassium, 4700)} type="good" style={styles.npEqualCell} />
+      </View>
+
+      {nutrition.ingredients && (
+        <>
+          <View style={styles.npDivider} />
+          <Text style={styles.npIngredLabel}>Ingredients</Text>
+          <Text style={styles.npIngredText}>{nutrition.ingredients}</Text>
+        </>
+      )}
+    </View>
+  );
+}
+
+// ─── MenuItemRow ──────────────────────────────────────────────────────────────
+
+function MenuItemRow({
+  item,
+  expandedId,
+  setExpandedId,
+}: {
+  item: MenuItem;
+  expandedId: string | null;
+  setExpandedId: (id: string | null) => void;
+}) {
   const [vote, setVote] = useState<"like" | "dislike" | null>(null);
   const [likes, setLikes] = useState(item.likes);
   const [dislikes, setDislikes] = useState(item.dislikes);
+  const isExpanded = expandedId === item.id;
+  const hasNutrition = !!item.nutrition;
 
   const handleLike = () => {
     if (vote === "like") {
@@ -101,40 +274,65 @@ function MenuItemRow({ item }: { item: MenuItem }) {
   };
 
   return (
-    <View style={styles.itemRow}>
-      <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-      <View style={styles.itemActions}>
-        <TouchableOpacity style={styles.heartBtn} activeOpacity={0.7}>
-          <HeartIcon />
-        </TouchableOpacity>
-        <View style={styles.voteRow}>
-          <TouchableOpacity style={styles.voteBtn} onPress={handleLike} activeOpacity={0.7}>
-            <ThumbUpIcon active={vote === "like"} />
-            <Text style={[styles.voteCount, vote === "like" && styles.voteCountLike]}>{likes}</Text>
+    <View>
+      <View style={styles.itemRow}>
+        <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+        <View style={styles.itemActions}>
+          <TouchableOpacity style={styles.heartBtn} activeOpacity={0.7}>
+            <HeartIcon />
           </TouchableOpacity>
-          <View style={styles.voteDivider} />
-          <TouchableOpacity style={styles.voteBtn} onPress={handleDislike} activeOpacity={0.7}>
-            <ThumbDownIcon active={vote === "dislike"} />
-            <Text style={[styles.voteCount, vote === "dislike" && styles.voteCountDislike]}>{dislikes}</Text>
-          </TouchableOpacity>
+          <View style={styles.voteRow}>
+            <TouchableOpacity style={styles.voteBtn} onPress={handleLike} activeOpacity={0.7}>
+              <ThumbUpIcon active={vote === "like"} />
+              <Text style={[styles.voteCount, vote === "like" && styles.voteCountLike]}>{likes}</Text>
+            </TouchableOpacity>
+            <View style={styles.voteDivider} />
+            <TouchableOpacity style={styles.voteBtn} onPress={handleDislike} activeOpacity={0.7}>
+              <ThumbDownIcon active={vote === "dislike"} />
+              <Text style={[styles.voteCount, vote === "dislike" && styles.voteCountDislike]}>{dislikes}</Text>
+            </TouchableOpacity>
+          </View>
+          {hasNutrition && (
+            <TouchableOpacity
+              style={styles.chevronBtn}
+              onPress={() => setExpandedId(isExpanded ? null : item.id)}
+              activeOpacity={0.7}>
+              <ChevronDownIcon expanded={isExpanded} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
+      {isExpanded && item.nutrition && <NutritionPanel nutrition={item.nutrition} />}
     </View>
   );
 }
 
-function MenuSection({ category, items }: { category: string; items: MenuItem[] }) {
+// ─── MenuSection ──────────────────────────────────────────────────────────────
+
+function MenuSection({
+  category,
+  items,
+  expandedId,
+  setExpandedId,
+}: {
+  category: string;
+  items: MenuItem[];
+  expandedId: string | null;
+  setExpandedId: (id: string | null) => void;
+}) {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{category.toUpperCase()}</Text>
       </View>
       {items.map((item) => (
-        <MenuItemRow key={item.id} item={item} />
+        <MenuItemRow key={item.id} item={item} expandedId={expandedId} setExpandedId={setExpandedId} />
       ))}
     </View>
   );
 }
+
+// ─── DiningHallCard ───────────────────────────────────────────────────────────
 
 interface DiningHallCardProps {
   hall: DiningHallData;
@@ -142,8 +340,8 @@ interface DiningHallCardProps {
 
 export default function DiningHallCard({ hall }: DiningHallCardProps) {
   const [pinned, setPinned] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Group items by category, preserving first-seen order
   const categories: string[] = [];
   const grouped: Record<string, MenuItem[]> = {};
   for (const item of hall.menu) {
@@ -156,7 +354,6 @@ export default function DiningHallCard({ hall }: DiningHallCardProps) {
 
   return (
     <View style={styles.card}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.hallName}>{hall.displayName}</Text>
@@ -164,21 +361,21 @@ export default function DiningHallCard({ hall }: DiningHallCardProps) {
             <PinIcon pinned={pinned} />
           </TouchableOpacity>
         </View>
-        {/* Banner placeholder */}
         <View style={styles.banner}>
           <Text style={styles.bannerText}>{hall.displayName[0]}</Text>
         </View>
       </View>
-
-      {/* Menu sections */}
       {categories.map((cat) => (
-        <MenuSection key={cat} category={cat} items={grouped[cat]} />
+        <MenuSection key={cat} category={cat} items={grouped[cat]} expandedId={expandedId} setExpandedId={setExpandedId} />
       ))}
     </View>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
+  // ── Card ──
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 14,
@@ -190,6 +387,8 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginHorizontal: 16,
   },
+
+  // ── Header ──
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -229,6 +428,8 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: "#166534",
   },
+
+  // ── Section ──
   section: {
     marginTop: 4,
   },
@@ -245,6 +446,8 @@ const styles = StyleSheet.create({
     color: "#374151",
     letterSpacing: 0.8,
   },
+
+  // ── Item row ──
   itemRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -267,6 +470,10 @@ const styles = StyleSheet.create({
   },
   heartBtn: {
     padding: 3,
+  },
+  chevronBtn: {
+    padding: 3,
+    marginLeft: 2,
   },
   voteRow: {
     flexDirection: "row",
@@ -298,5 +505,116 @@ const styles = StyleSheet.create({
   },
   voteCountDislike: {
     color: "#b91c1c",
+  },
+
+  // ── Nutrient cell ──
+  ncCell: {
+    paddingVertical: 5,
+    paddingHorizontal: 3,
+  },
+  ncLabel: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 9,
+    color: "#898787",
+    marginBottom: 1,
+  },
+  ncValue: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 12.5,
+    color: "#454545",
+  },
+  ncRdvRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: 2,
+  },
+  ncRdvText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 8,
+    color: "#888888",
+  },
+  ncRdvBar: {
+    height: 3,
+    width: 16,
+    borderRadius: 2,
+  },
+
+  // ── Serving / Calories ──
+  scContainer: {
+    flex: 2,
+    flexDirection: "row",
+    backgroundColor: "#EFEFEF",
+    borderRadius: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginRight: 6,
+    alignItems: "center",
+  },
+  scCol: {
+    flex: 1,
+    alignItems: "center",
+  },
+  scValue: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 16,
+    color: "#454545",
+  },
+  scDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    backgroundColor: "#D5D5D5",
+    marginHorizontal: 6,
+  },
+
+  // ── Nutrition panel ──
+  npPanel: {
+    backgroundColor: "#F7F7F7",
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#eeeeee",
+  },
+  npRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 4,
+  },
+  npGroupBox: {
+    flex: 3,
+    flexDirection: "row",
+    backgroundColor: "#E8E8E8",
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginRight: 4,
+  },
+  npGroupCell: {
+    flex: 1,
+  },
+  npSideCell: {
+    flex: 1,
+    paddingLeft: 4,
+  },
+  npEqualCell: {
+    flex: 1,
+  },
+  npDivider: {
+    height: 1.5,
+    backgroundColor: "#E0E0E0",
+    marginVertical: 6,
+  },
+  npIngredLabel: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 10.5,
+    color: "#555555",
+    marginBottom: 3,
+  },
+  npIngredText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 10.5,
+    color: "#666666",
+    lineHeight: 15,
   },
 });
