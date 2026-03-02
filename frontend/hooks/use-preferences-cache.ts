@@ -4,7 +4,6 @@
  * - Pinned halls cache: DiningHall[]
  * - Dining halls preferences cache: DiningHall[]
  * - Allergens cache: Allergen[]
- * - Dietary restrictions cache: DietaryTag[]
  * - Show nutrition cache: boolean
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
@@ -22,27 +21,19 @@
 
 import { DINING_HALLS } from '@/types/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { DiningHall, Allergen, DietaryTag } from '@/types/types';
+import { DiningHall, Allergen } from '@/types/types';
 
 // Keys for each preference type
 const CACHE_KEYS = {
   PINNED_HALLS: 'diningPinnedHalls',
   DINING_HALLS: 'diningHallsPreferences',
   ALLERGENS: 'allergensPreferences',
-  DIETARY_RESTRICTIONS: 'dietaryRestrictionsPreferences',
-  SHOW_NUTRITION: 'showNutritionPreference',
-  SHOW_DIETARY_TAGS: 'showDietaryTagsPreference',
-  SHOW_ALLERGEN_TAGS: 'showAllergenTagsPreference',
 } as const;
 
 // Default values for each preference type
 const DEFAULT_PINNED_HALLS: DiningHall[] = [];
-const DEFAULT_DINING_HALLS: DiningHall[] = DINING_HALLS;
+const DEFAULT_DINING_HALLS: DiningHall[] = Array.from(DINING_HALLS);
 const DEFAULT_ALLERGENS: Allergen[] = [];
-const DEFAULT_DIETARY_RESTRICTIONS: DietaryTag[] = [];
-const DEFAULT_SHOW_NUTRITION: boolean = true;
-const DEFAULT_SHOW_DIETARY_TAGS: boolean = true;
-const DEFAULT_SHOW_ALLERGEN_TAGS: boolean = true;
 
 /**
  * Hook for managing user dining preferences cache
@@ -51,58 +42,25 @@ const DEFAULT_SHOW_ALLERGEN_TAGS: boolean = true;
  */
 export function usePreferencesCache() {
   // Pinned halls cache
-  const [pinnedHalls, setPinnedHalls, pinnedHallsLoading] = useLocalStorage<DiningHall[]>({
+  const [pinnedHalls, setPinnedHalls] = useLocalStorage<DiningHall[]>({
     key: CACHE_KEYS.PINNED_HALLS,
     initialValue: DEFAULT_PINNED_HALLS,
+    expiryInMs: 30 * 24 * 60 * 60 * 1000, // 1 month
   });
 
   // Dining halls preferences cache
-  const [diningHalls, setDiningHalls, diningHallsLoading] = useLocalStorage<DiningHall[]>({
+  const [diningHalls, setDiningHalls] = useLocalStorage<DiningHall[]>({
     key: CACHE_KEYS.DINING_HALLS,
     initialValue: DEFAULT_DINING_HALLS,
+    expiryInMs: 30 * 24 * 60 * 60 * 1000, // 1 month
   });
 
   // Allergens preferences cache
-  const [allergens, setAllergens, allergensLoading] = useLocalStorage<Allergen[]>({
+  const [allergens, setAllergens] = useLocalStorage<Allergen[]>({
     key: CACHE_KEYS.ALLERGENS,
     initialValue: DEFAULT_ALLERGENS,
+    expiryInMs: 30 * 24 * 60 * 60 * 1000, // 1 month
   });
-
-  // Dietary restrictions preferences cache
-  const [dietaryRestrictions, setDietaryRestrictions, dietaryRestrictionsLoading] = useLocalStorage<
-    DietaryTag[]
-  >({
-    key: CACHE_KEYS.DIETARY_RESTRICTIONS,
-    initialValue: DEFAULT_DIETARY_RESTRICTIONS,
-  });
-
-  // Show nutrition preference cache
-  const [showNutrition, setShowNutrition, showNutritionLoading] = useLocalStorage<boolean>({
-    key: CACHE_KEYS.SHOW_NUTRITION,
-    initialValue: DEFAULT_SHOW_NUTRITION,
-  });
-
-  // Show dietary tags preference cache
-  const [showDietaryTags, setShowDietaryTags, showDietaryTagsLoading] = useLocalStorage<boolean>({
-    key: CACHE_KEYS.SHOW_DIETARY_TAGS,
-    initialValue: DEFAULT_SHOW_DIETARY_TAGS,
-  });
-
-  // Show allergen tags preference cache
-  const [showAllergenTags, setShowAllergenTags, showAllergenTagsLoading] = useLocalStorage<boolean>({
-    key: CACHE_KEYS.SHOW_ALLERGEN_TAGS,
-    initialValue: DEFAULT_SHOW_ALLERGEN_TAGS,
-  });
-
-  // Loading state
-  const loading =
-    pinnedHallsLoading ||
-    diningHallsLoading ||
-    allergensLoading ||
-    dietaryRestrictionsLoading ||
-    showNutritionLoading ||
-    showDietaryTagsLoading ||
-    showAllergenTagsLoading;
 
   // Check if a dining hall is pinned
   const isPinned = (diningHall: DiningHall): boolean => {
@@ -119,149 +77,38 @@ export function usePreferencesCache() {
     return allergens.includes(allergen);
   };
 
-  // Check if a dietary restriction is in preferences
-  const hasDietaryRestriction = (dietaryRestriction: DietaryTag): boolean => {
-    return dietaryRestrictions.includes(dietaryRestriction);
-  };
-
-  // Check if show nutrition is enabled
-  const isShowNutritionEnabled = (): boolean => {
-    return showNutrition;
-  };
-
-  // Add a dining hall to pinned halls
-  const addPinnedHall = (diningHall: DiningHall): void => {
-    setPinnedHalls((prev) => {
-      if (prev.includes(diningHall)) {
-        return prev;
-      }
-      return [...prev, diningHall];
-    });
-  };
-
-  // Add a dining hall to preferences
-  const addDiningHall = (diningHall: DiningHall): void => {
-    setDiningHalls((prev) => {
-      if (prev.includes(diningHall)) {
-        return prev;
-      }
-      return [...prev, diningHall];
-    });
-  };
-
-  // Add an allergen to preferences
-  const addAllergen = (allergen: Allergen): void => {
-    setAllergens((prev) => {
-      if (prev.includes(allergen)) {
-        return prev;
-      }
-      return [...prev, allergen];
-    });
-  };
-
-  // Add a dietary restriction to preferences
-  const addDietaryRestriction = (dietaryRestriction: DietaryTag): void => {
-    setDietaryRestrictions((prev) => {
-      if (prev.includes(dietaryRestriction)) {
-        return prev;
-      }
-      return [...prev, dietaryRestriction];
-    });
-  };
-
-  // Remove a dining hall from pinned halls
-  const removePinnedHall = (diningHall: DiningHall): void => {
-    setPinnedHalls((prev) => {
-      if (!prev.includes(diningHall)) {
-        return prev;
-      }
-      return prev.filter((hall) => hall !== diningHall);
-    });
-  };
-
-  // Remove a dining hall from preferences
-  const removeDiningHall = (diningHall: DiningHall): void => {
-    setDiningHalls((prev) => {
-      if (!prev.includes(diningHall)) {
-        return prev;
-      }
-      const filtered = prev.filter((hall) => hall !== diningHall);
-      if (filtered.length === 0) {
-        return DEFAULT_DINING_HALLS;
-      }
-      return filtered;
-    });
-  };
-
-  // Remove an allergen from preferences
-  const removeAllergen = (allergen: Allergen): void => {
-    setAllergens((prev) => {
-      if (!prev.includes(allergen)) {
-        return prev;
-      }
-      return prev.filter((a) => a !== allergen);
-    });
-  };
-
-  // Remove a dietary restriction from preferences
-  const removeDietaryRestriction = (dietaryRestriction: DietaryTag): void => {
-    setDietaryRestrictions((prev) => {
-      if (!prev.includes(dietaryRestriction)) {
-        return prev;
-      }
-      return prev.filter((restriction) => restriction !== dietaryRestriction);
-    });
-  };
-
   // Toggle a dining hall's pinned status
   const togglePinnedHall = (diningHall: DiningHall): void => {
-    if (isPinned(diningHall)) {
-      removePinnedHall(diningHall);
-    } else {
-      addPinnedHall(diningHall);
-    }
+    setPinnedHalls((prev) => {
+      if (prev.includes(diningHall)) {
+        return prev.filter((hall) => hall !== diningHall);
+      }
+      return [...prev, diningHall];
+    });
   };
 
   // Toggle a dining hall in preferences
   const toggleDiningHall = (diningHall: DiningHall): void => {
-    if (hasDiningHall(diningHall)) {
-      removeDiningHall(diningHall);
-    } else {
-      addDiningHall(diningHall);
-    }
+    setDiningHalls((prev) => {
+      if (prev.includes(diningHall)) {
+        const filtered = prev.filter((hall) => hall !== diningHall);
+        if (filtered.length === 0) {
+          return DEFAULT_DINING_HALLS;
+        }
+        return filtered;
+      }
+      return [...prev, diningHall];
+    });
   };
 
   // Toggle an allergen in preferences
   const toggleAllergen = (allergen: Allergen): void => {
-    if (hasAllergen(allergen)) {
-      removeAllergen(allergen);
-    } else {
-      addAllergen(allergen);
-    }
-  };
-
-  // Toggle a dietary restriction in preferences
-  const toggleDietaryRestriction = (dietaryRestriction: DietaryTag): void => {
-    if (hasDietaryRestriction(dietaryRestriction)) {
-      removeDietaryRestriction(dietaryRestriction);
-    } else {
-      addDietaryRestriction(dietaryRestriction);
-    }
-  };
-
-  // Toggle show nutrition
-  const toggleShowNutrition = (): void => {
-    setShowNutrition((prev) => !prev);
-  };
-
-  // Toggle show dietary tags
-  const toggleShowDietaryTags = (): void => {
-    setShowDietaryTags((prev) => !prev);
-  };
-
-  // Toggle show allergen tags
-  const toggleShowAllergenTags = (): void => {
-    setShowAllergenTags((prev) => !prev);
+    setAllergens((prev) => {
+      if (prev.includes(allergen)) {
+        return prev.filter((a) => a !== allergen);
+      }
+      return [...prev, allergen];
+    });
   };
 
   // Clear all pinned halls
@@ -279,70 +126,33 @@ export function usePreferencesCache() {
     setAllergens(DEFAULT_ALLERGENS);
   };
 
-  // Clear all dietary restrictions preferences
-  const clearDietaryRestrictions = (): void => {
-    setDietaryRestrictions(DEFAULT_DIETARY_RESTRICTIONS);
-  };
-
-  // Clear show nutrition preference
-  const clearShowNutrition = (): void => {
-    setShowNutrition(DEFAULT_SHOW_NUTRITION);
-  };
-
   // Clear all preferences
   const clearAll = (): void => {
     clearPinnedHalls();
     clearDiningHalls();
     clearAllergens();
-    clearDietaryRestrictions();
-    clearShowNutrition();
   };
 
   return {
     // State
-    loading,
     pinnedHalls,
     diningHalls,
     allergens,
-    dietaryRestrictions,
-    showNutrition,
-    showDietaryTags,
-    showAllergenTags,
 
     // Checkers
     isPinned,
     hasDiningHall,
     hasAllergen,
-    hasDietaryRestriction,
-    isShowNutritionEnabled,
-
-    // Adders
-    addPinnedHall,
-    addDiningHall,
-    addAllergen,
-    addDietaryRestriction,
-
-    // Removers
-    removePinnedHall,
-    removeDiningHall,
-    removeAllergen,
-    removeDietaryRestriction,
 
     // Togglers
     togglePinnedHall,
     toggleDiningHall,
     toggleAllergen,
-    toggleDietaryRestriction,
-    toggleShowNutrition,
-    toggleShowDietaryTags,
-    toggleShowAllergenTags,
 
     // Clearers
     clearPinnedHalls,
     clearDiningHalls,
     clearAllergens,
-    clearDietaryRestrictions,
-    clearShowNutrition,
     clearAll,
   };
 }

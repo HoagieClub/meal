@@ -20,57 +20,36 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.postgres.fields import ArrayField
 
 
-class DiningVenue(models.Model):
-    """Represent a dining venue on campus.
-
-    This model maps to the dining API's location data.
+class DiningLocation(models.Model):
+    """Represent a dining location on campus.
 
     Attributes:
-        name (str): Name of the dining hall.
-        map_name (str): Name used for mapping purposes.
-        database_id (str): Unique API location identifier.
-        latitude (float): Latitude coordinate.
-        longitude (float): Longitude coordinate.
-        building_name (str): Name of the building.
-        amenities (list of str): List of available amenities.
-        is_active (bool): Operational status of the dining hall.
-        category_id (str): The category ID of the dining venue.
-        created_at (datetime): Timestamp when the record was created.
-        updated_at (datetime): Timestamp when the record was last updated.
+        id (str): The unique API location identifier.
+        category (str): The category ID of the dining venue.
+        name (str): The name of the dining venue.
+        url (str): The URL of the dining venue.
+        created_at (DateTimeField): The date and time the dining location was created.
+        updated_at (DateTimeField): The date and time the dining location was last updated.
 
     """
 
-    name = models.CharField(max_length=255, unique=True)
-    map_name = models.CharField(max_length=255)
-    database_id = models.CharField(
-        max_length=50, unique=True, help_text=_("API's location identifier"), primary_key=True
-    )
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    building_name = models.CharField(max_length=255)
-    amenities = ArrayField(models.CharField(max_length=100), blank=True, default=list)
-    is_active = models.BooleanField(default=True, help_text=_("Whether this dining hall is currently operational"))
-    category_id = models.CharField(
-        max_length=50, help_text=_("The category ID of the dining venue"), null=True, blank=True
-    )
+    id = models.CharField(max_length=50, primary_key=True, help_text=_("API's location identifier"))
+    category = models.CharField(max_length=50, help_text=_("The category ID of the dining venue"))
+    name = models.CharField(max_length=255, help_text=_("The name of the dining venue"))
+    url = models.URLField(max_length=500, help_text=_("The URL of the dining venue"))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        """Meta class for the DiningVenue model."""
+        """Meta class for the DiningLocation model."""
 
-        db_table = "dining_venues"
+        db_table = "dining_locations"
         indexes = [
-            models.Index(fields=["database_id"]),
+            models.Index(fields=["id"]),
+            models.Index(fields=["category"]),
             models.Index(fields=["name"]),
-            models.Index(fields=["category_id"]),
         ]
 
     def __str__(self):
-        """Return the string representation of the DiningVenue instance.
-
-        Returns:
-            str: The dining hall name along with the building name.
-
-        """
-        return f"{self.name} ({self.building_name})"
+        """Return the string representation of the DiningLocation instance."""
+        return f"{self.name} ({self.id})"

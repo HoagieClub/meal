@@ -15,137 +15,44 @@
 
 import { api } from '@/hooks/use-next-api';
 import {
-  MenuItem,
-  MenuItemInteraction,
-  MenuItemMetrics,
-  Menu,
-  MenusForLocations,
-  MenusForMealAndLocations,
-  MenusForDateMealAndLocations,
-  LocationMap,
+    MenuItem,
+    MenuItemInteraction,
+    MenuItemMetrics,
+    LocationMap,
 } from '@/types/types';
 
 /**
- * Gets dining locations.
+ * Gets all locations.
  *
- * @param params - Query parameters (category_id, fmt)
- * @returns API response with dining locations
+ * @returns API response with all locations
  */
-export const getDiningLocations = (params: { category_id?: string; fmt?: string } = {}) => {
-  const queryParams = new URLSearchParams({
-    category_id: params.category_id || '2',
-    ...(params.fmt && { fmt: params.fmt }),
-  });
-  const url = `/api/dining/locations/?${queryParams.toString()}`;
-  return api.get<{ data: LocationMap }>(url);
+export const getAllLocations = () => {
+    const url = '/api/locations/';
+    return api.get<{ data: LocationMap }>(url);
 };
 
 /**
- * Gets all dining locations.
+ * Gets all menus for a date.
  *
- * @returns API response with all dining locations
- */
-export const getAllDiningLocations = async () => {
-  const url = '/api/dining/locations/all/';
-  return api.get<{ data: LocationMap }>(url);
-};
-
-/**
- * Dining Menus API Endpoints
- */
-
-/**
- * Gets dining menu for a specific location and menu ID.
- *
- * @param params - Query parameters (location_id, menu_id)
- * @returns API response with menu data
- */
-export const getDiningMenu = async (params: { location_id: string; menu_id: string }) => {
-  const queryParams = new URLSearchParams({
-    location_id: params.location_id,
-    menu_id: params.menu_id,
-  });
-  const url = `/api/dining/menus/?${queryParams.toString()}`;
-  return api.get<{ data: Menu }>(url);
-};
-
-/**
- * Gets dining menus for all locations for a specific menu ID.
- *
- * @param params - Query parameters (menu_id)
+ * @param params - Query parameters (date - YYYY-MM-DD format)
  * @returns API response with menus data
  */
-export const getDiningMenusForLocations = async (params: { menu_id: string }) => {
-  const queryParams = new URLSearchParams({ menu_id: params.menu_id });
-  const url = `/api/dining/menus/locations/?${queryParams.toString()}`;
-  return api.get<{ data: MenusForLocations }>(url);
+export const getAllMenusForDate = (params: { date: string }) => {
+    const queryParams = new URLSearchParams({ date: params.date });
+    const url = `/api/menus/?${queryParams.toString()}`;
+    return api.get<{ data: any }>(url);
 };
 
 /**
- * Gets dining menus for all locations for a specific day.
+ * Gets or caches menu items by IDs.
  *
- * @param params - Query parameters (menu_date - YYYY-MM-DD format)
- * @returns API response with menus data
- */
-export const getDiningMenusForLocationsAndDay = async (params: { menu_date: string }) => {
-  const queryParams = new URLSearchParams({ menu_date: params.menu_date });
-  const url = `/api/dining/menus/locations/day/?${queryParams.toString()}`;
-  return api.get<{ data: MenusForMealAndLocations }>(url);
-};
-
-/**
- * Gets dining menus for all locations for a date range.
- *
- * @param params - Query parameters (start_date, end_date - YYYY-MM-DD format)
- * @returns API response with menus data
- */
-export const getDiningMenusForLocationsAndDays = async (params: {
-  start_date: string;
-  end_date: string;
-}) => {
-  const queryParams = new URLSearchParams({
-    start_date: params.start_date,
-    end_date: params.end_date,
-  });
-  const url = `/api/dining/menus/locations/days/?${queryParams.toString()}`;
-  return api.get<{ data: MenusForDateMealAndLocations }>(url);
-};
-
-/**
- * Gets a single dining menu item by API ID.
- *
- * @param params - Query parameters (api_id)
- * @returns API response with menu item data
- */
-export const getDiningMenuItem = async (params: { api_id: string }) => {
-  const queryParams = new URLSearchParams({ api_id: String(params.api_id) });
-  const url = `/api/dining/menu-items/?${queryParams.toString()}`;
-  return api.get<{ data: MenuItem }>(url);
-};
-
-/**
- * Gets multiple dining menu items by API IDs.
- *
- * @param params - Request body (api_ids - array of strings)
+ * @param params - Request body (ids - comma-separated string or array)
  * @returns API response with menu items data
  */
-export const getDiningMenuItems = async (params: { api_ids: string[] }) => {
-  const url = '/api/dining/menu-items/batch/';
-  return api.post<{ data: Record<string, MenuItem> }>(url, {
-    api_ids: params.api_ids,
-  });
-};
-
-/**
- * Gets user menu item interaction.
- *
- * @param params - Query parameters (menu_item_api_id)
- * @returns API response with interaction data
- */
-export const getUserMenuItemInteraction = async (params: { menu_item_api_id: string }) => {
-  const queryParams = new URLSearchParams({ menu_item_api_id: String(params.menu_item_api_id) });
-  const url = `/api/interactions/user/menu-item/?${queryParams.toString()}`;
-  return api.get<{ data: MenuItemInteraction }>(url);
+export const getMenuItems = (params: { ids: string | string[] }) => {
+    const ids = Array.isArray(params.ids) ? params.ids.join(',') : params.ids;
+    const url = `/api/menu-items/?ids=${encodeURIComponent(ids)}`;
+    return api.get<{ data: Record<string, MenuItem> }>(url);
 };
 
 /**
@@ -154,82 +61,34 @@ export const getUserMenuItemInteraction = async (params: { menu_item_api_id: str
  * @param params - Request body (menu_item_api_ids - array of strings)
  * @returns API response with interactions data dictionary
  */
-export const getUserMenuItemsInteractions = async (params: { menu_item_api_ids: string[] }) => {
-  const url = '/api/interactions/user/menu-items/';
-  return api.post<{ data: Record<string, MenuItemInteraction | null> }>(url, {
-    menu_item_api_ids: params.menu_item_api_ids,
-  });
+export const getUserMenuItemsInteractions = (params: { menu_item_api_ids: string[] }) => {
+    const url = '/api/engagement/interactions/';
+    return api.post<{ data: Record<string, MenuItemInteraction | null> }>(url, {
+        menu_item_api_ids: params.menu_item_api_ids,
+    });
 };
 
 /**
- * Records a user menu item view.
- *
- * @param params - Request body (menu_item_api_id)
- * @returns API response
- */
-export const recordUserMenuItemView = async (params: { menu_item_api_id: string }) => {
-  const url = '/api/interactions/user/menu-item/view/';
-  return api.post<{ data: MenuItemInteraction }>(url, {
-    menu_item_api_id: params.menu_item_api_id,
-  });
-};
-
-/**
- * Updates user menu item interaction (PUT).
+ * Patches user menu item interaction.
  *
  * @param params - Request body (menu_item_api_id, liked, favorited, saved_for_later, would_eat_again)
  * @returns API response with updated interaction data
  */
-export const updateUserMenuItemInteraction = async (params: {
-  menu_item_api_id: string;
-  liked?: boolean | null;
-  favorited?: boolean;
-  saved_for_later?: boolean;
-  would_eat_again?: string;
+export const patchUserMenuItemInteraction = (params: {
+    menu_item_api_id: string;
+    liked?: boolean | null;
+    favorited?: boolean;
+    saved_for_later?: boolean;
+    would_eat_again?: string;
 }) => {
-  const url = '/api/interactions/user/menu-item/update/';
-  return api.put<{ data: MenuItemInteraction }>(url, {
-    menu_item_api_id: params.menu_item_api_id,
-    liked: params.liked,
-    favorited: params.favorited,
-    saved_for_later: params.saved_for_later,
-    would_eat_again: params.would_eat_again,
-  });
-};
-
-/**
- * Patches user menu item interaction (PATCH).
- *
- * @param params - Request body (menu_item_api_id, liked, favorited, saved_for_later, would_eat_again)
- * @returns API response with updated interaction data
- */
-export const patchUserMenuItemInteraction = async (params: {
-  menu_item_api_id: string;
-  liked?: boolean | null;
-  favorited?: boolean;
-  saved_for_later?: boolean;
-  would_eat_again?: string;
-}) => {
-  const url = '/api/interactions/user/menu-item/update/';
-  return api.patch<{ data: MenuItemInteraction }>(url, {
-    menu_item_api_id: params.menu_item_api_id,
-    liked: params.liked,
-    favorited: params.favorited,
-    saved_for_later: params.saved_for_later,
-    would_eat_again: params.would_eat_again,
-  });
-};
-
-/**
- * Gets menu item metrics.
- *
- * @param params - Query parameters (menu_item_api_id)
- * @returns API response with metrics data
- */
-export const getMenuItemMetrics = async (params: { menu_item_api_id: string }) => {
-  const queryParams = new URLSearchParams({ menu_item_api_id: String(params.menu_item_api_id) });
-  const url = `/api/interactions/menu-item/metrics/?${queryParams.toString()}`;
-  return api.get<{ data: MenuItemMetrics }>(url);
+    const url = '/api/engagement/interaction/';
+    return api.patch<{ data: MenuItemInteraction }>(url, {
+        menu_item_api_id: params.menu_item_api_id,
+        liked: params.liked,
+        favorited: params.favorited,
+        saved_for_later: params.saved_for_later,
+        would_eat_again: params.would_eat_again,
+    });
 };
 
 /**
@@ -238,24 +97,10 @@ export const getMenuItemMetrics = async (params: { menu_item_api_id: string }) =
  * @param params - Request body (menu_item_api_ids - array of strings)
  * @returns API response with metrics data dictionary
  */
-export const getMenuItemsMetrics = async (params: { menu_item_api_ids: string[] }) => {
-  const url = '/api/interactions/menu-items/metrics/';
-  return api.post<{ data: Record<string, MenuItemMetrics | null> }>(url, {
-    menu_item_api_ids: params.menu_item_api_ids,
-  });
-};
-
-/**
- * Gets recommendation score for a single menu item.
- *
- * @param params - Request body (menu_item_api_id - string)
- * @returns API response with menu item score
- */
-export const getMenuItemScore = async (params: { menu_item_api_id: string }) => {
-  const url = '/api/recommend/menu-item/';
-  return api.post<{ data: number }>(url, {
-    menu_item_api_id: params.menu_item_api_id,
-  });
+export const getMenuItemsMetrics = (params: { menu_item_api_ids: string[] }) => {
+    const ids = params.menu_item_api_ids.join(',');
+    const url = `/api/engagement/metrics/?menu_item_api_ids=${encodeURIComponent(ids)}`;
+    return api.get<{ data: Record<string, MenuItemMetrics | null> }>(url);
 };
 
 /**
@@ -264,9 +109,19 @@ export const getMenuItemScore = async (params: { menu_item_api_id: string }) => 
  * @param params - Request body (menu_item_api_ids - array of strings)
  * @returns API response with dictionary mapping menu item API IDs to scores
  */
-export const getMenuItemsScore = async (params: { menu_item_api_ids: string[] }) => {
-  const url = '/api/recommend/menu-items/';
-  return api.post<{ data: Record<string, number> }>(url, {
-    menu_item_api_ids: params.menu_item_api_ids,
-  });
+export const getMenuItemsScore = (params: { menu_item_api_ids: string[] }) => {
+    const url = '/api/recommend/';
+    return api.post<{ data: Record<string, number> }>(url, {
+        menu_item_api_ids: params.menu_item_api_ids,
+    });
+};
+
+/**
+ * Verifies user authentication and gets or creates the user.
+ *
+ * @returns API response with user data
+ */
+export const verifyUser = () => {
+    const url = '/api/user/';
+    return api.post<{ data: any }>(url, {});
 };

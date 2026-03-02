@@ -14,48 +14,62 @@
 
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { Pane, Heading, Text, majorScale, minorScale, useTheme, SearchIcon } from 'evergreen-ui';
-import DiningHallCard from '@/app/menu/components/dining-hall-card';
-import HallMenuModal from '@/app/menu/components/hall-menu-modal';
-import SkeletonDiningHallCard from '@/app/menu/components/dining-hall-card-skeleton';
-import FilterSidebar from '@/app/menu/components/filter-sidebar';
-import DateMealSelector from '@/app/menu/components/date-meal-selector';
-import { useDate } from '@/hooks/use-date';
+import React, { useEffect, useState } from 'react';
+import {
+  Pane,
+  Heading,
+  Text,
+  majorScale,
+  minorScale,
+  useTheme,
+  SearchIcon,
+  FilterListIcon,
+} from 'evergreen-ui';
+import DiningHallCard from '@/components/dining-hall-card/dining-hall-card';
+import SkeletonDiningHallCard from '@/components/dining-hall-card/dining-hall-card-skeleton';
+import FilterSidebar from '@/components/filter-sidebar/filter-sidebar';
+import DateMealSelector from '@/components/menu-page/date-meal-selector';
+import LocationTypeToggle from '@/components/menu-page/location-type-toggle';
+import MobileFilterBar from '@/components/menu-page/mobile-filter-bar';
 import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { MenuSortOption } from '@/types/types';
-import {
-  useLocationsCache,
-  useMenuItemsCache,
-  useMenuStructureCache,
-} from '@/hooks/use-menu-cache';
 import { MEAL_RANGES } from '@/data';
 import { MEAL_COLOR_MAP } from '@/styles';
-import {
-  Meal,
-  MenusForLocations,
-  DiningHall,
-  MenuItemMap,
-  ApiId,
-  MenuItemScoreMap,
-  LocationMap,
-  MenuItemMetricsMap,
-  MenuItemInteractionMap,
-} from '@/types/types';
-import {
-  buildDisplayData,
-  fetchLocationsWithCache,
-  fetchMenusForLocations,
-  fetchMenuItems,
-  fetchMenuItemMetrics,
-  fetchUserMenuItemInteractions,
-  fetchMenuItemScores,
-} from './actions';
+import { Meal, DiningHall } from '@/types/types';
 import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
+import { useMenuApi } from '@/hooks/use-menu-api';
 import {
-  getAllDiningLocations,
-} from '@/lib/next-endpoints';
+  useBuildResidentialDisplayData,
+  useBuildRetailDisplayData,
+} from '@/hooks/use-build-display-data';
+
+const getToday = (): Date => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+const getDateKey = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+const getCurrentMeal = (): Meal => {
+  const now = new Date();
+  const hour = now.getHours();
+  if (hour < 11) {
+    return 'Breakfast';
+  } else if (hour < 17) {
+    return 'Lunch';
+  } else {
+    return 'Dinner';
+  }
+};
+
+const isWeekend = (date: Date): boolean => {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+};
 
 /**
  * Menu page component.
@@ -65,405 +79,364 @@ import {
 export default function MenuPage() {
   const theme = useTheme();
 
-  // Create page loading states for all data fetching operations
-  const [loading, setLoading] = useState({
-    menusForLocations: true,
-    menuItems: false,
-    locations: false,
-    menuItemMetrics: false,
-    userMenuItemInteractions: false,
-    menuItemScores: false,
-  });
+  const [selectedDate, setSelectedDate] = useState<Date>(getToday());
+  const dateKey = getDateKey(selectedDate);
+  const currentMeal = getCurrentMeal();
+  const { data, loading } = useMenuApi(dateKey);
+  const residentialLocations = data?.residentialLocations ?? {};
+  const retailLocations = data?.retailLocations ?? {};
+  const residentialMenus = data?.residentialMenus ?? {};
+  const retailMenus = data?.retailMenus ?? {};
+  const menuItems = data?.menuItems ?? {};
+  const interactions = data?.interactions ?? {};
+  const metrics = data?.metrics ?? {};
+  const recommendations = data?.recommendations ?? {};
 
-  // Get the date related information from the useDate hook
-  const { currentMeal, dateKey, formattedDateForDisplay, goToPreviousDay, goToNextDay, isWeekend, selectedDate, goToDate } = useDate();
-
-  // Get the preferences for the menu page from local storage
   const {
     diningHalls,
-    dietaryRestrictions,
     allergens,
     pinnedHalls,
-    showNutrition,
-    toggleShowNutrition,
-    showDietaryTags,
-    toggleShowDietaryTags,
-    showAllergenTags,
-    toggleShowAllergenTags,
     toggleDiningHall,
-    toggleDietaryRestriction,
     toggleAllergen,
     togglePinnedHall,
     clearAll: clearPreferences,
-    loading: preferencesLoading,
   } = usePreferencesCache();
 
-  // Get menu, menu items, and location cache
-  const {
-    menuStructureCacheLoading,
-    getApiIdsForMenusForLocations,
-    setApiIdsForMenusForMealsLocations,
-  } = useMenuStructureCache();
-  const { menuItemsCacheLoading, getMenuItems, setMenuItems } = useMenuItemsCache();
-  const { locationsCacheLoading, getAllLocations, setLocations } = useLocationsCache();
-
-  // Create a loading state for the cache
-  const cacheLoading =
-    preferencesLoading ||
-    menuStructureCacheLoading ||
-    menuItemsCacheLoading ||
-    locationsCacheLoading;
-
-  // Create state to store the data that will be rendered/operated on
-  const [menusForLocationsState, setMenusForLocationsState] = useState<MenusForLocations>({});
-  const [menuItemsState, setMenuItemsState] = useState<MenuItemMap>({});
-  const [menuItemMetricsState, setMenuItemMetricsState] = useState<MenuItemMetricsMap>({});
-  const [userMenuItemInteractionsState, setUserMenuItemInteractionsState] =
-    useState<MenuItemInteractionMap>({});
-  const [menuItemScoresState, setMenuItemScoresState] = useState<MenuItemScoreMap>({});
-  const [locationsState, setLocationsState] = useState<LocationMap>({});
-
-  // Create state for the meal, search term, modal hall, and sort option
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
+  const [locationType, setLocationType] = useState<'residential' | 'retail'>('residential');
   const [searchTerm, setSearchTerm] = useState('');
-  const [modalHall, setModalHall] = useState<Location | null>(null);
-  const [sortOption, setSortOption] = useState<MenuSortOption>('Best');
+  const [sortOption, setSortOption] = useState<MenuSortOption>('Category');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [mobileScrolled, setMobileScrolled] = useState(false);
 
-  // Media query flags
+  useEffect(() => {
+    const onScroll = () => setMobileScrolled(window.scrollY > 4);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   const hideSidebar = useMediaQuery('(min-width: 1080px)');
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
-  const stackMenuHeader = useMediaQuery('(max-width: 880px)');
+  const stackMenuHeaderMobile = useMediaQuery('(max-width: 763px)');
+  const stackMenuHeaderWithSidebar = useMediaQuery('(max-width: 1019px)');
+  const stackMenuHeader =
+    !hideFilterSidebar && sidebarOpen ? stackMenuHeaderWithSidebar : stackMenuHeaderMobile;
 
-  // Fetch menu data for the selected date
-  useEffect(() => {
-    if (cacheLoading || !meal || !dateKey) return;
-    setLoading((prev) => ({ ...prev, menusForLocations: true }));
+  const residentialDisplayData = useBuildResidentialDisplayData({
+    locations: residentialLocations,
+    residentialMenus,
+    menuItems,
+    interactions,
+    metrics,
+    recommendations,
+    appliedDiningHalls: diningHalls,
+    appliedAllergens: allergens,
+    searchTerm,
+    pinnedHalls: pinnedHalls,
+    meal,
+    sortOption,
+  });
 
-    async function fetchMenuData() {
-      const menusForLocations = await fetchMenusForLocations(
-        dateKey,
-        meal,
-        getApiIdsForMenusForLocations,
-        setApiIdsForMenusForMealsLocations
-      );
-      setMenusForLocationsState(menusForLocations);
-      setLoading((prev) => ({ ...prev, menusForLocations: false }));
-    }
+  const retailDisplayData = useBuildRetailDisplayData({
+    locations: retailLocations,
+    retailMenus,
+    menuItems,
+    interactions,
+    metrics,
+    recommendations,
+    appliedDiningHalls: diningHalls,
+    appliedAllergens: allergens,
+    searchTerm,
+    pinnedHalls: pinnedHalls,
+    sortOption,
+  });
 
-    fetchMenuData();
-  }, [dateKey, cacheLoading, meal]);
+  const displayMenusForLocations =
+    locationType === 'retail' ? retailDisplayData : residentialDisplayData;
 
-  // Fetch menu items for the found menu
-  useEffect(() => {
-    if (cacheLoading) return;
-    if (!menusForLocationsState || Object.keys(menusForLocationsState).length === 0) {
-      setLoading((prev) => ({ ...prev, menuItems: false }));
-      return;
-    }
-
-    setLoading((prev) => ({ ...prev, menuItems: true }));
-
-    async function fetchMenuItemsData() {
-      const menuItems = await fetchMenuItems(menusForLocationsState, getMenuItems, setMenuItems);
-      setMenuItemsState(menuItems);
-      setLoading((prev) => ({ ...prev, menuItems: false }));
-    }
-
-    fetchMenuItemsData();
-  }, [cacheLoading, menusForLocationsState]);
-
-  // Fetch menu item metrics, user menu item interactions, and menu item scores for the found menu
-  useEffect(() => {
-    if (cacheLoading) return;
-    if (!menusForLocationsState || Object.keys(menusForLocationsState).length === 0) {
-      setLoading((prev) => ({ ...prev, menuItemMetrics: false, userMenuItemInteractions: false, menuItemScores: false }));
-      return;
-    }
-
-    setLoading((prev) => ({
-      ...prev,
-      menuItemMetrics: true,
-      userMenuItemInteractions: true,
-      menuItemScores: true,
-    }));
-
-    async function fetchAllMenuItemData() {
-      const [menuItemMetrics, userMenuItemInteractions, menuItemScores] = await Promise.all([
-        fetchMenuItemMetrics(menusForLocationsState),
-        fetchUserMenuItemInteractions(menusForLocationsState),
-        fetchMenuItemScores(menusForLocationsState),
-      ]);
-
-      setMenuItemMetricsState(menuItemMetrics);
-      setUserMenuItemInteractionsState(userMenuItemInteractions);
-      setMenuItemScoresState(menuItemScores);
-
-      setLoading((prev) => ({
-        ...prev,
-        menuItemMetrics: false,
-        userMenuItemInteractions: false,
-        menuItemScores: false,
-      }));
-    }
-
-    fetchAllMenuItemData();
-  }, [cacheLoading, menusForLocationsState]);
-
-  // Fetch locations
-  useEffect(() => {
-    if (cacheLoading) return;
-    setLoading((prev) => ({ ...prev, locations: true }));
-
-    async function fetchLocations() {
-      const locations = await fetchLocationsWithCache(getAllLocations, setLocations);
-      setLocationsState(locations);
-      setLoading((prev) => ({ ...prev, locations: false }));
-    }
-
-    fetchLocations();
-  }, [cacheLoading]);
-
-  // Build display data for the current meal
-  const displayMenusForLocations = useMemo(
-    () =>
-      buildDisplayData({
-        menusForLocations: menusForLocationsState,
-        locationItems: locationsState,
-        menuItems: menuItemsState,
-        menuItemMetrics: menuItemMetricsState,
-        userMenuItemInteractions: userMenuItemInteractionsState,
-        menuItemScores: menuItemScoresState,
-        appliedDiningHalls: diningHalls,
-        appliedDietaryRestrictions: dietaryRestrictions,
-        appliedAllergens: allergens,
-        searchTerm,
-        pinnedHalls: pinnedHalls,
-        sortOption,
-      }),
-    [
-      menusForLocationsState,
-      locationsState,
-      menuItemsState,
-      menuItemMetricsState,
-      userMenuItemInteractionsState,
-      menuItemScoresState,
-      diningHalls,
-      dietaryRestrictions,
-      allergens,
-      searchTerm,
-      pinnedHalls,
-      meal,
-      dateKey,
-      sortOption,
-    ]
-  );
-
-  // Render skeleton cards while loading
-  const DiningHallSkeletonCards = () => {
-    return (
-      <Pane
-        display='grid'
-        overflowY='auto'
-        paddingBottom={majorScale(6)}
-        paddingRight={majorScale(3)}
-        gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
-        gap={majorScale(2)}
-        className='h-full no-scrollbar'
-      >
-        {Array(6)
-          .fill(0)
-          .map((_, i) => (
-            <SkeletonDiningHallCard key={i} />
-          ))}
-      </Pane>
-    );
-  };
-
-  // Render empty state if no menu items are found
-  const NoMenusFoundCard = () => (
-    <Pane
-      display='flex'
-      alignItems='center'
-      justifyContent='center'
-      paddingY={majorScale(8)}
-      flexDirection='column'
-      width='100%'
-      background={theme.colors.gray100}
-      borderRadius={12}
-      border={`2px dashed ${theme.colors.green400}`}
-      marginTop={majorScale(2)}
-      className='h-full'
-    >
-      <SearchIcon color={theme.colors.gray600} size={32} marginBottom={majorScale(2)} />
-      <Heading size={500} color={theme.colors.gray800} marginBottom={minorScale(1)}>
-        No Dishes Found
-      </Heading>
-      <Text size={400} color='muted' textAlign='center'>
-        Try adjusting your search terms or filters.
-      </Text>
-    </Pane>
-  );
-
-  // Render dining hall cards
-  const DiningHallCards = () => {
-    return (
-      <Pane
-        display='grid'
-        overflowY='auto'
-        paddingBottom={majorScale(6)}
-        paddingRight={majorScale(3)}
-        gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
-        gap={majorScale(2)}
-        className='h-full no-scrollbar'
-      >
-        {displayMenusForLocations.map((diningHall) => {
-          const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
-          return (
-            <DiningHallCard
-              key={diningHall.name}
-              diningHall={diningHall}
-              setModalHall={setModalHall}
-              showNutrition={showNutrition}
-              showDietaryTags={showDietaryTags}
-              showAllergenTags={showAllergenTags}
-              isPinned={isPinned}
-              onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
-            />
-          );
-        })}
-      </Pane>
-    );
-  };
-
-  // Render the menu page
   return (
     <NutritionAccordionProvider>
-    <Pane
-      display='flex'
-      className='sm:flex-row overflow-hidden min-h-screen flex-col transition-colors duration-300'
-      background={MEAL_COLOR_MAP(theme)[meal]}
-    >
-      {/* Filter sidebar for desktop*/}
-      {!hideFilterSidebar && (
-        <FilterSidebar
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          showNutrition={showNutrition}
-          toggleShowNutrition={toggleShowNutrition}
-          showDietaryTags={showDietaryTags}
-          toggleShowDietaryTags={toggleShowDietaryTags}
-          showAllergenTags={showAllergenTags}
-          toggleShowAllergenTags={toggleShowAllergenTags}
-          sortOption={sortOption}
-          setSortOption={setSortOption}
-          diningHalls={diningHalls}
-          dietaryRestrictions={dietaryRestrictions}
-          allergens={allergens}
-          toggleDiningHall={toggleDiningHall}
-          toggleDietaryRestriction={toggleDietaryRestriction}
-          toggleAllergen={toggleAllergen}
-          clearPreferences={clearPreferences}
-          variant='sidebar'
-        />
-      )}
-
       <Pane
-        flex={1}
-        className={`overflow-x-hidden h-full no-scrollbar`}
-        paddingRight={hideSidebar ? 0 : majorScale(3)}
-        paddingLeft={hideFilterSidebar ? majorScale(3) : 0}
+        display='flex'
+        className='sm:flex-row sm:overflow-hidden min-h-screen flex-col transition-colors duration-300'
+        background={MEAL_COLOR_MAP(theme)[meal]}
       >
-        {/* Header for the menu page */}
-        <Pane>
-          <Pane
-            display='flex'
-            alignItems='center'
-            justifyContent='space-between'
-            marginY={majorScale(1)}
-            className={`flex-col ${stackMenuHeader ? 'flex-col' : 'flex-row'} text-center sm:text-left`}
+        {!hideFilterSidebar && (
+          <div
+            className='sidebar-slide-wrapper'
+            style={{
+              width: sidebarOpen ? 280 : 0,
+              minWidth: sidebarOpen ? 280 : 0,
+              transform: `translateX(${sidebarOpen ? 0 : -280}px)`,
+            }}
           >
-            {/* Render the meal header */}
-            <Pane width={240}>
-              <Heading className='text-5xl' color={theme.colors.green700} fontWeight={900}>
-                {meal.toUpperCase()}
-              </Heading>
-              <Text className='text-xl' color={theme.colors.green600} fontWeight={600}>
-                {MEAL_RANGES[meal]}
-              </Text>
-            </Pane>
-
-            {/* Render the date and meal selector */}
-            <DateMealSelector
-              meal={meal}
-              setMeal={setMeal}
-              formattedDateForDisplay={formattedDateForDisplay}
-              goToPreviousDay={goToPreviousDay}
-              goToNextDay={goToNextDay}
-              isWeekend={isWeekend}
-              selectedDate={selectedDate}
-              goToDate={goToDate}
-            />
-
-            {/* Render the sort and filter options */}
-            <Pane
-              display='flex'
-              flexDirection='column'
-              gap={majorScale(2)}
-              width={240}
-              alignItems='flex-end'
-              justifyContent='flex-start'
-            ></Pane>
-          </Pane>
-
-          {/* Render the filter sidebar for mobile */}
-          {hideFilterSidebar && (
             <FilterSidebar
+              locationType={locationType}
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
-              showNutrition={showNutrition}
-              toggleShowNutrition={toggleShowNutrition}
-              showDietaryTags={showDietaryTags}
-              toggleShowDietaryTags={toggleShowDietaryTags}
-              showAllergenTags={showAllergenTags}
-              toggleShowAllergenTags={toggleShowAllergenTags}
               sortOption={sortOption}
               setSortOption={setSortOption}
               diningHalls={diningHalls}
-              dietaryRestrictions={dietaryRestrictions}
               allergens={allergens}
               toggleDiningHall={toggleDiningHall}
-              toggleDietaryRestriction={toggleDietaryRestriction}
               toggleAllergen={toggleAllergen}
               clearPreferences={clearPreferences}
-              variant='mobile'
+              variant='sidebar'
+              onClose={() => setSidebarOpen(false)}
             />
+          </div>
+        )}
+
+        <Pane flex={1} className='h-full no-scrollbar' style={{ overflowX: 'clip' }}>
+          {/* Mobile: sticky search/filter bar only */}
+          {hideFilterSidebar && (
+            <>
+              <div
+                className={`sticky top-0 z-50 transition-shadow duration-200${mobileScrolled ? ' shadow-[0px_4px_8px_rgba(0,0,0,0.1)]' : ''}`}
+                style={{ background: MEAL_COLOR_MAP(theme)[meal] }}
+              >
+                {/* Filter popover — slides down from top of sticky bar, overlays content */}
+                <div
+                  className='absolute top-0 left-0 right-0 z-[60]'
+                  style={{ pointerEvents: mobileFilterOpen ? 'auto' : 'none' }}
+                >
+                  <div
+                    className='mobile-filter-popover'
+                    data-state={mobileFilterOpen ? 'open' : 'closed'}
+                  >
+                    <div className='mobile-filter-popover-inner bg-white rounded-b-[20px] shadow-[0px_4px_8px_rgba(0,0,0,0.15)] max-h-[100dvh] overflow-y-auto'>
+                      <FilterSidebar
+                        variant='mobile-popover'
+                        locationType={locationType}
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                        sortOption={sortOption}
+                        setSortOption={setSortOption}
+                        diningHalls={diningHalls}
+                        allergens={allergens}
+                        toggleDiningHall={toggleDiningHall}
+                        toggleAllergen={toggleAllergen}
+                        clearPreferences={clearPreferences}
+                        onClose={() => setMobileFilterOpen(false)}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <MobileFilterBar
+                  locationType={locationType}
+                  setLocationType={setLocationType}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  filterOpen={mobileFilterOpen}
+                  setFilterOpen={setMobileFilterOpen}
+                />
+              </div>
+              {/* Non-sticky: meal title + date selector scroll with page */}
+              <div className='flex flex-col items-center text-center px-4 pt-2'>
+                {(() => {
+                  const displayedMeal =
+                    locationType === 'retail'
+                      ? 'Retail'
+                      : meal === 'Lunch' && isWeekend(selectedDate)
+                        ? 'Brunch'
+                        : meal;
+                  return (
+                    <>
+                      <Heading
+                        key={displayedMeal}
+                        className='text-4xl meal-title-enter p-0'
+                        color={theme.colors.green700}
+                        fontWeight={900}
+                      >
+                        {displayedMeal}
+                      </Heading>
+                      <Text
+                        key={`hours-${displayedMeal}`}
+                        className='text-xl meal-title-enter'
+                        color={theme.colors.green600}
+                        fontWeight={600}
+                        style={{ animationDelay: '30ms' }}
+                      >
+                        {locationType === 'retail' ? 'Hours vary' : MEAL_RANGES[meal]}
+                      </Text>
+                    </>
+                  );
+                })()}
+              </div>
+              <div className='mx-4'>
+                <DateMealSelector
+                  meal={meal}
+                  setMeal={setMeal}
+                  selectedDate={selectedDate}
+                  setSelectedDate={setSelectedDate}
+                  locationType={locationType}
+                />
+              </div>
+            </>
           )}
 
-          {/* Render the correct content depending on the loading/data states */}
-          {loading.menusForLocations ||
-            loading.menuItems ||
-            loading.locations ||
-            loading.menuItemMetrics ||
-            loading.userMenuItemInteractions ? (
-            <DiningHallSkeletonCards />
-          ) : displayMenusForLocations.length === 0 ? (
-            <NoMenusFoundCard />
-          ) : (
-            <DiningHallCards />
-          )}
+          <Pane
+            paddingRight={majorScale(3)}
+            paddingLeft={hideFilterSidebar || !sidebarOpen ? majorScale(3) : 0}
+          >
+            <Pane maxWidth={1200} marginX='auto' width='100%'>
+              {/* Desktop: non-sticky header with meal title, date selector, location toggle */}
+              {!hideFilterSidebar && (
+                <Pane
+                  display='flex'
+                  alignItems='center'
+                  justifyContent='space-between'
+                  marginY={majorScale(1)}
+                  minHeight={160}
+                  className={stackMenuHeader ? 'flex-col' : 'flex-row'}
+                >
+                  <Pane
+                    width={stackMenuHeader ? undefined : 240}
+                    className={`flex flex-col ${stackMenuHeader ? 'items-center text-center pt-5' : 'items-start'} justify-start`}
+                  >
+                    {(() => {
+                      const displayedMeal =
+                        locationType === 'retail'
+                          ? 'Retail'
+                          : meal === 'Lunch' && isWeekend(selectedDate)
+                            ? 'Brunch'
+                            : meal;
+                      return (
+                        <>
+                          <Heading
+                            key={displayedMeal}
+                            className='text-5xl meal-title-enter'
+                            color={theme.colors.green700}
+                            fontWeight={900}
+                          >
+                            {displayedMeal}
+                          </Heading>
+                          <Text
+                            key={`hours-${displayedMeal}`}
+                            className='text-xl meal-title-enter'
+                            color={theme.colors.green600}
+                            fontWeight={600}
+                            style={{ animationDelay: '30ms' }}
+                          >
+                            {locationType === 'retail' ? 'Hours vary' : MEAL_RANGES[meal]}
+                          </Text>
+                        </>
+                      );
+                    })()}
+                    <Pane
+                      display='inline-flex'
+                      alignItems='center'
+                      gap={minorScale(2)}
+                      cursor={sidebarOpen ? 'default' : 'pointer'}
+                      onClick={sidebarOpen ? undefined : () => setSidebarOpen(true)}
+                      borderRadius={999}
+                      className='select-none bg-[#A2D4B8]/50'
+                      style={{
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        opacity: sidebarOpen ? 0 : 1,
+                        maxWidth: sidebarOpen ? 0 : 200,
+                        height: sidebarOpen ? 0 : 28,
+                        marginTop: sidebarOpen ? 0 : 12,
+                        paddingLeft: sidebarOpen ? 0 : 12,
+                        paddingRight: sidebarOpen ? 0 : 12,
+                        pointerEvents: sidebarOpen ? 'none' : 'auto',
+                        transition:
+                          'max-width 250ms ease, padding 250ms ease, height 250ms ease, margin-top 250ms ease, opacity 150ms ease',
+                      }}
+                    >
+                      <FilterListIcon size={12} className='text-[#156534]' />
+                      <Text fontSize={12} className='text-[#156534]' fontWeight={600}>
+                        Search & Filter
+                      </Text>
+                    </Pane>
+                  </Pane>
+                  <DateMealSelector
+                    meal={meal}
+                    setMeal={setMeal}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                    locationType={locationType}
+                  />
+                  <Pane
+                    display='flex'
+                    flexDirection='column'
+                    gap={majorScale(2)}
+                    width={stackMenuHeader ? undefined : 240}
+                    alignItems={stackMenuHeader ? 'center' : 'flex-end'}
+                    justifyContent='flex-start'
+                    className={stackMenuHeader ? 'order-last pt-2 pb-4' : undefined}
+                  >
+                    <LocationTypeToggle
+                      locationType={locationType}
+                      setLocationType={setLocationType}
+                      vertical={!stackMenuHeader}
+                    />
+                  </Pane>
+                </Pane>
+              )}
+
+              {loading ? (
+                <Pane
+                  display='grid'
+                  overflowY='auto'
+                  paddingBottom={majorScale(6)}
+                  gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
+                  gap={majorScale(2)}
+                  className='h-full no-scrollbar'
+                >
+                  {Array(6)
+                    .fill(0)
+                    .map((_, i) => (
+                      <SkeletonDiningHallCard key={i} />
+                    ))}
+                </Pane>
+              ) : displayMenusForLocations.length === 0 ? (
+                <Pane
+                  display='flex'
+                  alignItems='center'
+                  justifyContent='center'
+                  paddingY={majorScale(8)}
+                  flexDirection='column'
+                  width='100%'
+                  marginTop={majorScale(2)}
+                  className='h-full'
+                >
+                  <SearchIcon color={theme.colors.gray600} size={32} marginBottom={majorScale(2)} />
+                  <Heading size={500} color={theme.colors.gray800} marginBottom={minorScale(1)}>
+                    No Locations Found
+                  </Heading>
+                  <Text size={400} color='muted' textAlign='center'>
+                    Try adjusting your filters.
+                  </Text>
+                </Pane>
+              ) : (
+                <Pane
+                  display='grid'
+                  overflowY='auto'
+                  paddingBottom={majorScale(6)}
+                  gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
+                  gap={majorScale(2)}
+                  className='h-full no-scrollbar'
+                >
+                  {displayMenusForLocations.map((diningHall) => {
+                    const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
+                    return (
+                      <DiningHallCard
+                        key={diningHall.name}
+                        diningHall={diningHall}
+                        isPinned={isPinned}
+                        onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
+                        sortOption={sortOption}
+                      />
+                    );
+                  })}
+                </Pane>
+              )}
+            </Pane>
+          </Pane>
         </Pane>
       </Pane>
-
-
-      {/* Render the hall menu modal */}
-      <HallMenuModal
-        modalHall={modalHall}
-        setModalHall={setModalHall}
-        showNutrition={showNutrition}
-        showDietaryTags={showDietaryTags}
-        showAllergenTags={showAllergenTags}
-      />
-    </Pane>
     </NutritionAccordionProvider>
   );
 }

@@ -16,15 +16,15 @@ This software is provided "as-is", without warranty of any kind.
 """
 
 from .user import CustomUser
-from .dining import DiningVenue
-from .menu import Menu, MenuItem, MenuItemInteraction, MenuItemMetrics, MenuItemSimilarity
+from .dining import DiningLocation
+from .menu import ResidentialMenu, RetailMenu
+from .menu_item import MenuItem, MenuItemNutrition
 
 __all__ = [
     "CustomUser",
-    "DiningVenue",
-    "Menu",
+    "DiningLocation",
+    "ResidentialMenu",
+    "RetailMenu",
     "MenuItem",
-    "MenuItemInteraction",
-    "MenuItemMetrics",
-    "MenuItemSimilarity",
+    "MenuItemNutrition",
 ]

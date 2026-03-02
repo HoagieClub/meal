@@ -18,28 +18,13 @@ This software is provided "as-is", without warranty of any kind.
 from rest_framework import serializers
 from django.db import models
 from hoagiemeal.models.user import CustomUser
-from hoagiemeal.models.menu import MenuItem, MenuItemInteraction, MenuItemMetrics, MenuItemNutrition
-from hoagiemeal.models.dining import DiningVenue
+from hoagiemeal.models.menu import ResidentialMenu, RetailMenu
+from hoagiemeal.models.menu_item import MenuItem, MenuItemNutrition
+from hoagiemeal.models.engagement import MenuItemInteraction, MenuItemMetrics
+from hoagiemeal.models.dining import DiningLocation
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-
-
-class GeoLocationSerializer(serializers.Serializer):
-    """Serializer for the GeoLocation model."""
-
-    lat = serializers.CharField()
-    long = serializers.CharField()
-
-
-class DiningEventSerializer(serializers.Serializer):
-    """Serializer for the DiningEvent model."""
-
-    summary = serializers.CharField()
-    start = serializers.CharField()
-    end = serializers.CharField()
-    uid = serializers.CharField()
-    description = serializers.CharField()
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -59,7 +44,27 @@ class UserSerializer(serializers.ModelSerializer):
             "class_year",
             "auth0_id",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id"]
+
+
+class ResidentialMenuSerializer(serializers.ModelSerializer):
+    """Serializer for the ResidentialMenu model."""
+
+    class Meta:
+        """Meta class for the ResidentialMenuSerializer."""
+
+        model = ResidentialMenu
+        exclude = ["created_at", "updated_at"]
+
+
+class RetailMenuSerializer(serializers.ModelSerializer):
+    """Serializer for the RetailMenu model."""
+
+    class Meta:
+        """Meta class for the RetailMenuSerializer."""
+
+        model = RetailMenu
+        exclude = ["created_at", "updated_at"]
 
 
 class MenuItemInteractionSerializer(serializers.ModelSerializer):
@@ -70,7 +75,6 @@ class MenuItemInteractionSerializer(serializers.ModelSerializer):
 
         model = MenuItemInteraction
         exclude = ["created_at", "updated_at"]
-        read_only_fields = ["user", "menu_item"]
 
 
 class MenuItemMetricsSerializer(serializers.ModelSerializer):
@@ -81,7 +85,6 @@ class MenuItemMetricsSerializer(serializers.ModelSerializer):
 
         model = MenuItemMetrics
         exclude = ["created_at", "updated_at"]
-        read_only_fields = ["menu_item"]
 
 
 class MenuItemNutritionSerializer(serializers.ModelSerializer):
@@ -91,8 +94,7 @@ class MenuItemNutritionSerializer(serializers.ModelSerializer):
         """Meta class for the MenuItemNutritionSerializer."""
 
         model = MenuItemNutrition
-        exclude = ["created_at", "updated_at"]
-        read_only_fields = ["menu_item"]
+        exclude = ["created_at", "updated_at", "menu_item"]
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
@@ -105,15 +107,13 @@ class MenuItemSerializer(serializers.ModelSerializer):
 
         model = MenuItem
         exclude = ["created_at", "updated_at"]
-        read_only_fields = ["api_id"]
 
 
-class DiningVenueSerializer(serializers.ModelSerializer):
-    """Serializer for the DiningVenue model."""
+class DiningLocationSerializer(serializers.ModelSerializer):
+    """Serializer for the DiningLocation model."""
 
     class Meta:
-        """Meta class for the DiningVenueSerializer."""
+        """Meta class for the DiningLocationSerializer."""
 
-        model = DiningVenue
+        model = DiningLocation
         exclude = ["created_at", "updated_at"]
-        read_only_fields = ["id", "created_at", "updated_at"]

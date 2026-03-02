@@ -12,44 +12,14 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { Meal, Allergen, DietaryTag, DiningHall } from '@/types/types';
+import { Allergen, DiningHall } from '@/types/types';
 
 // Meal ranges that maps from meal type to their corresponding range.
-export const MEAL_RANGES: Record<Meal, string> = {
-  Breakfast: '7:30 AM – 10:30 AM',
-  Lunch: '11:30 AM – 2:00 PM',
-  Dinner: '5:00 PM – 8:00 PM',
-};
-
-// Diet label map that maps from dietary tag type to their corresponding label.
-export const DIET_LABEL_MAP: Record<DietaryTag, string> = {
-  Vegetarian: 'V',
-  Vegan: 'VG',
-  Halal: 'H',
-  Kosher: 'K',
-};
-
-// Allergen emoji map that maps from allergen type to their corresponding emoji.
-export const ALLERGEN_EMOJI_MAP: Record<Allergen, string> = {
-  Peanut: '🥜',
-  Coconut: '🌰',
-  Eggs: '🥚',
-  Milk: '🥛',
-  Wheat: '🌾',
-  Soybeans: '🌱',
-  Crustacean: '🦞',
-  Alcohol: '🍺',
-  Fish: '🐟',
-  Sesame: '🍔',
-  Gluten: '🍞',
-};
-
-// Icon path map for dietary tags.
-export const DIET_ICON_MAP: Record<DietaryTag, string> = {
-  Vegetarian: '/images/icons/vegetarian.svg',
-  Vegan: '/images/icons/vegan.svg',
-  Halal: '/images/icons/halal.svg',
-  Kosher: '/images/icons/kosher.svg',
+export const MEAL_RANGES: Record<string, string> = {
+  Breakfast: '7:30 AM - 10:30 AM',
+  Lunch: '11:30 AM - 2:00 PM',
+  Dinner: '5:00 PM - 8:00 PM',
+  Brunch: '10:00 AM - 2:00 PM',
 };
 
 // Icon path map for allergens.
@@ -74,6 +44,12 @@ export const DINING_HALL_DISPLAY_NAMES: Record<DiningHall, string> = {
   'Whitman & Butler Colleges': 'Whitman / Butler',
   'Yeh College & NCW': 'Yeh / NCW',
   'Center for Jewish Life': 'CJL',
+  'Graduate College': 'Grad',
+  'Chemistry CaFe': 'Chemistry',
+  'EQuad Cafe': 'EQuad',
+  'Frist Gallery': 'Frist',
+  'Genomics Cafe': 'Genomics',
+  'Shultz Cafe': 'Shultz',
 };
 
 
