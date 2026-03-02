@@ -1,0 +1,78 @@
+{
+	"name": "hoagiemeal",
+	"description": "Meal by Hoagie — campus dining nutrition tracker for Princeton students.",
+	"repository": "https://github.com/HoagieClub/meal",
+	"homepage": "https://meal.hoagie.io/",
+	"stack": "heroku-24",
+	"buildpacks": [
+		{
+			"url": "https://github.com/timanovsky/subdir-heroku-buildpack"
+		},
+		{
+			"url": "heroku/python"
+		},
+		{
+			"url": "heroku/pgbouncer"
+		}
+	],
+	"formation": {
+		"web": {
+			"quantity": 1,
+			"size": "eco"
+		}
+	},
+	"addons": [
+		{
+			"plan": "heroku-postgresql:essential-0"
+		},
+		{
+			"plan": "scheduler:standard"
+		}
+	],
+	"env": {
+		"ACCESS_TOKEN": {
+			"description": "Princeton OIT API OAuth access token.",
+			"required": true
+		},
+		"ALLOWED_HOSTS": {
+			"description": "Comma-separated list of allowed hostnames.",
+			"required": true
+		},
+		"AUTH0_AUDIENCE": {
+			"description": "Auth0 API audience identifier.",
+			"required": true
+		},
+		"AUTH0_DOMAIN": {
+			"description": "Auth0 tenant domain",
+			"required": true
+		},
+		"AUTH0_ISSUER": {
+			"description": "Auth0 token issuer URL.",
+			"required": true
+		},
+		"CONSUMER_KEY": {
+			"description": "Princeton OIT API OAuth consumer key.",
+			"required": true
+		},
+		"CONSUMER_SECRET": {
+			"description": "Princeton OIT API OAuth consumer secret.",
+			"required": true
+		},
+		"DATABASE_URL": {
+			"description": "PostgreSQL connection URL. Automatically set by the Heroku Postgres add-on.",
+			"required": true
+		},
+		"DEBUG": {
+			"description": "Set to 'true' for development mode, 'false' for production.",
+			"required": true
+		},
+		"DJANGO_SECRET_KEY": {
+			"description": "Django secret key used for cryptographic signing.",
+			"generator": "secret"
+		},
+		"PROJECT_PATH": {
+			"description": "Path to the Django project directory for the subdirectory buildpack.",
+			"required": true
+		}
+	}
+}
