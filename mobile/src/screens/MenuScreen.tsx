@@ -1,48 +1,28 @@
 import { useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from "react-native";
-import Svg, { Path, Circle, Line } from "react-native-svg";
-import DiningHallCard from "../components/DiningHallCard";
-import { DUMMY_DINING_HALL } from "../data/dummyMenu";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  ScrollView,
+} from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../navigation/AppNavigator";
+import DiningHallCard from "../components/DiningHallCard";
+import { DUMMY_DINING_HALL } from "../data/dummyMenu";
 
-function DhallIcon() {
-  return (
-    <Svg width={16} height={14} viewBox="0 0 51 45" fill="none">
-      <Path
-        d="M33.9137 4.8308C29.6549 9.08961 29.2988 13.7338 30.6465 16.7898C30.7717 17.0719 30.7498 17.4179 30.4729 17.6628L8.06315 37.5755C6.16661 39.2608 6.25368 41.2663 8.10922 43.1219C9.96476 44.978 11.9697 45.0639 13.6545 43.1679L33.5683 20.7571C33.8143 20.4813 34.1587 20.4599 34.4418 20.5841C37.4973 21.9306 42.1409 21.5745 46.4003 17.3162C50.9001 12.817 51.9877 6.24816 48.485 2.74493C44.9813 -0.757726 38.4136 0.331553 33.9137 4.8308Z"
-        fill="white"
-      />
-      <Path
-        d="M16.5232 20.3358C16.7816 20.1678 17.1058 20.1554 17.3513 20.4318L20.5068 23.9783L24.1976 20.6992L20.4365 17.3528C20.1607 17.1067 20.1725 16.7826 20.341 16.5247C22.3314 13.4703 21.2657 10.2845 18.4108 7.88686L9.25331 0.378756C8.65446 -0.108302 8.05561 -0.143694 7.53372 0.378194C7.01015 0.901767 7.01127 1.57702 7.53316 2.09891L15.1115 9.67555C15.6632 10.2283 15.6632 10.9395 15.1115 11.4912L15.0699 11.5333C14.5183 12.0844 13.8059 12.0844 13.2537 11.5333L5.6765 3.95557C5.15405 3.43368 4.4788 3.43312 3.95579 3.95613C3.43277 4.47914 3.43334 5.1544 3.95635 5.67572L11.533 13.2541C12.0858 13.8063 12.0858 14.518 11.533 15.0691L11.4925 15.1113C10.9409 15.6624 10.2286 15.6624 9.67633 15.1107L2.09856 7.53295C1.57611 7.01106 0.900858 7.00994 0.378408 7.53295C-0.144041 8.0554 -0.108088 8.65369 0.37897 9.25254L7.88708 18.41C10.2853 21.2655 13.4689 22.3267 16.5232 20.3358Z"
-        fill="white"
-      />
-      <Path
-        d="M43.1691 37.5794L30.878 26.6428L26.8799 31.1421L37.58 43.168C39.2642 45.064 41.268 44.9752 43.1225 43.1208C44.9774 41.2692 45.0639 39.2642 43.1691 37.5794Z"
-        fill="white"
-      />
-    </Svg>
-  );
-}
-
-function RetailIcon() {
-  return (
-    <Svg width={11} height={14} viewBox="0 0 34 45" fill="none">
-      <Path
-        d="M33.9976 12.2161L0 12.0631L0.642116 7.90985L4.52116 7.69239L4.84341 4.16764L21.0884 2.88675L25.5951 0H29.5366L30.1186 7.72096L34 8.52389V12.216L33.9976 12.2161ZM27.9903 45L31.3475 13.9773L2.99652 14.0108L5.86307 44.9998L27.9903 45Z"
-        fill="white"
-      />
-    </Svg>
-  );
-}
+// ─── Icons ────────────────────────────────────────────────────────────────────
 
 function SearchIcon() {
   return (
     <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
       <Path
         d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"
-        stroke="#808080"
+        stroke="#9ca3af"
         strokeWidth={2}
         strokeLinecap="round"
       />
@@ -52,24 +32,24 @@ function SearchIcon() {
 
 function FilterIcon() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Path d="M4 6h16M7 12h10M10 18h4" stroke="#166534" strokeWidth={2} strokeLinecap="round" />
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 6h16M7 12h10M10 18h4" stroke="#374151" strokeWidth={2} strokeLinecap="round" />
     </Svg>
   );
 }
 
-function ChevronLeft() {
+function ChevronLeftIcon() {
   return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-      <Path d="M15 18l-6-6 6-6" stroke="#166534" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M15 18l-6-6 6-6" stroke="#374151" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
 
-function ChevronRight() {
+function ChevronRightIcon() {
   return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-      <Path d="M9 18l6-6-6-6" stroke="#166534" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M9 18l6-6-6-6" stroke="#374151" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
@@ -91,33 +71,35 @@ function HoagieLogoSvg() {
   );
 }
 
+// ─── Data & Helpers ───────────────────────────────────────────────────────────
+
 const MEAL_COLORS: Record<string, string> = {
-  Breakfast: "#ebf7f2",
-  Lunch: "#daefe8",
-  Dinner: "#cae6dc",
+  Breakfast: "#e8f5ee",
+  Lunch: "#d5eddf",
+  Dinner: "#c2e5d0",
 };
 
 const MEAL_RANGES: Record<string, string> = {
-  Breakfast: "7:30 AM - 10:30 AM",
-  Lunch: "11:30 AM - 2:00 PM",
-  Dinner: "5:00 PM - 8:00 PM",
-  Brunch: "10:00 AM - 2:00 PM",
+  Breakfast: "7:30 – 10:30 AM",
+  Lunch: "11:30 AM – 2:00 PM",
+  Dinner: "5:00 – 8:00 PM",
+  Brunch: "10:00 AM – 2:00 PM",
 };
 
 const getToday = (): Date => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
 };
 
 const getCurrentMeal = (): string => {
-  const hour = new Date().getHours();
-  if (hour < 11) return "Breakfast";
-  if (hour < 17) return "Lunch";
+  const h = new Date().getHours();
+  if (h < 11) return "Breakfast";
+  if (h < 17) return "Lunch";
   return "Dinner";
 };
 
-const isWeekend = (date: Date): boolean => [0, 6].includes(date.getDay());
+const isWeekend = (d: Date): boolean => [0, 6].includes(d.getDay());
 
 const getNext7Days = (): Date[] => {
   const today = getToday();
@@ -129,16 +111,20 @@ const getNext7Days = (): Date[] => {
 };
 
 const isSameDay = (a: Date, b: Date): boolean =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
 
-const formatDate = (date: Date): string =>
-  date.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+const formatDateLabel = (d: Date): string =>
+  d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
-const formatDayAbbrev = (date: Date): string => date.toLocaleDateString("en-US", { weekday: "short" });
+const formatDayAbbrev = (d: Date): string =>
+  d.toLocaleDateString("en-US", { weekday: "short" });
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function MenuScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [selectedDate, setSelectedDate] = useState<Date>(getToday());
   const [meal, setMeal] = useState<string>(getCurrentMeal());
   const [locationType, setLocationType] = useState<"residential" | "retail">("residential");
@@ -146,123 +132,157 @@ export default function MenuScreen() {
 
   const isWeekendDay = isWeekend(selectedDate);
   const meals = isWeekendDay ? ["Lunch", "Dinner"] : ["Breakfast", "Lunch", "Dinner"];
-  const mealColor = MEAL_COLORS[meal] ?? "#cae6dc";
+  const mealColor = MEAL_COLORS[meal] ?? "#c2e5d0";
   const next7Days = getNext7Days();
 
-  const displayedMeal = locationType === "retail" ? "Retail" : meal === "Lunch" && isWeekendDay ? "Brunch" : meal;
-  const mealHours = locationType === "retail" ? "Hours vary" : MEAL_RANGES[displayedMeal] ?? MEAL_RANGES[meal];
+  const displayedMeal =
+    locationType === "retail" ? "Retail" : meal === "Lunch" && isWeekendDay ? "Brunch" : meal;
+  const hours =
+    locationType === "retail" ? "Hours vary by location" : MEAL_RANGES[displayedMeal] ?? MEAL_RANGES[meal];
 
-  const goToPreviousDay = () => {
+  const shiftDay = (delta: number) => {
     const d = new Date(selectedDate);
-    d.setDate(d.getDate() - 1);
+    d.setDate(d.getDate() + delta);
     setSelectedDate(d);
     if (isWeekend(d) && meal === "Breakfast") setMeal("Lunch");
   };
-
-  const goToNextDay = () => {
-    const d = new Date(selectedDate);
-    d.setDate(d.getDate() + 1);
-    setSelectedDate(d);
-    if (isWeekend(d) && meal === "Breakfast") setMeal("Lunch");
-  };
-
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <SafeAreaView style={styles.root}>
+      {/* ── Top accent bar ── */}
       <View style={styles.topBar} />
+
+      {/* ── Nav ── */}
       <View style={styles.nav}>
         <View style={styles.logoRow}>
           <Text style={styles.logoHoagie}>hoagie</Text>
           <Text style={styles.logoMeal}>meal</Text>
           <Text style={styles.logoBeta}> BETA</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
+        <TouchableOpacity onPress={() => navigation.navigate("Home")} activeOpacity={0.7}>
           <Text style={styles.navLink}>Login</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.navDivider} />
 
-      <View style={[styles.searchBar, { backgroundColor: mealColor }]}>
-        <View style={styles.locationToggle}>
-          <TouchableOpacity
-            style={[styles.locationBtn, locationType === "residential" && styles.locationBtnActive]}
-            onPress={() => setLocationType("residential")}>
-            <DhallIcon />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.locationBtn, locationType === "retail" && styles.locationBtnActive]}
-            onPress={() => setLocationType("retail")}>
-            <RetailIcon />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.searchInputWrapper}>
+      {/* ── Sticky search bar ── */}
+      <View style={styles.searchSection}>
+        <View style={styles.searchInputWrap}>
           <SearchIcon />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search for food..."
-            placeholderTextColor="#808080"
+            placeholder="Search for a dish..."
+            placeholderTextColor="#9ca3af"
             value={searchTerm}
             onChangeText={setSearchTerm}
           />
         </View>
-        <TouchableOpacity style={styles.filterBtn}>
+        <TouchableOpacity style={styles.filterBtn} activeOpacity={0.7}>
           <FilterIcon />
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={{ backgroundColor: mealColor }}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
-        <View style={styles.mealTitleSection}>
-          <Text style={styles.mealTitle}>{displayedMeal}</Text>
-          <Text style={styles.mealHours}>{mealHours}</Text>
-        </View>
+      {/* ── Scrollable content ── */}
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
 
-        <View style={styles.dateSelectorSection}>
-          <View style={styles.dateNavRow}>
-            <TouchableOpacity style={styles.arrowBtn} onPress={goToPreviousDay}>
-              <ChevronLeft />
-            </TouchableOpacity>
-            <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
-            <TouchableOpacity style={styles.arrowBtn} onPress={goToNextDay}>
-              <ChevronRight />
-            </TouchableOpacity>
-          </View>
+        {/* ── Context band: location + meal ── */}
+        <View style={[styles.contextBand, { backgroundColor: mealColor }]}>
 
-          <View style={styles.dayTabsRow}>
-            {next7Days.map((date) => {
-              const selected = isSameDay(date, selectedDate);
+          {/* Location toggle */}
+          <View style={styles.segmentedControl}>
+            {(["residential", "retail"] as const).map((type) => {
+              const label = type === "residential" ? "Dining Halls" : "Retail";
+              const active = locationType === type;
               return (
-                <TouchableOpacity key={date.toISOString()} onPress={() => setSelectedDate(date)}>
-                  <Text style={[styles.dayTab, selected && styles.dayTabSelected]}>{formatDayAbbrev(date)}</Text>
+                <TouchableOpacity
+                  key={type}
+                  style={[styles.segmentBtn, active && styles.segmentBtnActive]}
+                  onPress={() => setLocationType(type)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                    {label}
+                  </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
+          {/* Meal toggle (residential only) */}
           {locationType === "residential" && (
-            <View style={styles.mealToggle}>
+            <View style={styles.mealPill}>
               {meals.map((m) => {
-                const isSelected = meal === m;
+                const active = meal === m;
                 const label = isWeekendDay && m === "Lunch" ? "Brunch" : m;
                 return (
                   <TouchableOpacity
                     key={m}
-                    style={[styles.mealToggleOption, isSelected && styles.mealToggleOptionActive]}
-                    onPress={() => setMeal(m)}>
-                    <Text style={[styles.mealToggleText, isSelected && styles.mealToggleTextActive]}>{label}</Text>
+                    style={[styles.mealOption, active && styles.mealOptionActive]}
+                    onPress={() => setMeal(m)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.mealOptionText, active && styles.mealOptionTextActive]}>
+                      {label}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
           )}
+
+          {/* Hours */}
+          <Text style={styles.hoursText}>{hours}</Text>
         </View>
 
-        <DiningHallCard hall={DUMMY_DINING_HALL} />
+        {/* ── Date strip ── */}
+        <View style={styles.dateStrip}>
 
+          {/* Date nav row */}
+          <View style={styles.dateNavRow}>
+            <TouchableOpacity style={styles.chevronBtn} onPress={() => shiftDay(-1)} activeOpacity={0.7}>
+              <ChevronLeftIcon />
+            </TouchableOpacity>
+            <Text style={styles.dateLabel} numberOfLines={1}>
+              {formatDateLabel(selectedDate)}
+            </Text>
+            <TouchableOpacity style={styles.chevronBtn} onPress={() => shiftDay(1)} activeOpacity={0.7}>
+              <ChevronRightIcon />
+            </TouchableOpacity>
+          </View>
+
+          {/* Day chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.dayChipsRow}
+          >
+            {next7Days.map((date) => {
+              const selected = isSameDay(date, selectedDate);
+              return (
+                <TouchableOpacity
+                  key={date.toISOString()}
+                  style={[styles.dayChip, selected && styles.dayChipSelected]}
+                  onPress={() => setSelectedDate(date)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.dayChipAbbrev, selected && styles.dayChipTextSelected]}>
+                    {formatDayAbbrev(date)}
+                  </Text>
+                  <Text style={[styles.dayChipNum, selected && styles.dayChipTextSelected]}>
+                    {date.getDate()}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* ── Cards ── */}
+        <View style={styles.cardsSection}>
+          <DiningHallCard hall={DUMMY_DINING_HALL} />
+        </View>
+
+        {/* ── Footer ── */}
         <View style={styles.footer}>
           <HoagieLogoSvg />
           <Text style={styles.footerText}>
@@ -274,22 +294,28 @@ export default function MenuScreen() {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: "#ffffff",
   },
+
+  // ── Top bar ──
   topBar: {
     height: 6,
     backgroundColor: "#008001",
   },
+
+  // ── Nav ──
   nav: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     backgroundColor: "#ffffff",
-    paddingHorizontal: 24,
-    paddingVertical: 16,
   },
   logoRow: {
     flexDirection: "row",
@@ -314,155 +340,203 @@ const styles = StyleSheet.create({
   navLink: {
     fontFamily: "Poppins_400Regular",
     fontSize: 14,
-    color: "#808080",
+    color: "#6b7280",
   },
   navDivider: {
     height: 1,
-    backgroundColor: "#EEEEEE",
+    backgroundColor: "#f0f0f0",
   },
-  searchBar: {
+
+  // ── Search ──
+  searchSection: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    paddingTop: 12,
-    gap: 12,
+    paddingVertical: 12,
+    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
-  locationToggle: {
-    flexDirection: "row",
-    borderRadius: 999,
-    overflow: "hidden",
-    backgroundColor: "#a3d4b8",
-  },
-  locationBtn: {
-    padding: 8,
-  },
-  locationBtnActive: {
-    backgroundColor: "#166534",
-  },
-  searchInputWrapper: {
+  searchInputWrap: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 6,
+    gap: 8,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   searchInput: {
     flex: 1,
     fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: "#343434",
+    fontSize: 14,
+    color: "#111827",
     padding: 0,
   },
   filterBtn: {
-    padding: 6,
-    borderRadius: 10,
-  },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  mealTitleSection: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#f3f4f6",
     alignItems: "center",
-    paddingTop: 8,
+    justifyContent: "center",
+  },
+
+  // ── Scroll ──
+  scroll: {
+    flex: 1,
+    backgroundColor: "#f7f8f9",
+  },
+
+  // ── Context band ──
+  contextBand: {
     paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 20,
+    gap: 12,
   },
-  mealTitle: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 36,
-    marginBottom: -12,
-    color: "#166534",
-    textAlign: "center",
+  segmentedControl: {
+    flexDirection: "row",
+    backgroundColor: "rgba(0,0,0,0.1)",
+    borderRadius: 10,
+    padding: 3,
   },
-  mealHours: {
+  segmentBtn: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  segmentBtnActive: {
+    backgroundColor: "#ffffff",
+    shadowColor: "#000",
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  segmentText: {
     fontFamily: "Poppins_600SemiBold",
-    fontSize: 18,
-    color: "#15803d",
-    textAlign: "center",
+    fontSize: 13,
+    color: "rgba(22,101,52,0.65)",
   },
-  dateSelectorSection: {
-    marginHorizontal: 8,
-    marginTop: 12,
-    gap: 8,
+  segmentTextActive: {
+    color: "#166534",
+  },
+  mealPill: {
+    flexDirection: "row",
+    backgroundColor: "rgba(0,0,0,0.1)",
+    borderRadius: 10,
+    padding: 3,
+  },
+  mealOption: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  mealOptionActive: {
+    backgroundColor: "#166534",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  mealOptionText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 13,
+    color: "rgba(22,101,52,0.65)",
+  },
+  mealOptionTextActive: {
+    color: "#ffffff",
+  },
+  hoursText: {
+    textAlign: "center",
+    fontFamily: "Poppins_400Regular",
+    fontSize: 13,
+    color: "#15803d",
+    marginTop: -4,
+  },
+
+  // ── Date strip ──
+  dateStrip: {
+    backgroundColor: "#ffffff",
+    paddingTop: 16,
+    paddingBottom: 14,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
   dateNavRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    paddingHorizontal: 16,
+    gap: 10,
   },
-  arrowBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 999,
-    backgroundColor: "#f0fdf4",
+  chevronBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#f3f4f6",
     alignItems: "center",
     justifyContent: "center",
   },
-  dateText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 20,
-    color: "#166534",
-    width: 220,
-    textAlign: "center",
-  },
-  dayTabsRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-    marginBottom: 4,
-  },
-  dayTab: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 13,
-    color: "#166534",
-  },
-  dayTabSelected: {
-    fontFamily: "Poppins_600SemiBold",
-    textDecorationLine: "underline",
-  },
-  mealToggle: {
-    flexDirection: "row",
-    borderRadius: 999,
-    backgroundColor: "#f0fdf4",
-    overflow: "hidden",
-    marginHorizontal: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  mealToggleOption: {
+  dateLabel: {
     flex: 1,
-    alignItems: "center",
-    paddingVertical: 6,
-    borderRadius: 999,
+    textAlign: "center",
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 15,
+    color: "#111827",
   },
-  mealToggleOptionActive: {
+  dayChipsRow: {
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  dayChip: {
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 11,
+    borderRadius: 10,
+    backgroundColor: "#f3f4f6",
+    minWidth: 46,
+  },
+  dayChipSelected: {
     backgroundColor: "#166534",
   },
-  mealToggleText: {
+  dayChipAbbrev: {
     fontFamily: "Poppins_400Regular",
-    fontSize: 12,
-    color: "#14532d",
+    fontSize: 11,
+    color: "#6b7280",
   },
-  mealToggleTextActive: {
+  dayChipNum: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 15,
+    color: "#111827",
+  },
+  dayChipTextSelected: {
     color: "#ffffff",
   },
+
+  // ── Cards ──
+  cardsSection: {
+    paddingBottom: 8,
+  },
+
+  // ── Footer ──
   footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 40,
-    paddingBottom: 16,
+    paddingTop: 32,
+    paddingBottom: 24,
   },
   footerText: {
     fontFamily: "Poppins_400Regular",
     fontSize: 14,
-    color: "#343434",
+    color: "#6b7280",
   },
   bold: {
     fontFamily: "Poppins_700Bold",
