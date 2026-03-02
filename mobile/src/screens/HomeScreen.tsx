@@ -1,5 +1,8 @@
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from "react-native";
 import Svg, { Path } from "react-native-svg";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../navigation/AppNavigator";
 
 function ArrowLeftIcon() {
   return (
@@ -31,22 +34,20 @@ function HoagieLogoSvg() {
 }
 
 export default function HomeScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.topBar} />
-
       <View style={styles.nav}>
         <View style={styles.logoRow}>
           <Text style={styles.logoHoagie}>hoagie</Text>
           <Text style={styles.logoMeal}>meal</Text>
           <Text style={styles.logoBeta}> BETA</Text>
         </View>
-        <View style={styles.navLinks}>
-          <TouchableOpacity onPress={() => {}}>
-            <Text style={styles.navLink}>Menu</Text>
-          </TouchableOpacity>
-          <Text style={styles.navLink}>Login</Text>
-        </View>
+        <TouchableOpacity onPress={() => navigation.navigate("Menu")}>
+          <Text style={styles.navLink}>Menu</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.navDivider} />
 
@@ -54,7 +55,7 @@ export default function HomeScreen() {
         <View style={styles.card}>
           <Text style={styles.title}>Hoagie Meal</Text>
           <Text style={styles.subtitle}>Track your meals.</Text>
-          <TouchableOpacity style={styles.loginBtn} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.loginBtn} activeOpacity={0.85} onPress={() => navigation.navigate("Menu")}>
             <View style={styles.loginIconBox}>
               <Text style={styles.loginIconText}>h</Text>
             </View>
@@ -121,10 +122,6 @@ const styles = StyleSheet.create({
     color: "#052e16",
     letterSpacing: 1,
   },
-  navLinks: {
-    flexDirection: "row",
-    gap: 16,
-  },
   navLink: {
     fontFamily: "Poppins_400Regular",
     fontSize: 14,
@@ -142,7 +139,6 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 20,
   },
-  // elevation={1} in Evergreen = subtle border + faint shadow
   card: {
     width: "100%",
     backgroundColor: "#ffffff",
@@ -159,7 +155,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
-  // Heading size={900} = 32px, Poppins bold
   title: {
     fontFamily: "Poppins_700Bold",
     fontSize: 32,
@@ -174,7 +169,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 30,
   },
-  // Primary button — Evergreen UI default primary = blue ~#3d5af1
   loginBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -204,7 +198,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#ffffff",
   },
-  // Default button — Evergreen UI default = white with border
   backBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -229,7 +222,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#343434",
   },
-  // Footer — mirrors Footer component layout
   footer: {
     flexDirection: "row",
     alignItems: "center",
