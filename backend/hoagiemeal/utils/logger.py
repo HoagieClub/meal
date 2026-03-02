@@ -1,6 +1,6 @@
 """Colorful logger module for the Hoagie Meal backend.
 
-Copyright © 2021-2024 Hoagie Club and affiliates.
+Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
 
@@ -18,6 +18,8 @@ This software is provided "as-is", without warranty of any kind.
 import logging
 import os
 import sys
+from datetime import datetime
+from pathlib import Path
 from colorama import Fore, Style, init
 from dotenv import load_dotenv
 
@@ -25,9 +27,57 @@ load_dotenv()
 init(autoreset=True)
 
 
+#################### File Blacklist #########################
+# Add filenames (without path) to this set to prevent logging from those files.
+# Example: LOGGER_FILE_BLACKLIST = {"migrations.py", "test_file.py"}
+LOGGER_FILE_BLACKLIST = set()
+
+#################### Log File Settings #########################
+# Toggle to enable/disable saving logs to file
+SAVE_LOGS_TO_FILE = False
+LOG_DIR = Path("logs")
+
+
+class FileBlacklistFilter(logging.Filter):
+    """A custom log filter that prevents logging from blacklisted files.
+
+    Attributes:
+        blacklist (set): A set of filenames to exclude from logging.
+
+    Methods:
+        filter(record):
+            Returns False if the record's filename is in the blacklist, True otherwise.
+
+    """
+
+    def __init__(self, blacklist=None):
+        """Initialize the FileBlacklistFilter with a blacklist of filenames.
+
+        Args:
+            blacklist (set, optional): A set of filenames to exclude from logging. Defaults to empty set.
+
+        """
+        super().__init__()
+        self.blacklist = set(blacklist) if blacklist else set()
+
+    def filter(self, record):
+        """Filter log records based on the filename blacklist.
+
+        Args:
+            record (logging.LogRecord): The log record to filter.
+
+        Returns:
+            bool: False if the filename is in the blacklist (log is filtered out), True otherwise.
+
+        """
+        # Check if the filename (without path) is in the blacklist
+        filename = os.path.basename(record.pathname) if hasattr(record, "pathname") else record.filename
+        return filename not in self.blacklist
+
+
 class ColorFormatter(logging.Formatter):
     """A custom log formatter that applies color based on the log level using the Colorama library.
-    
+
     Attributes:
         LOG_COLORS (dict): A dictionary mapping log levels to their corresponding color codes.
 
@@ -53,6 +103,12 @@ class ColorFormatter(logging.Formatter):
     LEVEL_COLOR = Style.BRIGHT
 
     def __init__(self, fmt=None):
+        """Initialize the ColorFormatter with a custom log format.
+
+        Args:
+            fmt (str, optional): The log format string. Defaults to the default format.
+
+        """
         super().__init__(
             fmt or "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s", "%Y-%m-%d %H:%M:%S"
         )
@@ -80,27 +136,46 @@ class ColorFormatter(logging.Formatter):
 
 def setup_logger():
     """Set up a logger with a custom color formatter that logs to standard output (stdout).
-    
+
+    Optionally saves logs to a file if SAVE_LOGS_TO_FILE is enabled.
     The logger is configured with the ColorFormatter to format log messages with color based on the log level.
     The log level is set to INFO by default, but this can be changed to show more or less detailed messages.
 
     Returns:
-        logging.Logger: A logger instance that logs formatted messages to stdout.
+        logging.Logger: A logger instance that logs formatted messages to stdout (and optionally to a file).
 
     """
-    handler = logging.StreamHandler(sys.stdout)
-
-    # Set custom formatter
-    formatter = ColorFormatter()
-    handler.setFormatter(formatter)
     logger = logging.getLogger(__name__)
 
     # Set to DEBUG to capture all logging levels
     DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
-    logger.setLevel(logging.DEBUG) if DEBUG else logger.setLevel(logging.INFO)
-    logger.addHandler(handler)
-    logger.propagate = False  # Prevents multiple logging if re-initialized
+    logger.setLevel(logging.DEBUG if DEBUG else logging.WARNING)
 
+    # Console handler (stdout) with color formatter
+    console_handler = logging.StreamHandler(sys.stdout)
+    color_formatter = ColorFormatter()
+    console_handler.setFormatter(color_formatter)
+    blacklist_filter = FileBlacklistFilter(blacklist=LOGGER_FILE_BLACKLIST)
+    console_handler.addFilter(blacklist_filter)
+    logger.addHandler(console_handler)
+
+    # File handler (if enabled)
+    if SAVE_LOGS_TO_FILE:
+        LOG_DIR.mkdir(exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_file = LOG_DIR / f"{timestamp}.log"
+
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
+        plain_formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s", "%Y-%m-%d %H:%M:%S"
+        )
+        file_handler.setFormatter(plain_formatter)
+        file_handler.addFilter(blacklist_filter)
+        logger.addHandler(file_handler)
+
+        logger.info(f"Logging to file: {log_file}")
+
+    logger.propagate = False  # Prevents multiple logging if re-initialized
     return logger
 
 

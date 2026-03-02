@@ -1,38 +1,36 @@
 # Hoagie Meal Backend
 
-This is the backend directory for Hoagie Meal.
+## Getting Started
 
-## Prerequisites
+Ensure you have [uv](docs.astral.sh/uv) installed.
 
-Before you begin, ensure you have [uv](docs.astral.sh/uv) installed.
+1. **Create and activate a virtual environment:**
 
-## Getting started
+   ```zsh
+   uv venv --prompt hoagiemeal .venv
+   source .venv/bin/activate
+   ```
 
-1. Create a virtual environment and activate it:
+2. **Install dependencies:**
 
-```zsh
-uv venv --prompt hoagiemeal --python 3.12.7 .venv
-source .venv/bin/activate
-```
+   ```zsh
+   uv sync
+   ```
 
-2. Install the dependencies:
+   > *Optional:* Generate a `requirements.txt` from `pyproject.toml`:
+   >
+   > ```zsh
+   > uv pip compile pyproject.toml --no-deps -o requirements.txt 
+   > ```
 
-```zsh
-uv sync
-```
+3. **Run the app:**
 
-> Optional: Generate a requirements.txt file from the pyproject.toml file, run:
+   ```zsh
+   uv run manage.py runserver
+   ```
 
-```zsh
-uv pip compile pyproject.toml --no-deps -o requirements.txt 
-```
+   The development server will run on port 8000.
 
-## Running the app
+### License
 
-To run the app, use the following command:
-
-```zsh
-uv run manage.py runserver
-```
-
-This will start the development server on port 8000.
+MIT License. Adapt freely with proper attribution.

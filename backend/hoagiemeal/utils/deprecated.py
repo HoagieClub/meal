@@ -1,6 +1,6 @@
 """Deprecated decorator for functions in the Hoagie Meal backend.
 
-Copyright © 2021-2024 Hoagie Club and affiliates.
+Copyright © 2021-2025 Hoagie Club and affiliates.
 
 Licensed under the MIT License. You may obtain a copy of the License at:
 
@@ -18,6 +18,7 @@ This software is provided "as-is", without warranty of any kind.
 import functools
 from hoagiemeal.utils.logger import logger
 
+
 def deprecated(reason: str = ""):
     """Mark a function as deprecated.
 
@@ -28,6 +29,7 @@ def deprecated(reason: str = ""):
         Callable: The original function wrapped to log a deprecation warning.
 
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapped_func(*args, **kwargs):

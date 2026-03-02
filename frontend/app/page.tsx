@@ -1,11 +1,11 @@
 /**
  * @overview Landing page for the Hoagie Meal app.
- * 
- * Copyright © 2021-2024 Hoagie Club and affiliates.
+ *
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree or at
- * 
+ *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
@@ -38,7 +38,7 @@ export default function Index() {
   else if (user) {
     Profile = (
       <Pane>
-        <Link href='/feature1'>
+        <Link href='/menu'>
           <Button
             height={56}
             width={majorScale(35)}
@@ -104,7 +104,7 @@ export default function Index() {
             <br />
           </Pane>
         </div>
-        <div>© 2024 Hoagie Club.</div>
+        <div>© 2025 Hoagie Club.</div>
       </Pane>
     </Pane>
   );

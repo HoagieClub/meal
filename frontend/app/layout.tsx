@@ -1,10 +1,10 @@
 /**
  * @overview Root layout component for the Hoagie Meal app. Styles apply to all children.
  *
- * Copyright © 2021-2024 Hoagie Club and affiliates.
+ * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/template/LICENSE.
+ * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/meal/LICENSE.
  *
  * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
@@ -18,11 +18,20 @@ import { getSession } from '@auth0/nextjs-auth0';
 
 import Layout from '@/lib/hoagie-ui/Layout';
 import Nav from '@/lib/hoagie-ui/Nav';
-import Footer from '@/lib/hoagie-ui/Footer';
 import Theme from '@/lib/hoagie-ui/Theme';
 import { Toaster } from '@/components/ui/sonner';
+import AuthStorageCleanup from '@/components/auth-storage-cleanup';
+import { hoagie } from '@/app/hoagie';
+
+import '@/app/globals.css';
 import '@/lib/hoagie-ui/Theme/theme.css';
-import './globals.css';
+
+import { Poppins } from 'next/font/google';
+
+const poppins = Poppins({
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin'],
+});
 
 export const metadata = {
   title: 'Meal by Hoagie',
@@ -36,23 +45,21 @@ export const metadata = {
  * @param children - The child components to render within the layout.
  * @returns JSX Element representing the content area.
  */
-async function Content({ children }: { children: ReactNode }): Promise<JSX.Element> {
+async function Content({ children }: { children: ReactNode }): Promise<React.JSX.Element> {
   const session = await getSession();
   const user = session?.user;
 
   const tabs = [
-    { title: 'Menus', href: '/feature1' },
-    { title: 'Meals', href: '/feature2' },
-    { title: 'Nutrients', href: '/feature3' },
+    { title: 'Menu', href: '/menu' },
+    // { title: 'Profile', href: '/profile' },
   ];
 
   return (
     <Theme palette='green'>
       <Layout>
         <Nav name='meal' tabs={tabs} user={user} />
-        {children}
+        <div className='min-h-screen w-full'>{children}</div>
         <Toaster />
-        <Footer />
       </Layout>
     </Theme>
   );
@@ -65,11 +72,23 @@ async function Content({ children }: { children: ReactNode }): Promise<JSX.Eleme
  * @param children - The child components to render within the layout.
  * @returns JSX Element representing the root HTML structure.
  */
-export default function RootLayout({ children }: { children: ReactNode }): JSX.Element {
+export default function RootLayout({ children }: { children: ReactNode }): React.JSX.Element {
   return (
-    <html lang='en'>
+    <html
+      lang='en'
+      className={`bg-hoagiemeal-dark-green ${poppins.className}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(${hoagie.toString()})();`,
+          }}
+        />
+      </head>
       <UserProvider>
-        <body className='antialiased'>
+        <body className='antialiased' suppressHydrationWarning>
+          <AuthStorageCleanup />
           <Content>{children}</Content>
           <Analytics />
           <SpeedInsights />
