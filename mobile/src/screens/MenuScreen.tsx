@@ -65,10 +65,11 @@ function HoagieLogoSvg() {
 
 // ─── Data & Helpers ───────────────────────────────────────────────────────────
 
-const MEAL_COLORS: Record<string, string> = {
+const BG_COLORS: Record<string, string> = {
   Breakfast: "#d0e9d8",
   Lunch: "#bde0ca",
   Dinner: "#a8d8bc",
+  Retail: "#bde0ca",
 };
 
 const MEAL_RANGES: Record<string, string> = {
@@ -128,7 +129,7 @@ export default function MenuScreen() {
 
   const isWeekendDay = isWeekend(selectedDate);
   const meals = isWeekendDay ? ["Lunch", "Dinner"] : ["Breakfast", "Lunch", "Dinner"];
-  const mealColor = MEAL_COLORS[meal] ?? "#c2e5d0";
+  const mealColor = locationType === "retail" ? BG_COLORS.Retail : (BG_COLORS[meal] ?? "#bde0ca");
   const next7Days = getNext7Days();
 
   const displayedMeal = locationType === "retail" ? "Retail" : meal === "Lunch" && isWeekendDay ? "Brunch" : meal;
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
   // ── Date strip ──
   dateStrip: {
     paddingTop: 16,
-    paddingBottom: 14,
+    paddingBottom: 16,
     gap: 12,
   },
   dateNavRow: {
@@ -426,8 +427,8 @@ const styles = StyleSheet.create({
   // ── Context band ──
   contextBand: {
     paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 6,
+    paddingTop: 0,
+    paddingBottom: 16,
     gap: 10,
   },
   selectorGroup: {
