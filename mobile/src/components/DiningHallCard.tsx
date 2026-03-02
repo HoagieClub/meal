@@ -95,7 +95,7 @@ function calcDV(amount: number | null | undefined, dv: number): number | null {
 }
 
 function rdvBarColor(rdvPercent: number | null, type: NutrientType): string {
-  if (rdvPercent == null || type === "neutral") return "#C9C9C9";
+  if (rdvPercent == null || type === "neutral") return "#94a3b8";
   if (type === "good") return "#8BCF95";
   if (rdvPercent < 15) return "#8BCF95";
   if (rdvPercent <= 40) return "#F6C77D";
@@ -107,66 +107,39 @@ function fmt(n: number | null | undefined): string {
   return parseFloat(n.toFixed(1)).toString();
 }
 
-// ─── NutrientCell ─────────────────────────────────────────────────────────────
+// ─── Nutrition sub-components ─────────────────────────────────────────────────
 
-function NutrientCell({
-  label,
-  amount,
-  unit,
-  rdvPercent,
-  type = "neutral",
-  style,
-}: {
+function SectionLabel({ label }: { label: string }) {
+  return <Text style={styles.npSectionLabel}>{label}</Text>;
+}
+
+function NutritionDivider() {
+  return <View style={styles.npDivider} />;
+}
+
+interface NutrientRowProps {
   label: string;
   amount: number | null | undefined;
   unit: string;
-  rdvPercent: number | null;
-  type?: NutrientType;
-  style?: any;
-}) {
-  const barColor = rdvBarColor(rdvPercent, type);
-  const displayValue = amount != null ? `${fmt(amount)} ${unit}` : "–";
-
-  return (
-    <View style={[styles.ncCell, style]}>
-      <Text style={styles.ncLabel} numberOfLines={1}>{label}</Text>
-      <Text style={styles.ncValue}>{displayValue}</Text>
-      {rdvPercent != null && (
-        <View style={styles.ncRdvRow}>
-          <Text style={styles.ncRdvText}>{rdvPercent}%</Text>
-          <View style={[styles.ncRdvBar, { backgroundColor: barColor }]} />
-          <Text style={styles.ncRdvText}>RDV</Text>
-        </View>
-      )}
-    </View>
-  );
+  dv: number;
+  type: NutrientType;
 }
 
-// ─── ServingCalories ──────────────────────────────────────────────────────────
-
-function ServingCalories({
-  servingSize,
-  servingUnit,
-  calories,
-}: {
-  servingSize: number | null | undefined;
-  servingUnit: string | null | undefined;
-  calories: number | null | undefined;
-}) {
-  const servDisplay =
-    servingSize != null ? `${fmt(servingSize)}${servingUnit ? ` ${servingUnit}` : ""}` : "–";
+function NutrientRow({ label, amount, unit, dv, type }: NutrientRowProps) {
+  const rdv = calcDV(amount, dv);
+  const barColor = rdvBarColor(rdv, type);
+  const fillPct = rdv != null ? `${Math.min(rdv, 100)}%` : "0%";
 
   return (
-    <View style={styles.scContainer}>
-      <View style={styles.scCol}>
-        <Text style={styles.ncLabel}>Serving Size</Text>
-        <Text style={styles.scValue}>{servDisplay}</Text>
+    <View style={styles.npRow}>
+      <Text style={styles.npRowLabel}>{label}</Text>
+      <Text style={styles.npRowValue}>{amount != null ? `${fmt(amount)} ${unit}` : "–"}</Text>
+      <View style={styles.npBarTrack}>
+        {rdv != null && (
+          <View style={[styles.npBarFill, { width: fillPct, backgroundColor: barColor }]} />
+        )}
       </View>
-      <View style={styles.scDivider} />
-      <View style={styles.scCol}>
-        <Text style={styles.ncLabel}>Calories</Text>
-        <Text style={styles.scValue}>{fmt(calories)}</Text>
-      </View>
+      <Text style={styles.npRowPct}>{rdv != null ? `${rdv}%` : ""}</Text>
     </View>
   );
 }
@@ -174,58 +147,54 @@ function ServingCalories({
 // ─── NutritionPanel ───────────────────────────────────────────────────────────
 
 function NutritionPanel({ nutrition }: { nutrition: Nutrition }) {
+  const servDisplay =
+    nutrition.servingSize != null
+      ? `${fmt(nutrition.servingSize)}${nutrition.servingUnit ? ` ${nutrition.servingUnit}` : ""}`
+      : "–";
+
   return (
     <View style={styles.npPanel}>
-      {/* Row 1: Serving + Calories | Sodium */}
-      <View style={styles.npRow}>
-        <ServingCalories
-          servingSize={nutrition.servingSize}
-          servingUnit={nutrition.servingUnit}
-          calories={nutrition.calories}
-        />
-        <NutrientCell
-          label="Sodium"
-          amount={nutrition.sodium}
-          unit="mg"
-          rdvPercent={calcDV(nutrition.sodium, 2300)}
-          type="limit"
-          style={styles.npSideCell}
-        />
-      </View>
-
-      {/* Row 2: Fat group | Protein */}
-      <View style={styles.npRow}>
-        <View style={styles.npGroupBox}>
-          <NutrientCell label="Total Fat" amount={nutrition.totalFat} unit="g" rdvPercent={calcDV(nutrition.totalFat, 78)} type="limit" style={styles.npGroupCell} />
-          <NutrientCell label="Sat. Fat" amount={nutrition.saturatedFat} unit="g" rdvPercent={calcDV(nutrition.saturatedFat, 20)} type="limit" style={styles.npGroupCell} />
-          <NutrientCell label="Trans Fat" amount={nutrition.transFat} unit="g" rdvPercent={calcDV(nutrition.transFat, 2)} type="limit" style={styles.npGroupCell} />
+      {/* Hero */}
+      <View style={styles.npHero}>
+        <View>
+          <Text style={styles.npHeroCal}>{fmt(nutrition.calories)}</Text>
+          <Text style={styles.npHeroCalLabel}>CALORIES</Text>
         </View>
-        <NutrientCell label="Protein" amount={nutrition.protein} unit="g" rdvPercent={calcDV(nutrition.protein, 50)} type="good" style={styles.npSideCell} />
-      </View>
-
-      {/* Row 3: Carbs group | Cholesterol */}
-      <View style={[styles.npRow, { marginBottom: 6 }]}>
-        <View style={styles.npGroupBox}>
-          <NutrientCell label="Total Carbs" amount={nutrition.totalCarbohydrates} unit="g" rdvPercent={calcDV(nutrition.totalCarbohydrates, 275)} type="neutral" style={styles.npGroupCell} />
-          <NutrientCell label="Fiber" amount={nutrition.dietaryFiber} unit="g" rdvPercent={calcDV(nutrition.dietaryFiber, 28)} type="good" style={styles.npGroupCell} />
-          <NutrientCell label="Sugars" amount={nutrition.sugars} unit="g" rdvPercent={calcDV(nutrition.sugars, 50)} type="limit" style={styles.npGroupCell} />
+        <View style={styles.npHeroRight}>
+          <Text style={styles.npHeroServing}>{servDisplay}</Text>
+          <Text style={styles.npHeroServingLabel}>PER SERVING</Text>
         </View>
-        <NutrientCell label="Cholesterol" amount={nutrition.cholesterol} unit="mg" rdvPercent={calcDV(nutrition.cholesterol, 300)} type="limit" style={styles.npSideCell} />
       </View>
 
-      <View style={styles.npDivider} />
+      {/* Macros */}
+      <SectionLabel label="MACROS" />
+      <NutrientRow label="Total Fat" amount={nutrition.totalFat} unit="g" dv={78} type="limit" />
+      <NutrientRow label="Carbohydrates" amount={nutrition.totalCarbohydrates} unit="g" dv={275} type="neutral" />
+      <NutrientRow label="Protein" amount={nutrition.protein} unit="g" dv={50} type="good" />
+      <NutrientRow label="Sodium" amount={nutrition.sodium} unit="mg" dv={2300} type="limit" />
 
-      {/* Row 4: Vitamins & Minerals */}
-      <View style={[styles.npRow, { marginBottom: 0 }]}>
-        <NutrientCell label="Vitamin D" amount={nutrition.vitaminD} unit="mcg" rdvPercent={calcDV(nutrition.vitaminD, 20)} type="good" style={styles.npEqualCell} />
-        <NutrientCell label="Calcium" amount={nutrition.calcium} unit="mg" rdvPercent={calcDV(nutrition.calcium, 1300)} type="good" style={styles.npEqualCell} />
-        <NutrientCell label="Iron" amount={nutrition.iron} unit="mg" rdvPercent={calcDV(nutrition.iron, 18)} type="good" style={styles.npEqualCell} />
-        <NutrientCell label="Potassium" amount={nutrition.potassium} unit="mg" rdvPercent={calcDV(nutrition.potassium, 4700)} type="good" style={styles.npEqualCell} />
-      </View>
+      <NutritionDivider />
+
+      {/* Details */}
+      <SectionLabel label="DETAILS" />
+      <NutrientRow label="Saturated Fat" amount={nutrition.saturatedFat} unit="g" dv={20} type="limit" />
+      <NutrientRow label="Trans Fat" amount={nutrition.transFat} unit="g" dv={2} type="limit" />
+      <NutrientRow label="Dietary Fiber" amount={nutrition.dietaryFiber} unit="g" dv={28} type="good" />
+      <NutrientRow label="Sugars" amount={nutrition.sugars} unit="g" dv={50} type="limit" />
+      <NutrientRow label="Cholesterol" amount={nutrition.cholesterol} unit="mg" dv={300} type="limit" />
+
+      <NutritionDivider />
+
+      {/* Vitamins & Minerals */}
+      <SectionLabel label="VITAMINS & MINERALS" />
+      <NutrientRow label="Vitamin D" amount={nutrition.vitaminD} unit="mcg" dv={20} type="good" />
+      <NutrientRow label="Calcium" amount={nutrition.calcium} unit="mg" dv={1300} type="good" />
+      <NutrientRow label="Iron" amount={nutrition.iron} unit="mg" dv={18} type="good" />
+      <NutrientRow label="Potassium" amount={nutrition.potassium} unit="mg" dv={4700} type="good" />
 
       {nutrition.ingredients && (
         <>
-          <View style={styles.npDivider} />
+          <NutritionDivider />
           <Text style={styles.npIngredLabel}>Ingredients</Text>
           <Text style={styles.npIngredText}>{nutrition.ingredients}</Text>
         </>
@@ -366,7 +335,13 @@ export default function DiningHallCard({ hall }: DiningHallCardProps) {
         </View>
       </View>
       {categories.map((cat) => (
-        <MenuSection key={cat} category={cat} items={grouped[cat]} expandedId={expandedId} setExpandedId={setExpandedId} />
+        <MenuSection
+          key={cat}
+          category={cat}
+          items={grouped[cat]}
+          expandedId={expandedId}
+          setExpandedId={setExpandedId}
+        />
       ))}
     </View>
   );
@@ -378,14 +353,6 @@ const styles = StyleSheet.create({
   // ── Card ──
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 14,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-    marginHorizontal: 16,
   },
 
   // ── Header ──
@@ -507,114 +474,123 @@ const styles = StyleSheet.create({
     color: "#b91c1c",
   },
 
-  // ── Nutrient cell ──
-  ncCell: {
-    paddingVertical: 5,
-    paddingHorizontal: 3,
-  },
-  ncLabel: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 9,
-    color: "#898787",
-    marginBottom: 1,
-  },
-  ncValue: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 12.5,
-    color: "#454545",
-  },
-  ncRdvRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    marginTop: 2,
-  },
-  ncRdvText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 8,
-    color: "#888888",
-  },
-  ncRdvBar: {
-    height: 3,
-    width: 16,
-    borderRadius: 2,
-  },
-
-  // ── Serving / Calories ──
-  scContainer: {
-    flex: 2,
-    flexDirection: "row",
-    backgroundColor: "#EFEFEF",
-    borderRadius: 7,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    marginRight: 6,
-    alignItems: "center",
-  },
-  scCol: {
-    flex: 1,
-    alignItems: "center",
-  },
-  scValue: {
-    fontFamily: "Poppins_700Bold",
-    fontSize: 16,
-    color: "#454545",
-  },
-  scDivider: {
-    width: 1,
-    alignSelf: "stretch",
-    backgroundColor: "#D5D5D5",
-    marginHorizontal: 6,
-  },
-
   // ── Nutrition panel ──
   npPanel: {
-    backgroundColor: "#F7F7F7",
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 12,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 18,
     borderTopWidth: 1,
-    borderTopColor: "#eeeeee",
+    borderTopColor: "#f0f0f0",
   },
+
+  // Hero
+  npHero: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#f0faf4",
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginBottom: 16,
+  },
+  npHeroCal: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 44,
+    lineHeight: 48,
+    color: "#166534",
+  },
+  npHeroCalLabel: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 9.5,
+    color: "#9ca3af",
+    letterSpacing: 1.2,
+  },
+  npHeroRight: {
+    alignItems: "flex-end",
+  },
+  npHeroServing: {
+    fontFamily: "Poppins_700Bold",
+    fontSize: 22,
+    color: "#374151",
+  },
+  npHeroServingLabel: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 9.5,
+    color: "#9ca3af",
+    letterSpacing: 1.2,
+  },
+
+  // Section label
+  npSectionLabel: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 10,
+    color: "#9ca3af",
+    letterSpacing: 1.2,
+    paddingTop: 2,
+    paddingBottom: 4,
+  },
+
+  // Nutrient rows
   npRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 4,
+    alignItems: "center",
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f8f8f8",
   },
-  npGroupBox: {
-    flex: 3,
-    flexDirection: "row",
-    backgroundColor: "#E8E8E8",
-    borderRadius: 6,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    marginRight: 4,
-  },
-  npGroupCell: {
+  npRowLabel: {
     flex: 1,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 13,
+    color: "#374151",
   },
-  npSideCell: {
-    flex: 1,
-    paddingLeft: 4,
+  npRowValue: {
+    width: 74,
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 13,
+    color: "#111827",
+    textAlign: "right",
+    marginRight: 10,
   },
-  npEqualCell: {
-    flex: 1,
+  npBarTrack: {
+    width: 54,
+    height: 5,
+    backgroundColor: "#EBEBEB",
+    borderRadius: 3,
+    overflow: "hidden",
   },
+  npBarFill: {
+    height: "100%",
+    borderRadius: 3,
+  },
+  npRowPct: {
+    width: 34,
+    fontFamily: "Poppins_400Regular",
+    fontSize: 11,
+    color: "#9ca3af",
+    textAlign: "right",
+  },
+
+  // Divider
   npDivider: {
-    height: 1.5,
-    backgroundColor: "#E0E0E0",
-    marginVertical: 6,
+    height: 1,
+    backgroundColor: "#f0f0f0",
+    marginVertical: 10,
   },
+
+  // Ingredients
   npIngredLabel: {
     fontFamily: "Poppins_600SemiBold",
-    fontSize: 10.5,
-    color: "#555555",
-    marginBottom: 3,
+    fontSize: 12.5,
+    color: "#374151",
+    marginBottom: 5,
   },
   npIngredText: {
     fontFamily: "Poppins_400Regular",
-    fontSize: 10.5,
-    color: "#666666",
-    lineHeight: 15,
+    fontSize: 12,
+    color: "#6b7280",
+    lineHeight: 18,
   },
 });

@@ -178,9 +178,8 @@ export default function MenuScreen() {
 
       {/* ── Scrollable content ── */}
       <ScrollView showsVerticalScrollIndicator={false} style={[styles.scroll, { backgroundColor: mealColor }]}>
-        {/* ── Date strip ── */}
+        {/* Date strip */}
         <View style={styles.dateStrip}>
-          {/* Date nav row */}
           <View style={styles.dateNavRow}>
             <TouchableOpacity style={styles.chevronBtn} onPress={() => shiftDay(-1)} activeOpacity={0.7}>
               <ChevronLeftIcon />
@@ -192,8 +191,6 @@ export default function MenuScreen() {
               <ChevronRightIcon />
             </TouchableOpacity>
           </View>
-
-          {/* Day chips */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayChipsRow}>
             {next7Days.map((date) => {
               const selected = isSameDay(date, selectedDate);
@@ -213,10 +210,9 @@ export default function MenuScreen() {
           </ScrollView>
         </View>
 
-        {/* ── Context band: location + meal ── */}
+        {/* Context band: location + meal */}
         <View style={styles.contextBand}>
           <View style={styles.selectorGroup}>
-            {/* Location toggle */}
             <View style={[styles.segmentedControl, locationType === "residential" && styles.segmentedControlDivider]}>
               {(["residential", "retail"] as const).map((type) => {
                 const label = type === "residential" ? "Dining Halls" : "Retail";
@@ -232,8 +228,6 @@ export default function MenuScreen() {
                 );
               })}
             </View>
-
-            {/* Meal toggle (residential only) — hours shown inside each option */}
             {locationType === "residential" && (
               <View style={styles.mealPill}>
                 {meals.map((m) => {
@@ -490,7 +484,7 @@ const styles = StyleSheet.create({
 
   // ── Cards ──
   cardsSection: {
-    paddingBottom: 8,
+    backgroundColor: "#ffffff",
   },
 
   // ── Footer ──
@@ -498,7 +492,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 32,
+    backgroundColor: "#ffffff",
+    paddingTop: 24,
     paddingBottom: 24,
   },
   footerText: {
