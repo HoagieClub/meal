@@ -58,10 +58,6 @@
 			"description": "Princeton OIT API OAuth consumer secret.",
 			"required": true
 		},
-		"DATABASE_URL": {
-			"description": "PostgreSQL connection URL. Automatically set by the Heroku Postgres add-on.",
-			"required": true
-		},
 		"DEBUG": {
 			"description": "Set to 'true' for development mode, 'false' for production.",
 			"required": true
