@@ -1,9 +1,9 @@
 'use client';
 
-import { calculateDVPercentage } from '@/utils/dining';
 import { ALLERGEN_ICON_MAP } from '@/data';
 import { Allergen } from '@/types/types';
-import { ServingCalories, AllergensDisplay, NutrientCell, Ingredients } from '.';
+import { calculateDVPercentage } from '@/utils/dining';
+import { Allergens, AllergensDisplay, Ingredients, NutrientCell, ServingCalories } from '.';
 
 export default function NutritionAccordionContent({ item }: any) {
   const nutrition = item.nutrition;
@@ -15,6 +15,7 @@ export default function NutritionAccordionContent({ item }: any) {
   }
 
   const ingredientsString = ingredients ?? '';
+  const allergensString = allergens ?? '';
   const searchText = `${allergens || ''} ${ingredientsString}`.toLowerCase();
   const allergensArray = (Object.keys(ALLERGEN_ICON_MAP) as Allergen[]).filter((allergen) =>
     searchText.includes(allergen.toLowerCase())
@@ -170,6 +171,8 @@ export default function NutritionAccordionContent({ item }: any) {
 
       {/* Ingredients (full width) */}
       {ingredientsString && <Ingredients ingredients={ingredientsString} />}
+      <br/>
+      {allergensString && <Allergens allergens={allergensString} />}
     </div>
   );
 }
