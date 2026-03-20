@@ -35,7 +35,7 @@ export const FavoriteButton = ({ item }: { item: any }) => {
       <Pane position='relative' width={14} height={14}>
         {/* make heart red if favorited */}
         <Image
-          src='/images/icons/heart.svg'          
+          src='/images/icons/star.svg'
           alt='Favorite'
           width={14}
           height={14}
@@ -46,7 +46,7 @@ export const FavoriteButton = ({ item }: { item: any }) => {
           }}
         />
         <Image
-          src='/images/icons/heart-solid.svg'
+          src='/images/icons/star-filled.svg'
           alt='Favorited'
           width={14}
           height={14}

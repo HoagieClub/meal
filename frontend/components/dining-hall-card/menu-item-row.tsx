@@ -83,7 +83,8 @@ export default function MenuItemRow({
             flexDirection='row'
             alignItems='center'
             justifyContent='flex-end'
-            gap={minorScale(1)}
+            // gap={minorScale(1)}
+            paddingTop={minorScale(1)}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             <FavoriteButton item={item} />
