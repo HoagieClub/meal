@@ -6,6 +6,7 @@ import { ALLERGEN_ICON_MAP } from '@/data';
 import { Allergen } from '@/types/types';
 import { LikeDislikeButtons } from '@/components/dining-hall-card/like-dislike-button';
 import { FavoriteButton } from '@/components/dining-hall-card/favorite-button';
+import { useMenuItemInteractions } from '@/hooks/use-menu-item-interactions';
 import {
   Accordion,
   AccordionItem,
@@ -30,6 +31,7 @@ export default function MenuItemRow({
   diningHallId: string;
 }) {
   const { expandedItemId, setExpandedItemId, hideAllergenTags } = useNutritionAccordion();
+  const interactions = useMenuItemInteractions(item?.id, item?.userInteraction, item?.metrics);
   const menuItemId = item?.id;
   if (!menuItemId) {
     console.warn('MenuItemRow: item missing id', item);
@@ -87,8 +89,8 @@ export default function MenuItemRow({
             paddingTop={minorScale(1)}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-            <FavoriteButton item={item} />
-            <LikeDislikeButtons item={item} />
+            <FavoriteButton favorited={interactions.favorited} onToggle={interactions.handleFavorite} />
+            <LikeDislikeButtons userLiked={interactions.userLiked} likeCount={interactions.likeCount} dislikeCount={interactions.dislikeCount} onLike={interactions.handleLike} onDislike={interactions.handleDislike} />
             <AccordionTrigger className='p-0 hover:no-underline [&>svg]:h-4 [&>svg]:w-4 cursor-pointer' />
           </Pane>
         </Pane>

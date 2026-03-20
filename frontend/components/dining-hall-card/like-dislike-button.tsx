@@ -1,24 +1,20 @@
 import React from 'react';
 import Image from 'next/image';
 import { Pane, Text, useTheme, minorScale } from 'evergreen-ui';
-import { useMenuItemInteractions } from '@/hooks/use-menu-item-interactions';
-
 /**
  * Like/dislike buttons component.
  * Renders both like and dislike buttons that share the same state.
  *
- * @param item - The menu item to display like/dislike for.
  * @returns A React component.
  */
-export const LikeDislikeButtons = ({ item }: { item: any }) => {
+export const LikeDislikeButtons = ({ userLiked, likeCount, dislikeCount, onLike, onDislike }: {
+  userLiked: boolean | null;
+  likeCount: number;
+  dislikeCount: number;
+  onLike: () => void;
+  onDislike: () => void;
+}) => {
   const theme = useTheme();
-
-  // Get the like/dislike state and handlers from the useMenuItemInteractions hook
-  const { userLiked, likeCount, dislikeCount, handleLike, handleDislike } = useMenuItemInteractions(
-    item.id,
-    item.userInteraction,
-    item.metrics
-  );
 
   // Render the like/dislike buttons (YouTube-style pill)
   return (
@@ -28,7 +24,7 @@ export const LikeDislikeButtons = ({ item }: { item: any }) => {
         alignItems='center'
         justifyContent='center'
         gap={minorScale(1)}
-        onClick={handleLike}
+        onClick={onLike}
         cursor='pointer'
         minWidth={40}
         paddingX={minorScale(2)}
@@ -70,7 +66,7 @@ export const LikeDislikeButtons = ({ item }: { item: any }) => {
         alignItems='center'
         justifyContent='center'
         gap={minorScale(1)}
-        onClick={handleDislike}
+        onClick={onDislike}
         cursor='pointer'
         minWidth={40}
         paddingX={minorScale(2)}
