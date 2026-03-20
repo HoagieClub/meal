@@ -13,6 +13,7 @@ interface DiningHallCardProps {
   isPinned: boolean;
   onPinToggle: () => void;
   sortOption: string;
+  filtersActive?: boolean;
 }
 
 /**
@@ -20,7 +21,7 @@ interface DiningHallCardProps {
  *
  * @returns The dining hall card component
  */
-const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption }: DiningHallCardProps) => {
+const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filtersActive }: DiningHallCardProps) => {
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
 
@@ -87,9 +88,35 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption }: Dinin
         </Pane>
       </Pane>
       {menuItems.length === 0 ? (
-        <Text marginX={majorScale(1)} size={300} color='muted' fontStyle='italic' marginTop={minorScale(1)}>
-          Nothing available
-        </Text>
+        <Pane
+          display='flex'
+          flexDirection='column'
+          alignItems='center'
+          justifyContent='center'
+          paddingTop={majorScale(2)}
+          paddingBottom={majorScale(1)}
+          paddingX={majorScale(2)}
+          textAlign='center'
+        >
+          {filtersActive ? (
+            <img src='/images/icons/funnel-x.svg' width={40} height={40} alt='Filtered out'/>
+          ) : (
+            <img src='/images/icons/no-food.svg' width={52} height={52} alt='Nothing today' />
+          )}
+          <Text
+            size={400}
+            fontWeight={600}
+            color={theme.colors.gray700}
+            marginTop={minorScale(3)}
+          >
+            {filtersActive ? 'Filtered out' : 'Nothing here'}
+          </Text>
+          <Text size={300} color={theme.colors.gray500} marginTop={minorScale(1)}>
+            {filtersActive
+              ? 'Try adjusting your search or filters'
+              : 'We couldn\'t find any items for this meal'}
+          </Text>
+        </Pane>
       ) : sortOption === 'Category' ? (
         categories.map((category: string) => {
           const items = menuItems.filter((item: any) => item.category === category);

@@ -22,7 +22,7 @@ export const LikeDislikeButtons = ({ item }: { item: any }) => {
 
   // Render the like/dislike buttons (YouTube-style pill)
   return (
-    <Pane display='flex' alignItems='center' borderRadius={999} overflow='hidden'>
+    <Pane display='flex' alignItems='center' borderRadius={999} overflow='hidden' marginRight={2}>
       <Pane
         display='flex'
         alignItems='center'

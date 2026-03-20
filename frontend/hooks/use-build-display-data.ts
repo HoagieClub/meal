@@ -250,7 +250,7 @@ export const useBuildResidentialDisplayData = ({
 }: any) => {
   const displayData = useMemo(() => {
     if (!locations || !residentialMenus || !menuItems) {
-      return [];
+      return { displayData: [], hasAnyRawLocations: false };
     }
     const shapedData = buildResidentialLocationMenuShape(
       locations,
@@ -262,10 +262,12 @@ export const useBuildResidentialDisplayData = ({
     );
 
     const filteredAndSorted = shapedData.map((location) => {
+      const rawMenuCount = location.menu.length;
       const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
       const sortedMenu = sortMenuItems(filteredMenu, sortOption, recommendations);
       return {
         ...location,
+        rawMenuCount,
         menu: sortedMenu,
       };
     });
@@ -281,10 +283,11 @@ export const useBuildResidentialDisplayData = ({
     orderedMissingDiningHalls.forEach((diningHall: any) => {
       sortedLocations.push({
         name: diningHall,
+        rawMenuCount: 0,
         menu: [],
       });
     });
-    return sortedLocations;
+    return { displayData: sortedLocations, hasAnyRawLocations: shapedData.length > 0 };
   }, [
     locations,
     residentialMenus,
@@ -318,7 +321,7 @@ export const useBuildRetailDisplayData = ({
 }: any) => {
   const displayData = useMemo(() => {
     if (!locations || !retailMenus || !menuItems) {
-      return [];
+      return { displayData: [], hasAnyRawLocations: false };
     }
     const shapedData = buildRetailLocationMenuShape(
       locations,
@@ -329,10 +332,12 @@ export const useBuildRetailDisplayData = ({
     );
 
     const filteredAndSorted = shapedData.map((location) => {
+      const rawMenuCount = location.menu.length;
       const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
       const sortedMenu = sortMenuItems(filteredMenu, sortOption, recommendations);
       return {
         ...location,
+        rawMenuCount,
         menu: sortedMenu,
       };
     });
@@ -348,10 +353,11 @@ export const useBuildRetailDisplayData = ({
     orderedMissingDiningHalls.forEach((diningHall: any) => {
       sortedLocations.push({
         name: diningHall,
+        rawMenuCount: 0,
         menu: [],
       });
     });
-    return sortedLocations;
+    return { displayData: sortedLocations, hasAnyRawLocations: shapedData.length > 0 };
   }, [
     locations,
     retailMenus,

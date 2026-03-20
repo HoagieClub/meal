@@ -22,7 +22,6 @@ import {
   majorScale,
   minorScale,
   useTheme,
-  SearchIcon,
   FilterListIcon,
 } from 'evergreen-ui';
 import DiningHallCard from '@/components/dining-hall-card/dining-hall-card';
@@ -122,7 +121,7 @@ export default function MenuPage() {
   const stackMenuHeader =
     !hideFilterSidebar && sidebarOpen ? stackMenuHeaderWithSidebar : stackMenuHeaderMobile;
 
-  const residentialDisplayData = useBuildResidentialDisplayData({
+  const { displayData: residentialDisplayData, hasAnyRawLocations: hasAnyResidentialData } = useBuildResidentialDisplayData({
     locations: residentialLocations,
     residentialMenus,
     menuItems,
@@ -137,7 +136,7 @@ export default function MenuPage() {
     sortOption,
   });
 
-  const retailDisplayData = useBuildRetailDisplayData({
+  const { displayData: retailDisplayData, hasAnyRawLocations: hasAnyRetailData } = useBuildRetailDisplayData({
     locations: retailLocations,
     retailMenus,
     menuItems,
@@ -153,6 +152,7 @@ export default function MenuPage() {
 
   const displayMenusForLocations =
     locationType === 'retail' ? retailDisplayData : residentialDisplayData;
+  const hasAnyRawData = locationType === 'retail' ? hasAnyRetailData : hasAnyResidentialData;
 
   return (
     <NutritionAccordionProvider>
@@ -402,12 +402,18 @@ export default function MenuPage() {
                   marginTop={majorScale(2)}
                   className='h-full'
                 >
-                  <SearchIcon color={theme.colors.gray600} size={32} marginBottom={majorScale(2)} />
-                  <Heading size={500} color={theme.colors.gray800} marginBottom={minorScale(1)}>
-                    No Locations Found
+                  {hasAnyRawData ? (
+                    <img src='/images/icons/funnel-x-dark.svg' width={50} height={50} alt='Filtered out' />
+                  ) : (
+                    <img src='/images/icons/no-food-dark.svg' width={70} height={70} alt='No menus available' />
+                  )}
+                  <Heading size={500} color={theme.colors.gray800} marginTop={majorScale(2)} marginBottom={minorScale(1)}>
+                    {hasAnyRawData ? 'Filtered out' : 'Nothing today!'}
                   </Heading>
-                  <Text size={400} color='muted' textAlign='center'>
-                    Try adjusting your filters.
+                  <Text size={400} color='black' opacity={0.4} textAlign='center' maxWidth={320}>
+                    {hasAnyRawData
+                      ? 'Try adjusting your search or filters'
+                      : 'We couldn\'t find any menus for this meal. Check back later.'}
                   </Text>
                 </Pane>
               ) : (
@@ -428,6 +434,7 @@ export default function MenuPage() {
                         isPinned={isPinned}
                         onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
                         sortOption={sortOption}
+                        filtersActive={diningHall.rawMenuCount > 0}
                       />
                     );
                   })}
