@@ -104,7 +104,7 @@ export default function MenuPage() {
   const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [locationType, setLocationType] = useState<'residential' | 'retail'>('residential');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOption, setSortOption] = useState<MenuSortOption>('Category');
+  const [sortOption, setSortOption] = useState<MenuSortOption>('Starred');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [mobileScrolled, setMobileScrolled] = useState(false);

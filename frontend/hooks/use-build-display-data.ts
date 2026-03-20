@@ -165,17 +165,17 @@ function filterLocations(
 }
 
 function sortMenuItems(menu: any[], sortOption: string, recommendations: any) {
-  if (sortOption === 'Favorited') {
-    return menu.filter((item) => item.userInteraction?.favorited === true);
-  }
-
   const menuCopy = [...menu];
 
-  if (sortOption === 'Category') {
+  if (sortOption === 'Starred') {
     menuCopy.sort((a: any, b: any) => {
       const categoryA = String(a.category || '').trim();
       const categoryB = String(b.category || '').trim();
-      return categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
+      const catCmp = categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
+      if (catCmp !== 0) return catCmp;
+      const favA = a.userInteraction?.favorited === true ? 0 : 1;
+      const favB = b.userInteraction?.favorited === true ? 0 : 1;
+      return favA - favB;
     });
   } else if (sortOption === 'Recommended') {
     menuCopy.sort((a: any, b: any) => {
@@ -190,14 +190,13 @@ function sortMenuItems(menu: any[], sortOption: string, recommendations: any) {
     });
   } else if (sortOption === 'Most Liked') {
     menuCopy.sort((a: any, b: any) => {
-      const likeA = a.metrics?.likeCount > 0 ? a.metrics.likeCount : -(a.metrics?.dislikeCount || 0);
-      const likeB = b.metrics?.likeCount > 0 ? b.metrics.likeCount : -(b.metrics?.dislikeCount || 0);
-      if (likeB !== likeA) {
-        return likeB - likeA;
-      }
       const categoryA = String(a.category || '').trim();
       const categoryB = String(b.category || '').trim();
-      return categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
+      const catCmp = categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
+      if (catCmp !== 0) return catCmp;
+      const likeA = a.metrics?.likeCount > 0 ? a.metrics.likeCount : -(a.metrics?.dislikeCount || 0);
+      const likeB = b.metrics?.likeCount > 0 ? b.metrics.likeCount : -(b.metrics?.dislikeCount || 0);
+      return likeB - likeA;
     });
   } else {
     menuCopy.sort((a: any, b: any) => {

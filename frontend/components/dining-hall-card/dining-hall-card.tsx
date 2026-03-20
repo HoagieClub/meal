@@ -27,7 +27,7 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filters
 
   const menuItems = diningHall.menu ?? [];
   const categories: string[] =
-    sortOption === 'Category'
+    (sortOption === 'Starred' || sortOption === 'Most Liked')
       ? ([...new Set(menuItems.map((item: any) => item.category || 'Other'))] as string[]).sort(
           (a, b) => {
             const diff = canonicalIndex(a, SECTION_TITLE_ORDER) - canonicalIndex(b, SECTION_TITLE_ORDER);
@@ -117,7 +117,7 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filters
               : 'We couldn\'t find any items for this meal'}
           </Text>
         </Pane>
-      ) : sortOption === 'Category' ? (
+      ) : (sortOption === 'Starred' || sortOption === 'Most Liked') ? (
         categories.map((category: string) => {
           const items = menuItems.filter((item: any) => item.category === category);
           return (
