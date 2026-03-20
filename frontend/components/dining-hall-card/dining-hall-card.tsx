@@ -14,6 +14,7 @@ interface DiningHallCardProps {
   onPinToggle: () => void;
   sortOption: string;
   filtersActive?: boolean;
+  index?: number;
 }
 
 /**
@@ -21,7 +22,7 @@ interface DiningHallCardProps {
  *
  * @returns The dining hall card component
  */
-const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filtersActive }: DiningHallCardProps) => {
+const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filtersActive, index = 0 }: DiningHallCardProps) => {
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
 
@@ -46,6 +47,8 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filters
       display='flex'
       flexDirection='column'
       height='100%'
+      className='card-fade-up'
+      style={{ animationDelay: `${index * 40}ms` }}
     >
       <Pane
         display='flex'

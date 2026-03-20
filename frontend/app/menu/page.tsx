@@ -77,19 +77,26 @@ const isWeekend = (date: Date): boolean => {
  */
 export default function MenuPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(getToday());
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [meal, setMeal] = useState<Meal>(getCurrentMeal());
   const dateKey = getDateKey(selectedDate);
   const { data, loading } = useMenuApi(dateKey);
   const interactions = data?.interactions ?? {};
   const metrics = data?.metrics ?? {};
 
   return (
-    <InteractionsProvider key={dateKey} initialInteractions={interactions} initialMetrics={metrics}>
+    <InteractionsProvider initialInteractions={interactions} initialMetrics={metrics} dateKey={dateKey}>
       <NutritionAccordionProvider>
         <MenuContent
           data={data}
           loading={loading}
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          meal={meal}
+          setMeal={setMeal}
+          dateKey={dateKey}
         />
       </NutritionAccordionProvider>
     </InteractionsProvider>
@@ -105,14 +112,23 @@ function MenuContent({
   loading,
   selectedDate,
   setSelectedDate,
+  sidebarOpen,
+  setSidebarOpen,
+  meal,
+  setMeal,
+  dateKey,
 }: {
   data: any;
   loading: boolean;
   selectedDate: Date;
   setSelectedDate: (d: Date) => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  meal: Meal;
+  setMeal: (m: Meal) => void;
+  dateKey: string;
 }) {
   const theme = useTheme();
-  const currentMeal = getCurrentMeal();
 
   const residentialLocations = data?.residentialLocations ?? {};
   const retailLocations = data?.retailLocations ?? {};
@@ -130,11 +146,9 @@ function MenuContent({
     clearAll: clearPreferences,
   } = usePreferencesCache();
 
-  const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [locationType, setLocationType] = useState<'residential' | 'retail'>('residential');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<MenuSortOption>('Starred');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [mobileScrolled, setMobileScrolled] = useState(false);
 
@@ -404,7 +418,7 @@ function MenuContent({
                 paddingBottom={majorScale(6)}
                 gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
                 gap={majorScale(2)}
-                className='h-full no-scrollbar'
+                className='h-full no-scrollbar skeleton-grid-enter'
               >
                 {Array(6)
                   .fill(0)
@@ -439,6 +453,7 @@ function MenuContent({
               </Pane>
             ) : (
               <Pane
+                key={`${dateKey}-${meal}-${locationType}`}
                 display='grid'
                 overflowY='auto'
                 paddingBottom={majorScale(6)}
@@ -446,7 +461,7 @@ function MenuContent({
                 gap={majorScale(2)}
                 className='h-full no-scrollbar'
               >
-                {displayMenusForLocations.map((diningHall) => {
+                {displayMenusForLocations.map((diningHall, i) => {
                   const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
                   return (
                     <DiningHallCard
@@ -456,6 +471,7 @@ function MenuContent({
                       onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
                       sortOption={sortOption}
                       filtersActive={diningHall.rawMenuCount > 0}
+                      index={i}
                     />
                   );
                 })}

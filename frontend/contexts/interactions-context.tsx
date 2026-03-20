@@ -31,15 +31,23 @@ export const InteractionsProvider = ({
   children,
   initialInteractions,
   initialMetrics,
+  dateKey,
 }: {
   children: React.ReactNode;
   initialInteractions: Record<string, any> | null | undefined;
   initialMetrics: Record<string, any> | null | undefined;
+  dateKey: string;
 }) => {
   const [interactions, setInteractions] = useState<Record<string, InteractionData>>({});
   const [metrics, setMetrics] = useState<Record<string, MetricsData>>({});
 
-  // Sync when API data first arrives
+  // Clear stale data when date changes
+  useEffect(() => {
+    setInteractions({});
+    setMetrics({});
+  }, [dateKey]);
+
+  // Sync when API data arrives
   useEffect(() => {
     if (initialInteractions && Object.keys(initialInteractions).length > 0) {
       setInteractions(initialInteractions);

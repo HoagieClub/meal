@@ -250,3 +250,24 @@ body {
   overflow: hidden;
   min-height: 0;
 }
+
+/* Skeleton loading grid — delayed fade-in so it doesn't flash on fast loads */
+.skeleton-grid-enter {
+  animation: card-fade-up 300ms ease-out 150ms both;
+}
+
+/* Dining hall card entrance animation */
+@keyframes card-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-fade-up {
+  animation: card-fade-up 280ms ease-out both;
+}

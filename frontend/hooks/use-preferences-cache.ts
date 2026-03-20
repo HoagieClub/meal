@@ -91,11 +91,7 @@ export function usePreferencesCache() {
   const toggleDiningHall = (diningHall: DiningHall): void => {
     setDiningHalls((prev) => {
       if (prev.includes(diningHall)) {
-        const filtered = prev.filter((hall) => hall !== diningHall);
-        if (filtered.length === 0) {
-          return DEFAULT_DINING_HALLS;
-        }
-        return filtered;
+        return prev.filter((hall) => hall !== diningHall);
       }
       return [...prev, diningHall];
     });

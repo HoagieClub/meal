@@ -155,8 +155,11 @@ function filterLocations(
   locations: any[],
   appliedDiningHalls: string[]
 ) {
-  if (!appliedDiningHalls || appliedDiningHalls.length === 0) {
+  if (!appliedDiningHalls) {
     return locations;
+  }
+  if (appliedDiningHalls.length === 0) {
+    return [];
   }
   const diningHallsLower = appliedDiningHalls.map((h: any) => String(h).toLowerCase().trim());
   return locations.filter((location) => {
