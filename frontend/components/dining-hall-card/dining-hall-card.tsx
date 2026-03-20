@@ -15,6 +15,7 @@ interface DiningHallCardProps {
   sortOption: string;
   filtersActive?: boolean;
   index?: number;
+  stickyTop?: number;
 }
 
 /**
@@ -22,7 +23,7 @@ interface DiningHallCardProps {
  *
  * @returns The dining hall card component
  */
-const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filtersActive, index = 0 }: DiningHallCardProps) => {
+const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filtersActive, index = 0, stickyTop = 0 }: DiningHallCardProps) => {
   const theme = useTheme();
   const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
 
@@ -50,10 +51,25 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filters
       className='card-fade-up'
       style={{ animationDelay: `${index * 40}ms` }}
     >
+      <div
+        className='sticky z-10 rounded-t-[15px]'
+        style={{
+          top: stickyTop,
+          marginLeft: -24,
+          marginRight: -24,
+          marginTop: -24,
+          paddingLeft: 24,
+          paddingRight: 24,
+          paddingTop: 24,
+          paddingBottom: 24,
+          marginBottom: -16,
+          background: 'linear-gradient(to bottom, white 0%, white 55%, transparent 100%)',
+          overflow: 'hidden',
+        }}
+      >
       <Pane
         display='flex'
         alignItems='center'
-        marginBottom={majorScale(1)}
         background={theme.colors.gray200}
         className='py-2 border relative border-gray-300 rounded-md flex items-center'
       >
@@ -90,6 +106,7 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filters
           <img src={imageSrc?.src} className='h-full my-auto w-auto' alt={diningHall.name} />
         </Pane>
       </Pane>
+      </div>
       {menuItems.length === 0 ? (
         <Pane
           display='flex'

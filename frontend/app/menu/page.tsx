@@ -24,6 +24,7 @@ import {
   useTheme,
   FilterListIcon,
 } from 'evergreen-ui';
+import SplashScreen from '@/components/splash-screen/splash-screen';
 import DiningHallCard from '@/components/dining-hall-card/dining-hall-card';
 import SkeletonDiningHallCard from '@/components/dining-hall-card/dining-hall-card-skeleton';
 import FilterSidebar from '@/components/filter-sidebar/filter-sidebar';
@@ -86,6 +87,7 @@ export default function MenuPage() {
 
   return (
     <InteractionsProvider initialInteractions={interactions} initialMetrics={metrics} dateKey={dateKey}>
+      <SplashScreen />
       <NutritionAccordionProvider>
         <MenuContent
           data={data}
@@ -193,7 +195,8 @@ function MenuContent({
   return (
     <Pane
       display='flex'
-      className='sm:flex-row sm:overflow-hidden min-h-screen flex-col transition-colors duration-300'
+      className='sm:flex-row min-h-screen flex-col transition-colors duration-300'
+      style={{ overflowX: 'clip' }}
       background={MEAL_COLOR_MAP(theme)[meal]}
     >
       {!hideFilterSidebar && (
@@ -414,11 +417,10 @@ function MenuContent({
             {loading ? (
               <Pane
                 display='grid'
-                overflowY='auto'
                 paddingBottom={majorScale(6)}
                 gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
                 gap={majorScale(2)}
-                className='h-full no-scrollbar skeleton-grid-enter'
+                className='skeleton-grid-enter'
               >
                 {Array(6)
                   .fill(0)
@@ -455,11 +457,9 @@ function MenuContent({
               <Pane
                 key={`${dateKey}-${meal}-${locationType}`}
                 display='grid'
-                overflowY='auto'
                 paddingBottom={majorScale(6)}
                 gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
                 gap={majorScale(2)}
-                className='h-full no-scrollbar'
               >
                 {displayMenusForLocations.map((diningHall, i) => {
                   const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
@@ -472,6 +472,7 @@ function MenuContent({
                       sortOption={sortOption}
                       filtersActive={diningHall.rawMenuCount > 0}
                       index={i}
+                      stickyTop={hideFilterSidebar ? 48 : 0}
                     />
                   );
                 })}
