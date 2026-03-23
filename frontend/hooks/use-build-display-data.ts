@@ -164,7 +164,7 @@ function filterLocations(
   });
 }
 
-function sortMenuItems(menu: any[], sortOption: string, recommendations: any) {
+function sortMenuItems(menu: any[], sortOption: string) {
   if (sortOption === 'Favorited') {
     return menu.filter((item) => item.userInteraction?.favorited === true);
   }
@@ -173,17 +173,6 @@ function sortMenuItems(menu: any[], sortOption: string, recommendations: any) {
 
   if (sortOption === 'Category') {
     menuCopy.sort((a: any, b: any) => {
-      const categoryA = String(a.category || '').trim();
-      const categoryB = String(b.category || '').trim();
-      return categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
-    });
-  } else if (sortOption === 'Recommended') {
-    menuCopy.sort((a: any, b: any) => {
-      const scoreA = recommendations?.[a.id] || 0;
-      const scoreB = recommendations?.[b.id] || 0;
-      if (scoreB !== scoreA) {
-        return scoreB - scoreA;
-      }
       const categoryA = String(a.category || '').trim();
       const categoryB = String(b.category || '').trim();
       return categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
@@ -240,7 +229,6 @@ export const useBuildResidentialDisplayData = ({
   menuItems,
   interactions,
   metrics,
-  recommendations,
   appliedDiningHalls,
   appliedAllergens,
   searchTerm,
@@ -263,7 +251,7 @@ export const useBuildResidentialDisplayData = ({
 
     const filteredAndSorted = shapedData.map((location) => {
       const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
-      const sortedMenu = sortMenuItems(filteredMenu, sortOption, recommendations);
+      const sortedMenu = sortMenuItems(filteredMenu, sortOption);
       return {
         ...location,
         menu: sortedMenu,
@@ -291,7 +279,6 @@ export const useBuildResidentialDisplayData = ({
     menuItems,
     interactions,
     metrics,
-    recommendations,
     appliedDiningHalls,
     appliedAllergens,
     searchTerm,
@@ -309,7 +296,6 @@ export const useBuildRetailDisplayData = ({
   menuItems,
   interactions,
   metrics,
-  recommendations,
   appliedDiningHalls,
   appliedAllergens,
   searchTerm,
@@ -330,7 +316,7 @@ export const useBuildRetailDisplayData = ({
 
     const filteredAndSorted = shapedData.map((location) => {
       const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
-      const sortedMenu = sortMenuItems(filteredMenu, sortOption, recommendations);
+      const sortedMenu = sortMenuItems(filteredMenu, sortOption);
       return {
         ...location,
         menu: sortedMenu,
@@ -358,7 +344,6 @@ export const useBuildRetailDisplayData = ({
     menuItems,
     interactions,
     metrics,
-    recommendations,
     appliedDiningHalls,
     appliedAllergens,
     searchTerm,

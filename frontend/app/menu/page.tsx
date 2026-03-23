@@ -90,7 +90,7 @@ export default function MenuPage() {
   const menuItems = data?.menuItems ?? {};
   const interactions = data?.interactions ?? {};
   const metrics = data?.metrics ?? {};
-  const recommendations = data?.recommendations ?? {};
+
 
   const {
     diningHalls,
@@ -128,7 +128,7 @@ export default function MenuPage() {
     menuItems,
     interactions,
     metrics,
-    recommendations,
+
     appliedDiningHalls: diningHalls,
     appliedAllergens: allergens,
     searchTerm,
@@ -143,7 +143,7 @@ export default function MenuPage() {
     menuItems,
     interactions,
     metrics,
-    recommendations,
+
     appliedDiningHalls: diningHalls,
     appliedAllergens: allergens,
     searchTerm,

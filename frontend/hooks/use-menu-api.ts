@@ -7,7 +7,6 @@ import {
   getMenuItems,
   getUserMenuItemsInteractions,
   getMenuItemsMetrics,
-  getMenuItemsScore,
 } from '@/lib/next-endpoints';
 
 interface MenuData {
@@ -18,12 +17,36 @@ interface MenuData {
   menuItems: any;
   interactions: any;
   metrics: any;
-  recommendations: any;
 }
 
 // Module-level — persists across renders and remounts
 const dataCache = new Map<string, MenuData>();
 const inFlight = new Map<string, Promise<MenuData>>();
+
+// Locations are static — fetch once and reuse across all dates
+let locationsCache: { all: any; residential: any; retail: any } | null = null;
+let locationsInFlight: Promise<typeof locationsCache> | null = null;
+
+async function fetchLocations() {
+  if (locationsCache) return locationsCache;
+  if (locationsInFlight) return locationsInFlight;
+
+  locationsInFlight = (async () => {
+    const res = await getAllLocations();
+    const all = res.data || {};
+    const residential = Object.fromEntries(
+      Object.entries(all).filter(([, v]: [string, any]) => v.category === 'residential')
+    );
+    const retail = Object.fromEntries(
+      Object.entries(all).filter(([, v]: [string, any]) => v.category === 'retail')
+    );
+    locationsCache = { all, residential, retail };
+    locationsInFlight = null;
+    return locationsCache;
+  })();
+
+  return locationsInFlight;
+}
 
 function getNext7DayKeys(): string[] {
   const today = new Date();
@@ -35,9 +58,34 @@ function getNext7DayKeys(): string[] {
   });
 }
 
+/** Walk the menu tree to collect all 6-digit item IDs without serializing to JSON. */
 function extractMenuItemIds(menus: any): string[] {
-  const matches = JSON.stringify(menus).match(/"\d{6}"/g) || [];
-  return Array.from(new Set(matches.map((m) => m.replace(/"/g, ''))));
+  const ids = new Set<string>();
+  for (const locationId in menus) {
+    const locationMenus = menus[locationId];
+    if (typeof locationMenus !== 'object' || !locationMenus) continue;
+    for (const key in locationMenus) {
+      const value = locationMenus[key];
+      // Residential: value is { station: [id, ...] }
+      if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+        for (const station in value) {
+          const stationIds = value[station];
+          if (Array.isArray(stationIds)) {
+            for (const id of stationIds) {
+              if (typeof id === 'string' && /^\d{6}$/.test(id)) ids.add(id);
+            }
+          }
+        }
+      }
+      // Retail: value is [id, ...] directly
+      if (Array.isArray(value)) {
+        for (const id of value) {
+          if (typeof id === 'string' && /^\d{6}$/.test(id)) ids.add(id);
+        }
+      }
+    }
+  }
+  return Array.from(ids);
 }
 
 async function fetchDateData(dateKey: string): Promise<MenuData> {
@@ -46,18 +94,17 @@ async function fetchDateData(dateKey: string): Promise<MenuData> {
 
   const promise = (async (): Promise<MenuData> => {
     try {
-      const [locationsRes, menusRes] = await Promise.all([
-        getAllLocations(),
+      const [locations, menusRes] = await Promise.all([
+        fetchLocations(),
         getAllMenusForDate({ date: dateKey }),
       ]);
 
-      const locations: any = locationsRes.data || {};
       const allMenus: any = menusRes.data || {};
 
       const residentialMenus: any = {};
       const retailMenus: any = {};
       for (const locationId in allMenus) {
-        const loc = locations[locationId];
+        const loc = locations!.all[locationId];
         if (loc?.category === 'residential') residentialMenus[locationId] = allMenus[locationId];
         else if (loc?.category === 'retail') retailMenus[locationId] = allMenus[locationId];
       }
@@ -67,37 +114,26 @@ async function fetchDateData(dateKey: string): Promise<MenuData> {
       let menuItems: any = {};
       let interactions: any = {};
       let metrics: any = {};
-      let recommendations: any = {};
 
       if (itemIds.length > 0) {
-        const [menuItemsRes, interactionsRes, metricsRes, recommendationsRes] = await Promise.all([
+        const [menuItemsRes, interactionsRes, metricsRes] = await Promise.all([
           getMenuItems({ ids: itemIds }),
           getUserMenuItemsInteractions({ menu_item_api_ids: itemIds }),
           getMenuItemsMetrics({ menu_item_api_ids: itemIds }),
-          getMenuItemsScore({ menu_item_api_ids: itemIds }),
         ]);
         menuItems = menuItemsRes.data || {};
         interactions = interactionsRes.data || {};
         metrics = metricsRes.data || {};
-        recommendations = recommendationsRes.data || {};
       }
 
-      const residentialLocations = Object.fromEntries(
-        Object.entries(locations).filter(([, v]: [string, any]) => v.category === 'residential')
-      );
-      const retailLocations = Object.fromEntries(
-        Object.entries(locations).filter(([, v]: [string, any]) => v.category === 'retail')
-      );
-
       const result: MenuData = {
-        residentialLocations,
-        retailLocations,
+        residentialLocations: locations!.residential,
+        retailLocations: locations!.retail,
         residentialMenus,
         retailMenus,
         menuItems,
         interactions,
         metrics,
-        recommendations,
       };
 
       dataCache.set(dateKey, result);

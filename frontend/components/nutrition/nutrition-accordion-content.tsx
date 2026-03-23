@@ -168,8 +168,13 @@ export default function NutritionAccordionContent({ item }: any) {
 
       <div className='w-full h-[2px] rounded bg-[#E9E9E9] my-2' />
 
-      {/* Ingredients (full width) */}
+      {/* Ingredients & Allergens (full width) */}
       {ingredientsString && <Ingredients ingredients={ingredientsString} />}
+      {allergens && (
+        <div className={ingredientsString ? 'mt-2' : ''}>
+          <Ingredients ingredients={allergens} label='Allergens' />
+        </div>
+      )}
     </div>
   );
 }

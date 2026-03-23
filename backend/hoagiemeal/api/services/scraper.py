@@ -22,12 +22,9 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 from hoagiemeal.utils.logger import logger
-import logging
-import pprint
 import re
 import time
-import json
-import os
+
 
 session = requests.Session()
 
@@ -137,41 +134,10 @@ def add_inferred_daily_values(items_map: dict) -> dict:
         logger.debug(f"Adding inferred daily values for item: {item_data.get('id')}.")
         nutrition = item_data.get("nutrition", {})
 
-        if nutrition.get("total_fat") is not None and nutrition.get("total_fat_dv") is None:
-            nutrition["total_fat_dv"] = calculate_dv(nutrition["total_fat"], DV_STANDARDS["total_fat"])
-
-        if nutrition.get("saturated_fat") is not None and nutrition.get("saturated_fat_dv") is None:
-            nutrition["saturated_fat_dv"] = calculate_dv(nutrition["saturated_fat"], DV_STANDARDS["saturated_fat"])
-
-        if nutrition.get("cholesterol") is not None and nutrition.get("cholesterol_dv") is None:
-            nutrition["cholesterol_dv"] = calculate_dv(nutrition["cholesterol"], DV_STANDARDS["cholesterol"])
-
-        if nutrition.get("sodium") is not None and nutrition.get("sodium_dv") is None:
-            nutrition["sodium_dv"] = calculate_dv(nutrition["sodium"], DV_STANDARDS["sodium"])
-
-        if nutrition.get("total_carbs") is not None and nutrition.get("total_carbs_dv") is None:
-            nutrition["total_carbs_dv"] = calculate_dv(nutrition["total_carbs"], DV_STANDARDS["total_carbs"])
-
-        if nutrition.get("dietary_fiber") is not None and nutrition.get("dietary_fiber_dv") is None:
-            nutrition["dietary_fiber_dv"] = calculate_dv(nutrition["dietary_fiber"], DV_STANDARDS["dietary_fiber"])
-
-        if nutrition.get("added_sugars") is not None and nutrition.get("added_sugars_dv") is None:
-            nutrition["added_sugars_dv"] = calculate_dv(nutrition["added_sugars"], DV_STANDARDS["added_sugars"])
-
-        if nutrition.get("protein") is not None and nutrition.get("protein_dv") is None:
-            nutrition["protein_dv"] = calculate_dv(nutrition["protein"], DV_STANDARDS["protein"])
-
-        if nutrition.get("vitamin_d") is not None and nutrition.get("vitamin_d_dv") is None:
-            nutrition["vitamin_d_dv"] = calculate_dv(nutrition["vitamin_d"], DV_STANDARDS["vitamin_d"])
-
-        if nutrition.get("calcium") is not None and nutrition.get("calcium_dv") is None:
-            nutrition["calcium_dv"] = calculate_dv(nutrition["calcium"], DV_STANDARDS["calcium"])
-
-        if nutrition.get("iron") is not None and nutrition.get("iron_dv") is None:
-            nutrition["iron_dv"] = calculate_dv(nutrition["iron"], DV_STANDARDS["iron"])
-
-        if nutrition.get("potassium") is not None and nutrition.get("potassium_dv") is None:
-            nutrition["potassium_dv"] = calculate_dv(nutrition["potassium"], DV_STANDARDS["potassium"])
+        for nutrient, standard in DV_STANDARDS.items():
+            dv_key = f"{nutrient}_dv"
+            if nutrition.get(nutrient) is not None and nutrition.get(dv_key) is None:
+                nutrition[dv_key] = calculate_dv(nutrition[nutrient], standard)
 
     return items_map
 
@@ -297,22 +263,73 @@ def extract_menus(soup: BeautifulSoup) -> Optional[dict]:
         return None
 
 
+# Each rule: (match_fn, unit_regex, value_field, dv_field or None)
+# Order matters — first match wins (mirrors the original if/elif chain).
+NUTRIENT_RULES = [
+    (lambda t: "Total Fat" in t and "Saturated" not in t and "Trans" not in t,
+     r"([\d.]+)g", "total_fat", "total_fat_dv"),
+    (lambda t: "Saturated Fat" in t,
+     r"([\d.]+)g", "saturated_fat", "saturated_fat_dv"),
+    (lambda t: "Trans" in t and "Fat" in t,
+     r"([\d.]+)g", "trans_fat", None),
+    (lambda t: "Cholesterol" in t and t.index("Cholesterol") < 5,
+     r"([\d.]+)mg", "cholesterol", "cholesterol_dv"),
+    (lambda t: "Sodium" in t and t.index("Sodium") < 5,
+     r"([\d.]+)mg", "sodium", "sodium_dv"),
+    (lambda t: "Total Carbohydrate" in t,
+     r"([\d.]+)g", "total_carbs", "total_carbs_dv"),
+    (lambda t: "Dietary Fiber" in t,
+     r"([\d.]+)g", "dietary_fiber", "dietary_fiber_dv"),
+    (lambda t: "Total Sugars" in t,
+     r"([\d.]+)g", "total_sugars", None),
+    (lambda t: "Added Sugars" in t,
+     r"([\d.]+)g", "added_sugars", "added_sugars_dv"),
+    (lambda t: "Protein" in t and t.index("Protein") < 5,
+     r"([\d.]+)g", "protein", "protein_dv"),
+    (lambda t: "Vitamin D" in t,
+     r"([\d.]+)mcg", "vitamin_d", "vitamin_d_dv"),
+    (lambda t: "Calcium" in t and t.index("Calcium") < 5,
+     r"([\d.]+)mg", "calcium", "calcium_dv"),
+    (lambda t: "Iron" in t and t.index("Iron") < 5,
+     r"([\d.]+)mg", "iron", "iron_dv"),
+    (lambda t: "Potassium" in t and t.index("Potassium") < 5,
+     r"([\d.]+)mg", "potassium", "potassium_dv"),
+]
+
+
+def _build_empty_nutrition_data() -> dict:
+    """Build a nutrition_data dict with all fields set to None."""
+    data = {
+        "servings_per_container": None,
+        "serving_size": None,
+        "calories": None,
+        "ingredients": None,
+        "allergens": None,
+    }
+    for _, _, value_field, dv_field in NUTRIENT_RULES:
+        data[value_field] = None
+        if dv_field:
+            data[dv_field] = None
+    return data
+
+
+def _parse_numeric(value: str) -> Optional[float]:
+    """Extract numeric value from string with units (e.g., '5.7g' -> 5.7, '7%' -> 7)."""
+    if not value:
+        return None
+    match = re.search(r"([\d.]+)", value)
+    if match:
+        try:
+            return float(match.group(1))
+        except ValueError:
+            return None
+    return None
+
+
 def extract_menu_items(ids: "list[str]") -> dict:
     """Extract detailed information for menu items by scraping their nutrition label pages."""
     logger.debug(f"Extracting menu items from {len(ids)} ids.")
     items_map = {}
-
-    def parse_numeric(value: str) -> Optional[float]:
-        """Extract numeric value from string with units (e.g., '5.7g' -> 5.7, '7%' -> 7)."""
-        if not value:
-            return None
-        match = re.search(r"([\d.]+)", value)
-        if match:
-            try:
-                return float(match.group(1))
-            except ValueError:
-                return None
-        return None
 
     for id in ids:
         logger.debug(f"Extracting menu item from id: {id}.")
@@ -328,39 +345,7 @@ def extract_menu_items(ids: "list[str]") -> dict:
             if name_el:
                 item_name = name_el.get_text(strip=True)
 
-            nutrition_data = {
-                "servings_per_container": None,
-                "serving_size": None,
-                "calories": None,
-                "total_fat": None,
-                "total_fat_dv": None,
-                "saturated_fat": None,
-                "saturated_fat_dv": None,
-                "trans_fat": None,
-                "cholesterol": None,
-                "cholesterol_dv": None,
-                "sodium": None,
-                "sodium_dv": None,
-                "total_carbs": None,
-                "total_carbs_dv": None,
-                "dietary_fiber": None,
-                "dietary_fiber_dv": None,
-                "total_sugars": None,
-                "added_sugars": None,
-                "added_sugars_dv": None,
-                "protein": None,
-                "protein_dv": None,
-                "vitamin_d": None,
-                "vitamin_d_dv": None,
-                "calcium": None,
-                "calcium_dv": None,
-                "iron": None,
-                "iron_dv": None,
-                "potassium": None,
-                "potassium_dv": None,
-                "ingredients": None,
-                "allergens": None,
-            }
+            nutrition_data = _build_empty_nutrition_data()
 
             try:
                 servings_text = soup.find(text=re.compile(r"\d+\s+servings per container"))
@@ -385,7 +370,7 @@ def extract_menu_items(ids: "list[str]") -> dict:
                         if calories_div:
                             cal_text = calories_div.get_text(strip=True)
                             if cal_text and not re.match(r"^-+$", cal_text):
-                                nutrition_data["calories"] = parse_numeric(cal_text)  # type: ignore
+                                nutrition_data["calories"] = _parse_numeric(cal_text)  # type: ignore
 
                 all_rows = soup.select("#mobile-label .card-body .row.ms-0.me-0")
 
@@ -398,119 +383,20 @@ def extract_menu_items(ids: "list[str]") -> dict:
                     label_text = col_9.get_text(strip=True)
                     dv_text = col_3.get_text(strip=True) if col_3 else ""
                     if dv_text and not re.match(r"^-+$", dv_text):
-                        dv_value = parse_numeric(dv_text)
+                        dv_value = _parse_numeric(dv_text)
                     else:
                         dv_value = None
 
-                    if "Total Fat" in label_text and "Saturated" not in label_text and "Trans" not in label_text:
-                        match = re.search(r"([\d.]+)g", label_text)
-                        if match:
-                            nutrition_data["total_fat"] = float(match.group(1))  # type: ignore
-                            nutrition_data["total_fat_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["total_fat"] = None
-
-                    elif "Saturated Fat" in label_text:
-                        match = re.search(r"([\d.]+)g", label_text)
-                        if match:
-                            nutrition_data["saturated_fat"] = float(match.group(1))  # type: ignore
-                            nutrition_data["saturated_fat_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["saturated_fat"] = None
-
-                    elif "Trans" in label_text and "Fat" in label_text:
-                        match = re.search(r"([\d.]+)g", label_text)
-                        if match:
-                            nutrition_data["trans_fat"] = float(match.group(1))  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["trans_fat"] = None
-
-                    elif "Cholesterol" in label_text and label_text.index("Cholesterol") < 5:
-                        match = re.search(r"([\d.]+)mg", label_text)
-                        if match:
-                            nutrition_data["cholesterol"] = float(match.group(1))  # type: ignore
-                            nutrition_data["cholesterol_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["cholesterol"] = None
-
-                    elif "Sodium" in label_text and label_text.index("Sodium") < 5:
-                        match = re.search(r"([\d.]+)mg", label_text)
-                        if match:
-                            nutrition_data["sodium"] = float(match.group(1))  # type: ignore
-                            nutrition_data["sodium_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["sodium"] = None
-
-                    elif "Total Carbohydrate" in label_text:
-                        match = re.search(r"([\d.]+)g", label_text)
-                        if match:
-                            nutrition_data["total_carbs"] = float(match.group(1))  # type: ignore
-                            nutrition_data["total_carbs_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["total_carbs"] = None
-
-                    elif "Dietary Fiber" in label_text:
-                        match = re.search(r"([\d.]+)g", label_text)
-                        if match:
-                            nutrition_data["dietary_fiber"] = float(match.group(1))  # type: ignore
-                            nutrition_data["dietary_fiber_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["dietary_fiber"] = None
-
-                    elif "Total Sugars" in label_text:
-                        match = re.search(r"([\d.]+)g", label_text)
-                        if match:
-                            nutrition_data["total_sugars"] = float(match.group(1))  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["total_sugars"] = None
-
-                    elif "Added Sugars" in label_text:
-                        match = re.search(r"([\d.]+)g", label_text)
-                        if match:
-                            nutrition_data["added_sugars"] = float(match.group(1))  # type: ignore
-                            nutrition_data["added_sugars_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["added_sugars"] = None
-
-                    elif "Protein" in label_text and label_text.index("Protein") < 5:
-                        match = re.search(r"([\d.]+)g", label_text)
-                        if match:
-                            nutrition_data["protein"] = float(match.group(1))  # type: ignore
-                            nutrition_data["protein_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["protein"] = None
-
-                    elif "Vitamin D" in label_text:
-                        match = re.search(r"([\d.]+)mcg", label_text)
-                        if match:
-                            nutrition_data["vitamin_d"] = float(match.group(1))  # type: ignore
-                            nutrition_data["vitamin_d_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["vitamin_d"] = None
-
-                    elif "Calcium" in label_text and label_text.index("Calcium") < 5:
-                        match = re.search(r"([\d.]+)mg", label_text)
-                        if match:
-                            nutrition_data["calcium"] = float(match.group(1))  # type: ignore
-                            nutrition_data["calcium_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["calcium"] = None
-
-                    elif "Iron" in label_text and label_text.index("Iron") < 5:
-                        match = re.search(r"([\d.]+)mg", label_text)
-                        if match:
-                            nutrition_data["iron"] = float(match.group(1))  # type: ignore
-                            nutrition_data["iron_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["iron"] = None
-
-                    elif "Potassium" in label_text and label_text.index("Potassium") < 5:
-                        match = re.search(r"([\d.]+)mg", label_text)
-                        if match:
-                            nutrition_data["potassium"] = float(match.group(1))  # type: ignore
-                            nutrition_data["potassium_dv"] = dv_value  # type: ignore
-                        elif re.search(r"-\s*-\s*-", label_text):
-                            nutrition_data["potassium"] = None
+                    for matches, unit_pattern, value_field, dv_field in NUTRIENT_RULES:
+                        if matches(label_text):
+                            match = re.search(unit_pattern, label_text)
+                            if match:
+                                nutrition_data[value_field] = float(match.group(1))
+                                if dv_field:
+                                    nutrition_data[dv_field] = dv_value
+                            elif re.search(r"-\s*-\s*-", label_text):
+                                nutrition_data[value_field] = None
+                            break
 
                 ingredients_div = soup.find("strong", string="INGREDIENTS:")
                 if ingredients_div and ingredients_div.parent:
@@ -543,7 +429,7 @@ def extract_menu_items(ids: "list[str]") -> dict:
     return items_map
 
 
-###################################### Service functions #####################################
+###################################### Service class #####################################
 
 
 class Scraper:
@@ -622,57 +508,3 @@ class Scraper:
             return None
 
         return menu_items
-
-
-scraper = Scraper()
-
-
-###################################### Tester functions #####################################
-
-
-def test_scrape_all_locations():
-    """Test scraping all locations."""
-    logger.info("Testing scraping all locations.")
-    locations = scraper.get_all_locations()
-    if not locations:
-        logger.error("Failed to get all locations")
-        return None
-    pprint.pprint(locations)
-
-    os.makedirs("data", exist_ok=True)
-    with open("data/locations.json", "w") as f:
-        json.dump(locations, f, indent=2)
-
-
-def test_scrape_menu_with_menu_items():
-    """Test scraping menu items."""
-    logger.info("Testing scraping menu items.")
-    date = datetime.date.today()
-    menus = scraper.get_menus_for_all_locations_and_date(date)
-    if not menus:
-        logger.error(f"Failed to get menus for all locations and date: {date}")
-        return None
-
-    ids = get_menu_item_ids_from_menus_for_all_locations_and_date(menus)
-    if not ids:
-        logger.error(f"Failed to get menu item ids for all locations and date: {date}")
-        return None
-    pprint.pprint(ids)
-
-    menu_items = scraper.get_menu_items(ids)
-    if not menu_items:
-        logger.error(f"Failed to get menu items for {ids}")
-        return None
-    pprint.pprint(menu_items)
-
-    folder_name = f"data/{datetime.date.today().strftime('%Y-%m-%d')}"
-    os.makedirs(folder_name, exist_ok=True)
-    with open(f"{folder_name}/menus.json", "w") as f:
-        json.dump(menus, f, indent=2)
-    with open(f"{folder_name}/menu_items.json", "w") as f:
-        json.dump(menu_items, f, indent=2)
-
-
-if __name__ == "__main__":
-    test_scrape_all_locations()
-    test_scrape_menu_with_menu_items()

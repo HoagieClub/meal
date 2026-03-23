@@ -104,19 +104,6 @@ export const getMenuItemsMetrics = (params: { menu_item_api_ids: string[] }) => 
 };
 
 /**
- * Gets recommendation scores for multiple menu items.
- *
- * @param params - Request body (menu_item_api_ids - array of strings)
- * @returns API response with dictionary mapping menu item API IDs to scores
- */
-export const getMenuItemsScore = (params: { menu_item_api_ids: string[] }) => {
-    const url = '/api/recommend/';
-    return api.post<{ data: Record<string, number> }>(url, {
-        menu_item_api_ids: params.menu_item_api_ids,
-    });
-};
-
-/**
  * Verifies user authentication and gets or creates the user.
  *
  * @returns API response with user data

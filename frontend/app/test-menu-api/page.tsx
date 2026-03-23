@@ -19,39 +19,26 @@ import {
   Pane,
   Heading,
   Text,
-  Button,
   Spinner,
   TextInput,
   Select,
   majorScale,
   minorScale,
-  useTheme,
-  Tab,
-  TabNavigation,
 } from 'evergreen-ui';
 import { useMenuApi } from '@/hooks/use-menu-api';
 import { useBuildResidentialDisplayData, useBuildRetailDisplayData } from '@/hooks/use-build-display-data';
-import { MenuSortOption } from '@/types/types';
+import { MenuSortOption, MENU_SORT_OPTIONS } from '@/types/types';
 
 interface DataSectionProps {
   title: string;
   content?: any;
   count?: number;
-  renderContent?: () => string;
-  renderCount?: () => number;
   fileName?: string;
 }
 
-function DataSection({
-  title,
-  content,
-  count,
-  renderContent,
-  renderCount,
-  fileName,
-}: DataSectionProps) {
-  const displayContent = renderContent ? renderContent() : JSON.stringify(content, null, 2);
-  const displayCount = renderCount ? renderCount() : (count ?? 0);
+function DataSection({ title, content, count, fileName }: DataSectionProps) {
+  const displayContent = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+  const displayCount = count ?? 0;
 
   const handleOpenInNewTab = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -120,75 +107,31 @@ function DataSection({
   );
 }
 
-interface TabData {
-  date: string;
-  data: any;
-  loading: boolean;
-  error: string | null;
-}
-
 export default function TestMenuApiPage() {
-  const theme = useTheme();
-  const { fetchAll } = useMenuApi();
-  const [tabs, setTabs] = useState<Map<string, TabData>>(new Map());
-  const [activeDate, setActiveDate] = useState<string | null>(null);
-  const [date, setDate] = useState<string>(() => {
+  const [dateKey, setDateKey] = useState<string>(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
   const [meal, setMeal] = useState<string>('Lunch');
-  const [sortOption, setSortOption] = useState<MenuSortOption>('Best');
+  const [sortOption, setSortOption] = useState<MenuSortOption>('Category');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  const handleFetch = async () => {
-    setTabs((prev) => {
-      const newTabs = new Map(prev);
-      newTabs.set(date, {
-        date,
-        data: null,
-        loading: true,
-        error: null,
-      });
-      return newTabs;
-    });
-    setActiveDate(date);
+  const { data, loading } = useMenuApi(dateKey);
 
-    try {
-      const result = await fetchAll(date);
-      setTabs((prev) => {
-        const newTabs = new Map(prev);
-        newTabs.set(date, {
-          date,
-          data: result,
-          loading: false,
-          error: null,
-        });
-        return newTabs;
-      });
-    } catch (err) {
-      setTabs((prev) => {
-        const newTabs = new Map(prev);
-        newTabs.set(date, {
-          date,
-          data: null,
-          loading: false,
-          error: err instanceof Error ? err.message : 'An error occurred',
-        });
-        return newTabs;
-      });
-    }
-  };
-
-  const activeTab = activeDate ? tabs.get(activeDate) : null;
-  const tabDates = Array.from(tabs.keys()).sort();
+  const residentialLocations = data?.residentialLocations ?? {};
+  const retailLocations = data?.retailLocations ?? {};
+  const residentialMenus = data?.residentialMenus ?? {};
+  const retailMenus = data?.retailMenus ?? {};
+  const menuItems = data?.menuItems ?? {};
+  const interactions = data?.interactions ?? {};
+  const metrics = data?.metrics ?? {};
 
   const builtResidentialDisplayData = useBuildResidentialDisplayData({
-    locations: activeTab?.data?.locations || {},
-    residentialMenus: activeTab?.data?.residentialMenus || {},
-    menuItems: activeTab?.data?.menuItems || {},
-    interactions: activeTab?.data?.interactions || {},
-    metrics: activeTab?.data?.metrics || {},
-    recommendations: activeTab?.data?.recommendations || {},
+    locations: residentialLocations,
+    residentialMenus,
+    menuItems,
+    interactions,
+    metrics,
     appliedDiningHalls: [],
     appliedAllergens: [],
     searchTerm,
@@ -198,12 +141,11 @@ export default function TestMenuApiPage() {
   });
 
   const builtRetailDisplayData = useBuildRetailDisplayData({
-    locations: activeTab?.data?.locations || {},
-    retailMenus: activeTab?.data?.retailMenus || {},
-    menuItems: activeTab?.data?.menuItems || {},
-    interactions: activeTab?.data?.interactions || {},
-    metrics: activeTab?.data?.metrics || {},
-    recommendations: activeTab?.data?.recommendations || {},
+    locations: retailLocations,
+    retailMenus,
+    menuItems,
+    interactions,
+    metrics,
     appliedDiningHalls: [],
     appliedAllergens: [],
     searchTerm,
@@ -214,8 +156,10 @@ export default function TestMenuApiPage() {
   return (
     <Pane maxWidth={1200} marginX='auto' paddingX={majorScale(4)} paddingY={majorScale(6)}>
       <Heading size={900} marginBottom={majorScale(4)}>
-        Test Menu API/Cache + Build Display Data
+        Test Menu API + Build Display Data
       </Heading>
+
+      {/* Controls */}
       <Pane
         background='white'
         border
@@ -231,20 +175,10 @@ export default function TestMenuApiPage() {
               </Text>
               <TextInput
                 type='date'
-                value={date}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDate(e.target.value)}
+                value={dateKey}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateKey(e.target.value)}
                 width='100%'
               />
-            </Pane>
-            <Pane marginTop={majorScale(3)}>
-              <Button
-                appearance='primary'
-                onClick={handleFetch}
-                disabled={tabs.get(date)?.loading || false}
-                background={theme.colors.green600}
-              >
-                {tabs.get(date)?.loading ? 'Loading...' : 'Fetch Data'}
-              </Button>
             </Pane>
           </Pane>
           <Pane display='flex' gap={majorScale(2)}>
@@ -273,10 +207,11 @@ export default function TestMenuApiPage() {
                 }
                 width='100%'
               >
-                <option value='Best'>Best</option>
-                <option value='Recommended'>Recommended</option>
-                <option value='Most Liked'>Most Liked</option>
-                <option value='Category'>Category</option>
+                {MENU_SORT_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </Select>
             </Pane>
             <Pane flex={1}>
@@ -294,221 +229,94 @@ export default function TestMenuApiPage() {
         </Pane>
       </Pane>
 
-      {tabDates.length > 0 && (
-        <Pane marginBottom={majorScale(3)}>
-          <TabNavigation>
-            {tabDates.map((tabDate) => (
-              <Tab
-                key={tabDate}
-                id={tabDate}
-                isSelected={activeDate === tabDate}
-                onSelect={() => setActiveDate(tabDate)}
-              >
-                {tabDate}
-              </Tab>
-            ))}
-          </TabNavigation>
-        </Pane>
-      )}
-
-      {/* Error display */}
-      {activeTab?.error && (
-        <Pane
-          background='redTint'
-          border
-          borderColor='red500'
-          borderRadius={4}
-          padding={majorScale(3)}
-          marginBottom={majorScale(3)}
-        >
-          <Text color='red700' fontWeight={600}>
-            Error: {activeTab.error}
-          </Text>
-        </Pane>
-      )}
-
-      {/* Loading display */}
-      {activeTab?.loading && (
+      {/* Loading */}
+      {loading && (
         <Pane display='flex' flexDirection='column' alignItems='center' paddingY={majorScale(8)}>
           <Spinner size={32} />
           <Text size={400} color='muted' marginTop={majorScale(2)}>
-            Fetching data...
+            Fetching data for {dateKey}...
           </Text>
         </Pane>
       )}
 
-      {/* Data display */}
-      {activeTab?.data && (
+      {/* Raw data sections */}
+      {data && (
         <Pane>
+          <Heading size={700} marginBottom={majorScale(3)}>
+            Raw API Data — {dateKey}
+          </Heading>
+
           <DataSection
-            title='Locations'
-            content={activeTab.data.locations}
-            count={Object.keys(activeTab.data.locations || {}).length}
-            fileName={`locations-${activeDate || 'data'}.txt`}
+            title='Residential Locations'
+            content={residentialLocations}
+            count={Object.keys(residentialLocations).length}
+            fileName={`residential-locations-${dateKey}.txt`}
+          />
+
+          <DataSection
+            title='Retail Locations'
+            content={retailLocations}
+            count={Object.keys(retailLocations).length}
+            fileName={`retail-locations-${dateKey}.txt`}
           />
 
           <DataSection
             title='Residential Menus'
-            content={activeTab.data.residentialMenus}
-            count={Object.keys(activeTab.data.residentialMenus || {}).length}
-            fileName={`residential-menus-${activeDate || 'data'}.txt`}
+            content={residentialMenus}
+            count={Object.keys(residentialMenus).length}
+            fileName={`residential-menus-${dateKey}.txt`}
           />
 
           <DataSection
             title='Retail Menus'
-            content={activeTab.data.retailMenus}
-            count={Object.keys(activeTab.data.retailMenus || {}).length}
-            fileName={`retail-menus-${activeDate || 'data'}.txt`}
-          />
-
-          <DataSection
-            title='Unique Menu Item IDs'
-            renderContent={() => {
-              const menuString = JSON.stringify(activeTab.data.menus);
-              const matches = menuString.match(/"\d{6}"/g) || [];
-              const ids = Array.from(
-                new Set(matches.map((match) => match.replace(/"/g, '')))
-              ).sort();
-              return JSON.stringify(ids, null, 2);
-            }}
-            renderCount={() => {
-              const menuString = JSON.stringify(activeTab.data.menus);
-              const matches = menuString.match(/"\d{6}"/g) || [];
-              return new Set(matches.map((match) => match.replace(/"/g, ''))).size;
-            }}
-            fileName={`unique-menu-item-ids-${activeDate || 'data'}.txt`}
+            content={retailMenus}
+            count={Object.keys(retailMenus).length}
+            fileName={`retail-menus-${dateKey}.txt`}
           />
 
           <DataSection
             title='Menu Items'
-            content={activeTab.data.menuItems}
-            count={Object.keys(activeTab.data.menuItems || {}).length}
-            fileName={`menu-items-${activeDate || 'data'}.txt`}
+            content={menuItems}
+            count={Object.keys(menuItems).length}
+            fileName={`menu-items-${dateKey}.txt`}
           />
 
           <DataSection
             title='Interactions'
-            content={activeTab.data.interactions}
-            count={Object.keys(activeTab.data.interactions || {}).length}
-            fileName={`interactions-${activeDate || 'data'}.txt`}
+            content={interactions}
+            count={Object.keys(interactions).length}
+            fileName={`interactions-${dateKey}.txt`}
           />
 
           <DataSection
             title='Metrics'
-            content={activeTab.data.metrics}
-            count={Object.keys(activeTab.data.metrics || {}).length}
-            fileName={`metrics-${activeDate || 'data'}.txt`}
+            content={metrics}
+            count={Object.keys(metrics).length}
+            fileName={`metrics-${dateKey}.txt`}
+          />
+
+          <Heading size={700} marginTop={majorScale(4)} marginBottom={majorScale(3)}>
+            Built Display Data — {dateKey} / {meal}
+          </Heading>
+
+          <DataSection
+            title='Residential Display Data'
+            content={builtResidentialDisplayData}
+            count={builtResidentialDisplayData.reduce(
+              (sum: number, loc: any) => sum + (loc.menu?.length || 0),
+              0
+            )}
+            fileName={`residential-display-${dateKey}-${meal.toLowerCase()}.txt`}
           />
 
           <DataSection
-            title='Recommendations'
-            content={activeTab.data.recommendations}
-            count={Object.keys(activeTab.data.recommendations || {}).length}
-            fileName={`recommendations-${activeDate || 'data'}.txt`}
-          />
-
-          <DataSection
-            title='Full Local Storage Data'
-            renderContent={() => {
-              const cacheKeys = [
-                'residentialMenusCache',
-                'retailMenusCache',
-                'locationsCache',
-                'menuItemsCache',
-                'interactionsCache',
-                'metricsCache',
-                'recommendationsCache',
-              ];
-
-              const localStorageData: any = {};
-              for (const key of cacheKeys) {
-                try {
-                  const item = localStorage.getItem(key);
-                  if (item) {
-                    localStorageData[key] = JSON.parse(item);
-                  }
-                } catch (e) {
-                  localStorageData[key] = `Error parsing: ${e}`;
-                }
-              }
-
-              return JSON.stringify(localStorageData, null, 2);
-            }}
-            renderCount={() => {
-              const cacheKeys = [
-                'residentialMenusCache',
-                'retailMenusCache',
-                'locationsCache',
-                'menuItemsCache',
-                'interactionsCache',
-                'metricsCache',
-                'recommendationsCache',
-              ];
-              let totalKeys = 0;
-              for (const key of cacheKeys) {
-                try {
-                  const item = localStorage.getItem(key);
-                  if (item) {
-                    const parsed = JSON.parse(item);
-                    if (typeof parsed === 'object' && parsed !== null) {
-                      totalKeys += Object.keys(parsed).length;
-                    }
-                  }
-                } catch (e) {}
-              }
-              return totalKeys;
-            }}
-            fileName={`full-local-storage-data-${activeDate || 'data'}.txt`}
-          />
-        </Pane>
-      )}
-
-      {activeTab?.data && (
-        <Pane>
-          <DataSection
-            title='Built Residential Display Data'
-            renderContent={() => {
-              if (!activeTab?.data) {
-                return 'No data available';
-              }
-
-              return JSON.stringify(builtResidentialDisplayData, null, 2);
-            }}
-            renderCount={() => {
-              if (!activeTab?.data) {
-                return 0;
-              }
-
-              const totalMenuItems = builtResidentialDisplayData.reduce((sum: number, location: any) => {
-                return sum + (location.menu?.length || 0);
-              }, 0);
-
-              return totalMenuItems;
-            }}
-            fileName={`built-residential-display-data-${activeDate || 'data'}-${meal.toLowerCase()}.txt`}
-          />
-
-          <DataSection
-            title='Displayed Retail Menu Data'
-            renderContent={() => {
-              if (!activeTab?.data) {
-                return 'No data available';
-              }
-
-              return JSON.stringify(builtRetailDisplayData, null, 2);
-            }}
-            renderCount={() => {
-              if (!activeTab?.data) {
-                return 0;
-              }
-
-              const totalMenuItems = builtRetailDisplayData.reduce((sum: number, location: any) => {
-                return sum + (location.menu?.length || 0);
-              }, 0);
-
-              return totalMenuItems;
-            }}
-            fileName={`displayed-retail-menu-data-${activeDate || 'data'}.txt`}
+            title='Retail Display Data'
+            content={builtRetailDisplayData}
+            count={builtRetailDisplayData.reduce(
+              (sum: number, loc: any) => sum + (loc.menu?.length || 0),
+              0
+            )}
+            fileName={`retail-display-${dateKey}.txt`}
           />
         </Pane>
       )}

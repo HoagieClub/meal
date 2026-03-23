@@ -1,7 +1,7 @@
-"""API manager for menu item recommendations.
+"""Service for menu item recommendations.
 
 This module provides functionality for ranking menu items for a user
-using item–item collaborative filtering based on user likes/dislikes.
+using item-item collaborative filtering based on user likes/dislikes.
 
 Copyright © 2021-2025 Hoagie Club and affiliates.
 
@@ -21,19 +21,12 @@ This software is provided "as-is", without warranty of any kind.
 from typing import List, Dict, Any
 from collections import defaultdict
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
 from hoagiemeal.utils.logger import logger
-from hoagiemeal.api.user import get_user_from_request
 from hoagiemeal.models.engagement import (
     MenuItemInteraction,
     MenuItemSimilarity,
     MenuItem,
 )
-
-
-#################### RecommendationService class for managing recommendations business logic #########################
 
 
 class RecommendationService:
@@ -62,12 +55,13 @@ class RecommendationService:
         """Get recommendation scores for multiple menu items."""
         logger.debug(f"Getting scores for {len(menu_item_api_ids)} menu items for user_id={user.id}.")
         try:
-            # API might return invalid menu item IDs
-            menu_item_ids = set(menu_item_api_ids)
-            for menu_item_id in menu_item_ids:
-                if not MenuItem.objects.filter(id=menu_item_id).exists():
-                    logger.warning(f"Menu item with id {menu_item_id} does not exist.")
-                    menu_item_ids.remove(menu_item_id)
+            # Filter out invalid menu item IDs
+            existing_ids = set(
+                MenuItem.objects.filter(id__in=menu_item_api_ids).values_list("id", flat=True)
+            )
+            invalid_ids = set(menu_item_api_ids) - existing_ids
+            for invalid_id in invalid_ids:
+                logger.warning(f"Menu item with id {invalid_id} does not exist.")
 
             liked_items = set(
                 MenuItemInteraction.objects.filter(user=user, liked=True).values_list("menu_item__id", flat=True)
@@ -97,40 +91,4 @@ class RecommendationService:
             return {item_id: 0.0 for item_id in menu_item_api_ids}
 
 
-#################### Exposed endpoints #########################
-
-
 recommendation_service = RecommendationService()
-
-
-@api_view(["POST"])
-def get_menu_items_score(request):
-    """Django view function to get recommendation scores for multiple menu items."""
-    logger.debug("Getting menu items scores.")
-    try:
-        user = get_user_from_request(request)
-        if not user:
-            return Response(
-                {"data": None, "message": "Authentication required"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        menu_item_api_ids = request.data.get("menu_item_api_ids")
-        if not menu_item_api_ids:
-            return Response(
-                {"data": None, "message": "menu_item_api_ids is required"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        scores = {item_id: 0.0 for item_id in menu_item_api_ids}
-        logger.debug(f"Returning scores for {len(scores)} items for user_id={user.id}.")
-        return Response(
-            {"data": scores, "message": "Menu items scores retrieved successfully."},
-            status=status.HTTP_200_OK,
-        )
-    except Exception as e:
-        logger.error(f"Error in get_menu_items_score view: {e}")
-        return Response(
-            {"data": None, "message": f"Error getting menu items scores: {str(e)}"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )

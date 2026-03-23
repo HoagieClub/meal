@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir -p C:/Users/AbuAh/OneDrive/Desktop/meal/backend/hoagiemeal/api/services)",
+      "Bash(mkdir -p C:/Users/AbuAh/OneDrive/Desktop/meal/backend/hoagiemeal/api/views)",
+      "Bash(find /c/Users/AbuAh/OneDrive/Desktop/meal -name .env* -o -name *.env)",
+      "Bash(find /c/Users/AbuAh/OneDrive/Desktop/meal/frontend/app/api -type f -name *.ts -o -name *.tsx)",
+      "Bash(find /c/Users/AbuAh/OneDrive/Desktop/meal/frontend -name next.config.* -o -name tsconfig.json)",
+      "Bash(find /c/Users/AbuAh/OneDrive/Desktop/meal/frontend/utils -type f -name *.ts)",
+      "Bash(find /c/Users/AbuAh/OneDrive/Desktop/meal/frontend -name ordering* -o -name styles* -o -name data -type f)"
     ]
   }
 }

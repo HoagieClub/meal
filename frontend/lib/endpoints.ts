@@ -140,28 +140,6 @@ export const getMenuItemsMetrics = async (params: { menu_item_api_ids: string | 
 };
 
 /**
- * Gets recommendation scores for multiple menu items.
- *
- * @param accessToken - Auth0 access token
- * @param params - Request body (menu_item_api_ids - array of strings)
- * @returns API response with dictionary mapping menu item API IDs to scores
- */
-export const getMenuItemsScore = async (
-  accessToken: string,
-  params: { menu_item_api_ids: string[] }
-) => {
-  const url = '/api/recommend/';
-  return request
-    .postAuth(accessToken)(url, {
-      arg: { menu_item_api_ids: params.menu_item_api_ids },
-    })
-    .then((res) => ({
-      ...res,
-      data: res.data ? toCamelCase(res.data) : null,
-    }));
-};
-
-/**
  * Verifies user authentication and gets or creates the user.
  *
  * @param accessToken - Auth0 access token

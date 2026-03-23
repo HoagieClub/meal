@@ -9,7 +9,7 @@ import django
 
 django.setup()
 
-from hoagiemeal.api.cacher import CacherService
+from hoagiemeal.api.services.cacher import CacherService
 
 DAYS_AHEAD = 7
 

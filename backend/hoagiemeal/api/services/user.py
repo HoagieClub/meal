@@ -1,6 +1,4 @@
-"""API endpoints for user management.
-
-This module provides the API endpoints for user management, including authentication and user data retrieval.
+"""Service functions for user authentication and management.
 
 Copyright © 2021-2025 Hoagie Club and affiliates.
 
@@ -23,16 +21,10 @@ from typing import Optional, Any
 from jwt import PyJWKClient
 from django.conf import settings
 from hoagiemeal.utils.logger import logger
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from django.http import HttpRequest
 from django.contrib.auth import get_user_model
-from datetime import datetime
-from typing import TypedDict, List
 from django.utils import timezone
-from hoagiemeal.serializers import UserSerializer
-from django.db import transaction, IntegrityError
-from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 
 User = get_user_model()
 
@@ -126,27 +118,3 @@ def get_user_from_request(request: HttpRequest) -> Optional[Any]:
     except Exception as e:
         logger.error(f"Error getting user from request: {request}: {e}")
         return None
-
-
-@api_view(["POST"])
-def verify_and_get_or_create_user(request):
-    """Verify if the user is authenticated and create the user if they don't exist."""
-    logger.debug("Verifying user by Auth0 token.")
-    user = get_user_from_request(request)
-    if not user:
-        return Response(
-            {
-                "data": None,
-                "message": "Failed to get or create user",
-                "error": "Failed to get or create user",
-            },
-            status=500,
-        )
-    return Response(
-        {
-            "data": UserSerializer(user).data,
-            "message": "User fetched or created successfully.",
-            "error": None,
-        },
-        status=200,
-    )
