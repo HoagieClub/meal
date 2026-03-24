@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import {
-  getAllLocations,
   getAllMenusForDate,
   getMenuItems,
   getUserMenuItemsInteractions,
   getMenuItemsMetrics,
 } from '@/lib/next-endpoints';
+import { locations as allLocations, residentialLocations, retailLocations } from '@/locations';
 
 interface MenuData {
   residentialLocations: any;
@@ -23,30 +23,6 @@ interface MenuData {
 const dataCache = new Map<string, MenuData>();
 const inFlight = new Map<string, Promise<MenuData>>();
 
-// Locations are static — fetch once and reuse across all dates
-let locationsCache: { all: any; residential: any; retail: any } | null = null;
-let locationsInFlight: Promise<typeof locationsCache> | null = null;
-
-async function fetchLocations() {
-  if (locationsCache) return locationsCache;
-  if (locationsInFlight) return locationsInFlight;
-
-  locationsInFlight = (async () => {
-    const res = await getAllLocations();
-    const all = res.data || {};
-    const residential = Object.fromEntries(
-      Object.entries(all).filter(([, v]: [string, any]) => v.category === 'residential')
-    );
-    const retail = Object.fromEntries(
-      Object.entries(all).filter(([, v]: [string, any]) => v.category === 'retail')
-    );
-    locationsCache = { all, residential, retail };
-    locationsInFlight = null;
-    return locationsCache;
-  })();
-
-  return locationsInFlight;
-}
 
 function getNext7DayKeys(): string[] {
   const today = new Date();
@@ -94,17 +70,14 @@ async function fetchDateData(dateKey: string): Promise<MenuData> {
 
   const promise = (async (): Promise<MenuData> => {
     try {
-      const [locations, menusRes] = await Promise.all([
-        fetchLocations(),
-        getAllMenusForDate({ date: dateKey }),
-      ]);
+      const menusRes = await getAllMenusForDate({ date: dateKey });
 
       const allMenus: any = menusRes.data || {};
 
       const residentialMenus: any = {};
       const retailMenus: any = {};
       for (const locationId in allMenus) {
-        const loc = locations!.all[locationId];
+        const loc = allLocations[locationId];
         if (loc?.category === 'residential') residentialMenus[locationId] = allMenus[locationId];
         else if (loc?.category === 'retail') retailMenus[locationId] = allMenus[locationId];
       }
@@ -127,8 +100,8 @@ async function fetchDateData(dateKey: string): Promise<MenuData> {
       }
 
       const result: MenuData = {
-        residentialLocations: locations!.residential,
-        retailLocations: locations!.retail,
+        residentialLocations,
+        retailLocations,
         residentialMenus,
         retailMenus,
         menuItems,

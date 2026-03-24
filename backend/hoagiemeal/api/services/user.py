@@ -68,7 +68,7 @@ def get_or_create_user(auth0_claims: dict) -> Optional[Any]:
         user = User.objects.get(auth0_id=auth0_id)
         user.last_login = timezone.now()
         user.save()
-        logger.info(f"User found for auth0_id: {auth0_id}")
+        logger.debug(f"User found for auth0_id: {auth0_id}")
         return user
     except User.DoesNotExist:
         email = auth0_claims.get(HOAGIE_IO_EMAIL_CLAIM)
@@ -93,7 +93,7 @@ def get_or_create_user(auth0_claims: dict) -> Optional[Any]:
             user = User.objects.get(auth0_id=auth0_id)
             user.last_login = timezone.now()
             user.save()
-            logger.info(f"User found for auth0_id (concurrent create): {auth0_id}")
+            logger.debug(f"User found for auth0_id (concurrent create): {auth0_id}")
         return user
     except Exception as e:
         logger.error(f"Failed to get or create user for auth0_id: {auth0_id}: {e}")

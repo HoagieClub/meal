@@ -36,7 +36,8 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import type { MenuSortOption } from '@/types/types';
 import { MEAL_RANGES } from '@/data';
 import { MEAL_COLOR_MAP } from '@/styles';
-import { Meal, DiningHall } from '@/types/types';
+import { Meal } from '@/types/types';
+import type { DiningHall } from '@/locations';
 import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
 import { useMenuApi } from '@/hooks/use-menu-api';
 import {

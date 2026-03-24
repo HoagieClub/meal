@@ -149,7 +149,7 @@ def update_user_menu_item_interaction(request):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        logger.info(f"Updated user menu item interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
+        logger.debug(f"Updated user menu item interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
         return Response(
             {
                 "data": updated_interaction,

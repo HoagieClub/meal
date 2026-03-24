@@ -12,7 +12,8 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { Allergen, DiningHall } from '@/types/types';
+import { Allergen } from '@/types/types';
+import type { DiningHall } from '@/locations';
 
 // Meal ranges that maps from meal type to their corresponding range.
 export const MEAL_RANGES: Record<string, string> = {

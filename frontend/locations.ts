@@ -1,0 +1,110 @@
+export interface Location {
+  id: string;
+  category: "residential" | "retail";
+  name: string;
+  url: string;
+}
+
+export const locations: Record<string, Location> = {
+  "05": {
+    id: "05",
+    category: "residential",
+    name: "Center for Jewish Life",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=05&locationName=Center+for+Jewish+Life&naFlag=1",
+  },
+  "03": {
+    id: "03",
+    category: "residential",
+    name: "Forbes College",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=03&locationName=Forbes+College&naFlag=1",
+  },
+  "04": {
+    id: "04",
+    category: "residential",
+    name: "Graduate College",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=04&locationName=Graduate+College+&naFlag=1",
+  },
+  "01": {
+    id: "01",
+    category: "residential",
+    name: "Mathey & Rockefeller Colleges",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=01&locationName=Rockefeller+%26+Mathey+Colleges&naFlag=1",
+  },
+  "08": {
+    id: "08",
+    category: "residential",
+    name: "Whitman & Butler Colleges",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=08&locationName=Whitman+College+%26+Butler+College&naFlag=1",
+  },
+  "06": {
+    id: "06",
+    category: "residential",
+    name: "Yeh College & NCW",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=06&locationName=Yeh+College+%26+New+College+West&naFlag=1",
+  },
+  "15": {
+    id: "15",
+    category: "retail",
+    name: "Frist Gallery",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=15&locationName=The+Gallery&naFlag=1",
+  },
+  "16": {
+    id: "16",
+    category: "retail",
+    name: "Witherspoon's",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=16&locationName=Witherspoon%27s&naFlag=1",
+  },
+  "23": {
+    id: "23",
+    category: "retail",
+    name: "Chemistry CaFe",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=23&locationName=Chemistry+CaFe&naFlag=1",
+  },
+  "24": {
+    id: "24",
+    category: "retail",
+    name: "EQuad Cafe",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=24&locationName=EQuad+Cafe&naFlag=1",
+  },
+  "26": {
+    id: "26",
+    category: "retail",
+    name: "Genomics Cafe",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=26&locationName=Genomics+Cafe&naFlag=1",
+  },
+  "07": {
+    id: "07",
+    category: "retail",
+    name: "Shultz Cafe",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=07&locationName=Shultz+Cafe&naFlag=1",
+  },
+  "12": {
+    id: "12",
+    category: "retail",
+    name: "Tiger Tea Room",
+    url: "https://menus.princeton.edu/dining/_Foodpro/online-menu/menuDetails.asp?sName=Princeton+University+Campus+Dining&locationNum=12&locationName=Tiger+Tea+Room&naFlag=1",
+  },
+};
+
+export const residentialLocations = Object.fromEntries(
+  Object.entries(locations).filter(([, v]) => v.category === "residential")
+);
+
+export const retailLocations = Object.fromEntries(
+  Object.entries(locations).filter(([, v]) => v.category === "retail")
+);
+
+export const DINING_HALLS = [
+  'Forbes College',
+  'Mathey & Rockefeller Colleges',
+  'Whitman & Butler Colleges',
+  'Yeh College & NCW',
+  'Center for Jewish Life',
+  'Graduate College',
+  'Chemistry CaFe',
+  'EQuad Cafe',
+  'Frist Gallery',
+  'Genomics Cafe',
+  'Shultz Cafe',
+] as const;
+export type DiningHall = (typeof DINING_HALLS)[number];

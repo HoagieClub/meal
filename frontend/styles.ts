@@ -35,7 +35,8 @@ import equadBanner from '@/public/images/banners/EQuad-Cafe.png';
 import fristBanner from '@/public/images/banners/Frist-Pic.png';
 import genomicsBanner from '@/public/images/banners/Genomics-Cafe.png';
 import shultzBanner from '@/public/images/banners/Shultz-Cafe.png';
-import { Meal, DiningHall } from '@/types/types';
+import { Meal } from '@/types/types';
+import type { DiningHall } from '@/locations';
 import { Theme } from 'evergreen-ui';
 import { StaticImageData } from 'next/image';
 

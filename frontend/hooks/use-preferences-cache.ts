@@ -19,9 +19,10 @@
 
 'use client';
 
-import { DINING_HALLS } from '@/types/types';
+import { DINING_HALLS } from '@/locations';
+import type { DiningHall } from '@/locations';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { DiningHall, Allergen } from '@/types/types';
+import { Allergen } from '@/types/types';
 
 // Keys for each preference type
 const CACHE_KEYS = {

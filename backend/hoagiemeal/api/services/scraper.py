@@ -437,7 +437,7 @@ class Scraper:
 
     def get_all_locations(self) -> Optional[dict]:
         """Get all locations."""
-        logger.info("Getting all locations from main menu page.")
+        logger.debug("Getting all locations from main menu page.")
         url = "https://menus.princeton.edu/dining/_Foodpro/online-menu/default.asp"
         soup = fetch_page_soup(url)
         if not soup:
@@ -449,7 +449,7 @@ class Scraper:
             logger.error("Failed to extract locations")
             return None
 
-        logger.info(f"Extracted {len(locations)} locations")
+        logger.debug(f"Extracted {len(locations)} locations")
         return locations
 
     def get_menus_for_location_and_date(self, location_id: str, date: datetime.date) -> Optional[dict]:
@@ -471,7 +471,7 @@ class Scraper:
 
     def get_menus_for_all_locations_and_date(self, date: datetime.date) -> Optional[dict]:
         """Get the menus for all locations and date."""
-        logger.info(f"Getting menus for all locations and date: {date}.")
+        logger.debug(f"Getting menus for all locations and date: {date}.")
 
         locations = self.get_all_locations()
         if not locations:
@@ -490,7 +490,7 @@ class Scraper:
             logger.error(f"Failed to get menus for all locations and date: {date}")
             return None
 
-        logger.info(f"Extracted {len(all_menus)} menus for all locations and date: {date}")
+        logger.debug(f"Extracted {len(all_menus)} menus for all locations and date: {date}")
         return all_menus
 
     def get_menu_items(self, ids: "list[str]") -> Optional[dict]:

@@ -16,7 +16,8 @@ import {
   Switch,
 } from 'evergreen-ui';
 import { useNutritionAccordion } from '@/contexts/nutrition-accordion-context';
-import { DiningHall, Allergen, ALLERGENS, MenuSortOption, MENU_SORT_OPTIONS } from '@/types/types';
+import { Allergen, ALLERGENS, MenuSortOption, MENU_SORT_OPTIONS } from '@/types/types';
+import type { DiningHall } from '@/locations';
 import { RESIDENTIAL_HALL_ORDER, RETAIL_LOCATION_ORDER } from '@/ordering';
 import DiningHallRow from './dining-hall-row';
 import AllergenRow from './allergen-row';

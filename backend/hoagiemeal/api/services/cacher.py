@@ -36,7 +36,7 @@ from collections import defaultdict
 
 def cache_locations(locations: dict) -> bool:
     """Cache locations in the database."""
-    logger.info(f"Caching {len(locations)} locations.")
+    logger.debug(f"Caching {len(locations)} locations.")
     try:
         with transaction.atomic():
             for location in locations.values():
@@ -61,7 +61,7 @@ def cache_all_menus_for_locations_and_date(date: datetime.date, menus: dict) -> 
     Prefetches all referenced locations in one query, then creates
     residential/retail menu rows accordingly.
     """
-    logger.info(f"Caching all menus for date: {date}.")
+    logger.debug(f"Caching all menus for date: {date}.")
     try:
         # One query to fetch all locations referenced in the menus dict
         locations_by_id = {
@@ -104,7 +104,7 @@ def cache_all_menus_for_locations_and_date(date: datetime.date, menus: dict) -> 
 
 def cache_menu_items(menu_items: dict) -> bool:
     """Cache menu items in the database."""
-    logger.info(f"Caching {len(menu_items)} menu items.")
+    logger.debug(f"Caching {len(menu_items)} menu items.")
     try:
         for menu_item in menu_items.values():
             try:
@@ -256,7 +256,7 @@ class CacherService:
                     logger.error(f"Error caching menu items for IDs: {missing_ids}.")
                     return None
 
-            logger.info(f"Found {len(cached_ids)} existing cached menu items, cached {len(missing_ids)} menu items.")
+            logger.debug(f"Found {len(cached_ids)} existing cached menu items, cached {len(missing_ids)} menu items.")
             all_items = MenuItem.objects.filter(id__in=ids).select_related("nutrition")
             return self._serialize_menu_items(all_items)
         except Exception as e:

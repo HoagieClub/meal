@@ -12,7 +12,7 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import type { DiningHall } from '@/types/types';
+import type { DiningHall } from '@/locations';
 
 // Canonical display order for residential dining halls.
 export const RESIDENTIAL_HALL_ORDER: DiningHall[] = [

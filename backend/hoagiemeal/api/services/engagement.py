@@ -167,7 +167,7 @@ class MenuItemInteractionsService:
                 interaction.save()
 
             self.update_menu_item_metrics(menu_item_api_id)
-            logger.info(
+            logger.debug(
                 f"Updated user menu item interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}."
             )
             return True

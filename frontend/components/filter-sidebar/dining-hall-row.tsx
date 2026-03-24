@@ -4,7 +4,7 @@ import React from 'react';
 import { Pane, Text, minorScale, Checkbox, useTheme } from 'evergreen-ui';
 import { DINING_HALL_DISPLAY_NAMES } from '@/data';
 import { HALL_ICON_MAP } from '@/styles';
-import { DiningHall } from '@/types/types';
+import type { DiningHall } from '@/locations';
 
 export interface DiningHallRowProps {
   diningHall: DiningHall;
