@@ -3,28 +3,19 @@
 import React from 'react';
 import Image from 'next/image';
 import { Pane, minorScale } from 'evergreen-ui';
-import { useMenuItemInteractions } from '@/hooks/use-menu-item-interactions';
-
 /**
  * Favorite button component.
- * Renders a heart icon that toggles favorite state.
+ * Renders a star icon that toggles favorite state.
  *
- * @param item - The menu item to display favorite for.
  * @returns A React component.
  */
-export const FavoriteButton = ({ item }: { item: any }) => {
-  const { favorited, handleFavorite } = useMenuItemInteractions(
-    item.id,
-    item.userInteraction,
-    item.metrics
-  );
-
+export const FavoriteButton = ({ favorited, onToggle }: { favorited: boolean; onToggle: () => void }) => {
   return (
     <Pane
       display='flex'
       alignItems='center'
       justifyContent='center'
-      onClick={handleFavorite}
+      onClick={onToggle}
       cursor='pointer'
       paddingX={minorScale(1)}
       paddingY={minorScale(1)}
@@ -35,7 +26,7 @@ export const FavoriteButton = ({ item }: { item: any }) => {
       <Pane position='relative' width={14} height={14}>
         {/* make heart red if favorited */}
         <Image
-          src='/images/icons/heart.svg'          
+          src='/images/icons/star.svg'
           alt='Favorite'
           width={14}
           height={14}
@@ -46,7 +37,7 @@ export const FavoriteButton = ({ item }: { item: any }) => {
           }}
         />
         <Image
-          src='/images/icons/heart-solid.svg'
+          src='/images/icons/star-filled.svg'
           alt='Favorited'
           width={14}
           height={14}

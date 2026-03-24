@@ -7,5 +7,5 @@ export const ALLERGENS = [
 ] as const;
 export type Allergen = (typeof ALLERGENS)[number];
 
-export const MENU_SORT_OPTIONS = ['Category', 'Most Liked', 'Favorited'] as const;
+export const MENU_SORT_OPTIONS = ['Starred', 'Most Liked'] as const;
 export type MenuSortOption = (typeof MENU_SORT_OPTIONS)[number];

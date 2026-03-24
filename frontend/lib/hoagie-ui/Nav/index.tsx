@@ -109,7 +109,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
           maxWidth={1200}
           paddingX={isMobile ? majorScale(2) : majorScale(5)}
         >
-          <Link href='/'>
+          <Link href='/menu'>
             <Pane cursor='pointer' position='relative'>
               {LogoComponent ? (
                 <LogoComponent />

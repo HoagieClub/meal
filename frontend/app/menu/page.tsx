@@ -4,7 +4,7 @@
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this tree or at
+ * LICENSE file in the root directory of this source tree or at
  *
  *    https://github.com/hoagieclub/meal/LICENSE.
  *
@@ -22,9 +22,9 @@ import {
   majorScale,
   minorScale,
   useTheme,
-  SearchIcon,
   FilterListIcon,
 } from 'evergreen-ui';
+import SplashScreen from '@/components/splash-screen/splash-screen';
 import DiningHallCard from '@/components/dining-hall-card/dining-hall-card';
 import SkeletonDiningHallCard from '@/components/dining-hall-card/dining-hall-card-skeleton';
 import FilterSidebar from '@/components/filter-sidebar/filter-sidebar';
@@ -39,6 +39,7 @@ import { MEAL_COLOR_MAP } from '@/styles';
 import { Meal } from '@/types/types';
 import type { DiningHall } from '@/locations';
 import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
+import { InteractionsProvider } from '@/contexts/interactions-context';
 import { useMenuApi } from '@/hooks/use-menu-api';
 import {
   useBuildResidentialDisplayData,
@@ -73,25 +74,70 @@ const isWeekend = (date: Date): boolean => {
 };
 
 /**
- * Menu page component.
- *
- * @returns The menu page component.
+ * Menu page component. Fetches data and provides the interactions context,
+ * then delegates all rendering to MenuContent.
  */
 export default function MenuPage() {
+  const [selectedDate, setSelectedDate] = useState<Date>(getToday());
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [meal, setMeal] = useState<Meal>(getCurrentMeal());
+  const dateKey = getDateKey(selectedDate);
+  const { data, loading } = useMenuApi(dateKey);
+  const interactions = data?.interactions ?? {};
+  const metrics = data?.metrics ?? {};
+
+  return (
+    <InteractionsProvider initialInteractions={interactions} initialMetrics={metrics} dateKey={dateKey}>
+      <SplashScreen />
+      <NutritionAccordionProvider>
+        <MenuContent
+          data={data}
+          loading={loading}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          meal={meal}
+          setMeal={setMeal}
+          dateKey={dateKey}
+        />
+      </NutritionAccordionProvider>
+    </InteractionsProvider>
+  );
+}
+
+/**
+ * Inner content component — rendered inside InteractionsProvider so that
+ * useBuildResidentialDisplayData can subscribe to live interaction updates.
+ */
+function MenuContent({
+  data,
+  loading,
+  selectedDate,
+  setSelectedDate,
+  sidebarOpen,
+  setSidebarOpen,
+  meal,
+  setMeal,
+  dateKey,
+}: {
+  data: any;
+  loading: boolean;
+  selectedDate: Date;
+  setSelectedDate: (d: Date) => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  meal: Meal;
+  setMeal: (m: Meal) => void;
+  dateKey: string;
+}) {
   const theme = useTheme();
 
-  const [selectedDate, setSelectedDate] = useState<Date>(getToday());
-  const dateKey = getDateKey(selectedDate);
-  const currentMeal = getCurrentMeal();
-  const { data, loading } = useMenuApi(dateKey);
   const residentialLocations = data?.residentialLocations ?? {};
   const retailLocations = data?.retailLocations ?? {};
   const residentialMenus = data?.residentialMenus ?? {};
   const retailMenus = data?.retailMenus ?? {};
   const menuItems = data?.menuItems ?? {};
-  const interactions = data?.interactions ?? {};
-  const metrics = data?.metrics ?? {};
-
 
   const {
     diningHalls,
@@ -103,11 +149,9 @@ export default function MenuPage() {
     clearAll: clearPreferences,
   } = usePreferencesCache();
 
-  const [meal, setMeal] = useState<Meal>(currentMeal as Meal);
   const [locationType, setLocationType] = useState<'residential' | 'retail'>('residential');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOption, setSortOption] = useState<MenuSortOption>('Category');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sortOption, setSortOption] = useState<MenuSortOption>('Starred');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [mobileScrolled, setMobileScrolled] = useState(false);
 
@@ -116,20 +160,16 @@ export default function MenuPage() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
-  const hideSidebar = useMediaQuery('(min-width: 1080px)');
   const hideFilterSidebar = useMediaQuery('(max-width: 800px)');
   const stackMenuHeaderMobile = useMediaQuery('(max-width: 763px)');
   const stackMenuHeaderWithSidebar = useMediaQuery('(max-width: 1019px)');
   const stackMenuHeader =
     !hideFilterSidebar && sidebarOpen ? stackMenuHeaderWithSidebar : stackMenuHeaderMobile;
 
-  const residentialDisplayData = useBuildResidentialDisplayData({
+  const { displayData: residentialDisplayData, hasAnyRawLocations: hasAnyResidentialData } = useBuildResidentialDisplayData({
     locations: residentialLocations,
     residentialMenus,
     menuItems,
-    interactions,
-    metrics,
-
     appliedDiningHalls: diningHalls,
     appliedAllergens: allergens,
     searchTerm,
@@ -138,13 +178,10 @@ export default function MenuPage() {
     sortOption,
   });
 
-  const retailDisplayData = useBuildRetailDisplayData({
+  const { displayData: retailDisplayData, hasAnyRawLocations: hasAnyRetailData } = useBuildRetailDisplayData({
     locations: retailLocations,
     retailMenus,
     menuItems,
-    interactions,
-    metrics,
-
     appliedDiningHalls: diningHalls,
     appliedAllergens: allergens,
     searchTerm,
@@ -154,117 +191,205 @@ export default function MenuPage() {
 
   const displayMenusForLocations =
     locationType === 'retail' ? retailDisplayData : residentialDisplayData;
+  const hasAnyRawData = locationType === 'retail' ? hasAnyRetailData : hasAnyResidentialData;
 
   return (
-    <NutritionAccordionProvider>
-      <Pane
-        display='flex'
-        className='sm:flex-row sm:overflow-hidden min-h-screen flex-col transition-colors duration-300'
-        background={MEAL_COLOR_MAP(theme)[meal]}
-      >
-        {!hideFilterSidebar && (
-          <div
-            className='sidebar-slide-wrapper'
-            style={{
-              width: sidebarOpen ? 280 : 0,
-              minWidth: sidebarOpen ? 280 : 0,
-              transform: `translateX(${sidebarOpen ? 0 : -280}px)`,
-            }}
-          >
-            <FilterSidebar
-              locationType={locationType}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              sortOption={sortOption}
-              setSortOption={setSortOption}
-              diningHalls={diningHalls}
-              allergens={allergens}
-              toggleDiningHall={toggleDiningHall}
-              toggleAllergen={toggleAllergen}
-              clearPreferences={clearPreferences}
-              variant='sidebar'
-              onClose={() => setSidebarOpen(false)}
-            />
-          </div>
-        )}
+    <Pane
+      display='flex'
+      className='sm:flex-row min-h-screen flex-col transition-colors duration-300'
+      style={{ overflowX: 'clip' }}
+      background={MEAL_COLOR_MAP(theme)[meal]}
+    >
+      {!hideFilterSidebar && (
+        <div
+          className='sidebar-slide-wrapper'
+          style={{
+            width: sidebarOpen ? 280 : 0,
+            minWidth: sidebarOpen ? 280 : 0,
+            transform: `translateX(${sidebarOpen ? 0 : -280}px)`,
+          }}
+        >
+          <FilterSidebar
+            locationType={locationType}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            sortOption={sortOption}
+            setSortOption={setSortOption}
+            diningHalls={diningHalls}
+            allergens={allergens}
+            toggleDiningHall={toggleDiningHall}
+            toggleAllergen={toggleAllergen}
+            clearPreferences={clearPreferences}
+            variant='sidebar'
+            onClose={() => setSidebarOpen(false)}
+          />
+        </div>
+      )}
 
-        <Pane flex={1} className='h-full no-scrollbar' style={{ overflowX: 'clip' }}>
-          {/* Mobile: sticky search/filter bar only */}
-          {hideFilterSidebar && (
-            <>
+      <Pane flex={1} className='h-full no-scrollbar' style={{ overflowX: 'clip' }}>
+        {/* Mobile: sticky search/filter bar only */}
+        {hideFilterSidebar && (
+          <>
+            <div
+              className={`sticky top-0 z-50 transition-shadow duration-200${mobileScrolled ? ' shadow-[0px_4px_8px_rgba(0,0,0,0.1)]' : ''}`}
+              style={{ background: MEAL_COLOR_MAP(theme)[meal] }}
+            >
+              {/* Filter popover — slides down from top of sticky bar, overlays content */}
               <div
-                className={`sticky top-0 z-50 transition-shadow duration-200${mobileScrolled ? ' shadow-[0px_4px_8px_rgba(0,0,0,0.1)]' : ''}`}
-                style={{ background: MEAL_COLOR_MAP(theme)[meal] }}
+                className='absolute top-0 left-0 right-0 z-[60]'
+                style={{ pointerEvents: mobileFilterOpen ? 'auto' : 'none' }}
               >
-                {/* Filter popover — slides down from top of sticky bar, overlays content */}
                 <div
-                  className='absolute top-0 left-0 right-0 z-[60]'
-                  style={{ pointerEvents: mobileFilterOpen ? 'auto' : 'none' }}
+                  className='mobile-filter-popover'
+                  data-state={mobileFilterOpen ? 'open' : 'closed'}
                 >
-                  <div
-                    className='mobile-filter-popover'
-                    data-state={mobileFilterOpen ? 'open' : 'closed'}
-                  >
-                    <div className='mobile-filter-popover-inner bg-white rounded-b-[20px] shadow-[0px_4px_8px_rgba(0,0,0,0.15)] max-h-[100dvh] overflow-y-auto'>
-                      <FilterSidebar
-                        variant='mobile-popover'
-                        locationType={locationType}
-                        searchTerm={searchTerm}
-                        setSearchTerm={setSearchTerm}
-                        sortOption={sortOption}
-                        setSortOption={setSortOption}
-                        diningHalls={diningHalls}
-                        allergens={allergens}
-                        toggleDiningHall={toggleDiningHall}
-                        toggleAllergen={toggleAllergen}
-                        clearPreferences={clearPreferences}
-                        onClose={() => setMobileFilterOpen(false)}
-                      />
-                    </div>
+                  <div className='mobile-filter-popover-inner bg-white rounded-b-[20px] shadow-[0px_4px_8px_rgba(0,0,0,0.15)] max-h-[100dvh] overflow-y-auto'>
+                    <FilterSidebar
+                      variant='mobile-popover'
+                      locationType={locationType}
+                      searchTerm={searchTerm}
+                      setSearchTerm={setSearchTerm}
+                      sortOption={sortOption}
+                      setSortOption={setSortOption}
+                      diningHalls={diningHalls}
+                      allergens={allergens}
+                      toggleDiningHall={toggleDiningHall}
+                      toggleAllergen={toggleAllergen}
+                      clearPreferences={clearPreferences}
+                      onClose={() => setMobileFilterOpen(false)}
+                    />
                   </div>
                 </div>
-                <MobileFilterBar
-                  locationType={locationType}
-                  setLocationType={setLocationType}
-                  searchTerm={searchTerm}
-                  setSearchTerm={setSearchTerm}
-                  filterOpen={mobileFilterOpen}
-                  setFilterOpen={setMobileFilterOpen}
-                />
               </div>
-              {/* Non-sticky: meal title + date selector scroll with page */}
-              <div className='flex flex-col items-center text-center px-4 pt-2'>
-                {(() => {
-                  const displayedMeal =
-                    locationType === 'retail'
-                      ? 'Retail'
-                      : meal === 'Lunch' && isWeekend(selectedDate)
-                        ? 'Brunch'
-                        : meal;
-                  return (
-                    <>
-                      <Heading
-                        key={displayedMeal}
-                        className='text-4xl meal-title-enter p-0'
-                        color={theme.colors.green700}
-                        fontWeight={900}
-                      >
-                        {displayedMeal}
-                      </Heading>
-                      <Text
-                        key={`hours-${displayedMeal}`}
-                        className='text-xl meal-title-enter'
-                        color={theme.colors.green600}
-                        fontWeight={600}
-                        style={{ animationDelay: '30ms' }}
-                      >
-                        {locationType === 'retail' ? 'Hours vary' : MEAL_RANGES[meal]}
-                      </Text>
-                    </>
-                  );
-                })()}
-              </div>
-              <div className='mx-4'>
+              <MobileFilterBar
+                locationType={locationType}
+                setLocationType={setLocationType}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                filterOpen={mobileFilterOpen}
+                setFilterOpen={setMobileFilterOpen}
+              />
+            </div>
+            {/* Non-sticky: meal title + date selector scroll with page */}
+            <div className='flex flex-col items-center text-center px-4 pt-2'>
+              {(() => {
+                const displayedMeal =
+                  locationType === 'retail'
+                    ? 'Retail'
+                    : meal === 'Lunch' && isWeekend(selectedDate)
+                      ? 'Brunch'
+                      : meal;
+                return (
+                  <>
+                    <Heading
+                      key={displayedMeal}
+                      className='text-4xl meal-title-enter p-0'
+                      color={theme.colors.green700}
+                      fontWeight={900}
+                    >
+                      {displayedMeal}
+                    </Heading>
+                    <Text
+                      key={`hours-${displayedMeal}`}
+                      className='text-xl meal-title-enter'
+                      color={theme.colors.green600}
+                      fontWeight={600}
+                      style={{ animationDelay: '30ms' }}
+                    >
+                      {locationType === 'retail' ? 'Hours vary' : MEAL_RANGES[meal]}
+                    </Text>
+                  </>
+                );
+              })()}
+            </div>
+            <div className='mx-4'>
+              <DateMealSelector
+                meal={meal}
+                setMeal={setMeal}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                locationType={locationType}
+              />
+            </div>
+          </>
+        )}
+
+        <Pane
+          paddingRight={majorScale(3)}
+          paddingLeft={hideFilterSidebar || !sidebarOpen ? majorScale(3) : 0}
+        >
+          <Pane maxWidth={1200} marginX='auto' width='100%'>
+            {/* Desktop: non-sticky header with meal title, date selector, location toggle */}
+            {!hideFilterSidebar && (
+              <Pane
+                display='flex'
+                alignItems='center'
+                justifyContent='space-between'
+                marginY={majorScale(1)}
+                minHeight={160}
+                className={stackMenuHeader ? 'flex-col' : 'flex-row'}
+              >
+                <Pane
+                  width={stackMenuHeader ? undefined : 240}
+                  className={`flex flex-col ${stackMenuHeader ? 'items-center text-center pt-5' : 'items-start'} justify-start`}
+                >
+                  {(() => {
+                    const displayedMeal =
+                      locationType === 'retail'
+                        ? 'Retail'
+                        : meal === 'Lunch' && isWeekend(selectedDate)
+                          ? 'Brunch'
+                          : meal;
+                    return (
+                      <>
+                        <Heading
+                          key={displayedMeal}
+                          className='text-5xl meal-title-enter'
+                          color={theme.colors.green700}
+                          fontWeight={900}
+                        >
+                          {displayedMeal}
+                        </Heading>
+                        <Text
+                          key={`hours-${displayedMeal}`}
+                          className='text-xl meal-title-enter'
+                          color={theme.colors.green600}
+                          fontWeight={600}
+                          style={{ animationDelay: '30ms' }}
+                        >
+                          {locationType === 'retail' ? 'Hours vary' : MEAL_RANGES[meal]}
+                        </Text>
+                      </>
+                    );
+                  })()}
+                  <Pane
+                    display='inline-flex'
+                    alignItems='center'
+                    gap={minorScale(2)}
+                    cursor={sidebarOpen ? 'default' : 'pointer'}
+                    onClick={sidebarOpen ? undefined : () => setSidebarOpen(true)}
+                    borderRadius={999}
+                    className='select-none bg-[#A2D4B8]/50'
+                    style={{
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      opacity: sidebarOpen ? 0 : 1,
+                      maxWidth: sidebarOpen ? 0 : 200,
+                      height: sidebarOpen ? 0 : 28,
+                      marginTop: sidebarOpen ? 0 : 12,
+                      paddingLeft: sidebarOpen ? 0 : 12,
+                      paddingRight: sidebarOpen ? 0 : 12,
+                      pointerEvents: sidebarOpen ? 'none' : 'auto',
+                      transition:
+                        'max-width 250ms ease, padding 250ms ease, height 250ms ease, margin-top 250ms ease, opacity 150ms ease',
+                    }}
+                  >
+                    <FilterListIcon size={12} className='text-[#156534]' />
+                    <Text fontSize={12} className='text-[#156534]' fontWeight={600}>
+                      Search & Filter
+                    </Text>
+                  </Pane>
+                </Pane>
                 <DateMealSelector
                   meal={meal}
                   setMeal={setMeal}
@@ -272,172 +397,91 @@ export default function MenuPage() {
                   setSelectedDate={setSelectedDate}
                   locationType={locationType}
                 />
-              </div>
-            </>
-          )}
-
-          <Pane
-            paddingRight={majorScale(3)}
-            paddingLeft={hideFilterSidebar || !sidebarOpen ? majorScale(3) : 0}
-          >
-            <Pane maxWidth={1200} marginX='auto' width='100%'>
-              {/* Desktop: non-sticky header with meal title, date selector, location toggle */}
-              {!hideFilterSidebar && (
                 <Pane
                   display='flex'
-                  alignItems='center'
-                  justifyContent='space-between'
-                  marginY={majorScale(1)}
-                  minHeight={160}
-                  className={stackMenuHeader ? 'flex-col' : 'flex-row'}
-                >
-                  <Pane
-                    width={stackMenuHeader ? undefined : 240}
-                    className={`flex flex-col ${stackMenuHeader ? 'items-center text-center pt-5' : 'items-start'} justify-start`}
-                  >
-                    {(() => {
-                      const displayedMeal =
-                        locationType === 'retail'
-                          ? 'Retail'
-                          : meal === 'Lunch' && isWeekend(selectedDate)
-                            ? 'Brunch'
-                            : meal;
-                      return (
-                        <>
-                          <Heading
-                            key={displayedMeal}
-                            className='text-5xl meal-title-enter'
-                            color={theme.colors.green700}
-                            fontWeight={900}
-                          >
-                            {displayedMeal}
-                          </Heading>
-                          <Text
-                            key={`hours-${displayedMeal}`}
-                            className='text-xl meal-title-enter'
-                            color={theme.colors.green600}
-                            fontWeight={600}
-                            style={{ animationDelay: '30ms' }}
-                          >
-                            {locationType === 'retail' ? 'Hours vary' : MEAL_RANGES[meal]}
-                          </Text>
-                        </>
-                      );
-                    })()}
-                    <Pane
-                      display='inline-flex'
-                      alignItems='center'
-                      gap={minorScale(2)}
-                      cursor={sidebarOpen ? 'default' : 'pointer'}
-                      onClick={sidebarOpen ? undefined : () => setSidebarOpen(true)}
-                      borderRadius={999}
-                      className='select-none bg-[#A2D4B8]/50'
-                      style={{
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                        opacity: sidebarOpen ? 0 : 1,
-                        maxWidth: sidebarOpen ? 0 : 200,
-                        height: sidebarOpen ? 0 : 28,
-                        marginTop: sidebarOpen ? 0 : 12,
-                        paddingLeft: sidebarOpen ? 0 : 12,
-                        paddingRight: sidebarOpen ? 0 : 12,
-                        pointerEvents: sidebarOpen ? 'none' : 'auto',
-                        transition:
-                          'max-width 250ms ease, padding 250ms ease, height 250ms ease, margin-top 250ms ease, opacity 150ms ease',
-                      }}
-                    >
-                      <FilterListIcon size={12} className='text-[#156534]' />
-                      <Text fontSize={12} className='text-[#156534]' fontWeight={600}>
-                        Search & Filter
-                      </Text>
-                    </Pane>
-                  </Pane>
-                  <DateMealSelector
-                    meal={meal}
-                    setMeal={setMeal}
-                    selectedDate={selectedDate}
-                    setSelectedDate={setSelectedDate}
-                    locationType={locationType}
-                  />
-                  <Pane
-                    display='flex'
-                    flexDirection='column'
-                    gap={majorScale(2)}
-                    width={stackMenuHeader ? undefined : 240}
-                    alignItems={stackMenuHeader ? 'center' : 'flex-end'}
-                    justifyContent='flex-start'
-                    className={stackMenuHeader ? 'order-last pt-2 pb-4' : undefined}
-                  >
-                    <LocationTypeToggle
-                      locationType={locationType}
-                      setLocationType={setLocationType}
-                      vertical={!stackMenuHeader}
-                    />
-                  </Pane>
-                </Pane>
-              )}
-
-              {loading ? (
-                <Pane
-                  display='grid'
-                  overflowY='auto'
-                  paddingBottom={majorScale(6)}
-                  gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
-                  gap={majorScale(2)}
-                  className='h-full no-scrollbar'
-                >
-                  {Array(6)
-                    .fill(0)
-                    .map((_, i) => (
-                      <SkeletonDiningHallCard key={i} />
-                    ))}
-                </Pane>
-              ) : displayMenusForLocations.length === 0 ? (
-                <Pane
-                  display='flex'
-                  alignItems='center'
-                  justifyContent='center'
-                  paddingY={majorScale(8)}
                   flexDirection='column'
-                  width='100%'
-                  marginTop={majorScale(2)}
-                  className='h-full'
-                >
-                  <SearchIcon color={theme.colors.gray600} size={32} marginBottom={majorScale(2)} />
-                  <Heading size={500} color={theme.colors.gray800} marginBottom={minorScale(1)}>
-                    No Locations Found
-                  </Heading>
-                  <Text size={400} color='muted' textAlign='center'>
-                    Try adjusting your filters.
-                  </Text>
-                </Pane>
-              ) : (
-                <Pane
-                  display='grid'
-                  overflowY='auto'
-                  paddingBottom={majorScale(6)}
-                  gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
                   gap={majorScale(2)}
-                  className='h-full no-scrollbar'
+                  width={stackMenuHeader ? undefined : 240}
+                  alignItems={stackMenuHeader ? 'center' : 'flex-end'}
+                  justifyContent='flex-start'
+                  className={stackMenuHeader ? 'order-last pt-2 pb-4' : undefined}
                 >
-                  {displayMenusForLocations.map((diningHall) => {
-                    const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
-                    return (
-                      <DiningHallCard
-                        key={diningHall.name}
-                        diningHall={diningHall}
-                        isPinned={isPinned}
-                        onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
-                        sortOption={sortOption}
-                      />
-                    );
-                  })}
+                  <LocationTypeToggle
+                    locationType={locationType}
+                    setLocationType={setLocationType}
+                    vertical={!stackMenuHeader}
+                  />
                 </Pane>
-              )}
-            </Pane>
+              </Pane>
+            )}
+
+            {loading ? (
+              <Pane
+                display='grid'
+                paddingBottom={majorScale(6)}
+                gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
+                gap={majorScale(2)}
+                className='skeleton-grid-enter'
+              >
+                {Array(6)
+                  .fill(0)
+                  .map((_, i) => (
+                    <SkeletonDiningHallCard key={i} />
+                  ))}
+              </Pane>
+            ) : displayMenusForLocations.length === 0 ? (
+              <Pane
+                display='flex'
+                alignItems='center'
+                justifyContent='center'
+                paddingY={majorScale(8)}
+                flexDirection='column'
+                width='100%'
+                marginTop={majorScale(2)}
+                className='h-full'
+              >
+                {hasAnyRawData ? (
+                  <img src='/images/icons/funnel-x-dark.svg' width={50} height={50} alt='Filtered out' />
+                ) : (
+                  <img src='/images/icons/no-food-dark.svg' width={70} height={70} alt='No menus available' />
+                )}
+                <Heading size={500} color={theme.colors.gray800} marginTop={majorScale(2)} marginBottom={minorScale(1)}>
+                  {hasAnyRawData ? 'Filtered out' : 'Nothing today!'}
+                </Heading>
+                <Text size={400} color='black' opacity={0.4} textAlign='center' maxWidth={320}>
+                  {hasAnyRawData
+                    ? 'Try adjusting your search or filters'
+                    : 'We couldn\'t find any menus for this meal. Check back later.'}
+                </Text>
+              </Pane>
+            ) : (
+              <Pane
+                key={`${dateKey}-${meal}-${locationType}`}
+                display='grid'
+                paddingBottom={majorScale(6)}
+                gridTemplateColumns='repeat(auto-fill,minmax(350px,1fr))'
+                gap={majorScale(2)}
+              >
+                {displayMenusForLocations.map((diningHall, i) => {
+                  const isPinned = pinnedHalls.includes(diningHall.name as DiningHall);
+                  return (
+                    <DiningHallCard
+                      key={diningHall.name}
+                      diningHall={diningHall}
+                      isPinned={isPinned}
+                      onPinToggle={() => togglePinnedHall(diningHall.name as DiningHall)}
+                      sortOption={sortOption}
+                      filtersActive={diningHall.rawMenuCount > 0}
+                      index={i}
+                      stickyTop={hideFilterSidebar ? 48 : 0}
+                    />
+                  );
+                })}
+              </Pane>
+            )}
           </Pane>
         </Pane>
       </Pane>
-    </NutritionAccordionProvider>
+    </Pane>
   );
 }

@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { MenuItemInteraction, MenuItemMetrics } from '@/types/types';
 import { patchUserMenuItemInteraction } from '@/lib/next-endpoints';
+import { useInteractionsContext } from '@/contexts/interactions-context';
 
 /**
  * Hook return type for useMenuItemInteractions.
@@ -47,12 +48,26 @@ export const useMenuItemInteractions = (
 ): UseMenuItemInteractions => {
   const { user, isLoading: userLoading } = useUser();
   const router = useRouter();
-  const [userLiked, setUserLiked] = useState<boolean | null>(
-    initialInteraction?.liked ? true : initialInteraction?.liked === false ? false : null
-  );
-  const [likeCount, setLikeCount] = useState<number>(initialMetrics?.likeCount ?? 0);
-  const [dislikeCount, setDislikeCount] = useState<number>(initialMetrics?.dislikeCount ?? 0);
-  const [favorited, setFavorited] = useState<boolean>(initialInteraction?.favorited || false);
+  const { interactions, metrics, updateInteraction, updateMetrics } = useInteractionsContext();
+
+  const contextInteraction = interactions[menuItemApiId];
+  const contextMetrics = metrics[menuItemApiId];
+
+  // Prefer context values (live-updated), fall back to initial props
+  const userLiked: boolean | null = contextInteraction?.liked !== undefined
+    ? (contextInteraction.liked ?? null)
+    : (initialInteraction?.liked ? true : initialInteraction?.liked === false ? false : null);
+  const likeCount = contextMetrics?.likeCount ?? initialMetrics?.likeCount ?? 0;
+  const dislikeCount = contextMetrics?.dislikeCount ?? initialMetrics?.dislikeCount ?? 0;
+  const favorited = contextInteraction?.favorited !== undefined
+    ? contextInteraction.favorited
+    : (initialInteraction?.favorited || false);
+
+  const setUserLiked = (val: boolean | null) => updateInteraction(menuItemApiId, { liked: val });
+  const setLikeCount = (val: number) => updateMetrics(menuItemApiId, { likeCount: val });
+  const setDislikeCount = (val: number) => updateMetrics(menuItemApiId, { dislikeCount: val });
+  const setFavorited = (val: boolean) => updateInteraction(menuItemApiId, { favorited: val });
+
   const [updating, setUpdating] = useState(false);
 
   /**

@@ -106,19 +106,17 @@ export default function DateMealSelector({
           display='flex'
           alignItems='center'
           justifyContent='center'
-          width={32}
-          height={32}
           borderRadius={999}
           background={theme.colors.green25}
           cursor='pointer'
           onClick={goToPreviousDay}
-          className='transition-all hover:scale-110 active:scale-95 hover:brightness-95'
+          className='w-10 h-10 sm:w-8 sm:h-8 transition-all hover:scale-110 active:scale-95 hover:brightness-95'
         >
           <ChevronLeftIcon size={16} color={theme.colors.green700} />
         </Pane>
 
         <Text
-          className='text-2xl text-center w-[17rem] truncate font-semibold'
+          className='text-3xl sm:text-2xl text-center w-[17rem] truncate font-semibold'
           color={theme.colors.green700}
         >
           {formattedDateForDisplay}
@@ -128,13 +126,11 @@ export default function DateMealSelector({
           display='flex'
           alignItems='center'
           justifyContent='center'
-          width={32}
-          height={32}
           borderRadius={999}
           background={theme.colors.green25}
           cursor='pointer'
           onClick={goToNextDay}
-          className='transition-all hover:scale-110 active:scale-95 hover:brightness-95'
+          className='w-10 h-10 sm:w-8 sm:h-8 transition-all hover:scale-110 active:scale-95 hover:brightness-95'
         >
           <ChevronRightIcon size={16} color={theme.colors.green700} />
         </Pane>
@@ -149,7 +145,7 @@ export default function DateMealSelector({
               cursor='pointer'
               color={theme.colors.green700}
               fontWeight={isSelected ? 600 : 400}
-              className={`text-sm transition-all ${isSelected ? 'underline underline-offset-4' : ''}`}
+              className={`text-base sm:text-sm transition-all ${isSelected ? 'underline underline-offset-4' : ''}`}
               onClick={() => goToDate(date)}
             >
               {formatDayAbbrev(date)}
@@ -187,10 +183,9 @@ export default function DateMealSelector({
                 key={mealOption}
                 flex={1}
                 textAlign='center'
-                paddingY={2}
                 cursor='pointer'
                 color={textColor}
-                className='text-xs px-3 transition-colors duration-300 relative z-10'
+                className='text-sm sm:text-xs px-3 py-2 sm:py-0.5 transition-colors duration-300 relative z-10'
                 fontWeight={300}
                 onClick={() => setMeal(mealOption as string as Meal)}
               >

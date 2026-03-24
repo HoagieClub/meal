@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { canonicalIndex, RESIDENTIAL_HALL_ORDER, RETAIL_LOCATION_ORDER } from '@/ordering';
+import { useInteractionsContext } from '@/contexts/interactions-context';
 
 /** Residential: locationId -> meal (Breakfast/Lunch/Dinner) -> category -> itemIds */
 function buildResidentialLocationMenuShape(
@@ -154,8 +155,11 @@ function filterLocations(
   locations: any[],
   appliedDiningHalls: string[]
 ) {
-  if (!appliedDiningHalls || appliedDiningHalls.length === 0) {
+  if (!appliedDiningHalls) {
     return locations;
+  }
+  if (appliedDiningHalls.length === 0) {
+    return [];
   }
   const diningHallsLower = appliedDiningHalls.map((h: any) => String(h).toLowerCase().trim());
   return locations.filter((location) => {
@@ -165,39 +169,28 @@ function filterLocations(
 }
 
 function sortMenuItems(menu: any[], sortOption: string) {
-  if (sortOption === 'Favorited') {
-    return menu.filter((item) => item.userInteraction?.favorited === true);
-  }
-
   const menuCopy = [...menu];
 
-  if (sortOption === 'Category') {
+  if (sortOption === 'Most Liked') {
     menuCopy.sort((a: any, b: any) => {
       const categoryA = String(a.category || '').trim();
       const categoryB = String(b.category || '').trim();
-      return categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
-    });
-  } else if (sortOption === 'Most Liked') {
-    menuCopy.sort((a: any, b: any) => {
+      const catCmp = categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
+      if (catCmp !== 0) return catCmp;
       const likeA = a.metrics?.likeCount > 0 ? a.metrics.likeCount : -(a.metrics?.dislikeCount || 0);
       const likeB = b.metrics?.likeCount > 0 ? b.metrics.likeCount : -(b.metrics?.dislikeCount || 0);
-      if (likeB !== likeA) {
-        return likeB - likeA;
-      }
-      const categoryA = String(a.category || '').trim();
-      const categoryB = String(b.category || '').trim();
-      return categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
+      return likeB - likeA;
     });
   } else {
+    // Default ('Starred'): sort by category, favorites first within each category
     menuCopy.sort((a: any, b: any) => {
-      const scoreA = a.metrics?.averageLikeScore || 0;
-      const scoreB = b.metrics?.averageLikeScore || 0;
-      if (scoreB !== scoreA) {
-        return scoreB - scoreA;
-      }
       const categoryA = String(a.category || '').trim();
       const categoryB = String(b.category || '').trim();
-      return categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
+      const catCmp = categoryA.localeCompare(categoryB, undefined, { sensitivity: 'base' });
+      if (catCmp !== 0) return catCmp;
+      const favA = a.userInteraction?.favorited === true ? 0 : 1;
+      const favB = b.userInteraction?.favorited === true ? 0 : 1;
+      return favA - favB;
     });
   }
 
@@ -227,8 +220,6 @@ export const useBuildResidentialDisplayData = ({
   locations,
   residentialMenus,
   menuItems,
-  interactions,
-  metrics,
   appliedDiningHalls,
   appliedAllergens,
   searchTerm,
@@ -236,9 +227,10 @@ export const useBuildResidentialDisplayData = ({
   meal,
   sortOption,
 }: any) => {
+  const { interactions, metrics } = useInteractionsContext();
   const displayData = useMemo(() => {
     if (!locations || !residentialMenus || !menuItems) {
-      return [];
+      return { displayData: [], hasAnyRawLocations: false };
     }
     const shapedData = buildResidentialLocationMenuShape(
       locations,
@@ -250,10 +242,12 @@ export const useBuildResidentialDisplayData = ({
     );
 
     const filteredAndSorted = shapedData.map((location) => {
+      const rawMenuCount = location.menu.length;
       const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
       const sortedMenu = sortMenuItems(filteredMenu, sortOption);
       return {
         ...location,
+        rawMenuCount,
         menu: sortedMenu,
       };
     });
@@ -269,10 +263,11 @@ export const useBuildResidentialDisplayData = ({
     orderedMissingDiningHalls.forEach((diningHall: any) => {
       sortedLocations.push({
         name: diningHall,
+        rawMenuCount: 0,
         menu: [],
       });
     });
-    return sortedLocations;
+    return { displayData: sortedLocations, hasAnyRawLocations: shapedData.length > 0 };
   }, [
     locations,
     residentialMenus,
@@ -294,17 +289,16 @@ export const useBuildRetailDisplayData = ({
   locations,
   retailMenus,
   menuItems,
-  interactions,
-  metrics,
   appliedDiningHalls,
   appliedAllergens,
   searchTerm,
   pinnedHalls,
   sortOption,
 }: any) => {
+  const { interactions, metrics } = useInteractionsContext();
   const displayData = useMemo(() => {
     if (!locations || !retailMenus || !menuItems) {
-      return [];
+      return { displayData: [], hasAnyRawLocations: false };
     }
     const shapedData = buildRetailLocationMenuShape(
       locations,
@@ -315,10 +309,12 @@ export const useBuildRetailDisplayData = ({
     );
 
     const filteredAndSorted = shapedData.map((location) => {
+      const rawMenuCount = location.menu.length;
       const filteredMenu = filterMenuItems(location.menu, appliedAllergens, searchTerm);
       const sortedMenu = sortMenuItems(filteredMenu, sortOption);
       return {
         ...location,
+        rawMenuCount,
         menu: sortedMenu,
       };
     });
@@ -334,10 +330,11 @@ export const useBuildRetailDisplayData = ({
     orderedMissingDiningHalls.forEach((diningHall: any) => {
       sortedLocations.push({
         name: diningHall,
+        rawMenuCount: 0,
         menu: [],
       });
     });
-    return sortedLocations;
+    return { displayData: sortedLocations, hasAnyRawLocations: shapedData.length > 0 };
   }, [
     locations,
     retailMenus,
