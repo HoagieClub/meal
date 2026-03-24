@@ -12,7 +12,7 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { getAccessToken } from '@auth0/nextjs-auth0';
+import { getAccessToken, AccessTokenError } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
 import { verifyUser } from '@/lib/endpoints';
 
@@ -61,7 +61,12 @@ export async function POST(req: Request) {
       status: 200,
     });
   } catch (error: unknown) {
-    // If an error occurs, return a error response.
+    if (error instanceof AccessTokenError) {
+      return NextResponse.json(
+        { status: 401, message: 'Session expired', data: null, code: 'SESSION_EXPIRED' },
+        { status: 401 }
+      );
+    }
     DEBUG && console.error('Error:', error);
     const message = error instanceof Error ? error.message : 'Unexpected error';
     const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;

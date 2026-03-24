@@ -1,5 +1,5 @@
 /**
- * @overview Next.js Route Handler to get or cache all menus for a date.
+ * @overview Next.js Route Handler to get or cache all menus and menu items for a date.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -13,23 +13,21 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getAllMenusForDate } from '@/lib/endpoints';
+import { getMenusAndItemsForDate } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
- * Gets or caches all menus for a date.
+ * Gets or caches all menus and their menu items for a date.
  *
  * @param req - The HTTP request object.
- * @returns A NextResponse object with the menus data.
+ * @returns A NextResponse object with { menus, menuItems } data.
  */
 export async function GET(req: Request) {
   try {
-    // Get the query parameters from the request.
     const { searchParams } = new URL(req.url);
     const date = searchParams.get('date');
 
-    // If the date is not provided, return a 400 response.
     if (!date) {
       return NextResponse.json(
         {
@@ -41,10 +39,8 @@ export async function GET(req: Request) {
       );
     }
 
-    // Fetch menus data from the backend.
-    const res = await getAllMenusForDate({ date });
+    const res = await getMenusAndItemsForDate({ date });
 
-    // If no menus are found, return a 404 response.
     if (!res.data) {
       return NextResponse.json(
         {
@@ -56,14 +52,12 @@ export async function GET(req: Request) {
       );
     }
 
-    // Return the response from the backend.
     return NextResponse.json({
       status: 200,
-      message: `Successfully fetched all menus for date ${date}`,
+      message: `Successfully fetched menus and items for date ${date}`,
       data: res.data,
     });
   } catch (error: unknown) {
-    // If an error occurs, return a error response.
     DEBUG && console.error('Error:', error);
     const message = error instanceof Error ? error.message : 'Unexpected error';
     const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;
@@ -74,4 +68,3 @@ export async function GET(req: Request) {
     );
   }
 }
-

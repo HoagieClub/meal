@@ -149,7 +149,7 @@ def setup_logger():
 
     # Set to DEBUG to capture all logging levels
     DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
-    logger.setLevel(logging.DEBUG if DEBUG else logging.WARNING)
+    logger.setLevel(logging.INFO if DEBUG else logging.WARNING)
 
     # Console handler (stdout) with color formatter
     console_handler = logging.StreamHandler(sys.stdout)

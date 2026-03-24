@@ -18,52 +18,29 @@ import {
     MenuItem,
     MenuItemInteraction,
     MenuItemMetrics,
-    LocationMap,
 } from '@/types/types';
 
 /**
- * Gets all locations.
- *
- * @returns API response with all locations
- */
-export const getAllLocations = () => {
-    const url = '/api/locations/';
-    return api.get<{ data: LocationMap }>(url);
-};
-
-/**
- * Gets all menus for a date.
+ * Gets all menus and their menu items for a date.
  *
  * @param params - Query parameters (date - YYYY-MM-DD format)
- * @returns API response with menus data
+ * @returns API response with { menus, menuItems } data
  */
-export const getAllMenusForDate = (params: { date: string }) => {
+export const getMenusAndItemsForDate = (params: { date: string }) => {
     const queryParams = new URLSearchParams({ date: params.date });
     const url = `/api/menus/?${queryParams.toString()}`;
-    return api.get<{ data: any }>(url);
+    return api.get<{ data: { menus: any; menuItems: Record<string, MenuItem> } }>(url);
 };
 
 /**
- * Gets or caches menu items by IDs.
- *
- * @param params - Request body (ids - comma-separated string or array)
- * @returns API response with menu items data
- */
-export const getMenuItems = (params: { ids: string | string[] }) => {
-    const ids = Array.isArray(params.ids) ? params.ids.join(',') : params.ids;
-    const url = `/api/menu-items/?ids=${encodeURIComponent(ids)}`;
-    return api.get<{ data: Record<string, MenuItem> }>(url);
-};
-
-/**
- * Gets user menu item interactions for multiple menu items.
+ * Gets engagement data (interactions + metrics) for multiple menu items.
  *
  * @param params - Request body (menu_item_api_ids - array of strings)
- * @returns API response with interactions data dictionary
+ * @returns API response with { interactions, metrics } data
  */
-export const getUserMenuItemsInteractions = (params: { menu_item_api_ids: string[] }) => {
-    const url = '/api/engagement/interactions/';
-    return api.post<{ data: Record<string, MenuItemInteraction | null> }>(url, {
+export const getEngagementData = (params: { menu_item_api_ids: string[] }) => {
+    const url = '/api/engagement/';
+    return api.post<{ data: { interactions: Record<string, MenuItemInteraction | null>; metrics: Record<string, MenuItemMetrics | null> } }>(url, {
         menu_item_api_ids: params.menu_item_api_ids,
     });
 };
@@ -89,18 +66,6 @@ export const patchUserMenuItemInteraction = (params: {
         saved_for_later: params.saved_for_later,
         would_eat_again: params.would_eat_again,
     });
-};
-
-/**
- * Gets metrics for multiple menu items.
- *
- * @param params - Request body (menu_item_api_ids - array of strings)
- * @returns API response with metrics data dictionary
- */
-export const getMenuItemsMetrics = (params: { menu_item_api_ids: string[] }) => {
-    const ids = params.menu_item_api_ids.join(',');
-    const url = `/api/engagement/metrics/?menu_item_api_ids=${encodeURIComponent(ids)}`;
-    return api.get<{ data: Record<string, MenuItemMetrics | null> }>(url);
 };
 
 /**

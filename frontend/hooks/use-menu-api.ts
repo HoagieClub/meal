@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import {
-  getAllMenusForDate,
-  getMenuItems,
-  getUserMenuItemsInteractions,
-  getMenuItemsMetrics,
+  getMenusAndItemsForDate,
+  getEngagementData,
 } from '@/lib/next-endpoints';
 import { locations as allLocations, residentialLocations, retailLocations } from '@/locations';
 
@@ -22,7 +20,6 @@ interface MenuData {
 // Module-level — persists across renders and remounts
 const dataCache = new Map<string, MenuData>();
 const inFlight = new Map<string, Promise<MenuData>>();
-
 
 function getNext7DayKeys(): string[] {
   const today = new Date();
@@ -64,39 +61,36 @@ function extractMenuItemIds(menus: any): string[] {
   return Array.from(ids);
 }
 
+function splitMenus(allMenus: any) {
+  const residentialMenus: any = {};
+  const retailMenus: any = {};
+  for (const locationId in allMenus) {
+    const loc = allLocations[locationId];
+    if (loc?.category === 'residential') residentialMenus[locationId] = allMenus[locationId];
+    else if (loc?.category === 'retail') retailMenus[locationId] = allMenus[locationId];
+  }
+  return { residentialMenus, retailMenus };
+}
+
 async function fetchDateData(dateKey: string): Promise<MenuData> {
   if (dataCache.has(dateKey)) return dataCache.get(dateKey)!;
   if (inFlight.has(dateKey)) return inFlight.get(dateKey)!;
 
   const promise = (async (): Promise<MenuData> => {
     try {
-      const menusRes = await getAllMenusForDate({ date: dateKey });
-
-      const allMenus: any = menusRes.data || {};
-
-      const residentialMenus: any = {};
-      const retailMenus: any = {};
-      for (const locationId in allMenus) {
-        const loc = allLocations[locationId];
-        if (loc?.category === 'residential') residentialMenus[locationId] = allMenus[locationId];
-        else if (loc?.category === 'retail') retailMenus[locationId] = allMenus[locationId];
-      }
+      const res = await getMenusAndItemsForDate({ date: dateKey });
+      const allMenus = res.data?.menus || {};
+      const menuItems = res.data?.menuItems || {};
+      const { residentialMenus, retailMenus } = splitMenus(allMenus);
 
       const itemIds = extractMenuItemIds(allMenus);
-
-      let menuItems: any = {};
       let interactions: any = {};
       let metrics: any = {};
 
       if (itemIds.length > 0) {
-        const [menuItemsRes, interactionsRes, metricsRes] = await Promise.all([
-          getMenuItems({ ids: itemIds }),
-          getUserMenuItemsInteractions({ menu_item_api_ids: itemIds }),
-          getMenuItemsMetrics({ menu_item_api_ids: itemIds }),
-        ]);
-        menuItems = menuItemsRes.data || {};
-        interactions = interactionsRes.data || {};
-        metrics = metricsRes.data || {};
+        const engagementRes = await getEngagementData({ menu_item_api_ids: itemIds });
+        interactions = engagementRes.data?.interactions || {};
+        metrics = engagementRes.data?.metrics || {};
       }
 
       const result: MenuData = {

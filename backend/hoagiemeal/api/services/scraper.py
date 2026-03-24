@@ -46,7 +46,7 @@ def get_menu_item_ids_from_menus_for_location_and_date(menus: dict) -> "list[str
 
 def get_menu_item_ids_from_menus_for_all_locations_and_date(menus: dict) -> "list[str]":
     """Get unique menu item ids from a dictionary of menus for all locations and date."""
-    logger.debug(f"Getting menu item ids from menus for all locations and date.")
+    logger.debug("Getting menu item ids from menus for all locations and date.")
     all_ids = []
     for _, location_menus in menus.items():
         for _, meal_menus in location_menus.items():

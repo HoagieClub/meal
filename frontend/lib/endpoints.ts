@@ -16,46 +16,14 @@
 import { request } from '@/lib/http';
 import { toCamelCase } from '@/utils/toCamelCase';
 
-/**
- * Gets all locations.
- *
- * @returns API response with all locations
- */
-export const getAllLocations = async () => {
-  const url = '/api/locations/';
-  return request
-    .get<any>()(url, {})
-    .then((res) => ({
-      ...res,
-      data: res.data ? toCamelCase(res.data) : null,
-    }));
-};
-
 
 /**
- * Gets or caches menu items by IDs.
- *
- * @param params - Request body (ids - comma-separated string or array)
- * @returns API response with menu items data
- */
-export const getMenuItems = async (params: { ids: string | string[] }) => {
-  const ids = Array.isArray(params.ids) ? params.ids.join(',') : params.ids;
-  const url = `/api/menu-items/?ids=${encodeURIComponent(ids)}`;
-  return request
-    .get<any>()(url, {})
-    .then((res) => ({
-      ...res,
-      data: res.data ? toCamelCase(res.data) : null,
-    }));
-};
-
-/**
- * Gets all menus for a date.
+ * Gets all menus and their menu items for a date.
  *
  * @param params - Query parameters (date - YYYY-MM-DD format)
- * @returns API response with menus data
+ * @returns API response with { menus, menuItems } data
  */
-export const getAllMenusForDate = async (params: { date: string }) => {
+export const getMenusAndItemsForDate = async (params: { date: string }) => {
   const queryParams = new URLSearchParams({ date: params.date });
   const url = `/api/menus/?${queryParams.toString()}`;
   return request
@@ -67,17 +35,17 @@ export const getAllMenusForDate = async (params: { date: string }) => {
 };
 
 /**
- * Gets user menu item interactions for multiple menu items.
+ * Gets engagement data (interactions + metrics) for multiple menu items.
  *
  * @param accessToken - Auth0 access token
  * @param params - Request body (menu_item_api_ids - array of strings)
- * @returns API response with interactions data dictionary
+ * @returns API response with { interactions, metrics } data
  */
-export const getUserMenuItemsInteractions = async (
+export const getEngagementData = async (
   accessToken: string,
   params: { menu_item_api_ids: string[] }
 ) => {
-  const url = '/api/engagement/interactions/';
+  const url = '/api/engagement/';
   return request
     .postAuth(accessToken)(url, {
       arg: { menu_item_api_ids: params.menu_item_api_ids },
@@ -116,23 +84,6 @@ export const patchUserMenuItemInteraction = async (
         would_eat_again: params.would_eat_again,
       },
     })
-    .then((res) => ({
-      ...res,
-      data: res.data ? toCamelCase(res.data) : null,
-    }));
-};
-
-/**
- * Gets metrics for multiple menu items.
- *
- * @param params - Request body (menu_item_api_ids - array of strings)
- * @returns API response with metrics data dictionary
- */
-export const getMenuItemsMetrics = async (params: { menu_item_api_ids: string | string[] }) => {
-  const ids = Array.isArray(params.menu_item_api_ids) ? params.menu_item_api_ids.join(',') : params.menu_item_api_ids;
-  const url = `/api/engagement/metrics/?menu_item_api_ids=${encodeURIComponent(ids)}`;
-  return request
-    .get<any>()(url, {})
     .then((res) => ({
       ...res,
       data: res.data ? toCamelCase(res.data) : null,

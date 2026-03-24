@@ -231,6 +231,21 @@ class CacherService:
             logger.error(f"Error getting or caching all menus for date: {date}: {e}.")
             return None
 
+    def get_or_cache_menus_and_items_for_date(self, date: datetime.date) -> Optional[dict]:
+        """Get or cache all menus and their menu items for a date. Returns both in one response."""
+        try:
+            menus = self.get_or_cache_all_menus_for_date(date)
+            if not menus:
+                return None
+
+            item_ids = get_menu_item_ids_from_menus_for_all_locations_and_date(menus)
+            menu_items = self.get_or_cache_menu_items(item_ids) if item_ids else {}
+
+            return {"menus": menus, "menu_items": menu_items or {}}
+        except Exception as e:
+            logger.error(f"Error getting menus and items for date: {date}: {e}.")
+            return None
+
     def _serialize_menu_items(self, qs) -> dict:
         """Serialize a MenuItem queryset into {id: data} dict."""
         serialized = MenuItemSerializer(qs, many=True).data

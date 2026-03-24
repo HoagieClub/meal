@@ -36,21 +36,10 @@ def _parse_bool(value):
 
 
 @api_view(["POST"])
-def get_user_menu_item_interactions(request):
-    """Django view function to get user menu item interactions for multiple menu items."""
-    logger.debug("Getting user menu item interactions.")
+def get_engagement_data(request):
+    """Get interactions (if authenticated) and metrics for multiple menu items."""
+    logger.debug("Getting engagement data.")
     try:
-        user = get_user_from_request(request)
-        if not user:
-            return Response(
-                {
-                    "data": None,
-                    "message": "Authentication required",
-                    "error": "Authentication required",
-                },
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
         menu_item_api_ids = request.data.get("menu_item_api_ids")
         if not menu_item_api_ids:
             return Response(
@@ -62,32 +51,28 @@ def get_user_menu_item_interactions(request):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        interactions = interactions_service.get_user_menu_item_interactions(user, menu_item_api_ids)
-        if interactions is None:
-            return Response(
-                {
-                    "data": None,
-                    "message": "Error fetching user menu item interactions",
-                    "error": "Error fetching user menu item interactions",
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        # Interactions require auth — return empty dict if not authenticated
+        interactions = {}
+        user = get_user_from_request(request)
+        if user:
+            interactions = interactions_service.get_user_menu_item_interactions(user, menu_item_api_ids) or {}
 
-        logger.debug("User menu item interactions fetched successfully.")
+        metrics = interactions_service.get_or_create_menu_items_metrics(menu_item_api_ids) or {}
+
         return Response(
             {
-                "data": interactions,
-                "message": "User menu item interactions fetched successfully.",
+                "data": {"interactions": interactions, "metrics": metrics},
+                "message": "Engagement data fetched successfully.",
                 "error": None,
             },
             status=status.HTTP_200_OK,
         )
     except Exception as e:
-        logger.error(f"Error in get_user_menu_item_interactions view: {e}")
+        logger.error(f"Error in get_engagement_data view: {e}")
         return Response(
             {
                 "data": None,
-                "message": f"Error fetching user menu item interactions: {str(e)}",
+                "message": f"Error fetching engagement data: {str(e)}",
                 "error": str(e),
             },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -169,46 +154,3 @@ def update_user_menu_item_interaction(request):
         )
 
 
-@api_view(["GET"])
-def get_menu_items_metrics(request):
-    """Django view function to get metrics for multiple menu items."""
-    logger.debug("Getting menu items metrics.")
-    try:
-        raw = request.query_params.get("menu_item_api_ids")
-        menu_item_api_ids = [id.strip() for id in raw.split(",")] if raw else None
-        if not menu_item_api_ids:
-            return Response(
-                {
-                    "message": "menu_item_api_ids is required",
-                    "error": "menu_item_api_ids is required",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        metrics = interactions_service.get_or_create_menu_items_metrics(menu_item_api_ids)
-        if not metrics:
-            return Response(
-                {
-                    "message": "No metrics found",
-                    "error": "No metrics found",
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        return Response(
-            {
-                "data": metrics,
-                "message": "Menu items metrics fetched successfully.",
-                "error": None,
-            },
-            status=status.HTTP_200_OK,
-        )
-    except Exception as e:
-        logger.error(f"Error in get_menu_items_metrics view: {e}")
-        return Response(
-            {
-                "message": f"Error fetching menu items metrics: {str(e)}",
-                "error": str(e),
-            },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )

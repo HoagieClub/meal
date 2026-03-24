@@ -63,6 +63,14 @@ async function apiRequest<T>({
 
     const json = await res.json();
 
+    // If the session has expired, redirect to logout so the UI reflects the correct state
+    if (json?.code === 'SESSION_EXPIRED' || (res.status === 401 && json?.message === 'Session expired')) {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/api/auth/logout';
+        return { status: 401, message: 'Session expired', data: null, error: 'Session expired' } as ApiResponse<T>;
+      }
+    }
+
     // Return the API response with consistent structure
     return {
       status: json?.status || res.status,
