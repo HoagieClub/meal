@@ -12,7 +12,9 @@
       "Bash(find /c/Users/AbuAh/OneDrive/Desktop/meal/frontend/utils -type f -name *.ts)",
       "Bash(find /c/Users/AbuAh/OneDrive/Desktop/meal/frontend -name ordering* -o -name styles* -o -name data -type f)",
       "Bash(find C:UsersAbuAhOneDriveDesktopmealbackend -name settings.py -o -name *settings* -type f)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(find /c/Users/AbuAh/OneDrive/Desktop/meal/backend -name settings.py -o -name .env*)",
+      "Bash(find /c/Users/AbuAh/OneDrive/Desktop/meal/backend -name fixtures -o -name *seed*)"
     ]
   }
 }
