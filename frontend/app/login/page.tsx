@@ -104,7 +104,7 @@ function LoginPageContent() {
           Login to get the most out of hoagie<b>meal</b>.
         </Heading>
         <Paragraph size={600} color={theme.colors.gray900} marginTop={majorScale(1)} marginBottom={majorScale(3)}>
-          Every dining hall and café, all in one place.
+          Your stomach will thank you.
         </Paragraph>
         <Pane display='flex' flexDirection='column' alignItems='center' gap={majorScale(2)}>
           {Profile}
