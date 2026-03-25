@@ -109,7 +109,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
           maxWidth={1200}
           paddingX={isMobile ? majorScale(2) : majorScale(5)}
         >
-          <Link href='/menu'>
+          <Link href='/'>
             <Pane cursor='pointer' position='relative'>
               {LogoComponent ? (
                 <LogoComponent />
@@ -162,7 +162,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
                         </Menu.Item>
                       ))}
                       {!user && (
-                        <Menu.Item onSelect={() => router.push('/api/auth/login')}>
+                        <Menu.Item onSelect={() => router.push('/login')}>
                           Login
                         </Menu.Item>
                       )}
@@ -191,7 +191,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
                     id='Login'
                     isSelected={false}
                     appearance='primary'
-                    onSelect={() => router.push('/api/auth/login')}
+                    onSelect={() => router.push('/login')}
                     fontSize={14}
                   >
                     Login

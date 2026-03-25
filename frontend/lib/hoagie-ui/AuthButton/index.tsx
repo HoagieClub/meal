@@ -27,24 +27,26 @@ function AuthButton({ variant = 'login', href = '' }: AuthButtonProps) {
   const logo = (
     <h2
       style={{
-        fontSize: '28px',
-        paddingRight: 16,
+      fontSize: '28px',
+      paddingRight: 16,
+      fontWeight: 900,
       }}
       className='hoagie'
     >
-      h
+      <b>h</b>
     </h2>
   );
   const isLogout = variant === 'logout';
   const defHref = isLogout ? '/api/auth/logout' : '/api/auth/login';
 
   return (
-    <a href={href === '' ? defHref : href}>
+    <a href={href === '' ? defHref : href} className='transition-all duration-200 hover:brightness-90 active:brightness-75'>
       <Button
         height={56}
         width={majorScale(35)}
         background={theme.colors.green600}
         appearance={isLogout ? 'default' : 'primary'}
+        style={{ pointerEvents: 'none' }}
       >
         {logo}
         <Pane display='flex'>

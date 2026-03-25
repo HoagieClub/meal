@@ -185,8 +185,8 @@ export default function DateMealSelector({
                 textAlign='center'
                 cursor='pointer'
                 color={textColor}
-                className='text-sm sm:text-xs px-3 py-2 sm:py-0.5 transition-colors duration-300 relative z-10'
-                fontWeight={300}
+                className='text-sm sm:text-sm px-3 py-2 sm:py-1 transition-colors duration-300 relative z-10'
+                fontWeight={400}
                 onClick={() => setMeal(mealOption as string as Meal)}
               >
                 {displayLabel}

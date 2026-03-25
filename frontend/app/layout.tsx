@@ -50,7 +50,7 @@ async function Content({ children }: { children: ReactNode }): Promise<React.JSX
   const user = session?.user;
 
   const tabs = [
-    { title: 'Menu', href: '/menu' },
+    { title: 'Menu', href: '/' },
     // { title: 'Profile', href: '/profile' },
   ];
 
@@ -58,7 +58,7 @@ async function Content({ children }: { children: ReactNode }): Promise<React.JSX
     <Theme palette='green'>
       <Layout>
         <Nav name='meal' tabs={tabs} user={user} />
-        <div className='min-h-screen w-full'>{children}</div>
+        <div className='flex-1 flex flex-col w-full'>{children}</div>
         <Toaster />
       </Layout>
     </Theme>
