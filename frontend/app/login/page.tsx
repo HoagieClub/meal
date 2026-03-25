@@ -14,7 +14,8 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Pane,
   majorScale,
@@ -32,9 +33,11 @@ import AuthButton from '@/lib/hoagie-ui/AuthButton';
 
 const PAGE_BG = '#CBE6DC';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const { user, error, isLoading } = useUser();
   const theme = useTheme();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
 
   useEffect(() => {
     const prev = document.body.style.backgroundColor;
@@ -62,7 +65,8 @@ export default function LoginPage() {
       </Pane>
     );
   } else {
-    Profile = <AuthButton />;
+    const authHref = returnTo ? `/api/auth/login?returnTo=${encodeURIComponent(returnTo)}` : undefined;
+    Profile = <AuthButton href={authHref} />;
   }
 
   return (
@@ -119,5 +123,13 @@ export default function LoginPage() {
       </Pane>
     </Pane>
     </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<Pane display="flex" flex="1" justifyContent="center" alignItems="center" height="100vh"><Spinner /></Pane>}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

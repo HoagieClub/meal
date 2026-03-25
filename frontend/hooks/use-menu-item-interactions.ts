@@ -77,7 +77,7 @@ export const useMenuItemInteractions = (
     if (!userLoading && !user) {
       const currentPath =
         typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
-      router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+      router.push(`/login?returnTo=${encodeURIComponent(currentPath)}`);
       return;
     }
 
@@ -129,7 +129,7 @@ export const useMenuItemInteractions = (
     if (!userLoading && !user) {
       const currentPath =
         typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
-      router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+      router.push(`/login?returnTo=${encodeURIComponent(currentPath)}`);
       return;
     }
 
@@ -181,7 +181,7 @@ export const useMenuItemInteractions = (
     if (!userLoading && !user) {
       const currentPath =
         typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
-      router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+      router.push(`/login?returnTo=${encodeURIComponent(currentPath)}`);
       return;
     }
 

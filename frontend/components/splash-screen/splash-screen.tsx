@@ -1,23 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
+
+// Only show the splash screen on a true browser reload/load (JS execution),
+// not on soft navigations within the Next.js app.
+let isInitialLoad = true;
 
 export default function SplashScreen() {
   const [leaving, setLeaving] = useState(false);
-  const [gone, setGone] = useState(false);
+  const [gone, setGone] = useState(!isInitialLoad);
   // ---- tune these two numbers ----
-  const SIT_MS = 0;    // how long it sits before bouncing away
+  const SIT_MS = 100;    // how long it sits before bouncing away
   const BOUNCE_MS = 550; // must match the animation duration in globals.css
   // --------------------------------
 
+  // Run before paint to avoid flash when navigating from within the app
+  useLayoutEffect(() => {
+    isInitialLoad = false;
+  }, []);
+
   useEffect(() => {
+    if (gone) return;
+
     const leaveTimer = setTimeout(() => setLeaving(true), SIT_MS);
     const goneTimer = setTimeout(() => setGone(true), SIT_MS + BOUNCE_MS);
     return () => {
       clearTimeout(leaveTimer);
       clearTimeout(goneTimer);
     };
-  }, []);
+  }, [gone]);
 
   if (gone) return null;
 

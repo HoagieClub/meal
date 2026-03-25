@@ -257,17 +257,15 @@ export const useBuildResidentialDisplayData = ({
 
     const missingDiningHalls = appliedDiningHalls.filter((diningHall: any) => !sortedLocations.some((location: any) => location.name === diningHall));
     const filteredMissingDiningHalls = missingDiningHalls.filter((diningHall: any) => RESIDENTIAL_HALL_ORDER.includes(diningHall));
-    const orderedMissingDiningHalls = filteredMissingDiningHalls.sort((a: any, b: any) => {
-      return RESIDENTIAL_HALL_ORDER.indexOf(a) - RESIDENTIAL_HALL_ORDER.indexOf(b);
-    });
-    orderedMissingDiningHalls.forEach((diningHall: any) => {
+    filteredMissingDiningHalls.forEach((diningHall: any) => {
       sortedLocations.push({
         name: diningHall,
         rawMenuCount: 0,
         menu: [],
       });
     });
-    return { displayData: sortedLocations, hasAnyRawLocations: shapedData.length > 0 };
+    const finalLocations = sortLocations(sortedLocations, pinnedHalls, RESIDENTIAL_HALL_ORDER);
+    return { displayData: finalLocations, hasAnyRawLocations: shapedData.length > 0 };
   }, [
     locations,
     residentialMenus,
@@ -324,17 +322,15 @@ export const useBuildRetailDisplayData = ({
 
     const missingDiningHalls = appliedDiningHalls.filter((diningHall: any) => !sortedLocations.some((location: any) => location.name === diningHall));
     const filteredMissingDiningHalls = missingDiningHalls.filter((diningHall: any) => RETAIL_LOCATION_ORDER.includes(diningHall));
-    const orderedMissingDiningHalls = filteredMissingDiningHalls.sort((a: any, b: any) => {
-      return RETAIL_LOCATION_ORDER.indexOf(a) - RETAIL_LOCATION_ORDER.indexOf(b);
-    });
-    orderedMissingDiningHalls.forEach((diningHall: any) => {
+    filteredMissingDiningHalls.forEach((diningHall: any) => {
       sortedLocations.push({
         name: diningHall,
         rawMenuCount: 0,
         menu: [],
       });
     });
-    return { displayData: sortedLocations, hasAnyRawLocations: shapedData.length > 0 };
+    const finalLocations = sortLocations(sortedLocations, pinnedHalls, RETAIL_LOCATION_ORDER);
+    return { displayData: finalLocations, hasAnyRawLocations: shapedData.length > 0 };
   }, [
     locations,
     retailMenus,

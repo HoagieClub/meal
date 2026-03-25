@@ -15,6 +15,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 import {
   Pane,
   Heading,
@@ -79,7 +80,7 @@ const isWeekend = (date: Date): boolean => {
 export default function MenuPage() {
   // Initialize to null so SSR and client render identically (avoids timezone-driven hydration mismatch)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useLocalStorage<boolean>({ key: 'sidebarOpen', initialValue: true });
   const [meal, setMeal] = useState<Meal>('Lunch');
 
   useEffect(() => {
