@@ -94,8 +94,13 @@ export default function MenuPage() {
       Lunch: '#daefe8',
       Dinner: '#cae6dc',
     };
-    document.body.style.backgroundColor = mealColors[meal] ?? '#daefe8';
-    return () => { document.body.style.backgroundColor = ''; };
+    const color = mealColors[meal] ?? '#daefe8';
+    document.body.style.backgroundColor = color;
+    document.documentElement.style.setProperty('--footer-bg', color);
+    return () => {
+      document.body.style.backgroundColor = '';
+      document.documentElement.style.removeProperty('--footer-bg');
+    };
   }, [meal]);
 
   const dateKey = selectedDate ? getDateKey(selectedDate) : '';

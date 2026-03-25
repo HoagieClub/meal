@@ -42,7 +42,11 @@ function LoginPageContent() {
   useEffect(() => {
     const prev = document.body.style.backgroundColor;
     document.body.style.backgroundColor = PAGE_BG;
-    return () => { document.body.style.backgroundColor = prev; };
+    document.documentElement.style.setProperty('--footer-bg', PAGE_BG);
+    return () => { 
+      document.body.style.backgroundColor = prev; 
+      document.documentElement.style.setProperty('--footer-bg', '');
+    };
   }, []);
 
   let Profile;
@@ -71,7 +75,7 @@ function LoginPageContent() {
 
   return (
     <>
-    <style>{`body { background-color: ${PAGE_BG}; }`}</style>
+    <style>{`body { background-color: ${PAGE_BG}; } :root { --footer-bg: ${PAGE_BG}; }`}</style>
     <Pane
       display='flex'
       flex='1'

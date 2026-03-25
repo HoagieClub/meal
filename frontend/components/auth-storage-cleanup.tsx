@@ -79,4 +79,6 @@ export default function AuthStorageCleanup() {
     // Update the previous user reference
     previousUserRef.current = currentUser;
   }, [user, isLoading]);
+
+  return null;
 }
