@@ -16,19 +16,20 @@
 
 import { handleAuth, handleLogin, handleCallback } from '@auth0/nextjs-auth0';
 import { NextRequest } from 'next/server';
-import { verifyUser } from '@/lib/endpoints';
 
-/**
- * After callback function to verify the user.
- *
- * @param req - The request object.
- * @param session - The session object.
- * @returns The session object.
- */
+const API_URL = process.env.HOAGIE_API_URL;
+
 const afterCallback = async (req: NextRequest, session: any) => {
   if (session.accessToken) {
     try {
-      await verifyUser(session.accessToken);
+      await fetch(`${API_URL}/api/user/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.accessToken}`,
+        },
+        body: JSON.stringify({}),
+      });
     } catch (error) {
       console.error('Error verifying user:', error);
       return null;
@@ -36,12 +37,6 @@ const afterCallback = async (req: NextRequest, session: any) => {
   }
   return session;
 };
-
-/**
- * Handles authentication requests.
- *
- * @returns A NextResponse object with the API response.
- */
 
 export const GET = handleAuth({
   login: handleLogin({ returnTo: '/' }),

@@ -1,6 +1,8 @@
 /**
- * @overview Centralized endpoint functions for Django backend API calls.
- * These functions are used by Next.js API routes to communicate with the Django backend.
+ * @overview Centralized endpoint functions for backend API calls.
+ * Menu data goes through Next.js rewrites (/backend/...) for speed — no serverless function.
+ * Authenticated endpoints (engagement, interactions) go through Next.js proxy routes
+ * which handle auth token extraction server-side.
  *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
@@ -13,109 +15,48 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { request } from '@/lib/http';
+import { api } from '@/lib/api';
 import { toCamelCase } from '@/utils/toCamelCase';
+import {
+  MenuItemInteraction,
+  MenuItemMetrics,
+} from '@/types/types';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_HOAGIE_API_URL || 'http://localhost:8000';
 
-/**
- * Gets all menus and their menu items for a date.
- *
- * @param params - Query parameters (date - YYYY-MM-DD format)
- * @returns API response with { menus, menuItems } data
- */
+// TODO: move to Next.js rewrite once upgraded to Next.js 15
 export const getMenusAndItemsForDate = async (params: { date: string }) => {
   const queryParams = new URLSearchParams({ date: params.date });
-  const url = `/api/menus/?${queryParams.toString()}`;
-  return request
-    .get<any>()(url, {})
-    .then((res) => ({
-      ...res,
-      data: res.data ? toCamelCase(res.data) : null,
-    }));
+  const res = await fetch(`${BACKEND_URL}/api/menus/?${queryParams.toString()}`);
+  const json = await res.json();
+  return {
+    status: json?.status || res.status,
+    message: json?.message || 'Success',
+    data: json?.data ? toCamelCase(json.data) : null,
+    error: json?.error || null,
+  };
 };
 
-/**
- * Gets engagement data (interactions + metrics) for multiple menu items.
- *
- * @param accessToken - Auth0 access token
- * @param params - Request body (menu_item_api_ids - array of strings)
- * @returns API response with { interactions, metrics } data
- */
-export const getEngagementData = async (
-  accessToken: string,
-  params: { menu_item_api_ids: string[] }
-) => {
+export const getEngagementData = (params: { menu_item_api_ids: string[] }) => {
   const url = '/api/engagement/';
-  return request
-    .postAuth(accessToken)(url, {
-      arg: { menu_item_api_ids: params.menu_item_api_ids },
-    })
-    .then((res) => ({
-      ...res,
-      data: res.data ? toCamelCase(res.data) : null,
-    }));
+  return api.post<{ data: { interactions: Record<string, MenuItemInteraction | null>; metrics: Record<string, MenuItemMetrics | null> } }>(url, {
+    menu_item_api_ids: params.menu_item_api_ids,
+  });
 };
 
-export const getEngagementDataPublic = async (
-  params: { menu_item_api_ids: string[] }
-) => {
-  const url = '/api/engagement/';
-  return request
-    .post()(url, {
-      arg: { menu_item_api_ids: params.menu_item_api_ids },
-    })
-    .then((res) => ({
-      ...res,
-      data: res.data ? toCamelCase(res.data) : null,
-    }));
-};
-
-/**
- * Patches user menu item interaction (PATCH).
- *
- * @param accessToken - Auth0 access token
- * @param params - Request body (menu_item_api_id, liked, favorited, saved_for_later, would_eat_again)
- * @returns API response with updated interaction data
- */
-export const patchUserMenuItemInteraction = async (
-  accessToken: string,
-  params: {
-    menu_item_api_id: string;
-    liked?: boolean | null;
-    favorited?: boolean;
-    saved_for_later?: boolean;
-    would_eat_again?: string;
-  }
-) => {
+export const patchUserMenuItemInteraction = (params: {
+  menu_item_api_id: string;
+  liked?: boolean | null;
+  favorited?: boolean;
+  saved_for_later?: boolean;
+  would_eat_again?: string;
+}) => {
   const url = '/api/engagement/interaction/';
-  return request
-    .patchAuth(accessToken)(url, {
-      arg: {
-        menu_item_api_id: params.menu_item_api_id,
-        liked: params.liked,
-        favorited: params.favorited,
-        saved_for_later: params.saved_for_later,
-        would_eat_again: params.would_eat_again,
-      },
-    })
-    .then((res) => ({
-      ...res,
-      data: res.data ? toCamelCase(res.data) : null,
-    }));
-};
-
-/**
- * Verifies user authentication and gets or creates the user.
- *
- * @param accessToken - Auth0 access token
- * @returns API response with user data
- */
-export const verifyUser = async (accessToken: string) => {
-  const url = '/api/user/';
-  return request
-    .postAuth(accessToken)(url, { arg: {} })
-    .then((res) => ({
-      ...res,
-      data: res.data ? toCamelCase(res.data) : null,
-    }));
+  return api.patch<{ data: MenuItemInteraction }>(url, {
+    menu_item_api_id: params.menu_item_api_id,
+    liked: params.liked,
+    favorited: params.favorited,
+    saved_for_later: params.saved_for_later,
+    would_eat_again: params.would_eat_again,
+  });
 };

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   getMenusAndItemsForDate,
   getEngagementData,
-} from '@/lib/next-endpoints';
+} from '@/lib/endpoints';
 import { locations as allLocations, residentialLocations, retailLocations } from '@/locations';
 
 interface MenuData {

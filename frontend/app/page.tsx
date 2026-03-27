@@ -38,7 +38,6 @@ import { MEAL_RANGES } from '@/data';
 import { MEAL_COLOR_MAP } from '@/styles';
 import { Meal } from '@/types/types';
 import { DiningHall } from '@/locations';
-import { NutritionAccordionProvider } from '@/contexts/nutrition-accordion-context';
 import { useMenuApi } from '@/hooks/use-menu-api';
 import {
   useBuildResidentialDisplayData,
@@ -155,7 +154,6 @@ export default function MenuPage() {
   return (
     <>
       <SplashScreen />
-      <NutritionAccordionProvider>
           <Pane
             display='flex'
             className='sm:flex-row min-h-screen flex-col transition-colors duration-300'
@@ -266,7 +264,6 @@ export default function MenuPage() {
               </Pane>
             </Pane>
           </Pane>
-        </NutritionAccordionProvider>
     </>
   );
 }

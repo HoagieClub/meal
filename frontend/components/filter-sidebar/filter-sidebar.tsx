@@ -14,7 +14,7 @@ import {
   Select,
   Switch,
 } from 'evergreen-ui';
-import { useNutritionAccordion } from '@/contexts/nutrition-accordion-context';
+import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import { Allergen, ALLERGENS, MenuSortOption, MENU_SORT_OPTIONS } from '@/types/types';
 import type { DiningHall } from '@/locations';
 import { RESIDENTIAL_HALL_ORDER, RETAIL_LOCATION_ORDER } from '@/ordering';
@@ -57,7 +57,7 @@ export default function FilterSidebar({
   onClose,
 }: FilterSidebarProps) {
   const theme = useTheme();
-  const { hideAllergenTags, setHideAllergenTags } = useNutritionAccordion();
+  const { hideAllergenTags, setHideAllergenTags } = usePreferencesCache();
 
   const isSidebar = variant === 'sidebar';
   const isMobilePopover = variant === 'mobile-popover';

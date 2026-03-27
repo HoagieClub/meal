@@ -13,6 +13,7 @@ export function usePreferencesCache() {
   const [pinnedHalls, setPinnedHalls] = useLocalStorage<DiningHall[]>({ key: 'diningPinnedHalls', initialValue: [], expiryInMs: PREFS_EXPIRY });
   const [diningHalls, setDiningHalls] = useLocalStorage<DiningHall[]>({ key: 'diningHallsPreferences', initialValue: Array.from(DINING_HALLS), expiryInMs: PREFS_EXPIRY });
   const [allergens, setAllergens] = useLocalStorage<Allergen[]>({ key: 'allergensPreferences', initialValue: [], expiryInMs: PREFS_EXPIRY });
+  const [hideAllergenTags, setHideAllergenTags] = useLocalStorage<boolean>({ key: 'hideAllergenTags', initialValue: false, expiryInMs: PREFS_EXPIRY });
 
   const togglePinnedHall = useCallback((hall: DiningHall) => {
     setPinnedHalls((prev) => prev.includes(hall) ? prev.filter((h) => h !== hall) : [...prev, hall]);
@@ -38,6 +39,8 @@ export function usePreferencesCache() {
     pinnedHalls,
     diningHalls,
     allergens,
+    hideAllergenTags,
+    setHideAllergenTags,
     togglePinnedHall,
     toggleDiningHall,
     toggleAllergen,

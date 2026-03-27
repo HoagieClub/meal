@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Pane, minorScale, majorScale } from 'evergreen-ui';
 import { ALLERGEN_ICON_MAP } from '@/data';
 import { Allergen } from '@/types/types';
@@ -13,7 +13,7 @@ import {
   AccordionContent,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { useNutritionAccordion } from '@/contexts/nutrition-accordion-context';
+import { usePreferencesCache } from '@/hooks/use-preferences-cache';
 import NutritionAccordionContent from '../nutrition/nutrition-accordion-content';
 
 /**
@@ -30,7 +30,8 @@ export default function MenuItemRow({
   item: any;
   diningHallId: string;
 }) {
-  const { expandedItemId, setExpandedItemId, hideAllergenTags } = useNutritionAccordion();
+  const [expanded, setExpanded] = useState(false);
+  const { hideAllergenTags } = usePreferencesCache();
   const interactions = useMenuItemInteractions(item?.id, item?.userInteraction, item?.metrics);
   const menuItemId = item?.id;
   if (!menuItemId) {
@@ -38,7 +39,6 @@ export default function MenuItemRow({
   }
 
   const itemValue = `${diningHallId}-${menuItemId || 'unknown'}`;
-  const isExpanded = expandedItemId === itemValue;
   const searchText =
     `${item?.allergens || ''} ${item?.nutrition?.allergens || ''} ${item?.ingredients || ''} ${item?.nutrition?.ingredients || ''}`.toLowerCase();
   const foundAllergens = (Object.keys(ALLERGEN_ICON_MAP) as Allergen[]).filter((allergen) =>
@@ -49,8 +49,8 @@ export default function MenuItemRow({
     <Accordion
       type='single'
       collapsible
-      value={isExpanded ? itemValue : ''}
-      onValueChange={(value) => setExpandedItemId(value || '')}
+      value={expanded ? itemValue : ''}
+      onValueChange={(value) => setExpanded(!!value)}
       className='border-none'
     >
       <AccordionItem value={itemValue} className='border-none'>
@@ -65,7 +65,7 @@ export default function MenuItemRow({
             flex={1}
             marginY={majorScale(1)}
             style={{ fontSize: 14, fontWeight: 400, color: 'black', lineHeight: 1.2 }}
-            onClick={() => setExpandedItemId(isExpanded ? '' : itemValue)}
+            onClick={() => setExpanded(!expanded)}
           >
             <span style={{ paddingRight: minorScale(1) }}>{item.name}</span>{' '}
             {!hideAllergenTags && foundAllergens.map((allergen: Allergen) => (

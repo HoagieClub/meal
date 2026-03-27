@@ -20,7 +20,6 @@ import Layout from '@/lib/hoagie-ui/Layout';
 import Nav from '@/lib/hoagie-ui/Nav';
 import Theme from '@/lib/hoagie-ui/Theme';
 import { Toaster } from '@/components/ui/sonner';
-import { hoagie } from '@/app/hoagie';
 
 import '@/app/globals.css';
 import '@/lib/hoagie-ui/Theme/theme.css';
@@ -81,7 +80,7 @@ export default function RootLayout({ children }: { children: ReactNode }): React
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(${hoagie.toString()})();`,
+            __html: `(function(){console.log("\\n    █░█ █▀█ ▄▀█ █▀▀ █ █▀▀  █▄█ █▀▀ ▄▀█ █░░\\n    █▀█ █▄█ █▀█ █▄█ █ ██▄  █░█ ██▄ █▀█ █▄▄\\n  ")})();`,
           }}
         />
       </head>

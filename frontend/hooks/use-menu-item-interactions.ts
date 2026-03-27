@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { MenuItemInteraction, MenuItemMetrics } from '@/types/types';
-import { patchUserMenuItemInteraction } from '@/lib/next-endpoints';
+import { patchUserMenuItemInteraction } from '@/lib/endpoints';
 
 // Module-level interaction store — persists across renders, clears on page reload
 export const localInteractions = new Map<string, { liked?: boolean | null; favorited?: boolean }>();
