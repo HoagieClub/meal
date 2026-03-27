@@ -56,6 +56,20 @@ export const getEngagementData = async (
     }));
 };
 
+export const getEngagementDataPublic = async (
+  params: { menu_item_api_ids: string[] }
+) => {
+  const url = '/api/engagement/';
+  return request
+    .post()(url, {
+      arg: { menu_item_api_ids: params.menu_item_api_ids },
+    })
+    .then((res) => ({
+      ...res,
+      data: res.data ? toCamelCase(res.data) : null,
+    }));
+};
+
 /**
  * Patches user menu item interaction (PATCH).
  *

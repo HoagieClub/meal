@@ -20,7 +20,6 @@ import Layout from '@/lib/hoagie-ui/Layout';
 import Nav from '@/lib/hoagie-ui/Nav';
 import Theme from '@/lib/hoagie-ui/Theme';
 import { Toaster } from '@/components/ui/sonner';
-import AuthStorageCleanup from '@/components/auth-storage-cleanup';
 import { hoagie } from '@/app/hoagie';
 
 import '@/app/globals.css';
@@ -50,7 +49,7 @@ async function Content({ children }: { children: ReactNode }): Promise<React.JSX
   const user = session?.user;
 
   const tabs = [
-    { title: 'Menu', href: '/menu' },
+    { title: 'Menu', href: '/' },
     // { title: 'Profile', href: '/profile' },
   ];
 
@@ -58,7 +57,7 @@ async function Content({ children }: { children: ReactNode }): Promise<React.JSX
     <Theme palette='green'>
       <Layout>
         <Nav name='meal' tabs={tabs} user={user} />
-        <div className='min-h-screen w-full'>{children}</div>
+        <div className='flex-1 flex flex-col w-full'>{children}</div>
         <Toaster />
       </Layout>
     </Theme>
@@ -85,41 +84,9 @@ export default function RootLayout({ children }: { children: ReactNode }): React
             __html: `(${hoagie.toString()})();`,
           }}
         />
-        {/* Preload interaction icons */}
-        <link rel='preload' href='/images/icons/like.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/like-solid.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/dislike.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/dislike-solid.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/heart.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/heart-solid.svg' as='image' type='image/svg+xml' />
-        {/* Preload dining hall banners */}
-        <link rel='preload' href='/images/banners/forbesbanner.png' as='image' type='image/png' />
-        <link rel='preload' href='/images/banners/rockybanner.png' as='image' type='image/png' />
-        <link rel='preload' href='/images/banners/whitmanbutlerbanner.png' as='image' type='image/png' />
-        <link rel='preload' href='/images/banners/yehbanner.png' as='image' type='image/png' />
-        <link rel='preload' href='/images/banners/cjl-banner.png' as='image' type='image/png' />
-        <link rel='preload' href='/images/banners/gradbanner.png' as='image' type='image/png' />
-        <link rel='preload' href='/images/banners/Chemistry-CaFe.png' as='image' type='image/png' />
-        <link rel='preload' href='/images/banners/EQuad-Cafe.png' as='image' type='image/png' />
-        <link rel='preload' href='/images/banners/Frist-Pic.png' as='image' type='image/png' />
-        <link rel='preload' href='/images/banners/Genomics-Cafe.png' as='image' type='image/png' />
-        <link rel='preload' href='/images/banners/Shultz-Cafe.png' as='image' type='image/png' />
-        {/* Preload allergen icons */}
-        <link rel='preload' href='/images/icons/peanut.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/coconut.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/egg.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/milk.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/wheat.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/soybean.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/shellfish.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/alcohol.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/fish.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/sesame.svg' as='image' type='image/svg+xml' />
-        <link rel='preload' href='/images/icons/gluten.svg' as='image' type='image/svg+xml' />
       </head>
       <UserProvider>
         <body className='antialiased' suppressHydrationWarning>
-          <AuthStorageCleanup />
           <Content>{children}</Content>
           <Analytics />
           <SpeedInsights />

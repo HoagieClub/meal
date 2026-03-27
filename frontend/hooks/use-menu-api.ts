@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   getMenusAndItemsForDate,
   getEngagementData,
@@ -17,8 +17,8 @@ interface MenuData {
   metrics: any;
 }
 
-// Module-level — persists across renders and remounts
-const dataCache = new Map<string, MenuData>();
+// Module-level caches — persist across renders and remounts
+const menuCache = new Map<string, MenuData>();
 const inFlight = new Map<string, Promise<MenuData>>();
 
 function getNext7DayKeys(): string[] {
@@ -72,39 +72,56 @@ function splitMenus(allMenus: any) {
   return { residentialMenus, retailMenus };
 }
 
-async function fetchDateData(dateKey: string): Promise<MenuData> {
-  if (dataCache.has(dateKey)) return dataCache.get(dateKey)!;
+/** Fetch just menus + menu items (no engagement). */
+async function fetchMenuData(dateKey: string): Promise<MenuData> {
+  const res = await getMenusAndItemsForDate({ date: dateKey });
+  const allMenus = res.data?.menus || {};
+  const menuItems = res.data?.menuItems || {};
+  const { residentialMenus, retailMenus } = splitMenus(allMenus);
+
+  return {
+    residentialLocations,
+    retailLocations,
+    residentialMenus,
+    retailMenus,
+    menuItems,
+    interactions: {},
+    metrics: {},
+  };
+}
+
+/** Fetch engagement data and merge into existing MenuData. */
+async function fetchEngagement(menuData: MenuData): Promise<MenuData> {
+  const allMenus: any = {};
+  for (const locId in menuData.residentialMenus) allMenus[locId] = menuData.residentialMenus[locId];
+  for (const locId in menuData.retailMenus) allMenus[locId] = menuData.retailMenus[locId];
+
+  const itemIds = extractMenuItemIds(allMenus);
+  if (itemIds.length === 0) return menuData;
+
+  try {
+    const engagementRes = await getEngagementData({ menu_item_api_ids: itemIds });
+    return {
+      ...menuData,
+      interactions: engagementRes.data?.interactions || {},
+      metrics: engagementRes.data?.metrics || {},
+    };
+  } catch {
+    return menuData;
+  }
+}
+
+/** Full fetch (menus + engagement) for prefetching — no intermediate state needed. */
+async function fetchFullDateData(dateKey: string): Promise<MenuData> {
+  if (menuCache.has(dateKey)) return menuCache.get(dateKey)!;
   if (inFlight.has(dateKey)) return inFlight.get(dateKey)!;
 
-  const promise = (async (): Promise<MenuData> => {
+  const promise = (async () => {
     try {
-      const res = await getMenusAndItemsForDate({ date: dateKey });
-      const allMenus = res.data?.menus || {};
-      const menuItems = res.data?.menuItems || {};
-      const { residentialMenus, retailMenus } = splitMenus(allMenus);
-
-      const itemIds = extractMenuItemIds(allMenus);
-      let interactions: any = {};
-      let metrics: any = {};
-
-      if (itemIds.length > 0) {
-        const engagementRes = await getEngagementData({ menu_item_api_ids: itemIds });
-        interactions = engagementRes.data?.interactions || {};
-        metrics = engagementRes.data?.metrics || {};
-      }
-
-      const result: MenuData = {
-        residentialLocations,
-        retailLocations,
-        residentialMenus,
-        retailMenus,
-        menuItems,
-        interactions,
-        metrics,
-      };
-
-      dataCache.set(dateKey, result);
-      return result;
+      const menuData = await fetchMenuData(dateKey);
+      const fullData = await fetchEngagement(menuData);
+      menuCache.set(dateKey, fullData);
+      return fullData;
     } finally {
       inFlight.delete(dateKey);
     }
@@ -116,34 +133,49 @@ async function fetchDateData(dateKey: string): Promise<MenuData> {
 
 function prefetchOtherDays(currentDateKey: string): void {
   for (const day of getNext7DayKeys()) {
-    if (day !== currentDateKey && !dataCache.has(day) && !inFlight.has(day)) {
-      fetchDateData(day); // fire and forget
+    if (day !== currentDateKey && !menuCache.has(day) && !inFlight.has(day)) {
+      fetchFullDateData(day); // fire and forget
     }
   }
 }
 
 export const useMenuApi = (dateKey: string) => {
-  const [data, setData] = useState<MenuData | null>(() => dataCache.get(dateKey) ?? null);
-  const [loading, setLoading] = useState(!dataCache.has(dateKey));
+  const [data, setData] = useState<MenuData | null>(() => menuCache.get(dateKey) ?? null);
+  const [loading, setLoading] = useState(!menuCache.has(dateKey));
 
   useEffect(() => {
-    if (dataCache.has(dateKey)) {
-      setData(dataCache.get(dateKey)!);
+    if (!dateKey) {
+      setLoading(false);
+      return;
+    }
+
+    // Cache hit — show immediately
+    if (menuCache.has(dateKey)) {
+      setData(menuCache.get(dateKey)!);
       setLoading(false);
       prefetchOtherDays(dateKey);
       return;
     }
 
     let cancelled = false;
+
+    // Phase 1: fetch menus, render immediately
     setData(null);
     setLoading(true);
 
-    fetchDateData(dateKey)
-      .then((result) => {
+    fetchMenuData(dateKey)
+      .then((menuData) => {
         if (cancelled) return;
-        setData(result);
+        setData(menuData);
         setLoading(false);
-        prefetchOtherDays(dateKey);
+
+        // Phase 2: fetch engagement, update data in place
+        return fetchEngagement(menuData).then((fullData) => {
+          if (cancelled) return;
+          menuCache.set(dateKey, fullData);
+          setData(fullData);
+          prefetchOtherDays(dateKey);
+        });
       })
       .catch(() => {
         if (!cancelled) setLoading(false);

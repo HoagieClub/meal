@@ -58,12 +58,13 @@ export default function MobileFilterBar({
             );
           })}
         </div>
-        <div className='flex-1'>
+        <div className='flex-1 [&_input]:!rounded-full'>
           <SearchInput
             placeholder='Search for food...'
             value={searchTerm}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
             width='100%'
+            height={36}
           />
         </div>
         <button

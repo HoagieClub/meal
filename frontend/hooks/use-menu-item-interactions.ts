@@ -17,11 +17,14 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { MenuItemInteraction, MenuItemMetrics } from '@/types/types';
 import { patchUserMenuItemInteraction } from '@/lib/next-endpoints';
-import { useInteractionsContext } from '@/contexts/interactions-context';
 
-/**
- * Hook return type for useMenuItemInteractions.
- */
+// Module-level interaction store — persists across renders, clears on page reload
+export const localInteractions = new Map<string, { liked?: boolean | null; favorited?: boolean }>();
+
+// Listener for triggering re-renders in MenuPage when the Map updates
+let onInteractionChange: (() => void) | null = null;
+export function setInteractionListener(cb: () => void) { onInteractionChange = cb; }
+
 export interface UseMenuItemInteractions {
   userLiked: boolean | null;
   likeCount: number;
@@ -33,14 +36,6 @@ export interface UseMenuItemInteractions {
   handleFavorite: () => void;
 }
 
-/**
- * Custom hook for managing menu item interactions (like/dislike and favorite).
- *
- * @param menuItemApiId - The API ID of the menu item.
- * @param initialInteraction - Initial interaction data for the menu item (optional).
- * @param initialMetrics - Initial metrics data for the menu item (optional).
- * @returns Object containing state and handlers for interactions.
- */
 export const useMenuItemInteractions = (
   menuItemApiId: string,
   initialInteraction?: MenuItemInteraction | null,
@@ -48,158 +43,76 @@ export const useMenuItemInteractions = (
 ): UseMenuItemInteractions => {
   const { user, isLoading: userLoading } = useUser();
   const router = useRouter();
-  const { interactions, metrics, updateInteraction, updateMetrics } = useInteractionsContext();
 
-  const contextInteraction = interactions[menuItemApiId];
-  const contextMetrics = metrics[menuItemApiId];
+  // Merge: local overrides win over API data
+  const local = localInteractions.get(menuItemApiId);
 
-  // Prefer context values (live-updated), fall back to initial props
-  const userLiked: boolean | null = contextInteraction?.liked !== undefined
-    ? (contextInteraction.liked ?? null)
-    : (initialInteraction?.liked ? true : initialInteraction?.liked === false ? false : null);
-  const likeCount = contextMetrics?.likeCount ?? initialMetrics?.likeCount ?? 0;
-  const dislikeCount = contextMetrics?.dislikeCount ?? initialMetrics?.dislikeCount ?? 0;
-  const favorited = contextInteraction?.favorited !== undefined
-    ? contextInteraction.favorited
+  const userLiked: boolean | null = local?.liked !== undefined
+    ? local.liked
+    : initialInteraction?.liked === true
+      ? true
+      : initialInteraction?.liked === false
+        ? false
+        : null;
+
+  const favorited = local?.favorited !== undefined
+    ? local.favorited
     : (initialInteraction?.favorited || false);
 
-  const setUserLiked = (val: boolean | null) => updateInteraction(menuItemApiId, { liked: val });
-  const setLikeCount = (val: number) => updateMetrics(menuItemApiId, { likeCount: val });
-  const setDislikeCount = (val: number) => updateMetrics(menuItemApiId, { dislikeCount: val });
-  const setFavorited = (val: boolean) => updateInteraction(menuItemApiId, { favorited: val });
+  // Adjust counts based on local overrides vs API data
+  const apiLiked = initialInteraction?.liked === true ? true : initialInteraction?.liked === false ? false : null;
+  let likeCount = initialMetrics?.likeCount ?? 0;
+  let dislikeCount = initialMetrics?.dislikeCount ?? 0;
+
+  if (local?.liked !== undefined && local.liked !== apiLiked) {
+    // User changed their like state locally
+    if (apiLiked === true && local.liked !== true) likeCount--;
+    if (apiLiked === false && local.liked !== false) dislikeCount--;
+    if (local.liked === true && apiLiked !== true) likeCount++;
+    if (local.liked === false && apiLiked !== false) dislikeCount++;
+  }
 
   const [updating, setUpdating] = useState(false);
 
-  /**
-   * Handles when user clicks like button.
-   */
+  const redirectToLogin = () => {
+    const currentPath =
+      typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
+    router.push(`/login?returnTo=${encodeURIComponent(currentPath)}`);
+  };
+
   const handleLike = async () => {
-    if (!userLoading && !user) {
-      const currentPath =
-        typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
-      router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
-      return;
-    }
-
+    if (!userLoading && !user) { redirectToLogin(); return; }
     if (updating) return;
     setUpdating(true);
-
-    let newLikeStatus: boolean | null;
-    let optimisticLikeCount: number;
-    let optimisticDislikeCount: number;
-
-    if (userLiked === true) {
-      newLikeStatus = null;
-      optimisticLikeCount = likeCount - 1;
-      optimisticDislikeCount = dislikeCount;
-    } else if (userLiked === false) {
-      newLikeStatus = true;
-      optimisticLikeCount = likeCount + 1;
-      optimisticDislikeCount = dislikeCount - 1;
-    } else {
-      newLikeStatus = true;
-      optimisticLikeCount = likeCount + 1;
-      optimisticDislikeCount = dislikeCount;
-    }
-
-    const previousLikedBackup = userLiked;
-    const previousLikeCountBackup = likeCount;
-    const previousDislikeCountBackup = dislikeCount;
-
-    setUserLiked(newLikeStatus);
-    setLikeCount(optimisticLikeCount);
-    setDislikeCount(optimisticDislikeCount);
-
-    const updatedSuccessfully = await patchUserMenuItemInteraction({
-      menu_item_api_id: menuItemApiId,
-      liked: newLikeStatus,
-    });
-    if (updatedSuccessfully.status !== 200) {
-      setUserLiked(previousLikedBackup);
-      setLikeCount(previousLikeCountBackup);
-      setDislikeCount(previousDislikeCountBackup);
-    }
+    const newLikeStatus = userLiked === true ? null : true;
+    const existing = localInteractions.get(menuItemApiId) || {};
+    localInteractions.set(menuItemApiId, { ...existing, liked: newLikeStatus });
+    onInteractionChange?.();
+    await patchUserMenuItemInteraction({ menu_item_api_id: menuItemApiId, liked: newLikeStatus });
     setUpdating(false);
   };
 
-  /**
-   * Handles when user clicks dislike button.
-   */
   const handleDislike = async () => {
-    if (!userLoading && !user) {
-      const currentPath =
-        typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
-      router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
-      return;
-    }
-
+    if (!userLoading && !user) { redirectToLogin(); return; }
     if (updating) return;
     setUpdating(true);
-
-    let newLikeStatus: boolean | null;
-    let optimisticLikeCount: number;
-    let optimisticDislikeCount: number;
-
-    if (userLiked === false) {
-      newLikeStatus = null;
-      optimisticLikeCount = likeCount;
-      optimisticDislikeCount = dislikeCount - 1;
-    } else if (userLiked === true) {
-      newLikeStatus = false;
-      optimisticLikeCount = likeCount - 1;
-      optimisticDislikeCount = dislikeCount + 1;
-    } else {
-      newLikeStatus = false;
-      optimisticLikeCount = likeCount;
-      optimisticDislikeCount = dislikeCount + 1;
-    }
-
-    const previousLikedBackup = userLiked;
-    const previousLikeCountBackup = likeCount;
-    const previousDislikeCountBackup = dislikeCount;
-
-    setUserLiked(newLikeStatus);
-    setLikeCount(optimisticLikeCount);
-    setDislikeCount(optimisticDislikeCount);
-
-    const updatedSuccessfully = await patchUserMenuItemInteraction({
-      menu_item_api_id: menuItemApiId,
-      liked: newLikeStatus,
-    });
-    if (updatedSuccessfully.status !== 200) {
-      setUserLiked(previousLikedBackup);
-      setLikeCount(previousLikeCountBackup);
-      setDislikeCount(previousDislikeCountBackup);
-    }
+    const newLikeStatus = userLiked === false ? null : false;
+    const existing = localInteractions.get(menuItemApiId) || {};
+    localInteractions.set(menuItemApiId, { ...existing, liked: newLikeStatus });
+    onInteractionChange?.();
+    await patchUserMenuItemInteraction({ menu_item_api_id: menuItemApiId, liked: newLikeStatus });
     setUpdating(false);
   };
 
-  /**
-   * Handles when user clicks favorite button.
-   */
   const handleFavorite = async () => {
-    if (!userLoading && !user) {
-      const currentPath =
-        typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/menu';
-      router.push(`/api/auth/login?callbackUrl=${encodeURIComponent(currentPath)}`);
-      return;
-    }
-
+    if (!userLoading && !user) { redirectToLogin(); return; }
     if (updating) return;
     setUpdating(true);
-
-    const newFavoritedStatus = !favorited;
-    const previousFavoritedBackup = favorited;
-
-    setFavorited(newFavoritedStatus);
-
-    const updatedSuccessfully = await patchUserMenuItemInteraction({
-      menu_item_api_id: menuItemApiId,
-      favorited: newFavoritedStatus,
-    });
-    if (updatedSuccessfully.status !== 200) {
-      setFavorited(previousFavoritedBackup);
-    }
+    const newFavorited = !favorited;
+    const existing = localInteractions.get(menuItemApiId) || {};
+    localInteractions.set(menuItemApiId, { ...existing, favorited: newFavorited });
+    onInteractionChange?.();
+    await patchUserMenuItemInteraction({ menu_item_api_id: menuItemApiId, favorited: newFavorited });
     setUpdating(false);
   };
 
@@ -214,4 +127,3 @@ export const useMenuItemInteractions = (
     handleFavorite,
   };
 };
-

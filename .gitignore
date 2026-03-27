@@ -216,3 +216,4 @@ temp/
 **/outputs/
 /backend/scripts/outputs/
 /scripts/outputs/
+/.claude/

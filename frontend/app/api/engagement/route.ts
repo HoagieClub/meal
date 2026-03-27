@@ -14,30 +14,20 @@
 
 import { getAccessToken, AccessTokenError } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { getEngagementData } from '@/lib/endpoints';
+import { getEngagementData, getEngagementDataPublic } from '@/lib/endpoints';
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
 /**
  * Gets engagement data (interactions + metrics) for multiple menu items.
+ * If the user is authenticated, returns both interactions and metrics.
+ * If not authenticated, returns metrics only.
  *
  * @param req - The HTTP request object.
  * @returns A NextResponse object with { interactions, metrics } data.
  */
 export async function POST(req: Request) {
   try {
-    const { accessToken } = await getAccessToken();
-    if (!accessToken) {
-      return NextResponse.json(
-        {
-          status: 401,
-          message: 'No access token available',
-          data: null,
-        },
-        { status: 401 }
-      );
-    }
-
     const body = await req.json();
     const menuItemApiIds = body.menu_item_api_ids;
 
@@ -52,9 +42,21 @@ export async function POST(req: Request) {
       );
     }
 
-    const res = await getEngagementData(accessToken, {
-      menu_item_api_ids: menuItemApiIds,
-    });
+    // Try authenticated request first (returns interactions + metrics)
+    let accessToken: string | undefined;
+    try {
+      const tokenResult = await getAccessToken();
+      accessToken = tokenResult.accessToken;
+    } catch (e) {
+      // Not logged in — will fall through to public request
+    }
+
+    let res;
+    if (accessToken) {
+      res = await getEngagementData(accessToken, { menu_item_api_ids: menuItemApiIds });
+    } else {
+      res = await getEngagementDataPublic({ menu_item_api_ids: menuItemApiIds });
+    }
 
     if (!res.data) {
       return NextResponse.json(
@@ -73,12 +75,6 @@ export async function POST(req: Request) {
       status: 200,
     });
   } catch (error: unknown) {
-    if (error instanceof AccessTokenError) {
-      return NextResponse.json(
-        { status: 401, message: 'Session expired', data: null, code: 'SESSION_EXPIRED' },
-        { status: 401 }
-      );
-    }
     DEBUG && console.error('Error:', error);
     const message = error instanceof Error ? error.message : 'Unexpected error';
     const status = (error instanceof Error && 'status' in error && (error as any).status) || 500;

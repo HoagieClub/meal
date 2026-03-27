@@ -44,6 +44,6 @@ const afterCallback = async (req: NextRequest, session: any) => {
  */
 
 export const GET = handleAuth({
-  login: handleLogin({ returnTo: '/menu' }),
+  login: handleLogin({ returnTo: '/' }),
   callback: handleCallback({ afterCallback }),
 });

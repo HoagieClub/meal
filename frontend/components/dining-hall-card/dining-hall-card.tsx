@@ -2,6 +2,7 @@
 
 import { majorScale, minorScale, Pane, Text, useTheme } from 'evergreen-ui';
 import React from 'react';
+import Image from 'next/image';
 import MenuSection from './menu-section';
 import { HALL_BANNER_MAP } from '@/styles';
 import { DINING_HALL_DISPLAY_NAMES } from '@/data';
@@ -29,14 +30,12 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filters
 
   const menuItems = diningHall.menu ?? [];
   const categories: string[] =
-    (sortOption === 'Starred' || sortOption === 'Most Liked')
-      ? ([...new Set(menuItems.map((item: any) => item.category || 'Other'))] as string[]).sort(
-          (a, b) => {
-            const diff = canonicalIndex(a, SECTION_TITLE_ORDER) - canonicalIndex(b, SECTION_TITLE_ORDER);
-            return diff !== 0 ? diff : a.localeCompare(b);
-          }
-        )
-      : [];
+    ([...new Set(menuItems.map((item: any) => item.category || 'Other'))] as string[]).sort(
+      (a, b) => {
+        const diff = canonicalIndex(a, SECTION_TITLE_ORDER) - canonicalIndex(b, SECTION_TITLE_ORDER);
+        return diff !== 0 ? diff : a.localeCompare(b);
+      }
+    );
 
   return (
     <Pane
@@ -103,7 +102,15 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filters
               alt={isPinned ? 'Unpin hall' : 'Pin hall'}
             />
           </Pane>
-          <img src={imageSrc?.src} className='h-full my-auto w-auto' alt={diningHall.name} />
+          {imageSrc && (
+            <Image
+              src={imageSrc}
+              className='h-full my-auto w-auto'
+              alt={diningHall.name}
+              loading='lazy'
+              quality={75}
+            />
+          )}
         </Pane>
       </Pane>
       </div>
@@ -137,7 +144,7 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filters
               : 'We couldn\'t find any items for this meal'}
           </Text>
         </Pane>
-      ) : (sortOption === 'Starred' || sortOption === 'Most Liked') ? (
+      ) : (
         categories.map((category: string) => {
           const items = menuItems.filter((item: any) => item.category === category);
           return (
@@ -150,13 +157,6 @@ const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filters
             />
           );
         })
-      ) : (
-        <MenuSection
-          items={menuItems}
-          diningHallId={diningHall.name}
-          title='Meal'
-          sortOption={sortOption}
-        />
       )}
     </Pane>
   );

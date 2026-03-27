@@ -9,7 +9,6 @@ import {
   useTheme,
   SearchInput,
   UndoIcon,
-  ChevronDownIcon,
   ChevronLeftIcon,
   CrossIcon,
   Select,
@@ -135,7 +134,7 @@ export default function FilterSidebar({
             marginBottom={minorScale(3)}
           >
             <Text size={300} fontWeight={600} color={theme.colors.gray800}>
-              Sort/Filter
+              Filter
             </Text>
             <Pane width='65%'>
               <Select
@@ -289,7 +288,7 @@ export default function FilterSidebar({
             marginBottom={minorScale(3)}
           >
             <Text size={300} fontWeight={600} color={theme.colors.gray800}>
-              Sort/Filter
+              Filter
             </Text>
             <Pane width='65%'>
               <Select

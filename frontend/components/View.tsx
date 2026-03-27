@@ -1,6 +1,6 @@
 /**
  * @overview Simple styling component to ensure the layout is consistent.
- * 
+ *
  * Copyright © 2021-2025 Hoagie Club and affiliates.
  *
  * This source code is licensed under the MIT license found in the

@@ -12,7 +12,7 @@
 
 'use client';
 
-import { ComponentType, useState, useEffect } from 'react'; // IMPORTED useState, useEffect
+import { ComponentType } from 'react';
 import {
   majorScale,
   Pane,
@@ -31,28 +31,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import ProfileCard from '@/lib/hoagie-ui/ProfileCard';
 import { UserProfile } from '@auth0/nextjs-auth0/client';
-
-// A simple hook to check if the screen is mobile-sized.
-// This helps us make the layout responsive.
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const media = window.matchMedia(query);
-      if (media.matches !== matches) {
-        setMatches(media.matches);
-      }
-      const listener = () => setMatches(media.matches);
-      // Listen for changes in the screen size
-      media.addEventListener('change', listener);
-      // Clean up the listener when the component unmounts
-      return () => media.removeEventListener('change', listener);
-    }
-  }, [matches, query]);
-
-  return matches;
-}
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 export type Nav = {
   // The name of the app for generating the `hoagie{name}` title.
@@ -109,7 +88,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
           maxWidth={1200}
           paddingX={isMobile ? majorScale(2) : majorScale(5)}
         >
-          <Link href='/menu'>
+          <Link href='/'>
             <Pane cursor='pointer' position='relative'>
               {LogoComponent ? (
                 <LogoComponent />
@@ -162,7 +141,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
                         </Menu.Item>
                       ))}
                       {!user && (
-                        <Menu.Item onSelect={() => router.push('/api/auth/login')}>
+                        <Menu.Item onSelect={() => router.push('/login')}>
                           Login
                         </Menu.Item>
                       )}
@@ -191,7 +170,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
                     id='Login'
                     isSelected={false}
                     appearance='primary'
-                    onSelect={() => router.push('/api/auth/login')}
+                    onSelect={() => router.push('/login')}
                     fontSize={14}
                   >
                     Login

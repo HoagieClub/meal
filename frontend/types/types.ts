@@ -7,5 +7,33 @@ export const ALLERGENS = [
 ] as const;
 export type Allergen = (typeof ALLERGENS)[number];
 
-export const MENU_SORT_OPTIONS = ['Starred', 'Most Liked'] as const;
+export const MENU_SORT_OPTIONS = ['None', 'Starred'] as const;
 export type MenuSortOption = (typeof MENU_SORT_OPTIONS)[number];
+
+export interface MenuItem {
+  id: string;
+  apiId: string;
+  name: string;
+  allergens?: string[];
+  ingredients?: string[];
+  nutrition?: {
+    ingredients?: string;
+    allergens?: string;
+    servingSize?: string;
+    calories?: number;
+    [key: string]: any;
+  };
+}
+
+export interface MenuItemInteraction {
+  liked?: boolean | null;
+  favorited?: boolean;
+  savedForLater?: boolean;
+  wouldEatAgain?: string;
+}
+
+export interface MenuItemMetrics {
+  likeCount: number;
+  dislikeCount: number;
+  averageLikeScore?: number;
+}

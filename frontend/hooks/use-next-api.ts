@@ -63,9 +63,11 @@ async function apiRequest<T>({
 
     const json = await res.json();
 
-    // If the session has expired, redirect to logout so the UI reflects the correct state
+    // If the session has expired, redirect to logout so the UI reflects the correct state.
+    // Only redirect if there's actually a session cookie — otherwise the user was never
+    // logged in and redirecting would cause an infinite reload loop.
     if (json?.code === 'SESSION_EXPIRED' || (res.status === 401 && json?.message === 'Session expired')) {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && document.cookie.includes('appSession')) {
         window.location.href = '/api/auth/logout';
         return { status: 401, message: 'Session expired', data: null, error: 'Session expired' } as ApiResponse<T>;
       }
