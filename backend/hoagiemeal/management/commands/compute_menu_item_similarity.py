@@ -71,7 +71,11 @@ def compute_similarity_scores(co_occurrence, like_counts):
 
     for (a, b), co_count in co_occurrence.items():
         # Skip if cannot compute similarity (no likes)
-        denom = like_counts.get(a, 0)
+        if co_count < 2:
+            continue
+
+        # Jaccard similarity
+        denom = like_counts.get(a, 0) + like_counts.get(b, 0) - co_count
         if denom == 0:
             continue
 
