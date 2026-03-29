@@ -13,7 +13,7 @@ export const useRecommendations = (menuItemApiIds: string[], isAuthenticated: bo
 
         getRecommendationScores({ menu_item_api_ids: menuItemApiIds })
         .then((res) => {
-            if (!cancelled && res.data) setScores(res.data.data);
+            if (!cancelled && res.data) setScores(res.data);
         })
         .catch(() => {})
         .finally(() => { if (!cancelled) setLoading(false); });

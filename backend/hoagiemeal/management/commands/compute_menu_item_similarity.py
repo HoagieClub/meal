@@ -20,7 +20,7 @@ from collections import defaultdict
 from itertools import combinations
 from django.db import transaction
 
-from hoagiemeal.models.menu import MenuItemInteraction, MenuItemSimilarity
+from hoagiemeal.models.engagement import MenuItemInteraction, MenuItemSimilarity
 
 
 TOP_K = 30  # The number of similar menu items to return for each menu item.
@@ -107,8 +107,8 @@ def persist_similarities(top_k):
         # Create new MenuItemSimilarity rows
         objs = [
             MenuItemSimilarity(
-                item_a_id=a,
-                item_b_id=b,
+                menu_item_a_id=a,
+                menu_item_b_id=b,
                 score=score,
             )
             for a, neighbors in top_k.items()

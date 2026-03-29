@@ -74,10 +74,10 @@ class RecommendationService:
                 logger.debug(f"No interaction history for user_id={user.id}, returning all scores as 0.0.")
                 return {item_id: 0.0 for item_id in menu_item_api_ids}
 
-            similarities = MenuItemSimilarity.objects.filter(item_a__id__in=liked_items | disliked_items)
+            similarities = MenuItemSimilarity.objects.filter(menu_item_a__id__in=liked_items | disliked_items)
             similarity_map = defaultdict(dict)
             for sim in similarities:
-                similarity_map[sim.item_a.id][sim.item_b.id] = sim.score
+                similarity_map[sim.menu_item_a_id][sim.menu_item_b_id] = sim.score
 
             scores = {}
             for item_id in menu_item_api_ids:

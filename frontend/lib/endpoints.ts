@@ -46,7 +46,7 @@ export const getEngagementData = (params: { menu_item_api_ids: string[] }) => {
 
 export const getRecommendationScores = (params: { menu_item_api_ids: string[] }) => {
   const url = '/api/recommend/';
-  return api.post<{ data: Record<string, number> }>(url, {
+  return api.post<Record<string, number>>(url, {
     menu_item_api_ids: params.menu_item_api_ids,
   });
 };
