@@ -44,6 +44,10 @@ import {
   useBuildRetailDisplayData,
 } from '@/hooks/use-build-display-data';
 import { setInteractionListener } from '@/hooks/use-menu-item-interactions';
+import { useMemo } from 'react';
+import { useRecommendations } from '@/hooks/use-recommendations';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import RecommendedSection from '@/components/recommended-section';
 
 const getToday = (): Date => {
   const today = new Date();
@@ -105,6 +109,27 @@ export default function MenuPage() {
   const dateKey = getDateKey(selectedDate);
   const { data, loading } = useMenuApi(dateKey);
   const preferences = usePreferencesCache();
+
+  const { user } = useUser();
+
+  // Collect all menu item IDs from the current data
+  const allItemIds = useMemo(() => {
+    if (!data?.menuItems) return [];                                                                                           
+    return Object.keys(data.menuItems);
+  }, [data?.menuItems]);                                                                                                       
+                                                                                                                               
+  const { scores, loading: recLoading } = useRecommendations(allItemIds, !!user);
+
+  const topRecommended = useMemo(() => {
+    if (!data?.menuItems || !scores || Object.keys(scores).length === 0) return [];
+
+    return Object.entries(scores)
+      .filter(([, score]) => score > 0)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([id]) => data.menuItems[id])
+      .filter(Boolean);
+  }, [scores, data?.menuItems]);
 
   const [interactionVersion, setInteractionVersion] = useState(0);
   useEffect(() => {
@@ -246,6 +271,10 @@ export default function MenuPage() {
                       setSidebarOpen={preferences.setSidebarOpen}
                       stackMenuHeader={stackMenuHeader}
                     />
+                  )}
+
+                  {!loading && topRecommended.length > 0 && (
+                    <RecommendedSection items={topRecommended} />
                   )}
 
                   <MenuCardGrid
