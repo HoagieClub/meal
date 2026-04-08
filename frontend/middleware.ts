@@ -27,7 +27,6 @@ export async function middleware(req: NextRequest) {
   if (protectedRoutes.some((route) => pathname.startsWith(route))) {
     // The Auth0 session is stored in a cookie called 'appSession' by default
     const token = req.cookies.get('appSession');
-    console.log('token', token);
 
     // If no session token exists, redirect to login
     if (!token) {

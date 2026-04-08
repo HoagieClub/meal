@@ -28,7 +28,6 @@ from django.views.decorators.cache import cache_page
 CACHE_TIMEOUT = 60 * 5
 
 
-
 @cache_page(CACHE_TIMEOUT)
 @api_view(["GET"])
 def get_or_cache_menus_and_items_for_date(request):
@@ -50,6 +49,6 @@ def get_or_cache_menus_and_items_for_date(request):
     except Exception as e:
         logger.error(f"Error retrieving menus and items: {e}.")
         return Response(
-            {"data": None, "message": f"Error retrieving menus and items: {str(e)}", "error": str(e)},
+            {"data": None, "message": "An internal error occurred.", "error": None},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

@@ -1,0 +1,14 @@
+{
+  "name": "hoagiemeal",
+  "version": "0.0.3",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && uv run manage.py runserver",
+    "dev:frontend": "cd frontend && bun run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

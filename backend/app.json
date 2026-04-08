@@ -30,10 +30,6 @@
 		}
 	],
 	"env": {
-		"ACCESS_TOKEN": {
-			"description": "Princeton OIT API OAuth access token.",
-			"required": true
-		},
 		"ALLOWED_HOSTS": {
 			"description": "Comma-separated list of allowed hostnames.",
 			"required": true
@@ -42,20 +38,12 @@
 			"description": "Auth0 API audience identifier.",
 			"required": true
 		},
-		"AUTH0_DOMAIN": {
-			"description": "Auth0 tenant domain",
-			"required": true
-		},
 		"AUTH0_ISSUER": {
 			"description": "Auth0 token issuer URL.",
 			"required": true
 		},
-		"CONSUMER_KEY": {
-			"description": "Princeton OIT API OAuth consumer key.",
-			"required": true
-		},
-		"CONSUMER_SECRET": {
-			"description": "Princeton OIT API OAuth consumer secret.",
+		"CORS_ALLOWED_ORIGINS": {
+			"description": "Comma-separated list of allowed CORS origins.",
 			"required": true
 		},
 		"DATABASE_URL": {

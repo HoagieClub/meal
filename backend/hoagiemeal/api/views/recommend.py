@@ -50,6 +50,6 @@ def get_menu_items_score(request):
     except Exception as e:
         logger.error(f"Error in get_menu_items_score view: {e}")
         return Response(
-            {"data": None, "message": f"Error getting menu items scores: {str(e)}"},
+            {"data": None, "message": "An internal error occurred.", "error": None},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

@@ -72,8 +72,8 @@ def get_engagement_data(request):
         return Response(
             {
                 "data": None,
-                "message": f"Error fetching engagement data: {str(e)}",
-                "error": str(e),
+                "message": "An internal error occurred.",
+                "error": None,
             },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
@@ -147,8 +147,8 @@ def update_user_menu_item_interaction(request):
         return Response(
             {
                 "data": None,
-                "message": f"Error updating user menu item interaction: {str(e)}",
-                "error": str(e),
+                "message": "An internal error occurred.",
+                "error": None,
             },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

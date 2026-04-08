@@ -93,26 +93,19 @@ function LoginPageContent() {
           elevation={1}
           background='white'
           marginX={20}
-          maxWidth='600px'
+          maxWidth='500px'
           width='100%'
           paddingX={majorScale(5)}
-          paddingTop={majorScale(7)}
-          paddingBottom={majorScale(8)}
+          paddingTop={majorScale(9)}
+          paddingBottom={majorScale(10)}
         >
-          <Pane marginBottom={majorScale(2)} display='flex' justifyContent='center'>
-            <Image src='/images/icons/meal-icon.svg' alt='Hoagie Meal' width={90} height={90} />
+          <Pane marginBottom={majorScale(3)} display='flex' justifyContent='center'>
+            <Image src='/images/icons/meal-icon.svg' alt='Hoagie Meal' width={72} height={72} />
           </Pane>
-          <Heading size={900} className='hoagie' marginBottom={majorScale(1)}>
-            Login to get the most out of hoagie<b>meal</b>.
+          <Heading size={800} className='hoagie' marginBottom={majorScale(1)}>
+            Login to get the most out of<br />hoagie<b>meal</b>.
           </Heading>
-          <Paragraph
-            size={600}
-            color={theme.colors.gray900}
-            marginTop={majorScale(1)}
-            marginBottom={majorScale(3)}
-          >
-            Your stomach will thank you.
-          </Paragraph>
+          <Pane marginBottom={majorScale(5)} />
           <Pane display='flex' flexDirection='column' alignItems='center' gap={majorScale(2)}>
             {Profile}
             <Link href='https://hoagie.io'>
