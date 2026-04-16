@@ -200,14 +200,14 @@ export default function FilterSidebar({
             <Text size={300} fontWeight={600} color={theme.colors.gray800}>
               Allergen Tags
             </Text>
-            <Switch
+            {/* <Switch
               checked={!hideAllergenTags}
               className='[&_input:checked+div]:!bg-green-700 [&_input:focus+div]:!shadow-none [&_input:focus+div]:!outline-none'
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setHideAllergenTags(!e.target.checked)
               }
               height={20}
-            />
+            /> */}
           </Pane>
           <span className='text-xs ub-fnt-sze_14px ub-f-wght_400 ub-ln-ht_20px ub-ltr-spc_-0-05px ub-fnt-fam_rbgzyu ub-color_808080 ub-mb_4px ub-box-szg_border-box'>
             Exclude items containing:
