@@ -35,10 +35,15 @@ HOAGIE_IO_NAME_CLAIM = "https://hoagie.io/name"
 
 def decode_auth0_token(request: HttpRequest) -> Optional[dict]:
     """Decode the Auth0 token from the request."""
+    auth_headers = request.headers.get("Authorization")
+    if not auth_headers or len(auth_headers.split()) < 2:
+        logger.debug("Request is unauthenticated.")
+        return None
+
+    parts = auth_headers.split()
+    auth0_token = parts[1].strip()
     logger.debug("Decoding Auth0 token.")
     try:
-        auth_headers = request.headers.get("Authorization")
-        auth0_token = auth_headers.split()[1].strip()
         key = _JWK_CLIENT.get_signing_key_from_jwt(auth0_token).key
         auth0_claims = jwt.decode(
             auth0_token,
