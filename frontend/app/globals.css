@@ -293,3 +293,10 @@ body {
 .card-fade-up {
   animation: card-fade-up 280ms ease-out both;
 }
+
+/* Evergreen portals (Popovers, Dialogs, Toasts) default to z-index 10-30 via
+   StackingOrder, which sits below our sticky mobile header (z-50) and filter
+   popover (z-[60]). Force them above so nav menus/profile card aren't hidden. */
+[evergreen-portal-container] > * {
+  z-index: 100 !important;
+}
