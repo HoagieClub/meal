@@ -108,6 +108,10 @@ WSGI_APPLICATION = "hoagiemeal.wsgi.application"
 DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"), ssl_require=False)}
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
+if os.getenv("FREEFOOD_DATABASE_URL"):
+    DATABASES["freefood"] = dj_database_url.config(env="FREEFOOD_DATABASE_URL", ssl_require=False)
+    DATABASES["freefood"]["CONN_HEALTH_CHECKS"] = True
+
 # Set the custom user model for Hoagie Meal
 AUTH_USER_MODEL = "hoagiemeal.CustomUser"
 

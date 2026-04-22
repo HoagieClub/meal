@@ -25,6 +25,7 @@ from hoagiemeal.api.views.engagement import (
     update_user_menu_item_interaction,
 )
 from hoagiemeal.api.views.user import verify_and_get_or_create_user
+from hoagiemeal.api.views.freefood import receive_freefood_email
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -32,4 +33,5 @@ urlpatterns = [
     path("api/engagement/", get_engagement_data, name="engagement-data"),
     path("api/engagement/interaction/", update_user_menu_item_interaction, name="update-user-menu-item-interaction"),
     path("api/user/", verify_and_get_or_create_user, name="verify-and-get-or-create-user"),
+    path("api/freefood/", receive_freefood_email, name="receive-freefood-email"),
 ]
