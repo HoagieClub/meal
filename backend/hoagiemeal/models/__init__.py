@@ -19,6 +19,7 @@ from .user import CustomUser
 from .dining import DiningLocation
 from .menu import ResidentialMenu, RetailMenu
 from .menu_item import MenuItem, MenuItemNutrition
+from .free_food import FreeFoodAlert
 
 __all__ = [
     "CustomUser",
@@ -27,4 +28,5 @@ __all__ = [
     "RetailMenu",
     "MenuItem",
     "MenuItemNutrition",
+    "FreeFoodAlert",
 ]
