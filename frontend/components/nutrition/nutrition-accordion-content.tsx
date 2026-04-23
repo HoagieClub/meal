@@ -47,7 +47,6 @@ export default function NutritionAccordionContent({ item }: any) {
         <div className='col-span-2'>
           <ServingCalories
             servingSize={nutrition.servingSize}
-            servingUnit={nutrition.servingUnit}
             calories={nutrition.calories}
           />
         </div>

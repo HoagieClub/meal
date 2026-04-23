@@ -18,8 +18,7 @@ import { SectionTitle } from './section-title';
 import { MetricValue } from './metric-value';
 
 export interface ServingCaloriesProps {
-  servingSize: number | null | undefined;
-  servingUnit: string | null | undefined;
+  servingSize: string | number | null | undefined;
   calories: number | null | undefined;
 }
 
@@ -30,10 +29,12 @@ function formatAmount(num: number | string): string {
   return parseFloat(n.toFixed(10)).toString();
 }
 
-export function ServingCalories({ servingSize, servingUnit, calories }: ServingCaloriesProps) {
+export function ServingCalories({ servingSize, calories }: ServingCaloriesProps) {
   const servingDisplay =
-    servingSize != null
-      ? `${formatAmount(servingSize)}${servingUnit ? ` ${servingUnit}` : ''}`
+    servingSize != null && servingSize !== ''
+      ? typeof servingSize === 'string'
+        ? servingSize
+        : formatAmount(servingSize)
       : '-';
 
   const caloriesDisplay = calories != null ? formatAmount(calories) : '-';
