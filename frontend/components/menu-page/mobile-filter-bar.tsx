@@ -79,6 +79,8 @@ export default function MobileFilterBar({
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
             width='100%'
             height={36}
+            autoComplete='off'
+            spellCheck={false}
           />
         </div>
         <button

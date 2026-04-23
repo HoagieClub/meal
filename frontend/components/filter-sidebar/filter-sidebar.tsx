@@ -290,6 +290,8 @@ export default function FilterSidebar({
             placeholder='Search for food...'
             value={searchTerm}
             onChange={(e: any) => setSearchTerm(e.target.value)}
+            autoComplete='off'
+            spellCheck={false}
           />
         </Pane>
 

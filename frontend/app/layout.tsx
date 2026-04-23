@@ -47,15 +47,12 @@ async function Content({ children }: { children: ReactNode }): Promise<React.JSX
   const session = await getSession();
   const user = session?.user;
 
-  const tabs = [
-    { title: 'Menu', href: '/' },
-    // { title: 'Profile', href: '/profile' },
-  ];
+  const tabs: Array<{ title: string; href: string }> = [];
 
   return (
     <Theme palette='green'>
       <Layout>
-        <Nav name='meal' tabs={tabs} user={user} />
+        <Nav name='meal' tabs={tabs} user={user} beta={false} />
         <div className='flex-1 flex flex-col w-full'>{children}</div>
         <Toaster />
       </Layout>

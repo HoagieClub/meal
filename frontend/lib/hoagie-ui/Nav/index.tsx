@@ -125,7 +125,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
           </Link>
           <Pane display='flex' alignItems='center' gap={majorScale(2)}>
             {/* --- Conditional mobile menu --- */}
-            {isMobile ? (
+            {isMobile && tabs.length > 0 ? (
               <Popover
                 position={Position.BOTTOM_RIGHT}
                 content={
@@ -141,7 +141,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
                         </Menu.Item>
                       ))}
                       {!user && (
-                        <Menu.Item onSelect={() => router.push('/login')}>
+                        <Menu.Item onSelect={() => { window.location.href = '/api/auth/login'; }}>
                           Login
                         </Menu.Item>
                       )}
@@ -170,7 +170,7 @@ function Nav({ name, LogoComponent, HeaderComponent, tabs = [], user, beta = tru
                     id='Login'
                     isSelected={false}
                     appearance='primary'
-                    onSelect={() => router.push('/login')}
+                    onSelect={() => { window.location.href = '/api/auth/login'; }}
                     fontSize={14}
                   >
                     Login

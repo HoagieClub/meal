@@ -14,15 +14,14 @@
  * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
  */
 
-import { handleAuth, handleLogin, handleCallback } from '@auth0/nextjs-auth0';
-import { NextRequest } from 'next/server';
+import { handleAuth, handleLogin, handleCallback, Session } from '@auth0/nextjs-auth0';
 
 const API_URL = process.env.HOAGIE_API_URL;
 
-const afterCallback = async (req: NextRequest, session: any) => {
+const afterCallback = async (_req: unknown, session: Session) => {
   if (session.accessToken) {
     try {
-      await fetch(`${API_URL}/api/user/`, {
+      const res = await fetch(`${API_URL}/api/user/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,9 +29,13 @@ const afterCallback = async (req: NextRequest, session: any) => {
         },
         body: JSON.stringify({}),
       });
+      if (!res.ok) {
+        console.error('User verification failed:', res.status, res.statusText);
+        return undefined;
+      }
     } catch (error) {
       console.error('Error verifying user:', error);
-      return null;
+      return undefined;
     }
   }
   return session;

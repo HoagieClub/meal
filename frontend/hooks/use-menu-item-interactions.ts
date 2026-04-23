@@ -13,7 +13,6 @@
  */
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { MenuItemInteraction, MenuItemMetrics } from '@/types/types';
 import { patchUserMenuItemInteraction } from '@/lib/endpoints';
@@ -42,7 +41,6 @@ export const useMenuItemInteractions = (
   initialMetrics?: MenuItemMetrics | null
 ): UseMenuItemInteractions => {
   const { user, isLoading: userLoading } = useUser();
-  const router = useRouter();
 
   // Merge: local overrides win over API data
   const local = localInteractions.get(menuItemApiId);
@@ -77,7 +75,7 @@ export const useMenuItemInteractions = (
   const redirectToLogin = () => {
     const currentPath =
       typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
-    router.push(`/login?returnTo=${encodeURIComponent(currentPath)}`);
+    window.location.href = `/api/auth/login?returnTo=${encodeURIComponent(currentPath)}`;
   };
 
   const handleLike = async () => {
