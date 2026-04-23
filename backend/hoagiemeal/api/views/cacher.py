@@ -25,7 +25,7 @@ from rest_framework import status
 from django.views.decorators.cache import cache_page
 
 
-CACHE_TIMEOUT = 0
+CACHE_TIMEOUT = 60 * 60
 
 
 @cache_page(CACHE_TIMEOUT)
