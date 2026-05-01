@@ -37,13 +37,17 @@ import type { MenuSortOption } from '@/types/types';
 import { MEAL_RANGES } from '@/data';
 import { MEAL_COLOR_MAP } from '@/styles';
 import { Meal } from '@/types/types';
-import { DiningHall } from '@/locations';
+import { DiningHall, locations as allLocations } from '@/locations';
 import { useMenuApi } from '@/hooks/use-menu-api';
 import {
   useBuildResidentialDisplayData,
   useBuildRetailDisplayData,
 } from '@/hooks/use-build-display-data';
-import { setInteractionListener } from '@/hooks/use-menu-item-interactions';
+import { setInteractionListener, localInteractions } from '@/hooks/use-menu-item-interactions';
+import { useMemo } from 'react';
+import { useRecommendations } from '@/hooks/use-recommendations';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import RecommendedSection from '@/components/recommended-section';
 
 const getToday = (): Date => {
   const today = new Date();
@@ -106,10 +110,102 @@ export default function MenuPage() {
   const { data, loading } = useMenuApi(dateKey);
   const preferences = usePreferencesCache();
 
+  const { user } = useUser();
+
+  // Enrich a raw menu item with interaction, metrics, and dining hall data
+  const enrichItem = (item: any) => {
+    if (!item) return item;
+    return {
+      ...item,
+      userInteraction: data?.interactions?.[item.id] || null,
+      metrics: data?.metrics?.[item.id] || null,
+      diningHall: itemDiningHall.get(item.id) || null,
+    };
+  };
+
+  // Collect menu item IDs for the current meal and map each to its dining hall
+  const { currentMealItemIds, itemDiningHall } = useMemo(() => {
+    const ids = new Set<string>();
+    const hallMap = new Map<string, string>();
+    const addItem = (id: string, locId: string) => {
+      ids.add(id);
+      if (!hallMap.has(id)) hallMap.set(id, allLocations[locId]?.name || locId);
+    };
+    const menus = data?.residentialMenus;
+    if (menus) {
+      for (const locId in menus) {
+        const mealMenu = menus[locId]?.[meal];
+        if (!mealMenu) continue;
+        for (const station in mealMenu) {
+          for (const id of mealMenu[station] || []) addItem(id, locId);
+        }
+      }
+    }
+    const retail = data?.retailMenus;
+    if (retail) {
+      for (const locId in retail) {
+        const locMenu = retail[locId];
+        if (!locMenu) continue;
+        for (const key in locMenu) {
+          const val = locMenu[key];
+          if (Array.isArray(val)) { for (const id of val) addItem(id, locId); }
+          else if (val && typeof val === 'object') {
+            for (const cat in val) {
+              if (Array.isArray(val[cat])) { for (const id of val[cat]) addItem(id, locId); }
+            }
+          }
+        }
+      }
+    }
+    return { currentMealItemIds: ids, itemDiningHall: hallMap };
+  }, [data?.residentialMenus, data?.retailMenus, meal]);
+
+  const allItemIds = useMemo(() => Array.from(currentMealItemIds), [currentMealItemIds]);
+
+  const { scores, loading: recLoading } = useRecommendations(allItemIds, !!user);
+
+  const topRecommended = useMemo(() => {
+    if (!data?.menuItems || !scores || Object.keys(scores).length === 0) return [];
+
+    return Object.entries(scores)
+      .filter(([id, score]) => score > 0 && currentMealItemIds.has(id))
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([id]) => enrichItem(data.menuItems[id]))
+      .filter(Boolean);
+  }, [scores, data?.menuItems, currentMealItemIds, data?.interactions, data?.metrics]);
+
   const [interactionVersion, setInteractionVersion] = useState(0);
   useEffect(() => {
     setInteractionListener(() => setInteractionVersion(v => v + 1));
   }, []);
+
+  const popularItems = useMemo(() => {
+    if (!data?.menuItems || !data?.metrics) return [];
+    return Array.from(currentMealItemIds)
+      .map((id) => enrichItem(data.menuItems[id]))
+      .filter((item: any) => item && data.metrics[item.id])
+      .sort((a: any, b: any) => {
+        const aNet = (data.metrics[a.id]?.likeCount ?? 0) - (data.metrics[a.id]?.dislikeCount ?? 0);
+        const bNet = (data.metrics[b.id]?.likeCount ?? 0) - (data.metrics[b.id]?.dislikeCount ?? 0);
+        return bNet - aNet;
+      })
+      .slice(0, 3);
+  }, [data?.menuItems, data?.metrics, currentMealItemIds]);
+
+  const favoritedItems = useMemo(() => {
+    if (!data?.menuItems) return [];
+    return Array.from(currentMealItemIds)
+      .map((id) => enrichItem(data.menuItems[id]))
+      .filter((item: any) => {
+        if (!item) return false;
+        const local = localInteractions.get(item.id);
+        if (local?.favorited !== undefined) return local.favorited;
+        const interaction = data.interactions?.[item.id];
+        return interaction?.favorited;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.menuItems, data?.interactions, currentMealItemIds, interactionVersion]);
 
   const [locationType, setLocationType] = useState<'residential' | 'retail'>('residential');
   const [searchTerm, setSearchTerm] = useState('');
@@ -246,6 +342,10 @@ export default function MenuPage() {
                       setSidebarOpen={preferences.setSidebarOpen}
                       stackMenuHeader={stackMenuHeader}
                     />
+                  )}
+
+                  {!loading && locationType === 'residential' && (
+                    <RecommendedSection items={topRecommended} favoritedItems={favoritedItems} popularItems={popularItems} />
                   )}
 
                   <MenuCardGrid
