@@ -1,60 +1,33 @@
-"""Django settings for Hoagie Meal backend.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.1/topics/settings/
-
-For the full list of settings and their values, see
-https://docs.djangoproject.com/en/5.1/ref/settings/
-
-Copyright © 2021-2025 Hoagie Club and affiliates.
-
-Licensed under the MIT License. You may obtain a copy of the License at:
-
-    https://github.com/hoagieclub/meal/blob/main/LICENSE
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, subject to the following conditions:
-
-This software is provided "as-is", without warranty of any kind.
-"""
+"""Django settings for the Hoagie Meal backend."""
 
 import os
+import sys
+from pathlib import Path
 
 import dj_database_url
 import django_heroku
-
-from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t", "True")
+DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
 
 
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
-    if origin.strip()
-]
+def _csv_env(name: str, default: str) -> list[str]:
+    """A comma-separated environment variable as a list. Unset or empty falls back to the default."""
+    return [value.strip() for value in (os.getenv(name) or default).split(",") if value.strip()]
 
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    if host.strip()
-]
 
+ALLOWED_HOSTS = _csv_env("ALLOWED_HOSTS", "localhost,127.0.0.1")
+CORS_ALLOWED_ORIGINS = _csv_env("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000")
 CORS_ALLOW_CREDENTIALS = True
 
-# Application definition
+AUTH0_ISSUER = os.environ.get("AUTH0_ISSUER")
+AUTH0_AUDIENCE = os.environ.get("AUTH0_AUDIENCE")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -78,9 +51,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-AUTH0_ISSUER = os.environ.get("AUTH0_ISSUER")
-AUTH0_AUDIENCE = os.environ.get("AUTH0_AUDIENCE")
-
 ROOT_URLCONF = "hoagiemeal.urls"
 
 TEMPLATES = [
@@ -101,57 +71,41 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "hoagiemeal.wsgi.application"
 
+# DATABASE_URL, with connections kept open between requests and checked before reuse.
+DATABASES = {"default": dj_database_url.config(conn_max_age=600, conn_health_checks=True)}
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+# The test suite runs against an in-memory SQLite database instead of the real Postgres.
+if len(sys.argv) > 1 and sys.argv[1] == "test":
+    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
 
-DATABASES = {"default": dj_database_url.config(default=os.getenv("DATABASE_URL"), ssl_require=False)}
-DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
-
-# Set the custom user model for Hoagie Meal
 AUTH_USER_MODEL = "hoagiemeal.CustomUser"
 
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
+# The API is JSON only. Callers are identified by the Auth0 bearer token the views check
+# themselves, so DRF's session and basic authentication (and their CSRF checks) stay off.
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+}
 
 LANGUAGE_CODE = "en-us"
-
 TIME_ZONE = "UTC"
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
 STATIC_URL = "static/"
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# Configure Django App for Heroku.
-django_heroku.settings(locals(), databases=False)
+# WhiteNoise for static files on Heroku, and nothing else: left to its defaults, django-heroku would
+# also open ALLOWED_HOSTS to everything, override SECRET_KEY, replace the test runner and logging.
+django_heroku.settings(
+    locals(), databases=False, allowed_hosts=False, secret_key=False, logging=False, test_runner=False
+)

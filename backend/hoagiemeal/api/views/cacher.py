@@ -1,54 +1,52 @@
-"""API views for caching menu, menu items, and location data.
-
-Copyright © 2021-2025 Hoagie Club and affiliates.
-
-Licensed under the MIT License. You may obtain a copy of the License at:
-
-  https://github.com/hoagieclub/meal/blob/main/LICENSE
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-This software is provided "as-is", without warranty of any kind.
-"""
+"""Menu endpoints."""
 
 import datetime
-from hoagiemeal.utils.logger import logger
-from hoagiemeal.api.services.cacher import cacher_service
+
+from django.core.cache import cache
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
-from django.views.decorators.cache import cache_page
+
+from hoagiemeal.api.services.cacher import cacher_service, local_today
+from hoagiemeal.api.views.responses import error
+from hoagiemeal.utils.logger import logger
+
+# Successful, non-empty responses are cached briefly so bursts of traffic do not each hit the
+# database (and possibly the scraper). Empty or failed results are never cached.
+RESPONSE_CACHE_SECONDS = 5 * 60
+# Dates further from today than this are refused, so nobody can make the server scrape years of
+# menus that Campus Dining will never publish.
+MAX_DAYS_FROM_TODAY = 31
 
 
-CACHE_TIMEOUT = 60 * 60
-
-
-@cache_page(CACHE_TIMEOUT)
 @api_view(["GET"])
 def get_or_cache_menus_and_items_for_date(request):
-    """Get or cache all menus and their menu items for a date."""
+    """Menus and menu items for `?date=YYYY-MM-DD`."""
+    raw_date = request.query_params.get("date")
+    if not raw_date:
+        return error("Date is required.", status.HTTP_400_BAD_REQUEST)
     try:
-        date = request.query_params.get("date")
-        if not date:
-            return Response(
-                {"data": None, "message": "Date is required.", "error": "Date is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        date = datetime.date.fromisoformat(raw_date)
+    except ValueError:
+        return error("Date must be formatted as YYYY-MM-DD.", status.HTTP_400_BAD_REQUEST)
+    if abs((date - local_today()).days) > MAX_DAYS_FROM_TODAY:
+        return error(f"Date must be within {MAX_DAYS_FROM_TODAY} days of today.", status.HTTP_400_BAD_REQUEST)
 
-        date = datetime.date.fromisoformat(date)
+    cache_key = f"menus-response:{date.isoformat()}"
+    payload = cache.get(cache_key)
+    if payload:
+        return Response(payload)
+
+    try:
         result = cacher_service.get_or_cache_menus_and_items_for_date(date)
-        return Response(
-            {"data": result, "message": "Menus and items retrieved successfully.", "error": None},
-            status=status.HTTP_200_OK,
-        )
-    except Exception as e:
-        logger.error(f"Error retrieving menus and items: {e}.")
-        return Response(
-            {"data": None, "message": "An internal error occurred.", "error": None},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+    except Exception:
+        logger.exception(f"Error retrieving menus and items for {date}")
+        return error("An internal error occurred.", status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if result is None:
+        # Nothing stored and the menu site could not be reached: say so rather than "no menus".
+        return error("Menus are temporarily unavailable.", status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    payload = {"data": result, "message": "Menus and items retrieved successfully.", "error": None}
+    if result["menus"]:
+        cache.set(cache_key, payload, RESPONSE_CACHE_SECONDS)
+    return Response(payload)

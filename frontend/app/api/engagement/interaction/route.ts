@@ -1,14 +1,10 @@
-/**
- * @overview Next.js Route Handler to update a user's menu item interaction.
- * Requires authentication.
- */
-
-import { getAccessToken, AccessTokenError } from '@auth0/nextjs-auth0';
+import { AccessTokenError, getAccessToken } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { toCamelCase } from '@/utils/toCamelCase';
+import { toCamelCase } from '@/lib/utils';
 
 const API_URL = process.env.HOAGIE_API_URL;
 
+/** Update the logged-in user's interaction (like, favourite, ...) with one menu item. */
 export async function PATCH(req: Request) {
   try {
     const { accessToken } = await getAccessToken();
@@ -20,9 +16,7 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
-    const menuItemApiId = body.menu_item_api_id;
-
-    if (!menuItemApiId) {
+    if (!body.menu_item_api_id) {
       return NextResponse.json(
         { status: 400, message: 'Missing menu_item_api_id in request body', data: null },
         { status: 400 }
@@ -36,29 +30,27 @@ export async function PATCH(req: Request) {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        menu_item_api_id: menuItemApiId,
+        menu_item_api_id: body.menu_item_api_id,
         liked: body.liked,
         favorited: body.favorited,
         saved_for_later: body.saved_for_later,
         would_eat_again: body.would_eat_again,
       }),
     });
-
-    const json = await res.json();
-
-    if (!json?.data) {
-      return NextResponse.json(
-        { status: 500, message: 'Failed to update interaction', data: null },
-        { status: 500 }
-      );
+    const json = await res.json().catch(() => null);
+    if (!res.ok || json?.data == null) {
+      // Pass the backend's status through, so the browser can tell a lost login from an outage.
+      const status = res.ok ? 502 : res.status;
+      const message = json?.error ?? json?.message ?? 'Failed to update interaction';
+      return NextResponse.json({ status, message, data: null }, { status });
     }
 
     return NextResponse.json({
-      data: toCamelCase(json.data),
-      message: 'Interaction updated successfully',
       status: 200,
+      message: 'Interaction updated successfully',
+      data: toCamelCase(json.data),
     });
-  } catch (error: unknown) {
+  } catch (error) {
     if (error instanceof AccessTokenError) {
       return NextResponse.json(
         { status: 401, message: 'Session expired', data: null, code: 'SESSION_EXPIRED' },
@@ -66,9 +58,6 @@ export async function PATCH(req: Request) {
       );
     }
     const message = error instanceof Error ? error.message : 'Unexpected error';
-    return NextResponse.json(
-      { status: 500, message, data: null },
-      { status: 500 }
-    );
+    return NextResponse.json({ status: 500, message, data: null }, { status: 500 });
   }
 }

@@ -1,89 +1,62 @@
-/**
- * @overview Root layout component for the Hoagie Meal app. Styles apply to all children.
- *
- * Copyright © 2021-2025 Hoagie Club and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree or at https://github.com/hoagieclub/meal/LICENSE.
- *
- * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
- */
-
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { Poppins } from 'next/font/google';
+import { getSession } from '@auth0/nextjs-auth0';
+import { UserProvider } from '@auth0/nextjs-auth0/client';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import { UserProvider } from '@auth0/nextjs-auth0/client';
-import { getSession } from '@auth0/nextjs-auth0';
-
-import Layout from '@/lib/hoagie-ui/Layout';
-import Nav from '@/lib/hoagie-ui/Nav';
-import Theme from '@/lib/hoagie-ui/Theme';
-import { Toaster } from '@/components/ui/sonner';
-
+import Providers from '@/components/providers';
+import Layout from '@/lib/hoagie-ui/layout';
+import Nav from '@/lib/hoagie-ui/nav';
+import Theme from '@/lib/hoagie-ui/theme';
 import '@/app/globals.css';
-import '@/lib/hoagie-ui/Theme/theme.css';
-
-import { Poppins } from 'next/font/google';
 
 const poppins = Poppins({
   weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
+  variable: '--font-poppins',
 });
 
 export const metadata = {
   title: 'Meal by Hoagie',
-  description: 'Slogan TBD.', // TODO: Create a catchy slogan!
+  description:
+    "Today's menus at every Princeton dining hall and cafe, with nutrition facts and allergens.",
 };
 
-/**
- * Content Component
- * Fetches user data (real or mock) and renders the main layout.
- *
- * @param children - The child components to render within the layout.
- * @returns JSX Element representing the content area.
- */
-async function Content({ children }: { children: ReactNode }): Promise<React.JSX.Element> {
-  const session = await getSession();
-  const user = session?.user;
-
-  const tabs: Array<{ title: string; href: string }> = [];
-
-  return (
-    <Theme palette='green'>
-      <Layout>
-        <Nav name='meal' tabs={tabs} user={user} beta={false} />
-        <div className='flex-1 flex flex-col w-full'>{children}</div>
-        <Toaster />
-      </Layout>
-    </Theme>
-  );
+// Console easter egg, plus removal of the service worker an earlier release installed. That
+// worker cached API responses, which is one way users ended up seeing stale menus.
+const HEAD_SCRIPT = `
+console.log("\\n    █░█ █▀█ ▄▀█ █▀▀ █ █▀▀  █▄█ █▀▀ ▄▀█ █░░\\n    █▀█ █▄█ █▀█ █▄█ █ ██▄  █░█ ██▄ █▀█ █▄▄\\n  ");
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function (registrations) {
+    registrations.forEach(function (registration) { registration.unregister(); });
+  });
 }
+if (window.caches) { caches.keys().then(function (keys) { keys.forEach(function (key) { caches.delete(key); }); }); }
+`;
 
-/**
- * RootLayout Component
- * Wraps the entire application with necessary providers and layouts.
- *
- * @param children - The child components to render within the layout.
- * @returns JSX Element representing the root HTML structure.
- */
-export default function RootLayout({ children }: { children: ReactNode }): React.JSX.Element {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Read the session once on the server and hand it to the browser, so the client never has to
+  // ask who is logged in before it can fetch menus.
+  const session = await getSession();
   return (
     <html
       lang='en'
-      className={`bg-hoagiemeal-dark-green ${poppins.className}`}
+      className={`bg-hoagiemeal-dark-green ${poppins.variable} ${poppins.className}`}
       suppressHydrationWarning
     >
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){console.log("\\n    █░█ █▀█ ▄▀█ █▀▀ █ █▀▀  █▄█ █▀▀ ▄▀█ █░░\\n    █▀█ █▄█ █▀█ █▄█ █ ██▄  █░█ ██▄ █▀█ █▄▄\\n  ")})();`,
-          }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: HEAD_SCRIPT }} />
       </head>
-      <UserProvider>
+      <UserProvider user={session?.user}>
         <body className='antialiased' suppressHydrationWarning>
-          <Content>{children}</Content>
+          <Providers>
+            <Theme>
+              <Layout>
+                <Nav name='meal' user={session?.user} />
+                <div className='flex w-full flex-1 flex-col'>{children}</div>
+              </Layout>
+            </Theme>
+          </Providers>
           <Analytics />
           <SpeedInsights />
         </body>

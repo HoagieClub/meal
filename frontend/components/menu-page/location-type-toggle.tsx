@@ -1,45 +1,24 @@
-/**
- * @overview Toggle component for switching between residential and retail dining locations.
- *
- * Copyright © 2021-2025 Hoagie Club and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree or at
- *
- *    https://github.com/hoagieclub/meal/LICENSE.
- *
- * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
- */
-
-import React from 'react';
 import { Pane, useTheme } from 'evergreen-ui';
+import { LOCATION_TYPE_OPTIONS } from '@/lib/constants';
+import type { LocationType } from '@/types';
 
 interface LocationTypeToggleProps {
-  locationType: 'residential' | 'retail';
-  setLocationType: (type: 'residential' | 'retail') => void;
+  locationType: LocationType;
+  setLocationType: (type: LocationType) => void;
   vertical?: boolean;
 }
 
-const options = [
-  {
-    type: 'residential' as const,
-    label: 'Dining Halls',
-    selectedIcon: '/images/icons/dhall-inactive.svg',  // white fill for dark bg
-    defaultIcon: '/images/icons/dhall-active.svg',     // dark fill for light bg
-    iconWidth: 20,
-    iconHeight: 18,
-  },
-  {
-    type: 'retail' as const,
-    label: 'Retail Cafes',
-    selectedIcon: '/images/icons/retail-inactive.svg', // white fill for dark bg
-    defaultIcon: '/images/icons/retail-active.svg',    // dark fill for light bg
-    iconWidth: 14,
-    iconHeight: 18,
-  },
-] as const;
-export default function LocationTypeToggle({ locationType, setLocationType, vertical }: LocationTypeToggleProps) {
+const ICON_SIZES: Record<LocationType, { width: number; height: number }> = {
+  residential: { width: 18, height: 16 },
+  retail: { width: 12, height: 16 },
+};
+
+/** Pill toggle between dining halls and retail cafes, with a sliding highlight. */
+export default function LocationTypeToggle({
+  locationType,
+  setLocationType,
+  vertical,
+}: LocationTypeToggleProps) {
   const theme = useTheme();
   const activeIndex = locationType === 'retail' ? 1 : 0;
 
@@ -49,38 +28,62 @@ export default function LocationTypeToggle({ locationType, setLocationType, vert
     >
       <div
         className='absolute rounded-full transition-transform duration-300 ease-in-out'
-        style={vertical
-          ? { left: 0, right: 0, height: '50%', background: theme.colors.green700, transform: `translateY(${activeIndex * 100}%)` }
-          : { top: 0, bottom: 0, width: '50%', background: theme.colors.green700, transform: `translateX(${activeIndex * 100}%)` }
+        style={
+          vertical
+            ? {
+                left: 0,
+                right: 0,
+                height: '50%',
+                background: theme.colors.green700,
+                transform: `translateY(${activeIndex * 100}%)`,
+              }
+            : {
+                top: 0,
+                bottom: 0,
+                width: '50%',
+                background: theme.colors.green700,
+                transform: `translateX(${activeIndex * 100}%)`,
+              }
         }
       />
-      {options.map(({ type, label, selectedIcon, defaultIcon, iconWidth, iconHeight }) => {
-        const isActive = locationType === type;
+      {LOCATION_TYPE_OPTIONS.map(({ type, label, lightIcon, darkIcon }) => {
+        const active = locationType === type;
+        const { width, height } = ICON_SIZES[type];
         return (
           <button
             key={type}
+            type='button'
+            aria-pressed={active}
             onClick={() => setLocationType(type)}
-            className='relative z-10 flex flex-1 items-center justify-center gap-1.5 px-5 py-2 cursor-pointer'
+            className='relative z-10 flex flex-1 cursor-pointer items-center justify-center gap-1.5 px-4 py-2'
           >
-            <Pane position='relative' width={iconWidth} height={iconHeight}>
+            <Pane position='relative' width={width} height={height}>
               <Pane
                 position='absolute'
-                top={0} left={0} right={0} bottom={0}
-                opacity={isActive ? 0 : 1}
+                top={0}
+                left={0}
+                right={0}
+                bottom={0}
+                opacity={active ? 0 : 1}
                 className='transition-opacity duration-300 ease-in-out'
               >
-                <img src={defaultIcon} alt='' width={iconWidth} height={iconHeight} />
+                <img src={darkIcon} alt='' width={width} height={height} />
               </Pane>
               <Pane
                 position='absolute'
-                top={0} left={0} right={0} bottom={0}
-                opacity={isActive ? 1 : 0}
+                top={0}
+                left={0}
+                right={0}
+                bottom={0}
+                opacity={active ? 1 : 0}
                 className='transition-opacity duration-300 ease-in-out'
               >
-                <img src={selectedIcon} alt='' width={iconWidth} height={iconHeight} />
+                <img src={lightIcon} alt='' width={width} height={height} />
               </Pane>
             </Pane>
-            <span className={`font-bold select-none whitespace-nowrap transition-all duration-300 ease-in-out ${isActive ? 'text-white' : 'text-[#156534]'}`}>
+            <span
+              className={`text-sm font-bold whitespace-nowrap transition-all duration-300 ease-in-out select-none ${active ? 'text-white' : 'text-[#156534]'}`}
+            >
               {label}
             </span>
           </button>

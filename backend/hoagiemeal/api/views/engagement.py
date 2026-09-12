@@ -1,33 +1,21 @@
-"""API views for user interactions with menu items.
+"""Engagement endpoints: aggregate metrics and the caller's own interactions."""
 
-Copyright © 2021-2025 Hoagie Club and affiliates.
-
-Licensed under the MIT License. You may obtain a copy of the License at:
-
-  https://github.com/hoagieclub/meal/blob/main/LICENSE
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-This software is provided "as-is", without warranty of any kind.
-"""
-
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from rest_framework import status
-from hoagiemeal.utils.logger import logger
+from rest_framework.decorators import api_view
+
 from hoagiemeal.api.services.engagement import interactions_service
-from hoagiemeal.api.services.user import get_user_from_request
+from hoagiemeal.api.services.user import decode_auth0_token, get_or_create_user
+from hoagiemeal.api.views.responses import error, ok
+from hoagiemeal.models.engagement import MenuItemInteraction
+from hoagiemeal.utils.logger import logger
 
 _MISSING = object()
+# The frontend asks for one day's items at a time; anything much larger is not a real page.
+MAX_IDS_PER_REQUEST = 1000
 
 
 def _parse_bool(value):
-    """Coerce a request value to bool, handling string 'true'/'false'."""
+    """Coerce a request value to bool, accepting the strings 'true' and 'false'."""
     if value is None:
         return None
     if isinstance(value, str):
@@ -35,122 +23,72 @@ def _parse_bool(value):
     return bool(value)
 
 
+def _menu_item_ids(request) -> list[str] | None:
+    """The `menu_item_api_ids` list from the body, or None when it is missing or malformed."""
+    ids = request.data.get("menu_item_api_ids")
+    if not isinstance(ids, list) or not ids or len(ids) > MAX_IDS_PER_REQUEST:
+        return None
+    if not all(isinstance(item_id, str) for item_id in ids):
+        return None
+    return ids
+
+
 @api_view(["POST"])
 def get_engagement_data(request):
-    """Get interactions (if authenticated) and metrics for multiple menu items."""
-    logger.debug("Getting engagement data.")
+    """Metrics for the given menu items, plus the caller's interactions when authenticated."""
     try:
-        menu_item_api_ids = request.data.get("menu_item_api_ids")
-        if not menu_item_api_ids:
-            return Response(
-                {
-                    "data": None,
-                    "message": "menu_item_api_ids is required",
-                    "error": "menu_item_api_ids is required",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        menu_item_api_ids = _menu_item_ids(request)
+        if menu_item_api_ids is None:
+            return error("menu_item_api_ids must be a non-empty list of ids.", status.HTTP_400_BAD_REQUEST)
 
-        # Interactions require auth — return empty dict if not authenticated
+        claims = decode_auth0_token(request)
+        user = get_or_create_user(claims) if claims else None
         interactions = {}
-        user = get_user_from_request(request)
         if user:
             interactions = interactions_service.get_user_menu_item_interactions(user, menu_item_api_ids) or {}
+        metrics = interactions_service.get_or_create_menu_items_metrics(menu_item_api_ids)
+        if metrics is None:
+            return error("An internal error occurred.", status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        metrics = interactions_service.get_or_create_menu_items_metrics(menu_item_api_ids) or {}
-
-        return Response(
-            {
-                "data": {"interactions": interactions, "metrics": metrics},
-                "message": "Engagement data fetched successfully.",
-                "error": None,
-            },
-            status=status.HTTP_200_OK,
-        )
-    except Exception as e:
-        logger.error(f"Error in get_engagement_data view: {e}")
-        return Response(
-            {
-                "data": None,
-                "message": "An internal error occurred.",
-                "error": None,
-            },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+        return ok({"interactions": interactions, "metrics": metrics}, "Engagement data fetched successfully.")
+    except Exception:
+        logger.exception("Error in get_engagement_data view")
+        return error("An internal error occurred.", status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(["PATCH"])
 def update_user_menu_item_interaction(request):
-    """Django view function to update user menu item interaction."""
-    logger.debug("Updating user menu item interaction.")
+    """Update the caller's interaction with one menu item. Only fields present in the body change."""
     try:
-        user = get_user_from_request(request)
+        claims = decode_auth0_token(request)
+        if not claims:
+            return error("Authentication required.", status.HTTP_401_UNAUTHORIZED)
+        user = get_or_create_user(claims)
         if not user:
-            return Response(
-                {
-                    "message": "Authentication required",
-                    "error": "Authentication required",
-                },
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+            return error("Could not load your account.", status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         menu_item_api_id = request.data.get("menu_item_api_id")
-        if not menu_item_api_id:
-            return Response(
-                {
-                    "message": "menu_item_api_id is required",
-                    "error": "menu_item_api_id is required",
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if not isinstance(menu_item_api_id, str) or not menu_item_api_id:
+            return error("menu_item_api_id is required.", status.HTTP_400_BAD_REQUEST)
 
-        # Build a dict of only the fields that were actually sent in the request.
-        # This lets the service distinguish "not sent" from "sent as null".
+        # `liked` is tri-state (null clears it), so its presence is checked with a sentinel.
         fields = {}
         liked = request.data.get("liked", _MISSING)
         if liked is not _MISSING:
             fields["liked"] = _parse_bool(liked)
-        favorited = request.data.get("favorited")
-        if favorited is not None:
-            fields["favorited"] = _parse_bool(favorited)
-        saved_for_later = request.data.get("saved_for_later")
-        if saved_for_later is not None:
-            fields["saved_for_later"] = _parse_bool(saved_for_later)
+        for field in ("favorited", "saved_for_later"):
+            value = request.data.get(field)
+            if value is not None:
+                fields[field] = _parse_bool(value)
         would_eat_again = request.data.get("would_eat_again")
         if would_eat_again is not None:
+            if would_eat_again not in MenuItemInteraction.WouldEatAgain.values:
+                return error("would_eat_again must be Y, N or M.", status.HTTP_400_BAD_REQUEST)
             fields["would_eat_again"] = would_eat_again
 
-        updated_interaction = interactions_service.update_user_menu_item_interaction(
-            user,
-            menu_item_api_id,
-            **fields,
-        )
-        if not updated_interaction:
-            return Response(
-                {
-                    "message": "Failed to update user menu item interaction",
-                    "error": "Failed to update user menu item interaction",
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-        logger.debug(f"Updated user menu item interaction for user_id: {user.id}, menu_item_api_id: {menu_item_api_id}.")
-        return Response(
-            {
-                "data": updated_interaction,
-                "message": "User menu item interaction updated successfully.",
-            },
-            status=status.HTTP_200_OK,
-        )
-    except Exception as e:
-        logger.error(f"Error in update_user_menu_item_interaction view: {e}")
-        return Response(
-            {
-                "data": None,
-                "message": "An internal error occurred.",
-                "error": None,
-            },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-
+        if not interactions_service.update_user_menu_item_interaction(user, menu_item_api_id, **fields):
+            return error("Failed to update the interaction.", status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return ok(True, "Interaction updated successfully.")
+    except Exception:
+        logger.exception("Error in update_user_menu_item_interaction view")
+        return error("An internal error occurred.", status.HTTP_500_INTERNAL_SERVER_ERROR)

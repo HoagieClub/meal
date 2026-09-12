@@ -1,282 +1,211 @@
-"""Cacher service for caching menu, menu items, and location data.
-
-Copyright © 2021-2025 Hoagie Club and affiliates.
-
-Licensed under the MIT License. You may obtain a copy of the License at:
-
-  https://github.com/hoagieclub/meal/blob/main/LICENSE
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-This software is provided "as-is", without warranty of any kind.
-"""
+"""Serve menus, menu items and locations from the database, scraping whatever is missing or stale."""
 
 import datetime
+from collections import defaultdict
 from typing import Optional
-from hoagiemeal.utils.logger import logger
+from zoneinfo import ZoneInfo
+
+from django.core.cache import cache
+from django.db import transaction
+from django.utils import timezone
+
+from hoagiemeal.api.services.scraper import Scraper, collect_menu_item_ids
 from hoagiemeal.models.dining import DiningLocation
-from django.db import transaction, IntegrityError
 from hoagiemeal.models.menu import ResidentialMenu, RetailMenu
 from hoagiemeal.models.menu_item import MenuItem, MenuItemNutrition
-from hoagiemeal.api.services.scraper import Scraper, get_menu_item_ids_from_menus_for_all_locations_and_date
-from hoagiemeal.serializers import (
-    DiningLocationSerializer,
-    MenuItemSerializer,
-)
-from collections import defaultdict
+from hoagiemeal.serializers import DiningLocationSerializer, MenuItemSerializer
+from hoagiemeal.utils.logger import logger
+
+# Princeton edits menus for today and upcoming days throughout the day (soups come and go, items
+# get swapped), so stored menus are only trusted this long before being re-scraped. Past days
+# are frozen.
+MENU_REFRESH_AFTER = datetime.timedelta(hours=2)
+# Nutrition labels change when recipes are edited. The seed job re-checks labels older than this.
+ITEM_REFRESH_AFTER = datetime.timedelta(days=1)
+# A label that could not be fetched is not retried for this long, so one broken label cannot
+# slow down every request.
+MISSING_ITEM_BACKOFF_SECONDS = 60 * 60
+# A day where every location was closed leaves no rows to date, so a short-lived marker stops
+# each request for it from scraping the whole site again.
+EMPTY_DAY_RECHECK_SECONDS = 5 * 60
+CAMPUS_TZ = ZoneInfo("America/New_York")
 
 
-###################################### Caching helper functions #####################################
+def local_today() -> datetime.date:
+    """Today's date on campus, whatever the server's timezone."""
+    return datetime.datetime.now(CAMPUS_TZ).date()
 
 
-def cache_locations(locations: dict) -> bool:
-    """Cache locations in the database."""
-    logger.debug(f"Caching {len(locations)} locations.")
-    try:
+def _store_locations(locations: dict) -> None:
+    for location in locations.values():
+        DiningLocation.objects.update_or_create(
+            id=location["id"],
+            defaults={"category": location["category"], "name": location["name"], "url": location["url"]},
+        )
+
+
+def _store_menus(date: datetime.date, menus_by_location: dict) -> None:
+    """Replace each scraped location's menus for the date. Locations not in the dict are untouched."""
+    locations = {loc.id: loc for loc in DiningLocation.objects.filter(id__in=menus_by_location.keys())}
+    for location_id, meal_menus in menus_by_location.items():
+        location = locations.get(location_id)
+        if not location:
+            logger.warning(f"Location {location_id} not found in the database, skipping its menus.")
+            continue
+
         with transaction.atomic():
-            for location in locations.values():
-                try:
-                    DiningLocation.objects.get_or_create(
-                        id=location["id"],
-                        category=location["category"],
-                        name=location["name"],
-                        url=location["url"],
+            if location.category == "residential":
+                for meal, stations in meal_menus.items():
+                    ResidentialMenu.objects.update_or_create(
+                        dining_location=location, date=date, meal=meal, defaults={"menu_items": stations}
                     )
-                except IntegrityError:
-                    pass  # created by concurrent request
-        return True
-    except Exception as e:
-        logger.error(f"Error caching locations: {e}.")
-        return False
+                ResidentialMenu.objects.filter(dining_location=location, date=date).exclude(
+                    meal__in=meal_menus.keys()
+                ).delete()
+            elif meal_menus:
+                RetailMenu.objects.update_or_create(
+                    dining_location=location, date=date, defaults={"menu_items": meal_menus}
+                )
+            else:
+                RetailMenu.objects.filter(dining_location=location, date=date).delete()
 
 
-def cache_all_menus_for_locations_and_date(date: datetime.date, menus: dict) -> bool:
-    """Cache all menus for all locations and a date.
-
-    Prefetches all referenced locations in one query, then creates
-    residential/retail menu rows accordingly.
-    """
-    logger.debug(f"Caching all menus for date: {date}.")
-    try:
-        # One query to fetch all locations referenced in the menus dict
-        locations_by_id = {
-            loc.id: loc
-            for loc in DiningLocation.objects.filter(id__in=menus.keys())
-        }
-
-        for location_id, meal_menus in menus.items():
-            dining_location = locations_by_id.get(location_id)
-            if not dining_location:
-                logger.warning(f"Location {location_id} not found in DB, skipping.")
-                continue
-
-            if dining_location.category == "residential":
-                for meal, menu_items in meal_menus.items():
-                    try:
-                        ResidentialMenu.objects.get_or_create(
-                            dining_location=dining_location,
-                            date=date,
-                            meal=meal,
-                            menu_items=menu_items,
-                        )
-                    except IntegrityError:
-                        pass  # created by concurrent request
-            elif dining_location.category == "retail":
-                try:
-                    RetailMenu.objects.get_or_create(
-                        dining_location=dining_location,
-                        date=date,
-                        menu_items=meal_menus,
-                    )
-                except IntegrityError:
-                    pass  # created by concurrent request
-
-        return True
-    except Exception as e:
-        logger.error(f"Error caching all menus for date: {date}: {e}.")
-        return False
-
-
-def cache_menu_items(menu_items: dict) -> bool:
-    """Cache menu items in the database."""
-    logger.debug(f"Caching {len(menu_items)} menu items.")
-    try:
-        for menu_item in menu_items.values():
-            try:
-                with transaction.atomic():
-                    try:
-                        menu_item_obj, created = MenuItem.objects.get_or_create(
-                            id=menu_item["id"],
-                            name=menu_item["name"],
-                            url=menu_item["url"],
-                        )
-                    except IntegrityError:
-                        menu_item_obj = MenuItem.objects.get(id=menu_item["id"])
-
-                    try:
-                        MenuItemNutrition.objects.get_or_create(
-                            menu_item=menu_item_obj,
-                            **menu_item["nutrition"],
-                        )
-                    except IntegrityError:
-                        pass  # created by concurrent request
-            except Exception as e:
-                logger.error(f"Error caching menu item: {e}.")
-                continue
-        return True
-    except Exception as e:
-        logger.error(f"Error caching menu items: {e}.")
-        return False
-
-
-###################################### Caching service class #####################################
+def _store_menu_items(menu_items: dict) -> None:
+    for item in menu_items.values():
+        try:
+            with transaction.atomic():
+                menu_item, _ = MenuItem.objects.update_or_create(
+                    id=item["id"], defaults={"name": item["name"], "url": item["url"]}
+                )
+                MenuItemNutrition.objects.update_or_create(menu_item=menu_item, defaults=item["nutrition"])
+        except Exception:
+            logger.exception(f"Error storing menu item {item.get('id')}")
 
 
 class CacherService:
-    """Service for caching dining menus and menu items."""
+    """Database-first access to menus and menu items, refreshed from the Campus Dining site."""
 
-    SCRAPER = Scraper()
+    scraper = Scraper()
 
-    def _get_location_qs(self, category: Optional[str] = None):
-        """Return a DiningLocation queryset, optionally filtered by category."""
-        qs = DiningLocation.objects.all()
-        if category:
-            qs = qs.filter(category=category)
-        return qs
-
-    def _serialize_locations(self, qs) -> dict:
-        """Serialize a location queryset into {id: data} dict."""
-        serialized = DiningLocationSerializer(qs, many=True).data
-        return {loc["id"]: loc for loc in serialized}
-
-    def get_or_cache_locations(self, category: Optional[str] = None) -> Optional[dict]:
-        """Get or cache locations from the API, optionally filtered by category."""
-        label = category or "all"
-        logger.debug(f"Getting or caching {label} locations.")
+    def get_or_cache_locations(self, refresh: bool = False) -> Optional[dict]:
+        """All locations as {id: data}. Scraped on first use, or again when `refresh` is set."""
         try:
-            qs = self._get_location_qs(category)
-            # Evaluate once — skip the separate exists() query
-            locations = list(qs)
-            if locations:
-                logger.debug(f"Returning cached {label} locations.")
-                return self._serialize_locations(locations)
-
-            api_locations = self.SCRAPER.get_all_locations()
-            if not api_locations:
-                logger.error(f"No {label} locations found.")
-                return None
-
-            cached_success = cache_locations(api_locations)
-            if not cached_success:
-                logger.error(f"Error caching {label} locations.")
-                return None
-
-            return self._serialize_locations(self._get_location_qs(category))
-        except Exception as e:
-            logger.error(f"Error getting or caching {label} locations: {e}.")
+            if refresh or not DiningLocation.objects.exists():
+                scraped = self.scraper.get_all_locations()
+                if scraped:
+                    _store_locations(scraped)
+                elif not DiningLocation.objects.exists():
+                    logger.error("Failed to scrape locations.")
+                    return None
+            queryset = DiningLocation.objects.all()
+            return {loc["id"]: loc for loc in DiningLocationSerializer(queryset, many=True).data}
+        except Exception:
+            logger.exception("Error getting locations")
             return None
 
-    def get_or_cache_all_locations(self) -> Optional[dict]:
-        """Get or cache all locations from the API."""
-        return self.get_or_cache_locations()
+    @staticmethod
+    def _menu_rows(date: datetime.date) -> list:
+        return list(ResidentialMenu.objects.filter(date=date)) + list(RetailMenu.objects.filter(date=date))
 
-    def _build_menus_dict(self, date: datetime.date) -> dict:
-        """Build a combined menu dict from cached residential and retail menus for a date."""
-        residential_menus = ResidentialMenu.objects.filter(date=date).select_related("dining_location")
-        retail_menus = RetailMenu.objects.filter(date=date).select_related("dining_location")
-        menus = defaultdict(dict)
-        for menu in residential_menus:
-            menus[menu.dining_location_id][menu.meal] = menu.menu_items
-        for menu in retail_menus:
-            menus[menu.dining_location_id] = menu.menu_items
+    @staticmethod
+    def _menus_from_rows(rows: list) -> dict:
+        """{location id: {meal: {station: [item ids]}}} from stored rows."""
+        menus: dict = defaultdict(dict)
+        for row in rows:
+            if isinstance(row, ResidentialMenu):
+                menus[row.dining_location_id][row.meal] = row.menu_items
+            else:
+                menus[row.dining_location_id] = row.menu_items
         return dict(menus)
 
-    def get_or_cache_all_menus_for_date(self, date: datetime.date) -> Optional[dict]:
-        """Get or cache all menus for a date."""
-        logger.debug(f"Getting or caching all menus for date: {date}.")
+    @staticmethod
+    def _is_fresh(rows: list, date: datetime.date) -> bool:
+        if date < local_today():
+            return True
+        cutoff = timezone.now() - MENU_REFRESH_AFTER
+        return all(row.updated_at >= cutoff for row in rows)
+
+    def get_or_cache_all_menus_for_date(self, date: datetime.date, force: bool = False) -> Optional[dict]:
+        """Menus for every location on a date, scraping the day if it is missing, stale or `force`d.
+
+        Returns an empty dict when no location has a menu that day, and None only when nothing is
+        stored and the site could not be reached.
+        """
         try:
-            cached = self._build_menus_dict(date)
-            if cached:
-                logger.debug(f"Returning cached all menus for date: {date}.")
-                return cached
+            rows = self._menu_rows(date)
+            if rows and not force and self._is_fresh(rows, date):
+                return self._menus_from_rows(rows)
+            checked_key = f"menus-checked:{date.isoformat()}"
+            if not rows and not force and cache.get(checked_key):
+                return {}
 
-            locations = self.get_or_cache_all_locations()
+            locations = self.get_or_cache_locations()
             if not locations:
-                logger.error(f"Error getting or caching locations before caching menus for date: {date}.")
+                return self._menus_from_rows(rows) if rows else None
+
+            scraped = self.scraper.get_menus_for_all_locations_and_date(sorted(locations), date)
+            if not scraped:
+                if rows:
+                    logger.error(f"Could not reach the menu site for {date}; serving stored menus.")
+                    return self._menus_from_rows(rows)
+                logger.error(f"Could not reach the menu site for {date} and nothing is stored.")
                 return None
 
-            api_menus = self.SCRAPER.get_menus_for_all_locations_and_date(date)
-            if not api_menus:
-                logger.error(f"No all menus found for date: {date}.")
-                return None
-
-            cached_success = cache_all_menus_for_locations_and_date(date, api_menus)
-            if not cached_success:
-                logger.error(f"Error caching all menus for date: {date}.")
-                return None
-
-            menu_items_ids = get_menu_item_ids_from_menus_for_all_locations_and_date(api_menus)
-            cached_menu_items = self.get_or_cache_menu_items(menu_items_ids)
-            if not cached_menu_items:
-                logger.error(f"Error getting or caching menu items for date: {date}.")
-                return None
-
-            return self._build_menus_dict(date)
-        except Exception as e:
-            logger.error(f"Error getting or caching all menus for date: {date}: {e}.")
+            _store_menus(date, scraped)
+            self._store_missing_menu_items(collect_menu_item_ids(scraped))
+            menus = self._menus_from_rows(self._menu_rows(date))
+            if not menus:
+                cache.set(checked_key, True, EMPTY_DAY_RECHECK_SECONDS)
+            return menus
+        except Exception:
+            logger.exception(f"Error getting menus for {date}")
             return None
 
     def get_or_cache_menus_and_items_for_date(self, date: datetime.date) -> Optional[dict]:
-        """Get or cache all menus and their menu items for a date. Returns both in one response."""
+        """Menus for a date together with every menu item they reference, or None on failure."""
+        menus = self.get_or_cache_all_menus_for_date(date)
+        if menus is None:
+            return None
+        item_ids = collect_menu_item_ids(menus)
+        menu_items = self.get_or_cache_menu_items(item_ids) if item_ids else {}
+        if menu_items is None:
+            return None
+        return {"menus": menus, "menu_items": menu_items}
+
+    def _store_missing_menu_items(self, ids: list[str]) -> None:
+        """Scrape and store the labels of any ids not yet in the database."""
+        known = set(MenuItem.objects.filter(id__in=ids).values_list("id", flat=True))
+        missing = [i for i in ids if i not in known and not cache.get(f"menu-item-missing:{i}")]
+        if not missing:
+            return
+        scraped = self.scraper.get_menu_items(missing)
+        _store_menu_items(scraped)
+        for item_id in set(missing) - set(scraped):
+            cache.set(f"menu-item-missing:{item_id}", True, MISSING_ITEM_BACKOFF_SECONDS)
+
+    def get_or_cache_menu_items(self, ids: list[str]) -> Optional[dict]:
+        """Menu items as {id: data}, scraping any ids not yet stored. None on failure."""
         try:
-            menus = self.get_or_cache_all_menus_for_date(date)
-            if not menus:
-                return None
-
-            item_ids = get_menu_item_ids_from_menus_for_all_locations_and_date(menus)
-            menu_items = self.get_or_cache_menu_items(item_ids) if item_ids else {}
-
-            return {"menus": menus, "menu_items": menu_items or {}}
-        except Exception as e:
-            logger.error(f"Error getting menus and items for date: {date}: {e}.")
+            self._store_missing_menu_items(ids)
+            queryset = MenuItem.objects.filter(id__in=ids).select_related("nutrition")
+            return {item["id"]: item for item in MenuItemSerializer(queryset, many=True).data}
+        except Exception:
+            logger.exception("Error getting menu items")
             return None
 
-    def _serialize_menu_items(self, qs) -> dict:
-        """Serialize a MenuItem queryset into {id: data} dict."""
-        serialized = MenuItemSerializer(qs, many=True).data
-        return {item["id"]: item for item in serialized}
-
-    def get_or_cache_menu_items(self, ids: "list[str]") -> Optional[dict]:
-        """Get or cache menu items for a list of IDs."""
-        logger.debug(f"Getting or caching menu items for {len(ids)} IDs.")
-        try:
-            cached_menu_items = list(
-                MenuItem.objects.filter(id__in=ids).select_related("nutrition")
+    def refresh_stale_menu_items(self, ids: list[str], older_than: datetime.timedelta = ITEM_REFRESH_AFTER) -> int:
+        """Re-scrape the labels of the given items that were last checked more than `older_than` ago."""
+        cutoff = timezone.now() - older_than
+        stale = list(
+            MenuItemNutrition.objects.filter(menu_item_id__in=ids, updated_at__lt=cutoff).values_list(
+                "menu_item_id", flat=True
             )
-            if len(cached_menu_items) == len(ids):
-                logger.debug(f"Returning cached menu items for {len(ids)} IDs.")
-                return self._serialize_menu_items(cached_menu_items)
-
-            cached_ids = set(item.id for item in cached_menu_items)
-            missing_ids = list(set(ids) - cached_ids)
-            api_menu_items = self.SCRAPER.get_menu_items(missing_ids)
-            if api_menu_items:
-                cached_success = cache_menu_items(api_menu_items)
-                if not cached_success:
-                    logger.error(f"Error caching menu items for IDs: {missing_ids}.")
-                    return None
-
-            logger.debug(f"Found {len(cached_ids)} existing cached menu items, cached {len(missing_ids)} menu items.")
-            all_items = MenuItem.objects.filter(id__in=ids).select_related("nutrition")
-            return self._serialize_menu_items(all_items)
-        except Exception as e:
-            logger.error(f"Error getting or caching menu items for IDs: {ids}: {e}.")
-            return None
+        )
+        if not stale:
+            return 0
+        scraped = self.scraper.get_menu_items(stale)
+        _store_menu_items(scraped)
+        return len(scraped)
 
 
 cacher_service = CacherService()

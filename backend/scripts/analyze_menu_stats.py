@@ -1,24 +1,25 @@
-import sys
-import os
+"""Print statistics about the menus stored in the database.
+
+Run from the backend directory: `uv run scripts/analyze_menu_stats.py`.
+"""
+
 import datetime
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hoagiemeal.settings")
-
-import django
-
-django.setup()
-
+import os
+import sys
 from collections import defaultdict
-from hoagiemeal.models.menu import ResidentialMenu, RetailMenu
 
 
-def collect_item_ids_from_menu_items(menu_items: dict) -> list:
-    """Flatten the menu_items JSON structure into a list of item IDs (duplicates preserved).
+def setup_django():
+    """Make the backend importable and initialise Django."""
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "hoagiemeal.settings")
+    import django
 
-    menu_items is expected to be { section: [item_id, ...] }
-    but handles nesting one level deeper just in case.
-    """
+    django.setup()
+
+
+def collect_item_ids(menu_items: dict) -> list[str]:
+    """Flatten a menu's {section: [ids]} or {area: {section: [ids]}} structure, keeping duplicates."""
     ids = []
     for value in menu_items.values():
         if isinstance(value, list):
@@ -31,78 +32,65 @@ def collect_item_ids_from_menu_items(menu_items: dict) -> list:
 
 
 def main():
-    # Gather per-date counts and global item occurrence tracking
+    """Aggregate every stored menu and print the statistics."""
+    setup_django()
+    from hoagiemeal.models.menu import ResidentialMenu, RetailMenu
+
     menus_per_day: dict[str, int] = defaultdict(int)
-    items_per_day_unique: dict[str, set] = defaultdict(set)
-    items_per_day_total: dict[str, int] = defaultdict(int)
-    item_occurrence_count: dict[str, int] = defaultdict(int)  # how many days each item appears
+    unique_items_per_day: dict[str, set] = defaultdict(set)
+    total_items_per_day: dict[str, int] = defaultdict(int)
 
-    for menu in ResidentialMenu.objects.select_related("dining_location").all():
-        date_key = menu.date.isoformat()
-        menus_per_day[date_key] += 1
-        ids = collect_item_ids_from_menu_items(menu.menu_items or {})
-        items_per_day_unique[date_key].update(ids)
-        items_per_day_total[date_key] += len(ids)
-
-    for menu in RetailMenu.objects.select_related("dining_location").all():
-        date_key = menu.date.isoformat()
-        menus_per_day[date_key] += 1
-        ids = collect_item_ids_from_menu_items(menu.menu_items or {})
-        items_per_day_unique[date_key].update(ids)
-        items_per_day_total[date_key] += len(ids)
+    for model in (ResidentialMenu, RetailMenu):
+        for menu in model.objects.all():
+            day = menu.date.isoformat()
+            ids = collect_item_ids(menu.menu_items or {})
+            menus_per_day[day] += 1
+            unique_items_per_day[day].update(ids)
+            total_items_per_day[day] += len(ids)
 
     if not menus_per_day:
         print("No menu data found in the database.")
         return
 
-    # Count how many days each unique item appears across all days
-    for day_ids in items_per_day_unique.values():
-        for item_id in day_ids:
-            item_occurrence_count[item_id] += 1
+    days_per_item: dict[str, int] = defaultdict(int)
+    for ids in unique_items_per_day.values():
+        for item_id in ids:
+            days_per_item[item_id] += 1
 
     num_days = len(menus_per_day)
     total_menus = sum(menus_per_day.values())
-    unique_items_ever = len(item_occurrence_count)
-    avg_menus = total_menus / num_days
-    avg_unique_items_per_day = sum(len(ids) for ids in items_per_day_unique.values()) / num_days
-    avg_total_items_per_day = sum(items_per_day_total.values()) / num_days
-    avg_occurrences_per_item = sum(item_occurrence_count.values()) / unique_items_ever if unique_items_ever else 0
-
+    unique_items = len(days_per_item)
     print(f"Days with data:                  {num_days}")
     print(f"Total menu records:              {total_menus}")
-    print(f"Unique menu items ever served:   {unique_items_ever}")
-    print(f"Avg menus per day:               {avg_menus:.2f}")
-    print(f"Avg items per day (with dupes):  {avg_total_items_per_day:.2f}")
-    print(f"Avg unique items per day:        {avg_unique_items_per_day:.2f}")
-    print(f"Avg days each item appears:      {avg_occurrences_per_item:.2f}  (how often a given item recurs)")
+    print(f"Unique menu items ever served:   {unique_items}")
+    print(f"Avg menus per day:               {total_menus / num_days:.2f}")
+    print(f"Avg items per day (with dupes):  {sum(total_items_per_day.values()) / num_days:.2f}")
+    print(f"Avg unique items per day:        {sum(len(ids) for ids in unique_items_per_day.values()) / num_days:.2f}")
+    print(f"Avg days each item appears:      {sum(days_per_item.values()) / unique_items if unique_items else 0:.2f}")
 
-    # Find the 7-day window with the most item appearances (including dupes)
-    all_dates = sorted(datetime.date.fromisoformat(d) for d in menus_per_day)
-    best_start = None
-    best_items = -1
-    best_menus = 0
-    for i, start in enumerate(all_dates):
-        end = start + datetime.timedelta(days=6)
-        window_dates = [d for d in all_dates if start <= d <= end]
-        window_items = sum(items_per_day_total[d.isoformat()] for d in window_dates)
-        if window_items > best_items:
-            best_items = window_items
-            best_menus = sum(menus_per_day[d.isoformat()] for d in window_dates)
-            best_start = start
-
-    print()
-    if best_start is not None:
-        best_end = best_start + datetime.timedelta(days=6)
-        print(f"Busiest 7-day period:            {best_start} to {best_end}")
-        print(f"  Menu items served (w/ dupes):  {best_items}")
-        print(f"  Menu records:                  {best_menus}")
+    # Busiest seven-day window by item appearances.
+    all_dates = sorted(datetime.date.fromisoformat(day) for day in menus_per_day)
+    best = None
+    for start in all_dates:
+        window = [d for d in all_dates if start <= d <= start + datetime.timedelta(days=6)]
+        items = sum(total_items_per_day[d.isoformat()] for d in window)
+        if best is None or items > best[1]:
+            best = (start, items, sum(menus_per_day[d.isoformat()] for d in window))
+    if best:
+        start, items, menus = best
+        print()
+        print(f"Busiest 7-day period:            {start} to {start + datetime.timedelta(days=6)}")
+        print(f"  Menu items served (w/ dupes):  {items}")
+        print(f"  Menu records:                  {menus}")
 
     print()
     print("Breakdown by date:")
     print(f"  {'Date':<12}  {'Menus':>6}  {'Items (w/ dupes)':>16}  {'Unique Items':>12}")
     print(f"  {'-' * 12}  {'-' * 6}  {'-' * 16}  {'-' * 12}")
-    for date_key in sorted(menus_per_day):
-        print(f"  {date_key:<12}  {menus_per_day[date_key]:>6}  {items_per_day_total[date_key]:>16}  {len(items_per_day_unique[date_key]):>12}")
+    for day in sorted(menus_per_day):
+        print(
+            f"  {day:<12}  {menus_per_day[day]:>6}  {total_items_per_day[day]:>16}  {len(unique_items_per_day[day]):>12}"
+        )
 
 
 if __name__ == "__main__":

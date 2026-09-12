@@ -1,179 +1,240 @@
-/**
- * @overview Dining hall card component for displaying menu items from a dining location.
- *
- * Copyright © 2021-2025 Hoagie Club and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree or at
- *
- *    https://github.com/hoagieclub/meal/LICENSE.
- *
- * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
- */
-
 'use client';
 
-import { majorScale, minorScale, Pane, Text, useTheme } from 'evergreen-ui';
-import React from 'react';
 import Image from 'next/image';
-import MenuSection from './menu-section';
-import { HALL_BANNER_MAP } from '@/styles';
-import { DINING_HALL_DISPLAY_NAMES } from '@/data';
-import { SECTION_TITLE_ORDER, canonicalIndex } from '@/ordering';
+import { Heading, majorScale, minorScale, Pane, Text, useTheme } from 'evergreen-ui';
+import MenuItemRow from '@/components/dining-hall-card/menu-item-row';
+import { DINING_HALL_BANNERS } from '@/lib/banners';
+import { canonicalIndex, DINING_HALL_INFO, SECTION_TITLE_ORDER } from '@/lib/constants';
+import type { DiningHall } from '@/lib/constants';
+import { servesMeal } from '@/lib/hours';
+import { mealLabel } from '@/lib/menus';
+import type { DisplayLocation, DisplayMenuItem, LocationType, Meal } from '@/types';
 
 interface DiningHallCardProps {
-  diningHall: any;
-  showNutrition?: boolean;
+  diningHall: DisplayLocation;
   isPinned: boolean;
   onPinToggle: () => void;
-  sortOption: string;
-  filtersActive?: boolean;
+  /** The day and meal being shown, used to explain an empty card. */
+  date: Date;
+  meal: Meal;
+  locationType: LocationType;
+  /** Position in the grid, used to stagger the entrance animation. */
   index?: number;
-  stickyTop?: number;
+  /** Keep the name in view while the card's list scrolls past. */
+  stickyHeader?: boolean;
 }
 
-/**
- * Dining hall card component.
- *
- * @returns The dining hall card component
- */
-const DiningHallCard = ({ diningHall, isPinned, onPinToggle, sortOption, filtersActive, index = 0, stickyTop = 0 }: DiningHallCardProps) => {
+export default function DiningHallCard({
+  diningHall,
+  isPinned,
+  onPinToggle,
+  date,
+  meal,
+  locationType,
+  index = 0,
+  stickyHeader = false,
+}: DiningHallCardProps) {
   const theme = useTheme();
-  const imageSrc = HALL_BANNER_MAP[diningHall.name as keyof typeof HALL_BANNER_MAP];
+  const info = DINING_HALL_INFO[diningHall.name as DiningHall];
+  const banner = DINING_HALL_BANNERS[diningHall.name as DiningHall];
+  const closed = !servesMeal(diningHall.id, date, meal, locationType);
+  const empty = diningHall.menu.length === 0;
+  const filteredOut = diningHall.rawMenuCount > 0 && empty;
 
-  const menuItems = diningHall.menu ?? [];
-  const categories: string[] =
-    ([...new Set(menuItems.map((item: any) => item.category || 'Other'))] as string[]).sort(
-      (a, b) => {
-        const diff = canonicalIndex(a, SECTION_TITLE_ORDER) - canonicalIndex(b, SECTION_TITLE_ORDER);
-        return diff !== 0 ? diff : a.localeCompare(b);
-      }
-    );
+  const sectionOf = (item: DisplayMenuItem) => item.category || 'Other';
+  const sections = [...new Set(diningHall.menu.map(sectionOf))].sort((a, b) => {
+    const aIndex = canonicalIndex(a, SECTION_TITLE_ORDER);
+    const bIndex = canonicalIndex(b, SECTION_TITLE_ORDER);
+    return aIndex !== bIndex ? aIndex - bIndex : a.localeCompare(b);
+  });
 
   return (
     <Pane
-      key={diningHall.name}
       background='white'
       borderRadius={15}
       boxShadow='0 2px 8px rgba(0,0,0,0.08)'
       padding={majorScale(3)}
       display='flex'
       flexDirection='column'
-      height='100%'
+      // Cards with a menu fill their grid row; empty ones stay short instead of stretching.
+      height={empty ? undefined : '100%'}
+      alignSelf={empty ? 'start' : undefined}
       className='card-fade-up'
       style={{ animationDelay: `${index * 40}ms` }}
     >
+      {/*
+        Negative margins let the header span the card padding. The background is solid behind the
+        name bar and only fades in the bottom padding, so list content scrolling underneath never
+        shows through the text.
+      */}
       <div
-        className='sticky z-10 rounded-t-[15px]'
+        className={`rounded-t-[15px] ${stickyHeader ? 'sticky top-0 z-10' : ''}`}
         style={{
-          top: stickyTop,
-          marginLeft: -24,
-          marginRight: -24,
-          marginTop: -24,
-          paddingLeft: 24,
-          paddingRight: 24,
-          paddingTop: 24,
-          paddingBottom: 24,
-          marginBottom: -16,
-          background: 'linear-gradient(to bottom, white 0%, white 55%, transparent 100%)',
+          margin: '-24px -24px -16px',
+          padding: 24,
+          background:
+            'linear-gradient(to top, rgba(255,255,255,0) 0, rgba(255,255,255,0) 14px, #fff 24px)',
           overflow: 'hidden',
         }}
       >
-      <Pane
-        display='flex'
-        alignItems='center'
-        background={theme.colors.gray200}
-        className='py-2 border relative border-gray-300 rounded-md flex items-center'
-      >
         <Pane
-          display='flex'
-          alignItems='center'
-          borderRadius={majorScale(1)}
-          paddingX={majorScale(2)}
-          paddingY={minorScale(1)}
+          background={theme.colors.gray200}
+          className='relative flex items-center rounded-md border border-gray-300 py-2'
         >
-          <Text size={700} fontWeight={600} color={theme.colors.gray900}>
-            {DINING_HALL_DISPLAY_NAMES[diningHall.name as keyof typeof DINING_HALL_DISPLAY_NAMES] ??
-              diningHall.name}
-          </Text>
-        </Pane>
-        <Pane className='flex items-center right-[-1rem] h-[140%] absolute'>
-          <Pane
-            onClick={onPinToggle}
-            cursor='pointer'
-            padding={minorScale(1)}
-            marginRight={minorScale(1)}
-            className='transition-transform duration-200 hover:scale-95 active:scale-85'
-            display='flex'
-            alignItems='center'
-            title={isPinned ? 'Unpin hall' : 'Pin hall'}
-          >
-            <img
-              src={isPinned ? '/images/icons/pinned.svg' : '/images/icons/unpinned.svg'}
-              width={16}
-              height={16}
-              alt={isPinned ? 'Unpin hall' : 'Pin hall'}
-            />
+          {/* The pin and banner overlay the right end, so the name gets room and truncates. */}
+          <Pane paddingX={majorScale(2)} paddingY={minorScale(1)} className='min-w-0 flex-1 pr-36'>
+            <Heading is='h2' size={600} color={theme.colors.gray900} className='truncate'>
+              {info?.shortName ?? diningHall.name}
+            </Heading>
           </Pane>
-          {imageSrc && (
-            <Image
-              src={imageSrc}
-              className='h-full my-auto w-auto'
-              alt={diningHall.name}
-              loading='lazy'
-              quality={75}
-            />
-          )}
+          <Pane className='absolute right-[-1rem] flex h-[140%] items-center'>
+            <button
+              type='button'
+              onClick={onPinToggle}
+              aria-pressed={isPinned}
+              aria-label={isPinned ? 'Unpin hall' : 'Pin hall'}
+              title={isPinned ? 'Unpin hall' : 'Pin hall'}
+              className='mr-1 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition-transform duration-200 hover:scale-95 active:scale-85'
+            >
+              <img
+                src={isPinned ? '/images/icons/pinned.svg' : '/images/icons/unpinned.svg'}
+                width={16}
+                height={16}
+                alt=''
+              />
+            </button>
+            {banner && (
+              <Image
+                src={banner}
+                className='my-auto h-full w-auto'
+                alt=''
+                sizes='160px'
+                loading='lazy'
+                quality={75}
+              />
+            )}
+          </Pane>
         </Pane>
-      </Pane>
       </div>
-      {menuItems.length === 0 ? (
-        <Pane
-          display='flex'
-          flexDirection='column'
-          alignItems='center'
-          justifyContent='center'
-          paddingTop={majorScale(2)}
-          paddingBottom={majorScale(1)}
-          paddingX={majorScale(2)}
-          textAlign='center'
-        >
-          {filtersActive ? (
-            <img src='/images/icons/funnel-x.svg' width={40} height={40} alt='Filtered out'/>
-          ) : (
-            <img src='/images/icons/no-food.svg' width={52} height={52} alt='Nothing today' />
-          )}
-          <Text
-            size={400}
-            fontWeight={600}
-            color={theme.colors.gray700}
-            marginTop={minorScale(3)}
-          >
-            {filtersActive ? 'Filtered out' : 'Nothing here'}
-          </Text>
-          <Text size={300} color={theme.colors.gray500} marginTop={minorScale(1)}>
-            {filtersActive
-              ? 'Try adjusting your search or filters'
-              : 'We couldn\'t find any items for this meal'}
-          </Text>
-        </Pane>
+
+      {empty ? (
+        <EmptyState
+          filteredOut={filteredOut}
+          closed={closed}
+          date={date}
+          meal={meal}
+          locationType={locationType}
+        />
       ) : (
-        categories.map((category: string) => {
-          const items = menuItems.filter((item: any) => item.category === category);
-          return (
-            <MenuSection
-              key={category}
-              items={items}
-              diningHallId={diningHall.name}
-              title={category}
-              sortOption={sortOption}
-            />
-          );
-        })
+        sections.map((section) => (
+          <MenuSection
+            key={section}
+            title={section}
+            items={diningHall.menu.filter((item) => sectionOf(item) === section)}
+            diningHallName={diningHall.name}
+          />
+        ))
       )}
     </Pane>
   );
-};
+}
 
-export default DiningHallCard;
+function MenuSection({
+  title,
+  items,
+  diningHallName,
+}: {
+  title: string;
+  items: DisplayMenuItem[];
+  diningHallName: string;
+}) {
+  const theme = useTheme();
+  return (
+    <Pane marginTop={majorScale(1)}>
+      <Pane
+        display='grid'
+        gridTemplateColumns='2fr 1fr'
+        columnGap={minorScale(2)}
+        rowGap={minorScale(1)}
+        borderBottom={`1px solid ${theme.colors.green300}`}
+        paddingBottom={minorScale(1)}
+        marginBottom={minorScale(1)}
+        background={theme.colors.gray100}
+        className='rounded-t-lg'
+      >
+        <Text
+          size={400}
+          fontWeight={600}
+          textAlign='left'
+          className='col-span-2 -mb-[2px] pt-1 pl-2'
+          textTransform='uppercase'
+        >
+          {title}
+        </Text>
+      </Pane>
+      {items.map((item) => (
+        <MenuItemRow key={item.id} item={item} diningHallName={diningHallName} />
+      ))}
+    </Pane>
+  );
+}
+
+/** Why a card is empty: filtered out, not open for this meal or day, or no menu published yet. */
+function EmptyState({
+  filteredOut,
+  closed,
+  date,
+  meal,
+  locationType,
+}: {
+  filteredOut: boolean;
+  /** The hours table says this location does not serve this meal on this day. */
+  closed: boolean;
+  date: Date;
+  meal: Meal;
+  locationType: LocationType;
+}) {
+  const theme = useTheme();
+  const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
+
+  let title: string;
+  let detail: string;
+  if (filteredOut) {
+    title = 'Filtered out';
+    detail = 'Try adjusting your search or filters';
+  } else if (closed) {
+    title = 'Closed';
+    detail =
+      locationType === 'residential'
+        ? `Not open for ${mealLabel(meal, date).toLowerCase()} on ${weekday}s`
+        : `Closed on ${weekday}s`;
+  } else {
+    title = 'Nothing here';
+    detail = 'No menu has been published for this meal yet';
+  }
+
+  return (
+    <Pane
+      display='flex'
+      alignItems='center'
+      gap={majorScale(2)}
+      paddingTop={majorScale(3)}
+      paddingX={minorScale(2)}
+    >
+      <img
+        src={filteredOut ? '/images/icons/funnel-x.svg' : '/images/icons/no-food.svg'}
+        width={36}
+        height={36}
+        alt=''
+      />
+      <Pane display='flex' flexDirection='column'>
+        <Text size={400} fontWeight={600} color={theme.colors.gray700}>
+          {title}
+        </Text>
+        <Text size={300} color={theme.colors.gray500}>
+          {detail}
+        </Text>
+      </Pane>
+    </Pane>
+  );
+}

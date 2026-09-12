@@ -8,8 +8,6 @@ Get the latest information regarding meals at Princeton with Hoagie Meal.
 
 ### Prerequisites
 
-Before you begin, ensure you have the following installed:
-
 - [Bun](https://bun.sh/) (frontend package manager)
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 - Python 3.12+
@@ -95,21 +93,14 @@ Use this value in your backend `.env` file.
 
 ### Backend
 
-1. **Create and activate a virtual environment:**
+1. **Install dependencies** (this also creates `.venv`):
 
    ```sh
    cd backend
-   uv venv --prompt hoagiemeal .venv
-   source .venv/bin/activate    # Windows: .venv\Scripts\activate
-   ```
-
-2. **Install dependencies:**
-
-   ```sh
    uv sync
    ```
 
-3. **Configure environment variables:**
+2. **Configure environment variables:**
 
    ```sh
    cp .env.example .env
@@ -127,19 +118,27 @@ Use this value in your backend `.env` file.
    | `AUTH0_ISSUER` | Auth0 issuer URL (e.g. `https://hoagie.us.auth0.com/`) |
    | `AUTH0_AUDIENCE` | Auth0 API audience identifier |
 
-4. **Run migrations:**
+3. **Run migrations:**
 
    ```sh
    uv run manage.py migrate
    ```
 
-5. **Run the app:**
+4. **Run the app:**
 
    ```sh
    uv run manage.py runserver
    ```
 
    The backend will now be running at `http://localhost:8000`.
+
+5. **Seed menus** (optional). Menus are scraped on first request, but you can warm the cache ahead of time:
+
+   ```sh
+   uv run scripts/seed_menus.py                      # today plus the next six days, then re-check stale labels
+   uv run scripts/seed_menus.py --behind 21 --ahead 21
+   uv run scripts/seed_menus.py --force --skip-items # re-scrape menus now, even if checked recently
+   ```
 
 ### Frontend
 
@@ -176,16 +175,49 @@ Use this value in your backend `.env` file.
    bun run dev
    ```
 
-   The app will now be running locally, and you can view it in your browser at `http://localhost:3000`.
+   The app will now be running locally at `http://localhost:3000`.
+
+### Running both at once
+
+From the repository root, `npm install` once and then:
+
+```sh
+npm run dev
+```
+
+This starts the backend and frontend side by side with colour-coded output.
+
+### Tests and checks
+
+Backend (from `backend/`):
+
+```sh
+uv run manage.py test          # unit tests; runs against an in-memory SQLite database
+uv run ruff check . && uv run ruff format .
+```
+
+The scraper tests parse real pages saved from menus.princeton.edu in `hoagiemeal/tests/fixtures/`.
+If the site changes its markup, re-save the pages there and update the expected values.
+
+Frontend (from `frontend/`):
+
+```sh
+bun run test                       # unit and component tests (bun test + Testing Library)
+bunx playwright install chromium   # once: downloads the browser the e2e tests use
+bun run e2e                        # Playwright smoke tests against the real app; starts the servers if needed
+bun run screenshots                # saves phone, tablet and desktop screenshots to ./screenshots
+bun run typecheck && bun run lint && bun run check-format
+```
 
 ## Project Structure
 
-- **`backend/`** is a Django REST API. It scrapes Princeton dining menus, caches nutritional data in PostgreSQL, and serves it over a REST API. Authenticated users can like, favorite, and rate menu items.
+- **`backend/`** is a Django REST API. It scrapes Princeton Campus Dining menus, stores them and their nutrition facts in PostgreSQL, and serves them over a small JSON API. Logged-in users can like, dislike and star menu items.
   - **Models:** `CustomUser`, `DiningLocation`, `ResidentialMenu`, `RetailMenu`, `MenuItem`, `MenuItemNutrition`, `MenuItemInteraction`, `MenuItemMetrics`
-  - **API routes:** `GET /api/menus/` (menus for a date), `POST /api/engagement/` (likes/favorites/metrics), `PATCH /api/engagement/interaction/` (update a user interaction), `POST /api/user/` (verify and create user)
-- **`frontend/`** is a Next.js web app. It displays daily dining hall menus with nutritional info and proxies authenticated requests to the backend. Installable as a PWA.
-  - **Pages:** `/` (main menu page), `/login` (login page)
-  - **API routes:** `/api/auth/*` (Auth0 login/logout/callback), `/api/engagement/` and `/api/engagement/interaction/` (proxies to backend with Auth0 token)
+  - **API routes:** `GET /api/menus/?date=` (menus and items for a date), `POST /api/engagement/` (metrics, plus the caller's interactions when logged in), `PATCH /api/engagement/interaction/` (update an interaction), `POST /api/user/` (verify the Auth0 token and create the user)
+  - **Scripts:** `scripts/seed_menus.py` warms the menu cache; `scripts/analyze_menu_stats.py` prints statistics about stored menus.
+- **`frontend/`** is a Next.js app. It shows each day's dining hall and retail menus with nutrition facts and allergen tags, and proxies authenticated requests to the backend.
+  - **Page:** `/` (the menu page)
+  - **API routes:** `/api/auth/*` (Auth0 login, logout and callback), `/api/engagement/` and `/api/engagement/interaction/` (proxies that attach the Auth0 token)
 
 ## License
 

@@ -1,175 +1,104 @@
-/**
- * @overview Navigation component for selecting meal type and date.
- *
- * Copyright © 2021-2025 Hoagie Club and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree or at
- *
- *    https://github.com/hoagieclub/meal/LICENSE.
- *
- * Permission is granted under the MIT License to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the software. This software is provided "as-is", without warranty of any kind.
- */
-
-import React from 'react';
 import {
-  Pane,
-  Text,
-  majorScale,
-  minorScale,
-  useTheme,
   ChevronLeftIcon,
   ChevronRightIcon,
+  majorScale,
+  minorScale,
+  Pane,
+  Text,
+  useTheme,
 } from 'evergreen-ui';
-import { Meal } from '@/types/types';
-
-const formatDateForDisplay = (date: Date): string => {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
-const isWeekend = (date: Date): boolean => {
-  const day = date.getDay();
-  return day === 0 || day === 6;
-};
+import { mealLabel } from '@/lib/menus';
+import { toDateKey, upcomingDates } from '@/lib/utils';
+import type { LocationType, Meal } from '@/types';
 
 interface DateMealSelectorProps {
   meal: Meal;
   setMeal: (meal: Meal) => void;
+  /** Meals served on the selected day, in display order. */
+  meals: Meal[];
   selectedDate: Date;
   setSelectedDate: (date: Date) => void;
-  locationType?: string;
+  locationType: LocationType;
 }
 
-// Generate the next 7 days starting from today
-const getNext7Days = (): Date[] => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() + i);
-    return date;
-  });
-};
+const ARROW_CLASS =
+  'w-10 h-10 sm:w-8 sm:h-8 flex-none transition-all hover:scale-110 active:scale-95 hover:brightness-95';
 
-// Format a date to 3-letter day abbreviation
-const formatDayAbbrev = (date: Date): string => {
-  return date.toLocaleDateString('en-US', { weekday: 'short' });
-};
-
-// Check if two dates are the same day
-const isSameDay = (a: Date, b: Date): boolean => {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-};
-
-/**
- * Date and meal selector component.
- *
- * @param props - The component props.
- * @returns The date and meal selector component.
- */
+/** Previous/next day arrows, a week of quick-pick days, and meal tabs for residential halls. */
 export default function DateMealSelector({
   meal,
   setMeal,
+  meals,
   selectedDate,
   setSelectedDate,
-  locationType = 'residential',
+  locationType,
 }: DateMealSelectorProps) {
   const theme = useTheme();
-  const formattedDateForDisplay = formatDateForDisplay(selectedDate);
-  const isWeekendDay = isWeekend(selectedDate);
-  const meals = isWeekendDay ? ['Lunch', 'Dinner'] : ['Breakfast', 'Lunch', 'Dinner'];
-  const next7Days = getNext7Days();
+  const activeIndex = meals.indexOf(meal);
 
-  const handleDateChange = (newDate: Date) => {
-    setSelectedDate(newDate);
-    if (isWeekend(newDate) && meal === 'Breakfast') {
-      setMeal('Lunch');
-    }
+  const shiftDay = (delta: number) => {
+    const date = new Date(selectedDate);
+    date.setDate(date.getDate() + delta);
+    setSelectedDate(date);
   };
 
-  const goToPreviousDay = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() - 1);
-    handleDateChange(newDate);
-  };
+  const arrow = (label: string, delta: number, Icon: typeof ChevronLeftIcon) => (
+    <Pane
+      is='button'
+      type='button'
+      aria-label={label}
+      display='flex'
+      alignItems='center'
+      justifyContent='center'
+      borderRadius={999}
+      background={theme.colors.green25}
+      cursor='pointer'
+      onClick={() => shiftDay(delta)}
+      className={ARROW_CLASS}
+    >
+      <Icon size={16} color={theme.colors.green700} />
+    </Pane>
+  );
 
-  const goToNextDay = () => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(newDate.getDate() + 1);
-    handleDateChange(newDate);
-  };
-
-  const goToDate = (date: Date) => {
-    handleDateChange(date);
-  };
-
-  // Render the date and meal selector.
   return (
-    <Pane display='flex' gap={minorScale(2)} className='mx-2 flex-col flex justify-center my-4'>
+    <Pane display='flex' gap={minorScale(2)} className='mx-2 my-4 flex flex-col justify-center'>
       <Pane display='flex' alignItems='center' justifyContent='center' gap={minorScale(2)}>
-        <Pane
-          display='flex'
-          alignItems='center'
-          justifyContent='center'
-          borderRadius={999}
-          background={theme.colors.green25}
-          cursor='pointer'
-          onClick={goToPreviousDay}
-          className='w-10 h-10 sm:w-8 sm:h-8 transition-all hover:scale-110 active:scale-95 hover:brightness-95'
-        >
-          <ChevronLeftIcon size={16} color={theme.colors.green700} />
-        </Pane>
-
+        {arrow('Previous day', -1, ChevronLeftIcon)}
         <Text
-          className='text-3xl sm:text-2xl text-center w-[17rem] truncate font-semibold'
+          className='w-[17rem] min-w-0 truncate text-center text-3xl font-semibold sm:text-2xl'
           color={theme.colors.green700}
         >
-          {formattedDateForDisplay}
+          {selectedDate.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+          })}
         </Text>
-
-        <Pane
-          display='flex'
-          alignItems='center'
-          justifyContent='center'
-          borderRadius={999}
-          background={theme.colors.green25}
-          cursor='pointer'
-          onClick={goToNextDay}
-          className='w-10 h-10 sm:w-8 sm:h-8 transition-all hover:scale-110 active:scale-95 hover:brightness-95'
-        >
-          <ChevronRightIcon size={16} color={theme.colors.green700} />
-        </Pane>
+        {arrow('Next day', 1, ChevronRightIcon)}
       </Pane>
 
       <Pane display='flex' justifyContent='center' gap={majorScale(2)} marginBottom={minorScale(2)}>
-        {next7Days.map((date) => {
-          const isSelected = isSameDay(date, selectedDate);
+        {upcomingDates(7).map((date) => {
+          const selected = toDateKey(date) === toDateKey(selectedDate);
           return (
             <Text
+              is='button'
+              type='button'
               key={date.toISOString()}
+              aria-pressed={selected}
               cursor='pointer'
               color={theme.colors.green700}
-              fontWeight={isSelected ? 600 : 400}
-              className={`text-base sm:text-sm transition-all ${isSelected ? 'underline underline-offset-4' : ''}`}
-              onClick={() => goToDate(date)}
+              fontWeight={selected ? 600 : 400}
+              className={`text-base transition-all sm:text-sm ${selected ? 'underline underline-offset-4' : ''}`}
+              onClick={() => setSelectedDate(date)}
             >
-              {formatDayAbbrev(date)}
+              {date.toLocaleDateString('en-US', { weekday: 'short' })}
             </Text>
           );
         })}
       </Pane>
 
-      {/* Meal tabs - only show when residential is selected */}
-      {locationType === 'residential' && (
+      {locationType === 'residential' && meals.length > 0 && (
         <Pane
           display='flex'
           borderRadius={999}
@@ -177,36 +106,40 @@ export default function DateMealSelector({
           overflow='hidden'
           boxShadow='0 2px 8px rgba(0,0,0,0.08)'
           position='relative'
+          role='tablist'
+          aria-label='Meal'
         >
-          <Pane
-            position='absolute'
-            top={0}
-            bottom={0}
-            left={`${(meals.indexOf(meal) / meals.length) * 100}%`}
-            width={`${100 / meals.length}%`}
-            background={theme.colors.green700}
-            borderRadius={999}
-            className='transition-all duration-300 ease-in-out'
-          />
-          {meals.map((mealOption: string) => {
-            const isSelectedMeal = meal === mealOption;
-            const textColor = isSelectedMeal ? 'white' : theme.colors.green800;
-            const displayLabel = isWeekendDay && mealOption === 'Lunch' ? 'Brunch' : mealOption;
-            return (
-              <Pane
-                key={mealOption}
-                flex={1}
-                textAlign='center'
-                cursor='pointer'
-                color={textColor}
-                className='text-sm sm:text-sm px-3 py-2 sm:py-1 transition-colors duration-300 relative z-10'
-                fontWeight={400}
-                onClick={() => setMeal(mealOption as string as Meal)}
-              >
-                {displayLabel}
-              </Pane>
-            );
-          })}
+          {/* Sliding highlight behind the selected meal. */}
+          {activeIndex >= 0 && (
+            <Pane
+              position='absolute'
+              top={0}
+              bottom={0}
+              left={`${(activeIndex / meals.length) * 100}%`}
+              width={`${100 / meals.length}%`}
+              background={theme.colors.green700}
+              borderRadius={999}
+              className='transition-all duration-300 ease-in-out'
+            />
+          )}
+          {meals.map((option) => (
+            <Pane
+              is='button'
+              type='button'
+              key={option}
+              flex={1}
+              textAlign='center'
+              cursor='pointer'
+              color={meal === option ? 'white' : theme.colors.green800}
+              className='relative z-10 px-4 py-2 text-sm transition-colors duration-300'
+              fontWeight={500}
+              onClick={() => setMeal(option)}
+              role='tab'
+              aria-selected={meal === option}
+            >
+              {mealLabel(option, selectedDate)}
+            </Pane>
+          ))}
         </Pane>
       )}
     </Pane>
