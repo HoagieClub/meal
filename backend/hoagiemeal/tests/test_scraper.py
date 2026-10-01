@@ -28,7 +28,10 @@ def soup(name: str) -> BeautifulSoup:
 
 def label_soup_for(url: str):
     """Stand-in for fetch_page_soup that serves saved label pages by item id, or None if unknown."""
-    item_id = re.search(r"RecNumAndPort=(\d+)", url).group(1)
+    item_id_str = re.search(r"RecNumAndPort=(\d+)", url)
+    assert item_id_str is not None
+    item_id = item_id_str.group(1)
+
     path = FIXTURES / f"label_{item_id}.html"
     return soup(path.name) if path.exists() else None
 
@@ -36,6 +39,7 @@ def label_soup_for(url: str):
 class ExtractLocationsTests(SimpleTestCase):
     def test_landing_page(self):
         locations = extract_locations(soup("landing.html"))
+        assert locations is not None
 
         self.assertEqual(
             sorted(locations), ["01", "03", "04", "05", "06", "07", "08", "12", "15", "16", "23", "24", "26"]
@@ -55,6 +59,7 @@ class ExtractLocationsTests(SimpleTestCase):
 class ExtractMenusTests(SimpleTestCase):
     def test_weekday_residential_menu(self):
         menus = extract_menus(soup("menu_rocky_friday.html"))
+        assert menus is not None
 
         self.assertEqual(list(menus), ["Breakfast", "Lunch", "Dinner"])
         self.assertEqual(
@@ -70,6 +75,7 @@ class ExtractMenusTests(SimpleTestCase):
 
     def test_weekend_breakfast_is_kept(self):
         menus = extract_menus(soup("menu_whitman_saturday.html"))
+        assert menus is not None
 
         self.assertEqual(list(menus), ["Breakfast", "Lunch", "Dinner"])
         self.assertEqual(menus["Breakfast"]["Early Entree"], ["581044", "580787", "581342", "581114"])
@@ -85,6 +91,7 @@ class ExtractMenusTests(SimpleTestCase):
 
     def test_retail_menu(self):
         menus = extract_menus(soup("menu_frist_friday.html"))
+        assert menus is not None
 
         self.assertEqual(list(menus), ["Today's Menu", "Inspired Offerings"])
         self.assertEqual(menus["Today's Menu"]["Soups"], ["601254", "610195"])
@@ -193,11 +200,14 @@ class ScraperTests(SimpleTestCase):
 
     def test_closed_location_and_fetch_failure_are_distinguished(self):
         scraper = Scraper()
-        date = datetime.date(2026, 9, 11)
+        date = datetime.date(2026, 10, 2)
         pages = {"01": soup("menu_rocky_friday.html"), "04": soup("menu_grad_closed.html")}
 
         def fetch(url):
-            location_id = re.search(r"locationNum=(\d+)", url).group(1)
+            location_id_str = re.search(r"locationNum=(\d+)", url)
+            assert location_id_str is not None
+            location_id = location_id_str.group(1)
+
             return pages.get(location_id)
 
         with patch("hoagiemeal.api.services.scraper.fetch_page_soup", return_value=None):
