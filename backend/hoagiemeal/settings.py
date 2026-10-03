@@ -21,7 +21,7 @@ def _csv_env(name: str, default: str) -> list[str]:
     return [value.strip() for value in (os.getenv(name) or default).split(",") if value.strip()]
 
 
-ALLOWED_HOSTS = _csv_env("ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = _csv_env("ALLOWED_HOSTS", "127.0.0.1")
 CORS_ALLOWED_ORIGINS = _csv_env("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000")
 CORS_ALLOW_CREDENTIALS = True
 
