@@ -71,8 +71,6 @@ export default function MenuItemRow({
             <LikeDislikeButtons
               name={item.name}
               userLiked={interactions.userLiked}
-              likeCount={interactions.likeCount}
-              dislikeCount={interactions.dislikeCount}
               onLike={interactions.handleLike}
               onDislike={interactions.handleDislike}
             />
@@ -151,19 +149,15 @@ function StarButton({
   );
 }
 
-/** Like and dislike buttons in one pill. Counts appear once somebody has voted. */
+/** Like and dislike buttons in one pill. */
 function LikeDislikeButtons({
   name,
   userLiked,
-  likeCount,
-  dislikeCount,
   onLike,
   onDislike,
 }: {
   name: string;
   userLiked: boolean | null;
-  likeCount: number;
-  dislikeCount: number;
   onLike: () => void;
   onDislike: () => void;
 }) {
@@ -173,7 +167,6 @@ function LikeDislikeButtons({
         label={`Like ${name}`}
         icon='like'
         active={userLiked === true}
-        count={likeCount}
         className={userLiked === true ? 'bg-green-50' : 'hover:bg-green-50'}
         onClick={onLike}
       />
@@ -182,7 +175,6 @@ function LikeDislikeButtons({
         label={`Dislike ${name}`}
         icon='dislike'
         active={userLiked === false}
-        count={dislikeCount}
         className={userLiked === false ? 'bg-red-50' : 'hover:bg-red-50'}
         onClick={onDislike}
       />
@@ -194,14 +186,12 @@ function VoteButton({
   label,
   icon,
   active,
-  count,
   className,
   onClick,
 }: {
   label: string;
   icon: 'like' | 'dislike';
   active: boolean;
-  count: number;
   className: string;
   onClick: () => void;
 }) {
@@ -220,7 +210,6 @@ function VoteButton({
         active={active}
         size={12}
       />
-      {count > 0 && <span className='text-xs font-medium text-gray-800'>{count}</span>}
     </button>
   );
 }
