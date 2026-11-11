@@ -23,6 +23,9 @@ class MenuItemInteraction(models.Model):
     # When the user first liked or disliked the item. Unlike updated_at, stars and changed votes leave
     # it alone, so it says which day a rating was made (the rating campaign gives a ticket per day).
     first_rated_at = models.DateTimeField(null=True, blank=True)
+    # Whether the item was on that day's menu when first rated. Only such ratings earn raffle tickets,
+    # so rating next week's dishes cannot stand in for eating today's.
+    first_rated_from_menu = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

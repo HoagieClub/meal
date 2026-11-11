@@ -2,7 +2,8 @@
 
 A rating is a like or a dislike, dated by when the student first rated that dish (first_rated_at),
 so starring a dish or changing a vote later never moves it to another day. Each campus day on which
-a student first rated at least `ratings_per_ticket` dishes earns one ticket. A vote taken back no
+a student first rated at least `ratings_per_ticket` dishes from that day's menu earns one ticket.
+Ratings of dishes from other days' menus are kept and shown, but earn nothing. A vote taken back no
 longer counts, and rating a dish again keeps its original day, so toggling a vote earns nothing.
 """
 
@@ -86,8 +87,8 @@ def all_ratings() -> QuerySet:
 
 
 def campaign_ratings(campaign: RatingCampaign) -> QuerySet:
-    """Ratings first made during the campaign."""
-    ratings = all_ratings().filter(first_rated_at__gte=campaign.window_start)
+    """Ratings that count toward tickets: first made during the campaign, of a dish on that day's menu."""
+    ratings = all_ratings().filter(first_rated_from_menu=True, first_rated_at__gte=campaign.window_start)
     if campaign.window_end is not None:
         ratings = ratings.filter(first_rated_at__lt=campaign.window_end)
     return ratings

@@ -36,6 +36,13 @@ def local_today() -> datetime.date:
     return datetime.datetime.now(CAMPUS_TZ).date()
 
 
+def menu_item_ids_on(date: datetime.date) -> set[str]:
+    """Ids of every item on any stored menu, residential or retail, for `date`."""
+    rows = list(ResidentialMenu.objects.filter(date=date).values_list("menu_items", flat=True))
+    rows += RetailMenu.objects.filter(date=date).values_list("menu_items", flat=True)
+    return set(collect_menu_item_ids(dict(enumerate(rows))))
+
+
 def _store_locations(locations: dict) -> None:
     for location in locations.values():
         DiningLocation.objects.update_or_create(

@@ -31,7 +31,7 @@ test('a logged-out visitor sees the campus count, the goal, the rule and a way i
   expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('500');
   expect(
     screen.getByText(
-      'Rate a dish each day through Nov 14 for a raffle ticket to win any Amazon item up to $100.'
+      "Rate a dish from that day's menu each day through Nov 14 for a raffle ticket to win any Amazon item up to $100."
     )
   ).toBeTruthy();
   expect(screen.getByRole('link', { name: 'Log in to enter' }).getAttribute('href')).toStartWith(
@@ -51,7 +51,7 @@ test('a logged-in student sees a chip per day and their tickets', () => {
     'Fri: today, no ticket yet',
     'Sat: still to come',
   ]);
-  expect(screen.getByText('1 ticket · rate one today for another')).toBeTruthy();
+  expect(screen.getByText("1 ticket · rate one from today's menu for another")).toBeTruthy();
 });
 
 test('without a prize or goal it is just the count, and it can be dismissed', () => {

@@ -1,12 +1,13 @@
 """Rating campaign tests: its settings, daily tickets, the stats endpoint and the draw."""
 
 import datetime
+import importlib
 from io import StringIO
 from unittest.mock import patch
 
+from django.apps import apps as django_apps
 from django.core.management import CommandError, call_command
 from django.test import TestCase
-from django.utils import timezone
 
 from hoagiemeal.api.services.cacher import CAMPUS_TZ, local_today
 from hoagiemeal.api.services.engagement import interactions_service
@@ -16,7 +17,14 @@ from hoagiemeal.api.services.rating_campaign import (
     configured_campaign,
     ticket_days,
 )
-from hoagiemeal.models import CustomUser, MenuItem, MenuItemInteraction
+from hoagiemeal.models import (
+    CustomUser,
+    DiningLocation,
+    MenuItem,
+    MenuItemInteraction,
+    ResidentialMenu,
+    RetailMenu,
+)
 
 CAMPAIGN = {
     "RATING_CAMPAIGN_START": "2026-11-11",
@@ -37,10 +45,15 @@ def campus(day: int, hour: int = 12, minute: int = 0) -> datetime.datetime:
     return datetime.datetime(2026, 11, day, hour, minute, tzinfo=CAMPUS_TZ)
 
 
-def rate(user, item_id: str, liked, first_rated_at, **fields):
+def rate(user, item_id: str, liked, first_rated_at, from_menu: bool = True, **fields):
     """Store a rating first made at `first_rated_at`; its updated_at is deliberately left as now."""
     MenuItemInteraction.objects.create(
-        user=user, menu_item_id=item_id, liked=liked, first_rated_at=first_rated_at, **fields
+        user=user,
+        menu_item_id=item_id,
+        liked=liked,
+        first_rated_at=first_rated_at,
+        first_rated_from_menu=from_menu,
+        **fields,
     )
 
 
@@ -52,6 +65,15 @@ class CampaignTestCase(TestCase):
         )
         for item_id in "ABCDEF":
             MenuItem.objects.create(id=item_id, name=f"Item {item_id}", url="u")
+        self.hall = DiningLocation.objects.create(id="hall", category="residential", name="Hall", url="u")
+        self.cafe = DiningLocation.objects.create(id="cafe", category="retail", name="Cafe", url="u")
+
+    def serve(self, date: datetime.date, residential: list[str] = (), retail: list[str] = ()):
+        """Store a day's menus: `residential` items at lunch in the hall, `retail` items at the cafe."""
+        ResidentialMenu.objects.create(
+            dining_location=self.hall, date=date, meal="Lunch", menu_items={"Entree": list(residential)}
+        )
+        RetailMenu.objects.create(dining_location=self.cafe, date=date, menu_items={"Main": {"Grill": list(retail)}})
 
 
 class CampaignSettingsTests(TestCase):
@@ -101,6 +123,39 @@ class FirstRatedAtTests(CampaignTestCase):
             interactions_service.update_user_menu_item_interaction(self.alice, "A", **change)
             self.assertEqual(MenuItemInteraction.objects.get(user=self.alice).first_rated_at, first)
 
+    def test_records_whether_the_dish_was_on_todays_menu_when_first_rated(self):
+        today = local_today()
+        self.serve(today, residential=["A"], retail=["B"])
+        self.serve(today + datetime.timedelta(days=1), residential=["C"])
+
+        for item_id in "ABC":
+            interactions_service.update_user_menu_item_interaction(self.alice, item_id, liked=True)
+        from_menu = dict(
+            MenuItemInteraction.objects.filter(user=self.alice).values_list("menu_item_id", "first_rated_from_menu")
+        )
+        self.assertEqual(from_menu, {"A": True, "B": True, "C": False})
+
+        # Tomorrow's dish stays out even once it is served, because its rating keeps its first day.
+        ResidentialMenu.objects.filter(date=today).update(menu_items={"Entree": ["A", "C"]})
+        interactions_service.update_user_menu_item_interaction(self.alice, "C", liked=False)
+        self.assertFalse(MenuItemInteraction.objects.get(user=self.alice, menu_item_id="C").first_rated_from_menu)
+
+    def test_the_migration_dates_existing_ratings_and_checks_that_days_menus(self):
+        migration = importlib.import_module("hoagiemeal.migrations.0002_menuiteminteraction_first_rating")
+        self.serve(datetime.date(2026, 11, 11), residential=["A"])
+        for item_id, liked in (("A", True), ("B", False), ("C", None)):
+            interaction = MenuItemInteraction.objects.create(user=self.alice, menu_item_id=item_id, liked=liked)
+            MenuItemInteraction.objects.filter(pk=interaction.pk).update(updated_at=campus(11, 20))
+
+        migration.backfill_first_rating(django_apps, None)
+
+        rows = MenuItemInteraction.objects.filter(user=self.alice).order_by("menu_item_id")
+        self.assertEqual(
+            [(row.menu_item_id, row.first_rated_at, row.first_rated_from_menu) for row in rows],
+            [("A", campus(11, 20), True), ("B", campus(11, 20), False), ("C", None, False)],
+        )
+        self.assertEqual({row.updated_at for row in rows}, {campus(11, 20)})
+
 
 class TicketTests(CampaignTestCase):
     def test_ratings_count_by_the_campus_day_they_were_first_made(self):
@@ -109,6 +164,7 @@ class TicketTests(CampaignTestCase):
         rate(self.alice, "C", True, campus(14, 23, 59))  # the last minute of the last day
         rate(self.alice, "D", True, campus(15, 0, 1))  # the morning after it ends
         rate(self.alice, "E", None, campus(12))  # a vote taken back
+        rate(self.alice, "F", True, campus(13), from_menu=False)  # a dish from another day's menu
         rate(self.bob, "A", None, None, favorited=True)  # a star, never a vote
 
         with self.settings(**CAMPAIGN):
@@ -174,16 +230,22 @@ class StatsEndpointTests(CampaignTestCase):
         self.assertEqual(carol["campaign"]["user"], {"ticket_days": [], "rated_today": 0})
         self.assertEqual(after, {"total_ratings": 4, "campaign": None})
 
-    def test_a_vote_cast_now_earns_todays_ticket(self):
+    def test_a_vote_now_on_todays_menu_earns_todays_ticket_and_one_on_tomorrows_does_not(self):
+        today = local_today()
+        self.serve(today, residential=["A"])
+        self.serve(today + datetime.timedelta(days=1), residential=["C"])
+        interactions_service.update_user_menu_item_interaction(self.carol, "C", liked=True)
+        interactions_service.update_user_menu_item_interaction(self.bob, "C", liked=True)
         interactions_service.update_user_menu_item_interaction(self.carol, "A", liked=True)
         interactions_service.update_user_menu_item_interaction(self.carol, "B", favorited=True)
 
-        today = local_today().isoformat()
-        with self.settings(**{**CAMPAIGN, "RATING_CAMPAIGN_START": today, "RATING_CAMPAIGN_END": ""}):
-            stats = self.get_stats(self.carol)
+        with self.settings(**{**CAMPAIGN, "RATING_CAMPAIGN_START": today.isoformat(), "RATING_CAMPAIGN_END": ""}):
+            carol = self.get_stats(self.carol)
+            bob = self.get_stats(self.bob)
 
-        self.assertEqual(stats["campaign"]["user"], {"ticket_days": [today], "rated_today": 1})
-        self.assertLessEqual(MenuItemInteraction.objects.get(menu_item_id="A").first_rated_at, timezone.now())
+        self.assertEqual(carol["campaign"]["user"], {"ticket_days": [today.isoformat()], "rated_today": 1})
+        self.assertEqual(bob["campaign"]["user"], {"ticket_days": [], "rated_today": 0})
+        self.assertEqual(carol["total_ratings"], 3, "every rating still counts toward the campus total")
 
 
 class EntrantsCommandTests(CampaignTestCase):

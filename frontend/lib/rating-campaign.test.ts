@@ -36,10 +36,10 @@ test('dates read as campus days, short campaigns list their days, and the goal b
 
 test('the rule names the daily target, the last day and the prize', () => {
   expect(raffleRule(campaign)).toBe(
-    'Rate a dish each day through Nov 14 for a raffle ticket to win any Amazon item up to $100.'
+    "Rate a dish from that day's menu each day through Nov 14 for a raffle ticket to win any Amazon item up to $100."
   );
   expect(raffleRule({ ...campaign, ratingsPerTicket: 3, endsOn: null })).toBe(
-    'Rate 3 dishes each day for a raffle ticket to win any Amazon item up to $100.'
+    "Rate 3 dishes from that day's menu each day for a raffle ticket to win any Amazon item up to $100."
   );
   expect(raffleRule({ ...campaign, prize: '' })).toBeNull();
 });
@@ -52,16 +52,20 @@ test("the status counts tickets and says what today's needs", () => {
   ) => ticketStatus({ ...campaign, ...extra, user: { ticketDays, ratedToday } });
 
   expect(ticketStatus(campaign)).toBeNull();
-  expect(withUser([], 0)).toBe('Rate one today for your first ticket');
-  expect(withUser(['2026-11-11'], 0)).toBe('1 ticket · rate one today for another');
+  expect(withUser([], 0)).toBe("Rate one from today's menu for your first ticket");
+  expect(withUser(['2026-11-11'], 0)).toBe("1 ticket · rate one from today's menu for another");
   expect(withUser(['2026-11-11', '2026-11-12'], 2)).toBe(
     "2 tickets · today's is in, come back tomorrow for another"
   );
   expect(withUser(['2026-11-14'], 1, { today: '2026-11-14' })).toBe(
     "1 ticket · today's is in, that was the last day"
   );
-  expect(withUser([], 1, { ratingsPerTicket: 3 })).toBe('Rate 2 more today for your first ticket');
-  expect(withUser([], 0, { ratingsPerTicket: 3 })).toBe('Rate 3 today for your first ticket');
+  expect(withUser([], 1, { ratingsPerTicket: 3 })).toBe(
+    "Rate 2 more from today's menu for your first ticket"
+  );
+  expect(withUser([], 0, { ratingsPerTicket: 3 })).toBe(
+    "Rate 3 from today's menu for your first ticket"
+  );
 });
 
 test('a toast marks each new ticket, and progress when a ticket takes several ratings', () => {

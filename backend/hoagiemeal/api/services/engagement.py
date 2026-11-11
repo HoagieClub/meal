@@ -5,6 +5,7 @@ from typing import Any, Optional
 from django.db.models import Count, Q
 from django.utils import timezone
 
+from hoagiemeal.api.services.cacher import local_today, menu_item_ids_on
 from hoagiemeal.models.engagement import MenuItemInteraction, MenuItemMetrics
 from hoagiemeal.models.menu_item import MenuItem
 from hoagiemeal.serializers import MenuItemInteractionSerializer, MenuItemMetricsSerializer
@@ -95,6 +96,7 @@ class MenuItemInteractionsService:
                     setattr(interaction, field, value)
             if interaction.liked is not None and interaction.first_rated_at is None:
                 interaction.first_rated_at = timezone.now()
+                interaction.first_rated_from_menu = menu_item_api_id in menu_item_ids_on(local_today())
             interaction.save()
             self.update_menu_item_metrics(menu_item_api_id)
             return True

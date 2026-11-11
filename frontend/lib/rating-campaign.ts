@@ -42,11 +42,14 @@ export function campaignDays(campaign: Pick<RatingCampaign, 'startsOn' | 'endsOn
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? '' : 's'}`;
 const dishesPhrase = (count: number) => (count === 1 ? 'a dish' : `${count} dishes`);
 
-/** "Rate a dish each day through Nov 14 for a raffle ticket to win …", or null without a prize. */
+/**
+ * "Rate a dish from that day's menu each day through Nov 14 for a raffle ticket to win …", or null
+ * without a prize. Only dishes on the day's menu earn its ticket (the server checks).
+ */
 export function raffleRule(campaign: RatingCampaign): string | null {
   if (!campaign.prize) return null;
   const through = campaign.endsOn ? ` through ${formatCampaignDay(campaign.endsOn)}` : '';
-  return `Rate ${dishesPhrase(campaign.ratingsPerTicket)} each day${through} for a raffle ticket to win ${campaign.prize}.`;
+  return `Rate ${dishesPhrase(campaign.ratingsPerTicket)} from that day's menu each day${through} for a raffle ticket to win ${campaign.prize}.`;
 }
 
 /** The logged-in student's standing: "2 tickets · today's is in", or what today's ticket needs. */
@@ -62,8 +65,8 @@ export function ticketStatus(campaign: RatingCampaign): string | null {
   const remaining = ratingsPerTicket - user.ratedToday;
   const toRate =
     user.ratedToday > 0 ? `${remaining} more` : ratingsPerTicket === 1 ? 'one' : `${remaining}`;
-  if (tickets === 0) return `Rate ${toRate} today for your first ticket`;
-  return `${plural(tickets, 'ticket')} · rate ${toRate} today for another`;
+  if (tickets === 0) return `Rate ${toRate} from today's menu for your first ticket`;
+  return `${plural(tickets, 'ticket')} · rate ${toRate} from today's menu for another`;
 }
 
 export interface RaffleSnapshot {
