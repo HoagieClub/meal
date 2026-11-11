@@ -20,6 +20,9 @@ class MenuItemInteraction(models.Model):
     favorited = models.BooleanField(default=False)
     saved_for_later = models.BooleanField(default=False)
     would_eat_again = models.CharField(max_length=1, choices=WouldEatAgain.choices, null=True, blank=True)
+    # When the user first liked or disliked the item. Unlike updated_at, stars and changed votes leave
+    # it alone, so it says which day a rating was made (the rating campaign gives a ticket per day).
+    first_rated_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

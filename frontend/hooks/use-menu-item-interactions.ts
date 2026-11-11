@@ -2,6 +2,7 @@
 
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ENGAGEMENT_STATS_KEY } from '@/hooks/use-engagement-stats';
 import { MENUS_KEY } from '@/hooks/use-menus';
 import { ApiError, patchUserMenuItemInteraction } from '@/lib/endpoints';
 import { applyInteraction, type InteractionPatch } from '@/lib/interactions';
@@ -43,6 +44,8 @@ export function useMenuItemInteractions(
       if (error instanceof ApiError && error.status === 401) promptLogin();
       void client.invalidateQueries({ queryKey: [MENUS_KEY] });
     },
+    // The campus count and the user's giveaway progress move with every saved vote.
+    onSettled: () => void client.invalidateQueries({ queryKey: [ENGAGEMENT_STATS_KEY] }),
   });
 
   const userLiked = interaction?.liked ?? null;

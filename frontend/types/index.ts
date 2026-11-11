@@ -66,6 +66,36 @@ export interface MenuItemMetrics {
   averageLikeScore?: number | null;
 }
 
+/** A rating raffle that is running today, as /api/engagement/stats/ describes it. */
+export interface RatingCampaign {
+  /** First and last day, YYYY-MM-DD in campus time. No last day means open-ended. */
+  startsOn: string;
+  endsOn: string | null;
+  /** Today on campus, YYYY-MM-DD, as the server sees it. */
+  today: string;
+  /** Read as "to win <prize>", e.g. "any Amazon item up to $100". Empty when there is no raffle. */
+  prize: string;
+  /** Total ratings to show progress toward, if the team set one. */
+  goal: number | null;
+  /** Dishes to rate in one day to earn that day's ticket. */
+  ratingsPerTicket: number;
+  /** The visitor's tickets, or null when they are not logged in. */
+  user: RaffleProgress | null;
+}
+
+export interface RaffleProgress {
+  /** The days (YYYY-MM-DD) that earned a ticket. */
+  ticketDays: string[];
+  /** Dishes rated for the first time today. */
+  ratedToday: number;
+}
+
+export interface EngagementStats {
+  /** Every like and dislike ever cast, by every student. */
+  totalRatings: number;
+  campaign: RatingCampaign | null;
+}
+
 /**
  * A location's menu for one day. Residential locations nest meal → station → item ids;
  * retail locations nest section → station → item ids.

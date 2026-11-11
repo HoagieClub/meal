@@ -28,6 +28,18 @@ CORS_ALLOW_CREDENTIALS = True
 AUTH0_ISSUER = os.environ.get("AUTH0_ISSUER")
 AUTH0_AUDIENCE = os.environ.get("AUTH0_AUDIENCE")
 
+# Rating campaign: between these campus-time dates (both inclusive), each day a student rates dishes
+# earns them a raffle ticket. Leave RATING_CAMPAIGN_START unset to turn it off. Values are parsed,
+# and bad ones reported, in api/services/rating_campaign.py rather than here, so a typo in a config
+# var turns the campaign off instead of stopping the server.
+RATING_CAMPAIGN_START = os.environ.get("RATING_CAMPAIGN_START")  # YYYY-MM-DD
+RATING_CAMPAIGN_END = os.environ.get("RATING_CAMPAIGN_END")  # YYYY-MM-DD; unset means open-ended
+# Read as "...to win <prize>", e.g. "any Amazon item up to $100". Empty: no raffle, just the count.
+RATING_CAMPAIGN_PRIZE = os.environ.get("RATING_CAMPAIGN_PRIZE", "")
+RATING_CAMPAIGN_GOAL = os.environ.get("RATING_CAMPAIGN_GOAL")  # total ratings to aim for; optional
+# Dishes a student must rate in one day to earn that day's ticket.
+RATING_CAMPAIGN_RATINGS_PER_TICKET = os.environ.get("RATING_CAMPAIGN_RATINGS_PER_TICKET", "1")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

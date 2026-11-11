@@ -3,6 +3,7 @@
 from typing import Any, Optional
 
 from django.db.models import Count, Q
+from django.utils import timezone
 
 from hoagiemeal.models.engagement import MenuItemInteraction, MenuItemMetrics
 from hoagiemeal.models.menu_item import MenuItem
@@ -92,6 +93,8 @@ class MenuItemInteractionsService:
             for field, value in fields.items():
                 if field in self.UPDATABLE_FIELDS:
                     setattr(interaction, field, value)
+            if interaction.liked is not None and interaction.first_rated_at is None:
+                interaction.first_rated_at = timezone.now()
             interaction.save()
             self.update_menu_item_metrics(menu_item_api_id)
             return True
