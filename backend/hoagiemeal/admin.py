@@ -6,10 +6,11 @@ from hoagiemeal.models.dining import DiningLocation
 from hoagiemeal.models.engagement import MenuItemInteraction, MenuItemMetrics
 from hoagiemeal.models.menu import ResidentialMenu, RetailMenu
 from hoagiemeal.models.menu_item import MenuItem, MenuItemNutrition
-from hoagiemeal.models.user import CustomUser
+from hoagiemeal.models.user import CustomUser, UserActivityDay
 
 for model in (
     CustomUser,
+    UserActivityDay,
     DiningLocation,
     ResidentialMenu,
     RetailMenu,

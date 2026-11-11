@@ -4,10 +4,11 @@ from .dining import DiningLocation
 from .engagement import MenuItemInteraction, MenuItemMetrics, MenuItemSimilarity
 from .menu import ResidentialMenu, RetailMenu
 from .menu_item import MenuItem, MenuItemNutrition
-from .user import CustomUser
+from .user import CustomUser, UserActivityDay
 
 __all__ = [
     "CustomUser",
+    "UserActivityDay",
     "DiningLocation",
     "MenuItem",
     "MenuItemInteraction",
