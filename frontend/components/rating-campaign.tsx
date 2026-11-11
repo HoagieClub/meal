@@ -71,6 +71,12 @@ export function RatingCampaignBannerContent({
         <CrossIcon size={14} />
       </button>
 
+      {campaign.testRun && (
+        <span className='mb-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-amber-900 uppercase'>
+          Test run
+        </span>
+      )}
+
       <p className='text-sm'>
         {totalRatings > 0 ? (
           <>
@@ -110,6 +116,11 @@ export function RatingCampaignBannerContent({
       )}
 
       {rule && <p className='mt-2 text-sm'>{rule}</p>}
+      {campaign.testRun && (
+        <p className='mt-1 text-xs text-green-900/70'>
+          We&apos;re trying this out ahead of the official launch, so details may change.
+        </p>
+      )}
 
       {rule && (
         <div className='mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5'>

@@ -10,6 +10,7 @@ const campaign: RatingCampaign = {
   prize: 'any Amazon item up to $100',
   goal: 500,
   ratingsPerTicket: 1,
+  testRun: false,
   user: null,
 };
 
@@ -70,4 +71,14 @@ test('without a prize or goal it is just the count, and it can be dismissed', ()
 
   fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
   expect(onDismiss).toHaveBeenCalledTimes(1);
+});
+
+test('a test run is labelled as one', () => {
+  const { unmount } = renderBanner({});
+  expect(screen.queryByText('Test run')).toBeNull();
+  unmount();
+
+  renderBanner({ testRun: true });
+  expect(screen.getByText('Test run')).toBeTruthy();
+  expect(screen.getByText(/trying this out ahead of the official launch/)).toBeTruthy();
 });

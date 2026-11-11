@@ -17,6 +17,7 @@ const campaign: RatingCampaign = {
   prize: 'any Amazon item up to $100',
   goal: 500,
   ratingsPerTicket: 1,
+  testRun: false,
   user: null,
 };
 

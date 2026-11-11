@@ -39,6 +39,8 @@ RATING_CAMPAIGN_PRIZE = os.environ.get("RATING_CAMPAIGN_PRIZE", "")
 RATING_CAMPAIGN_GOAL = os.environ.get("RATING_CAMPAIGN_GOAL")  # total ratings to aim for; optional
 # Dishes a student must rate in one day to earn that day's ticket.
 RATING_CAMPAIGN_RATINGS_PER_TICKET = os.environ.get("RATING_CAMPAIGN_RATINGS_PER_TICKET", "1")
+# "true" labels the banner as a test run, for trying the campaign out before the official one.
+RATING_CAMPAIGN_TEST_RUN = os.environ.get("RATING_CAMPAIGN_TEST_RUN", "false").lower() in ("true", "1", "t")
 
 INSTALLED_APPS = [
     "django.contrib.admin",

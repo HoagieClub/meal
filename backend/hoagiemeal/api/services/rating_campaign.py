@@ -31,6 +31,8 @@ class RatingCampaign:
     prize: str
     goal: Optional[int]
     ratings_per_ticket: int
+    # Labelled as a trial on the menu page, ahead of the official campaign.
+    test_run: bool = False
 
     @property
     def window_start(self) -> datetime.datetime:
@@ -70,6 +72,7 @@ def configured_campaign() -> Optional[RatingCampaign]:
             prize=(settings.RATING_CAMPAIGN_PRIZE or "").strip(),
             goal=int(goal) if goal else None,
             ratings_per_ticket=int((settings.RATING_CAMPAIGN_RATINGS_PER_TICKET or "1").strip()),
+            test_run=bool(settings.RATING_CAMPAIGN_TEST_RUN),
         )
     except ValueError:
         logger.warning("Rating campaign is off: a RATING_CAMPAIGN_* value is not a valid date or number.")
@@ -144,6 +147,7 @@ def engagement_stats(user: Any) -> dict:
         "prize": campaign.prize,
         "goal": campaign.goal,
         "ratings_per_ticket": campaign.ratings_per_ticket,
+        "test_run": campaign.test_run,
         "user": progress,
     }
     return stats

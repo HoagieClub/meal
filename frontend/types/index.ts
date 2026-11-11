@@ -79,6 +79,8 @@ export interface RatingCampaign {
   goal: number | null;
   /** Dishes to rate in one day to earn that day's ticket. */
   ratingsPerTicket: number;
+  /** A trial ahead of the official campaign; the banner says so. */
+  testRun: boolean;
   /** The visitor's tickets, or null when they are not logged in. */
   user: RaffleProgress | null;
 }

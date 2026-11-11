@@ -81,6 +81,10 @@
 		"RATING_CAMPAIGN_RATINGS_PER_TICKET": {
 			"description": "Dishes a student must rate in one day to earn that day's raffle ticket. Defaults to 1.",
 			"required": false
+		},
+		"RATING_CAMPAIGN_TEST_RUN": {
+			"description": "Set to 'true' to label the banner as a test run, ahead of the official raffle.",
+			"required": false
 		}
 	}
 }

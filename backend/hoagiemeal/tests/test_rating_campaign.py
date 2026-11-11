@@ -32,6 +32,7 @@ CAMPAIGN = {
     "RATING_CAMPAIGN_PRIZE": "any Amazon item up to $100",
     "RATING_CAMPAIGN_GOAL": "500",
     "RATING_CAMPAIGN_RATINGS_PER_TICKET": "1",
+    "RATING_CAMPAIGN_TEST_RUN": False,
 }
 THURSDAY = datetime.date(2026, 11, 12)
 SUNDAY = datetime.date(2026, 11, 15)
@@ -96,6 +97,10 @@ class CampaignSettingsTests(TestCase):
             open_ended = configured_campaign()
         self.assertIsNone(open_ended.goal)
         self.assertTrue(open_ended.is_running(datetime.date(2027, 5, 1)))
+
+        self.assertFalse(campaign.test_run)
+        with self.settings(**{**CAMPAIGN, "RATING_CAMPAIGN_TEST_RUN": True}):
+            self.assertTrue(configured_campaign().test_run)
 
     def test_is_off_when_unset_or_any_value_is_invalid(self):
         with self.settings(**{**CAMPAIGN, "RATING_CAMPAIGN_START": None}):
@@ -222,6 +227,7 @@ class StatsEndpointTests(CampaignTestCase):
                     "prize": "any Amazon item up to $100",
                     "goal": 500,
                     "ratings_per_ticket": 1,
+                    "test_run": False,
                     "user": None,
                 },
             },
