@@ -1,1 +1,2 @@
 web: bin/start-pgbouncer gunicorn hoagiemeal.wsgi --workers 3 --threads 2 --timeout 30
+release: python manage.py migrate

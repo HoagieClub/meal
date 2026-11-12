@@ -61,6 +61,30 @@
 		"PROJECT_PATH": {
 			"description": "Path to the Django project directory for the subdirectory buildpack.",
 			"required": true
+		},
+		"RATING_CAMPAIGN_START": {
+			"description": "First day (YYYY-MM-DD, campus time) of the rating raffle. Leave unset to turn it off.",
+			"required": false
+		},
+		"RATING_CAMPAIGN_END": {
+			"description": "Last day (YYYY-MM-DD, inclusive) of the rating raffle. Unset means no end date.",
+			"required": false
+		},
+		"RATING_CAMPAIGN_PRIZE": {
+			"description": "Prize, read as 'to win <prize>', e.g. 'any Amazon item up to $100'. Empty: show the rating count only, no raffle.",
+			"required": false
+		},
+		"RATING_CAMPAIGN_GOAL": {
+			"description": "Total ratings to show progress toward on the menu page. Optional.",
+			"required": false
+		},
+		"RATING_CAMPAIGN_RATINGS_PER_TICKET": {
+			"description": "Dishes a student must rate in one day to earn that day's raffle ticket. Defaults to 1.",
+			"required": false
+		},
+		"RATING_CAMPAIGN_TEST_RUN": {
+			"description": "Set to 'true' to label the banner as a test run, ahead of the official raffle.",
+			"required": false
 		}
 	}
 }

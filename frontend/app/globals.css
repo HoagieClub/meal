@@ -188,3 +188,43 @@
 .login-prompt-enter {
   animation: login-prompt-enter 200ms ease-out both;
 }
+
+/* The rating progress toast rises from the bottom of the window. */
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-enter {
+  animation: toast-enter 200ms ease-out both;
+}
+
+/* The campus rating count pops when it goes up. */
+@keyframes count-bump {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.count-bump {
+  animation: count-bump 350ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter,
+  .count-bump {
+    animation: none;
+  }
+}

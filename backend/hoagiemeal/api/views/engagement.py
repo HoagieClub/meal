@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 
 from hoagiemeal.api.services.engagement import interactions_service
+from hoagiemeal.api.services.rating_campaign import engagement_stats
 from hoagiemeal.api.services.user import decode_auth0_token, get_or_create_user
 from hoagiemeal.api.views.responses import error, ok
 from hoagiemeal.models.engagement import MenuItemInteraction
@@ -53,6 +54,18 @@ def get_engagement_data(request):
         return ok({"interactions": interactions, "metrics": metrics}, "Engagement data fetched successfully.")
     except Exception:
         logger.exception("Error in get_engagement_data view")
+        return error("An internal error occurred.", status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["GET"])
+def get_engagement_stats(request):
+    """The campus-wide rating count and, while a rating campaign runs, the caller's progress in it."""
+    try:
+        claims = decode_auth0_token(request)
+        user = get_or_create_user(claims) if claims else None
+        return ok(engagement_stats(user), "Engagement stats fetched successfully.")
+    except Exception:
+        logger.exception("Error in get_engagement_stats view")
         return error("An internal error occurred.", status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

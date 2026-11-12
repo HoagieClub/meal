@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { applyInteraction } from '@/lib/interactions';
+import { applyInteraction, showsVoteCounts } from '@/lib/interactions';
 import type { MenuData } from '@/types';
 
 const data: MenuData = {
@@ -24,4 +24,11 @@ test('applyInteraction moves and clears votes, keeps counts for stars, and never
 
   expect(data.interactions.b).toBeUndefined();
   expect(data.metrics.a).toEqual({ likeCount: 5, dislikeCount: 1 });
+});
+
+test('vote counts show once a dish has three votes, likes and dislikes together', () => {
+  expect(showsVoteCounts(0, 0)).toBe(false);
+  expect(showsVoteCounts(2, 0)).toBe(false);
+  expect(showsVoteCounts(2, 1)).toBe(true);
+  expect(showsVoteCounts(0, 3)).toBe(true);
 });

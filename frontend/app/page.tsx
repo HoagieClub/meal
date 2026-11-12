@@ -18,6 +18,7 @@ import LoginPrompt from '@/components/login-prompt';
 import DateMealSelector from '@/components/menu-page/date-meal-selector';
 import LocationTypeToggle from '@/components/menu-page/location-type-toggle';
 import MobileFilterBar from '@/components/menu-page/mobile-filter-bar';
+import { RatingCampaignBanner, RatingProgressToast } from '@/components/rating-campaign';
 import SplashScreen from '@/components/splash-screen';
 import { useHydrated } from '@/hooks/use-hydrated';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -110,6 +111,7 @@ export default function MenuPage() {
     <>
       <SplashScreen />
       <LoginPrompt />
+      <RatingProgressToast />
       {hydrated && (
         <Pane
           display='flex'
@@ -197,6 +199,8 @@ export default function MenuPage() {
                     stackMenuHeader={stackMenuHeader}
                   />
                 )}
+
+                <RatingCampaignBanner />
 
                 <MenuCardGrid
                   loading={menus.isPending || (menus.isError && menus.isFetching)}

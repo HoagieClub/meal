@@ -1,5 +1,12 @@
 import type { MenuData } from '@/types';
 
+/** Votes a dish needs before its like and dislike counts appear, so one vote is never a verdict. */
+export const MIN_VOTES_TO_SHOW_COUNTS = 3;
+
+export function showsVoteCounts(likeCount: number, dislikeCount: number): boolean {
+  return likeCount + dislikeCount >= MIN_VOTES_TO_SHOW_COUNTS;
+}
+
 /** The fields a like, dislike or star changes on a user's interaction with an item. */
 export type InteractionPatch = { liked?: boolean | null; favorited?: boolean };
 
