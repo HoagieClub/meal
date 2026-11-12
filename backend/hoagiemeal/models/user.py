@@ -27,3 +27,22 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return f"{self.get_full_name()} ({self.net_id})"
+
+
+class UserActivityDay(models.Model):
+    """A campus day on which a user used the app while logged in.
+
+    The basis for daily, weekly and monthly active user counts. last_login only keeps the latest
+    visit, so this keeps the history.
+    """
+
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="activity_days")
+    date = models.DateField()
+
+    class Meta:
+        db_table = "user_activity_days"
+        constraints = [models.UniqueConstraint(fields=["user", "date"], name="user_activity_day")]
+        indexes = [models.Index(fields=["date"])]
+
+    def __str__(self):
+        return f"User {self.user_id} active on {self.date}"

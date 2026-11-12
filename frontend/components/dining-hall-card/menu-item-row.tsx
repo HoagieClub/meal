@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/accordion';
 import { useMenuItemInteractions } from '@/hooks/use-menu-item-interactions';
 import { ALLERGEN_ICON_MAP } from '@/lib/constants';
+import { showsVoteCounts } from '@/lib/interactions';
 import { detectAllergens } from '@/lib/utils';
 import type { DisplayMenuItem } from '@/types';
 
@@ -71,6 +72,8 @@ export default function MenuItemRow({
             <LikeDislikeButtons
               name={item.name}
               userLiked={interactions.userLiked}
+              likeCount={interactions.likeCount}
+              dislikeCount={interactions.dislikeCount}
               onLike={interactions.handleLike}
               onDislike={interactions.handleDislike}
             />
@@ -149,24 +152,33 @@ function StarButton({
   );
 }
 
-/** Like and dislike buttons in one pill. */
+/**
+ * Like and dislike buttons in one pill. Counts appear once a dish has a few votes (see
+ * showsVoteCounts); until then the buttons alone invite the first ones.
+ */
 function LikeDislikeButtons({
   name,
   userLiked,
+  likeCount,
+  dislikeCount,
   onLike,
   onDislike,
 }: {
   name: string;
   userLiked: boolean | null;
+  likeCount: number;
+  dislikeCount: number;
   onLike: () => void;
   onDislike: () => void;
 }) {
+  const showCounts = showsVoteCounts(likeCount, dislikeCount);
   return (
     <div className='mr-0.5 flex items-center overflow-hidden rounded-full'>
       <VoteButton
         label={`Like ${name}`}
         icon='like'
         active={userLiked === true}
+        count={showCounts ? likeCount : null}
         className={userLiked === true ? 'bg-green-50' : 'hover:bg-green-50'}
         onClick={onLike}
       />
@@ -175,6 +187,7 @@ function LikeDislikeButtons({
         label={`Dislike ${name}`}
         icon='dislike'
         active={userLiked === false}
+        count={showCounts ? dislikeCount : null}
         className={userLiked === false ? 'bg-red-50' : 'hover:bg-red-50'}
         onClick={onDislike}
       />
@@ -186,12 +199,15 @@ function VoteButton({
   label,
   icon,
   active,
+  count,
   className,
   onClick,
 }: {
   label: string;
   icon: 'like' | 'dislike';
   active: boolean;
+  /** Shown beside the icon; null hides it. */
+  count: number | null;
   className: string;
   onClick: () => void;
 }) {
@@ -210,6 +226,9 @@ function VoteButton({
         active={active}
         size={12}
       />
+      {count !== null && (
+        <span className='text-xs font-medium text-gray-800 tabular-nums'>{count}</span>
+      )}
     </button>
   );
 }

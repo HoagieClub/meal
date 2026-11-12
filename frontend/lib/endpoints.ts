@@ -1,6 +1,12 @@
 import type { InteractionPatch } from '@/lib/interactions';
 import { toCamelCase } from '@/lib/utils';
-import type { MenuItem, MenuItemInteraction, MenuItemMetrics, MenusByLocation } from '@/types';
+import type {
+  EngagementStats,
+  MenuItem,
+  MenuItemInteraction,
+  MenuItemMetrics,
+  MenusByLocation,
+} from '@/types';
 
 // Menus are fetched straight from the backend. Authenticated calls go through the Next.js
 // proxy routes under /api, which attach the Auth0 access token server-side.
@@ -50,6 +56,10 @@ export function getEngagementData(menuItemApiIds: string[]) {
     '/api/engagement/',
     jsonBody('POST', { menu_item_api_ids: menuItemApiIds })
   );
+}
+
+export function getEngagementStats() {
+  return request<EngagementStats>('/api/engagement/stats/');
 }
 
 export function patchUserMenuItemInteraction(menuItemApiId: string, patch: InteractionPatch) {

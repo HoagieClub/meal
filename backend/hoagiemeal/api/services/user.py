@@ -5,14 +5,20 @@ from typing import Any, Optional
 import jwt
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db import IntegrityError
 from django.http import HttpRequest
 from django.utils import timezone
 from jwt import PyJWKClient
 
+from hoagiemeal.api.services.cacher import local_today
+from hoagiemeal.models.user import UserActivityDay
 from hoagiemeal.utils.logger import logger
 
 User = get_user_model()
+
+# Longer than a day, so the key for today outlives today and is never re-added before midnight.
+ACTIVITY_CACHE_SECONDS = 36 * 60 * 60
 
 _JWK_CLIENT = PyJWKClient(f"{settings.AUTH0_ISSUER}.well-known/jwks.json")
 
@@ -51,6 +57,22 @@ def _unique_username(email: str, auth0_id: str) -> str:
     return auth0_id
 
 
+def _record_activity_day(user: Any) -> None:
+    """Note that `user` was active today. A failure here never blocks the login."""
+    today = local_today()
+    # Every logged-in request comes through here, so the cache keeps it to one write per user per
+    # day per server process instead of one per request.
+    key = f"user-active:{user.id}:{today.isoformat()}"
+    if not cache.add(key, True, ACTIVITY_CACHE_SECONDS):
+        return
+    try:
+        # ignore_conflicts: other server processes may already have written today's row.
+        UserActivityDay.objects.bulk_create([UserActivityDay(user=user, date=today)], ignore_conflicts=True)
+    except Exception:
+        cache.delete(key)  # so the next request tries again
+        logger.exception(f"Failed to record activity for user {user.id}")
+
+
 def get_or_create_user(auth0_claims: dict) -> Optional[Any]:
     """Find the user for a set of verified claims, creating one from the Hoagie claims on first login."""
     auth0_id = auth0_claims.get("sub")
@@ -78,6 +100,7 @@ def get_or_create_user(auth0_claims: dict) -> Optional[Any]:
             logger.info(f"User created for auth0_id {auth0_id}")
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
+        _record_activity_day(user)
         return user
     except Exception:
         logger.exception(f"Failed to get or create user for auth0_id {auth0_id}")
